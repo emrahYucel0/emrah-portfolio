@@ -1191,12 +1191,18 @@ function stripTones(dom) {
   }
   return [cover(V.strip / 2), cover(V.H - V.strip / 2)]
 }
+// the two faces are one opening (see frame()): going in, the picture is whole once the opening spans the sheet (0.7 of
+// the way); going back, once it has closed (0.1). A push-through lands exactly on the face, navigation damps onto it:
+// either way the face's text and tone arrive with the picture, not with the last hundredths of the position.
+const FACE_WHOLE = [0.1, 0.7]
 function domUpdate(from, to, front) {
   focusStep()
-  const dom = front < 0.5 ? from : to
+  const faceT = A.mode === 'index' && from === IDX[1] && to === IDX[2] ? A.p - 1 : null
+  const face = faceT == null ? null : A.base === 2 && faceT >= FACE_WHOLE[1] ? IDX[2] : A.base === 1 && faceT <= FACE_WHOLE[0] ? IDX[1] : null
+  const dom = face || (front < 0.5 ? from : to)
   const idleIdx = A.mode === 'index' && !A.busy
   const loaded = (A.press && A.press.L > 0.1 && A.press.st.beneath !== 'pin') || !!A.squeeze
-  const at = (i) => Math.abs(A.p - i) < 0.03 && Math.abs(A.p - A.base) < 0.2
+  const at = (i) => (Math.abs(A.p - i) < 0.03 && Math.abs(A.p - A.base) < 0.2) || face === IDX[i]
   setOn(D.about, A.aboutOpen && !A.aboutDetail && A.aboutDetailK < 0.02 && !!A.about && A.about.h > aboutHalf() * 0.82 && A.about.h < aboutHalf() * 1.15)
   setOn(D.detail, A.aboutOpen && A.aboutDetail && A.aboutDetailK > 0.72)
   if (D.lead.hidden !== A.aboutOpen) D.lead.hidden = A.aboutOpen

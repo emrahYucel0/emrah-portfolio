@@ -1,0 +1,4810 @@
+{
+ "1024x1366": {
+  "en": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  },
+  "tr": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  }
+ },
+ "1024x768": {
+  "en": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  },
+  "tr": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  }
+ },
+ "1180x820": {
+  "en": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  },
+  "tr": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  }
+ },
+ "1280x800": {
+  "en": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  },
+  "tr": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  }
+ },
+ "1366x1024": {
+  "en": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  },
+  "tr": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  }
+ },
+ "1366x768": {
+  "en": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  },
+  "tr": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  }
+ },
+ "1440x900": {
+  "en": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  },
+  "tr": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  }
+ },
+ "1512x982": {
+  "en": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  },
+  "tr": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  }
+ },
+ "1920x1080": {
+  "en": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  },
+  "tr": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  }
+ },
+ "2560x1440": {
+  "en": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  },
+  "tr": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  }
+ },
+ "320x568": {
+  "en": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": [
+      "offscreen span. \"Istanbul · Available for selected freela\" [18,539 → 325,552]",
+      "clipped span. \"Istanbul · Available for selected freela\" (307>284)"
+     ]
+    },
+    "02-about": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "04-creative": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": [
+      "offscreen span. \"Istanbul · Available for selected freela\" [18,539 → 325,552]",
+      "clipped span. \"Istanbul · Available for selected freela\" (307>284)"
+     ]
+    },
+    "05-fullstack": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": [
+      "offscreen span. \"Istanbul · Available for selected freela\" [18,539 → 325,552]",
+      "clipped span. \"Istanbul · Available for selected freela\" (307>284)"
+     ]
+    },
+    "06-work": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": [
+      "offscreen b. \"100\" [80,569 → 103,586]",
+      "offscreen abbr. \"SEO\" [109,572 → 128,585]"
+     ]
+    },
+    "07-istanbul-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": [
+      "offscreen p.wb-role \"Original visual direction, creative fron\" [18,64 → 579,82]",
+      "clipped p.wb-role \"Original visual direction, creative fron\" (561>1)"
+     ]
+    },
+    "08-ege-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": [
+      "offscreen p.wb-role \"SEO architecture, scalable content struc\" [18,64 → 472,82]",
+      "clipped p.wb-role \"SEO architecture, scalable content struc\" (454>1)"
+     ]
+    },
+    "09-evden-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": [
+      "offscreen p.wb-role \"CMS/admin system, full-stack architectur\" [18,64 → 479,82]",
+      "clipped p.wb-role \"CMS/admin system, full-stack architectur\" (461>1)"
+     ]
+    },
+    "10-lab": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": [
+      "offscreen span. \"Istanbul · Available for selected freela\" [18,539 → 325,552]",
+      "clipped span. \"Istanbul · Available for selected freela\" (307>284)"
+     ]
+    },
+    "11-contact": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": [
+      "offscreen span. \"Istanbul · Available for selected freela\" [18,539 → 325,552]",
+      "clipped span. \"Istanbul · Available for selected freela\" (307>284)"
+     ]
+    }
+   }
+  },
+  "tr": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "02-about": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "04-creative": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "06-work": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": [
+      "offscreen p.wb-role \"Özgün görsel yön, yaratıcı frontend mühe\" [18,64 → 549,82]",
+      "clipped p.wb-role \"Özgün görsel yön, yaratıcı frontend mühe\" (531>1)"
+     ]
+    },
+    "08-ege-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": [
+      "offscreen p.wb-role \"SEO mimarisi, ölçeklenebilir içerik yapı\" [18,64 → 459,82]",
+      "clipped p.wb-role \"SEO mimarisi, ölçeklenebilir içerik yapı\" (441>1)"
+     ]
+    },
+    "09-evden-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": [
+      "offscreen p.wb-role \"CMS/admin sistemi, full-stack mimari ve \" [18,64 → 431,82]",
+      "clipped p.wb-role \"CMS/admin sistemi, full-stack mimari ve \" (413>1)"
+     ]
+    },
+    "10-lab": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    }
+   }
+  }
+ },
+ "3440x1440": {
+  "en": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  },
+  "tr": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  }
+ },
+ "375x667": {
+  "en": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "02-about": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "04-creative": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "06-work": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "10-lab": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    }
+   }
+  },
+  "tr": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "02-about": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "04-creative": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "06-work": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "10-lab": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    }
+   }
+  }
+ },
+ "390x844": {
+  "en": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "02-about": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "04-creative": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "06-work": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "10-lab": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    }
+   }
+  },
+  "tr": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "02-about": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "04-creative": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "06-work": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "10-lab": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    }
+   }
+  }
+ },
+ "430x932": {
+  "en": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "02-about": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "04-creative": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "06-work": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "10-lab": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    }
+   }
+  },
+  "tr": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "02-about": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "04-creative": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "06-work": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "10-lab": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    }
+   }
+  }
+ },
+ "768x1024": {
+  "en": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  },
+  "tr": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  }
+ },
+ "820x1180": {
+  "en": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  },
+  "tr": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "05-fullstack": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "06-work": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f1": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "11-contact": {
+     "P": true,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  }
+ },
+ "844x390": {
+  "en": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": [
+      "clipped span.nt \"Authored visual systems · interaction\" (217>1)",
+      "clipped span.nt \"Scroll · gesture · choreography\" (178>1)",
+      "clipped span.nt \"Vue · Nuxt · TypeScript · Tailwind CSS\" (219>1)"
+     ]
+    },
+    "05-fullstack": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": [
+      "clipped span.nt \"SSR · REST APIs · Prisma · authenticatio\" (240>1)",
+      "clipped span.nt \"Database-driven publishing and editing\" (232>1)",
+      "clipped span.nt \"Metadata · routing · sitemaps · lean bui\" (243>1)"
+     ]
+    },
+    "06-work": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": [
+      "clipped p.wb-line \"A full-stack service platform where the \" (751>1)"
+     ]
+    },
+    "09-evden-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "11-contact": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  },
+  "tr": {
+   "errors": 0,
+   "states": {
+    "01-open": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "02-about": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "03-about-detail": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "04-creative": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": [
+      "clipped span.nt \"Özgün görsel sistemler · etkileşim\" (199>1)",
+      "clipped span.nt \"Kaydırma · hareket · koreografi\" (178>1)",
+      "clipped span.nt \"Vue · Nuxt · TypeScript · Tailwind CSS\" (219>1)"
+     ]
+    },
+    "05-fullstack": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": [
+      "clipped span.nt \"SSR · REST API · Prisma · kimlik doğrula\" (251>1)",
+      "clipped span.nt \"Veritabanı tabanlı yayın ve düzenleme\" (223>1)",
+      "clipped span.nt \"Metadata · routing · sitemap · yalın bui\" (233>1)"
+     ]
+    },
+    "06-work": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "07-istanbul-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "07-istanbul-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "08-ege-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "08-ege-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f0": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": [
+      "clipped p.wb-line \"Genele açık deneyim ile yönetim sistemin\" (678>1)"
+     ]
+    },
+    "09-evden-f1": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f2": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "09-evden-f3": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10,
+     "issues": []
+    },
+    "09-evden-f4": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "10-lab": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    },
+    "11-contact": {
+     "P": false,
+     "hScroll": false,
+     "minFont": 10.5,
+     "issues": []
+    }
+   }
+  }
+ }
+}

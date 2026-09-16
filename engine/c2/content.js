@@ -31,7 +31,8 @@ export const lab = { ...first.lab }
 export const ui = { ...first.ui }
 
 // the preview a work is registered with: wide on a wide screen, the real mobile capture on a phone
-export const previewOf = (w, portrait) => (portrait ? w.media.mobile || w.media.tablet || w.media.hero : w.media.hero)
+// M3: a tablet held upright registers the real tablet capture, not a phone capture cropped to its width
+export const previewOf = (w, portrait, tablet = false) => (portrait ? (tablet && w.media.tablet) || w.media.mobile || w.media.tablet || w.media.hero : w.media.hero)
 
 /**
  * Change language without disturbing anything the surface is made of.

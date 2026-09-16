@@ -135,16 +135,19 @@ export function face(V, which) {
   const word = capabilities[neg ? 'system' : 'surface'].word
   let lay, draw
   if (!P) {
-    const posBlock = { x: pad, y: strip + 46, w: Math.min(W * 0.56, 840), h: Math.round(H * 0.25) }
+    const S = V.S
+    const posBlock = S ? { x: pad, y: strip + 14, w: Math.round(W * 0.5), h: Math.round(H * 0.3) } : { x: pad, y: strip + 46, w: Math.min(W * 0.56, 840), h: Math.round(H * 0.25) }
     let size = Infinity, capR = 0.72
     for (const w of [capabilities.surface.word, capabilities.system.word]) { const f = fit(w, W - pad * 2, H * 0.3); if (f.size < size) { size = f.size; capR = f.capR } }
     const cap = size * capR
     const base = H - strip - 28
     MCTX.font = `900 ${size}px ${FAMILY}`
     const wordW = MCTX.measureText(word).width
-    const listBlock = { x: Math.round(W * 0.62), y: posBlock.y + posBlock.h + 34, w: Math.round(W * 0.38 - pad), h: 176 }
+    const listBlock = S
+      ? { x: Math.round(W * 0.56), y: strip + 14, w: Math.round(W * 0.44 - pad), h: Math.max(80, Math.round(base - cap - 20 - strip - 14)) }
+      : { x: Math.round(W * 0.62), y: posBlock.y + posBlock.h + 34, w: Math.round(W * 0.38 - pad), h: 176 }
     const roleRight = pad + wordW + 22
-    const role = W - pad - roleRight > 250 ? { x: roleRight, y: base - 30 } : { x: pad, y: base - cap - 40 }
+    const role = S ? null : W - pad - roleRight > 250 ? { x: roleRight, y: base - 30 } : { x: pad, y: base - cap - 40 }
     lay = { posBlock, listBlock, cap, base, wordTop: base - cap, role, weakY: Math.round((listBlock.y + listBlock.h + base - cap) / 2) }
     draw = (solid) => { solid.font = `900 ${size}px ${FAMILY}`; solid.fillText(word, pad - size * 0.02, base) }
   } else {
@@ -191,13 +194,17 @@ export function face(V, which) {
 // The frame takes the capture's own proportions — a wide hero stays wide, a phone capture stays tall.
 export function workFrame(V, w) {
   const { W, H, P, pad, strip } = V
-  const item = previewOf(w, P)
-  const col = P ? { x: 0, y: strip, w: W, h: Math.round(H * 0.4) } : { x: 0, y: strip, w: Math.round(W * 0.28), h: H - strip * 2 }
+  const item = previewOf(w, P, V.T)
+  const col = P ? { x: 0, y: strip, w: W, h: Math.round(H * (V.T ? 0.34 : H < 640 ? 0.5 : H < 760 ? 0.44 : 0.4)) } : { x: 0, y: strip, w: Math.round(W * (V.S ? 0.34 : 0.28)), h: H - strip * 2 }
   if (P) {
     const y0 = col.y + col.h + 26
-    return { col, item, frame: { x: pad, y: y0, w: W - pad * 2, h: H - strip - 24 - y0 } }
+    const area = { x: pad, y: y0, w: W - pad * 2, h: H - strip - 24 - y0 }
+    // a tablet capture keeps its own proportions in the frame; a phone fills the width as before
+    return { col, item, frame: V.T ? fitRect(item.aspect, area, 'center') : area }
   }
-  const box = { x: Math.round(W * 0.33), y: strip + 40, w: Math.round(W * 0.67 - pad), h: H - strip * 2 - 80 }
+  const box = V.S
+    ? { x: Math.round(W * 0.39), y: strip + 16, w: Math.round(W * 0.61 - pad), h: H - strip * 2 - 32 }
+    : { x: Math.round(W * 0.33), y: strip + 40, w: Math.round(W * 0.67 - pad), h: H - strip * 2 - 80 }
   return { col, item, frame: fitRect(item.aspect, box, 'center') }
 }
 export function workState(V, w, i) {
@@ -246,7 +253,7 @@ export function rest(V, visitOrder = [], mark = null) {
   const { W, H, P, pad, strip } = V
   const wedge = mark
     ? { ...mark }
-    : { cx: P ? W / 2 : W * 0.3, cy: H * 0.46, h: H * (P ? 0.235 : 0.2), hw: P ? 1e5 : W * 0.9, falloff: P ? 70 : 110, lip: 5, lipW: 7 }
+    : { cx: P ? W / 2 : W * 0.3, cy: H * 0.46, h: H * (P ? (H < 640 ? 0.27 : 0.235) : V.S ? 0.3 : H < 820 ? 0.215 : 0.2), hw: P ? 1e5 : W * 0.9, falloff: P ? 70 : 110, lip: 5, lipW: 7 }
   const bh = Math.min(wedge.h * 2 - 24, P ? 300 : 270)
   const block = { x: pad, y: Math.round(wedge.cy - bh / 2), w: P ? W - pad * 2 : Math.min(520, W * 0.42), h: Math.round(bh) }
   // history is art-directed: at most three threads carry full weight, the oldest thin out
@@ -312,12 +319,12 @@ export function worldSurface(V, w, k, fr, i) {
 export function worldFull(V, w, k) {
   const { W, H, P, pad, strip } = V
   const next = (k + 1) % works.length
-  const item = previewOf(works[next], P)
-  const text = P ? { x: pad, y: strip + 20, w: W - pad * 2, h: Math.round(H * 0.36) } : { x: pad, y: strip + 60, w: Math.round(W * 0.36), h: H - strip * 2 - 120 }
+  const item = previewOf(works[next], P, V.T)
+  const text = P ? { x: pad, y: strip + 20, w: W - pad * 2, h: Math.round(H < 760 ? Math.max(H * 0.36, Math.min(290, H * 0.48)) : H * 0.36) } : V.S ? { x: pad, y: strip + 12, w: Math.round(W * 0.4), h: H - strip * 2 - 24 } : { x: pad, y: strip + 60, w: Math.round(W * 0.36), h: H - strip * 2 - 120 }
   const area = P
     ? { x: pad, y: text.y + text.h + 50, w: W - pad * 2, h: H - strip - 24 - (text.y + text.h + 50) }
     : { x: Math.round(W * 0.44), y: strip + 70, w: Math.round(W * 0.56 - pad), h: H - strip * 2 - 140 }
-  const frame = P ? area : fitRect(item.aspect, area, 'center')
+  const frame = P && !V.T ? area : fitRect(item.aspect, area, 'center')
   const [fa, fb] = fragments(frame, next + 3)
   const img = build(V, H, ({ tone, solid, voids }) => {
     strips(voids, V)

@@ -18,7 +18,7 @@ import * as ST from './states.js'
 import { framesFor, GEOM, ABSENT } from './world.js'
 import { identity, about, capabilities, workIntro, works, lab, contact, previewOf, ui as TXT, applyLocale } from './content.js'
 import { termHtml } from '../../shared/content/term'
-import { mediaElement, placeMedia, loadImage, prepareTone, labElement } from './media.js'
+import { mediaElement, placeMedia, loadImage, prepareTone, labElement, setMediaScale } from './media.js'
 
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches
 const TOUCH = matchMedia('(pointer: coarse)').matches
@@ -66,15 +66,52 @@ const canvas = $('#surface')
 const surface = createSurface(canvas)
 const phys = createPhysics()
 
-const V = { W: 1, H: 1, P: false, dpr: 1, pad: 36, strip: 50 }
+const V = { W: 1, H: 1, u: 1, P: false, T: false, S: false, dpr: 1, pad: 36, strip: 50 }
+// M3 SAFE-AREA — a notch, rounded corners or a home indicator (viewport-fit=cover) take room from the screen edges.
+// Read from CSS env() on every measure; on a screen without them every inset is 0 and nothing below changes.
+let safeProbe = null
+function safeInsets() {
+  if (!safeProbe) {
+    safeProbe = document.createElement('div')
+    safeProbe.setAttribute('aria-hidden', 'true')
+    safeProbe.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)'
+    document.body.appendChild(safeProbe)
+  }
+  const cs = getComputedStyle(safeProbe), n = (v) => Math.round(parseFloat(v) || 0)
+  return { t: n(cs.paddingTop), r: n(cs.paddingRight), b: n(cs.paddingBottom), l: n(cs.paddingLeft) }
+}
 function measure() {
-  V.W = innerWidth; V.H = innerHeight
+  // M3 RESPONSIVE GEOMETRY — the large-screen limit. Past 1920 × 1080 the composition does not keep spreading: every
+  // fixed measure (type, blocks, rooms, rows) would stay 1080p-sized in an ever larger field of material. The surface is
+  // composed at the largest authored size (a 1920-wide or 1080-high field, whichever the screen reaches first) and that
+  // composition is shown at the screen's own size — at most 1.6×, so a 4K or ultrawide screen still gains real room.
+  // At 1920 × 1080 and below u is exactly 1 and nothing changes.
+  const u = V.u = clamp(Math.min(innerWidth / 1920, innerHeight / 1080), 1, 1.6)
+  V.W = Math.round(innerWidth / u); V.H = Math.round(innerHeight / u)
+  for (const el of [document.getElementById('ui'), document.getElementById('media')]) {
+    if (!el) continue
+    Object.assign(el.style, u > 1
+      ? { right: 'auto', bottom: 'auto', width: `${V.W}px`, height: `${V.H}px`, transform: `scale(${innerWidth / V.W})`, transformOrigin: '0 0' }
+      : { right: '', bottom: '', width: '', height: '', transform: '', transformOrigin: '' })
+  }
+  setMediaScale(u)
   V.P = V.W < V.H * 0.8
+  // M3 RESPONSIVE GEOMETRY — two composition classes the portrait / landscape split did not have. A tablet held upright
+  // is portrait, but not a phone: it keeps the portrait laws with its own measure and its own (tablet) captures.
+  // A phone on its side is landscape, but has less height than any laptop: the landscape laws, packed tighter.
+  V.T = V.P && V.W >= 700
+  V.S = !V.P && V.H < 520
   V.dpr = Math.min(devicePixelRatio || 1, V.W < 700 ? 1.75 : 1.5)
-  V.pad = V.P ? 18 : clamp(V.W * 0.025, 16, 36)
-  V.strip = V.P ? 44 : 50
-  document.documentElement.style.setProperty('--pad', `${V.pad}px`)
-  document.documentElement.style.setProperty('--strip', `${V.strip}px`)
+  const safe = V.safe = safeInsets()
+  // the composition stays symmetrical: the larger side inset moves both margins, the larger of top/bottom both strips
+  V.pad = Math.max(V.T ? clamp(V.W * 0.04, 28, 48) : V.P ? 18 : clamp(V.W * 0.025, 16, 36), safe.l, safe.r)
+  V.strip = (V.P && !V.T ? 44 : 50) + Math.max(safe.t, safe.b)
+  document.documentElement.dataset.c2Shape = V.T ? 'tablet' : V.P ? 'phone' : V.S ? 'short' : 'wide'
+  const root = document.documentElement.style
+  root.setProperty('--pad', `${V.pad}px`)
+  root.setProperty('--strip', `${V.strip}px`)
+  root.setProperty('--safe-t', `${safe.t}px`)
+  root.setProperty('--safe-b', `${safe.b}px`)
 }
 
 const LAST = 5
@@ -128,7 +165,7 @@ function prepareWorld(k) {
 // needs it is built until it is ready — the opening never shares the main thread with image processing
 let tonesReady = Promise.resolve()
 const ensurePreviews = async () => {
-  const items = [...new Set(works.map((w) => previewOf(w, V.P)))]
+  const items = [...new Set(works.map((w) => previewOf(w, V.P, V.T)))]
   await Promise.all(items.map(loadItem))
   tonesReady = Promise.all(items.map((it) => prepareTone(it.im)))
 }
@@ -143,7 +180,7 @@ function rebuild() {
   for (const list of Object.values(MEDIA)) list.flat().forEach((me) => me.el.remove())
   MEDIA = {}; mediaShown = ''
   old.forEach((s) => { if (s) { s.dead = true; surface.release(s) } })
-  surface.resize(V.W, V.H, V.dpr)
+  surface.resize(V.W, V.H, V.dpr * V.u)
   phys.resize(V.W, V.H)
   lastSig = ''
   works.forEach((w, i) => { if (i < 12) surface.inks.set(hexArr(w.ink), i * 3) })
@@ -220,32 +257,53 @@ addEventListener('wheel', (e) => {
   e.preventDefault()
   scrollBy((e.deltaMode === 1 ? e.deltaY * 32 : e.deltaY) * 0.0011)
 }, { passive: false })
+// M3 MOBILE BUG FIX — a gesture can end without the page ever hearing it end. On iOS a long press on media hands
+// the touch to the native callout and no pointerup / pointercancel follows; a system gesture or an alert can do the
+// same. The finger then stayed in `touches`, so every later single finger counted as a second one: it started a
+// squeeze (or nothing, where no squeeze is possible), and swiping never worked again. One idempotent ending, used
+// by every path that can end a gesture, puts the input back to rest; a non-forced press releases itself on the
+// next frame exactly as if the finger had lifted.
+function endGesture() {
+  touches.clear()
+  if (A.squeeze) endSqueeze()
+  ptr.down = false; ptr.axis = null; ptr.ui = false; ptr.rub = 0
+  if (ptr.touch) ptr.hover = false
+}
 addEventListener('pointerdown', (e) => {
+  // the first finger of a gesture: nothing else is on the glass, whatever an interrupted gesture left behind
+  if (e.pointerType === 'touch' && e.isPrimary && (touches.size || ptr.down)) endGesture()
   if (e.target.closest('a, button, .scroll')) { ptr.ui = true; return }
   if (e.pointerType === 'touch') {
-    touches.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    touches.set(e.pointerId, { x: e.clientX / V.u, y: e.clientY / V.u })
     if (touches.size === 2) { startSqueeze(); return }
     if (touches.size > 2) return
   }
-  Object.assign(ptr, { down: true, downT: performance.now(), sx: e.clientX, sy: e.clientY, x: e.clientX, y: e.clientY, moved: 0, axis: null, rub: 0, ui: false, touch: e.pointerType !== 'mouse' })
+  Object.assign(ptr, { down: true, downT: performance.now(), sx: e.clientX / V.u, sy: e.clientY / V.u, x: e.clientX / V.u, y: e.clientY / V.u, moved: 0, axis: null, rub: 0, ui: false, touch: e.pointerType !== 'mouse' })
 })
 addEventListener('pointermove', (e) => {
   const now = performance.now(), dts = Math.max(8, now - ptr.t) / 1000
-  if (e.pointerType === 'touch' && touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY })
+  if (e.pointerType === 'touch' && touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX / V.u, y: e.clientY / V.u })
   if (A.squeeze) return
-  const dx = e.clientX - ptr.x, dy = e.clientY - ptr.y
+  const cx = e.clientX / V.u, cy = e.clientY / V.u
+  const dx = cx - ptr.x, dy = cy - ptr.y
   if (ptr.t) { ptr.vx = lerp(ptr.vx, dx / dts, 0.5); ptr.vy = lerp(ptr.vy, dy / dts, 0.5) }
-  ptr.x = e.clientX; ptr.y = e.clientY; ptr.t = now
+  ptr.x = cx; ptr.y = cy; ptr.t = now
   ptr.touch = e.pointerType !== 'mouse'; ptr.hover = !ptr.touch
   if (!ptr.down) return
   ptr.moved += Math.hypot(dx, dy)
   ptr.rub = damp(ptr.rub, clamp(Math.hypot(ptr.vx, ptr.vy) / 700, 0, 1), 10, dts)
   if (ptr.touch) {
     // swipe vs hold is decided by displacement, not by time: rubbing stays near where it started, a swipe leaves
-    const ox = e.clientX - ptr.sx, oy = e.clientY - ptr.sy
-    if (!ptr.axis && Math.hypot(ox, oy) > 16 && (!A.press || A.press.L < 0.22)) {
+    const ox = cx - ptr.sx, oy = cy - ptr.sy
+    // M3 MOBILE BUG FIX — a hold that has already taken load used to ignore the finger leaving: the room kept
+    // growing under a swipe and the swipe never scrolled. Rubbing stays near where it started; a decisive vertical
+    // departure is a swipe, whatever the load. The hold then ends as if the finger had lifted (a Lab room keeps
+    // what it made). Below 0.22 of load nothing changes.
+    const loaded = A.press && A.press.L >= 0.22
+    const leaves = loaded ? Math.abs(oy) > Math.max(56, V.H * 0.08) && Math.abs(oy) > Math.abs(ox) * 2 : Math.hypot(ox, oy) > 16
+    if (!ptr.axis && leaves) {
       ptr.axis = Math.abs(oy) > Math.abs(ox) ? 'y' : 'x'
-      if (A.press && !A.press.forced) cancelPress(A.press)
+      if (A.press && !A.press.forced && !loaded) cancelPress(A.press)
       if (ptr.axis === 'y') scrollBy(-(oy - dy) / (V.H * 0.5), true)
     }
     if (ptr.axis === 'y') scrollBy(-dy / (V.H * 0.5), true)
@@ -262,14 +320,33 @@ const up = (e) => {
     touches.delete(e.pointerId)
     if (A.squeeze) { if (touches.size < 2) endSqueeze(); return }
   }
-  if (ptr.down && !ptr.ui && now - ptr.downT < 200 && ptr.moved < 8) tap(ptr.x, ptr.y)
+  // a cancelled gesture was not a tap
+  if (e?.type !== 'pointercancel' && ptr.down && !ptr.ui && now - ptr.downT < 200 && ptr.moved < 8) tap(ptr.x, ptr.y)
   ptr.down = false; ptr.axis = null; ptr.ui = false; ptr.rub = 0
   if (ptr.touch) ptr.hover = false
   A.lastInput = now
 }
 addEventListener('pointerup', up)
 addEventListener('pointercancel', up)
-addEventListener('blur', () => { touches.clear(); up() })
+// M3 MOBILE BUG FIX — every way the page can lose a gesture ends it
+addEventListener('blur', endGesture)
+addEventListener('pagehide', endGesture)
+document.addEventListener('visibilitychange', () => { if (document.hidden) endGesture() })
+// WebKit still delivers touch events when the pointer stream was taken: once no finger is left on the glass, no
+// gesture is left either. Checked a moment later, so a normal pointerup (and its tap) always runs first.
+const settleTouches = (e) => {
+  if (e.touches.length) return
+  const t = ptr.downT
+  setTimeout(() => { if (ptr.downT === t && (touches.size || (ptr.down && ptr.touch))) endGesture() }, 50)
+}
+addEventListener('touchend', settleTouches, { passive: true })
+addEventListener('touchcancel', settleTouches, { passive: true })
+// the native long-press menu (save image, open image…) is not offered for a hold on the material itself; links,
+// buttons, readable text and every mouse keep the browser's own menu
+addEventListener('contextmenu', (e) => {
+  if (!ptr.touch || e.target.closest?.('a, button, .scroll')) return
+  e.preventDefault()
+})
 addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { if (A.aboutDetail) leaveDetail(); else if (A.aboutOpen) closeAbout(); else exit(); return }
   if (e.target.closest?.('button, a, .scroll') && ['Enter', ' ', 'ArrowDown', 'ArrowUp', 'PageDown', 'PageUp'].includes(e.key)) return
@@ -517,7 +594,8 @@ function relaxPins(dt, k, P) {
 }
 
 // ─── NAME → beneath the name is the person ────────────────────────────────────
-const aboutHalf = () => (V.P ? 0.235 : 0.2) * V.H
+// M3 RESPONSIVE GEOMETRY — on a short phone the introduction needs a taller room than a fixed share of the height gives
+const aboutHalf = () => (V.P ? (V.H < 640 ? 0.27 : 0.235) : V.S ? 0.3 : V.H < 820 ? 0.215 : 0.2) * V.H   // a 13-inch laptop: a little more room between the names
 const aboutX = () => (V.P ? V.W / 2 : V.W * 0.3)
 function aboutFeature(open) {
   return feature({ cx: aboutX(), cy: IDX[0].layout.gapY, h: aboutHalf() * open, hw: V.P ? 1e5 : V.W * 0.9, falloff: V.P ? 70 : 110, lip: 5, lipW: 7 })
@@ -578,7 +656,8 @@ const ROOM_PAD = () => (V.P ? { x: 0, y: 24, falloff: 30 } : { x: 72, y: 30, fal
 function aboutRoomFeatures() {
   const k = A.aboutDetailK, B = D.aboutBlocks, pad = ROOM_PAD()
   const geo = (b) => {
-    const r = b.getBoundingClientRect()
+    const R = b.getBoundingClientRect(), u = V.u
+    const r = { left: R.left / u, top: R.top / u, width: R.width / u, height: R.height / u }
     return { cx: V.P ? V.W / 2 : r.left + r.width / 2, cy: r.top + r.height / 2, h: r.height / 2 + pad.y, hw: V.P ? 1e5 : r.width / 2 + pad.x, falloff: pad.falloff, power: 8 }
   }
   const home = aboutFeature(1), g0 = geo(B[0]), f = A.about
@@ -612,6 +691,7 @@ function layoutAbout() {
 }
 function leaveDetail() { if (A.detailPushed) HOST.back(); else collapseAbout(true) }
 export function routeChanged() {
+  endGesture()   // M3 MOBILE BUG FIX
   if (isAboutPath()) { if (A.mode === 'world') { exit(); A.pending = 'detail' } else expandAbout(false) }
   else if (A.aboutDetail) collapseAbout(false)
 }
@@ -1160,7 +1240,7 @@ function labMediaUpdate() {
       const key = `${Math.round(x)},${Math.round(y)},${Math.round(ww)}`
       if (m.key !== key) { m.key = key; Object.assign(m.el.style, { left: `${x}px`, top: `${y}px`, width: `${ww}px`, height: `${hh}px` }) }
       any = true
-      if (f === live) { const cw = V.P ? ww : Math.max(ww, 280), cx = Math.min(x, V.W - V.pad - cw); cap = `${m.entry.n} / ${String(LABM.length).padStart(2, '0')}|${m.entry.desc}|${Math.round(cx)}|${Math.round(y + hh + 6)}|${Math.round(cw)}` }
+      if (f === live) { const cw = V.P && !V.T ? ww : Math.max(ww, 280), cx = Math.min(x, V.W - V.pad - cw); cap = `${m.entry.n} / ${String(LABM.length).padStart(2, '0')}|${m.entry.desc}|${Math.round(cx)}|${Math.round(y + hh + 6)}|${Math.round(cw)}` }
     }
     const o = Math.round(op * 100) / 100
     if (m.op !== o) { m.op = o; m.el.style.opacity = String(o) }
@@ -1461,6 +1541,7 @@ function restoreMemory(phase) {
 // physics state, no Lab room and no memory.
 export function setLocale(next) {
   if (!applyLocale(next)) return false
+  endGesture()   // M3 MOBILE BUG FIX
   FR = {}                       // frame blocks carry copy; their geometry does not change, so WORLD textures stand
   buildDOM()
   lastHint = lastTone = lastTT = lastTB = lastBg = lastWork = lastWB = ''
@@ -1489,7 +1570,7 @@ async function start() {
   rebuild()
   restoreMemory('sheet')
   booted = true
-  if (Math.abs(innerWidth - V.W) > 1 || Math.abs(innerHeight - V.H) > 1) { measure(); await ensurePreviews(); rebuild() }
+  if (Math.abs(innerWidth - V.W * V.u) > 1 || Math.abs(innerHeight - V.H * V.u) > 1) { measure(); await ensurePreviews(); rebuild() }
   A.from = A.to = IDX[0]; A.front = 1
   if (isAboutPath()) { A.pending = 'detail'; document.title = TITLE_ABOUT() } else document.title = TITLE()
   requestAnimationFrame((t) => { last = t; frame(t) })

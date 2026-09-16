@@ -151,3 +151,21 @@ html:not([data-c2='on']) #ui { display: none; }
   each clause takes one line. Locale-specific measure only: type, placement and the surface are unchanged.
 */
 html[lang='tr-TR'] #ui .about .statement { max-width: 24ch; }
+
+/*
+  M3 — mobile bug fix (host side).
+  The runtime's stylesheet locks the document for its own gestures (overflow hidden, touch-action none, no text
+  selection) — which it needs: measured, with touch-action pan-y the browser claims a vertical swipe after the first
+  move, cancels the pointer stream and C2 never navigates. But that stylesheet stays loaded after the runtime steps
+  aside (the x-default entry, the error page), where it made the plain shell unscrollable. The lock now only holds
+  while the runtime actually has the screen.
+*/
+html:not([data-c2='on']),
+html:not([data-c2='on']) body {
+  height: auto;
+  overflow: visible;
+  overscroll-behavior: auto;
+  touch-action: auto;
+  -webkit-user-select: auto;
+  user-select: auto;
+}

@@ -37,11 +37,14 @@ export function mediaElement(item, cls = '') {
   el.appendChild(pic)
   return { el, node, pic, item }
 }
+// M3: on a large screen media is laid out in composition units and shown larger; the source it asks for is the shown size
+let mediaScale = 1
+export function setMediaScale(u) { mediaScale = u }
 export function placeMedia(me, r, pos = 'top left') {
   const s = me.el.style
   s.left = `${r.x}px`; s.top = `${r.y}px`; s.width = `${r.w}px`; s.height = `${r.h}px`
   me.node.style.objectPosition = pos
-  const sizes = `${Math.max(1, Math.round(r.w * Math.max(1, (me.item.aspect * r.h) / Math.max(1, r.w))))}px`
+  const sizes = `${Math.max(1, Math.round(mediaScale * r.w * Math.max(1, (me.item.aspect * r.h) / Math.max(1, r.w))))}px`
   if (me.lastSizes !== sizes) { me.lastSizes = sizes; for (const src of me.pic.querySelectorAll('source')) src.sizes = sizes; me.node.sizes = sizes }
 }
 
@@ -52,6 +55,7 @@ export function labElement(entry) {
   el.className = 'media lab-media'
   const poster = document.createElement('img')
   poster.src = entry.poster; poster.alt = ''; poster.decoding = 'async'; poster.className = 'media-node'
+  poster.draggable = false   // M3 MOBILE BUG FIX
   el.appendChild(poster)
   let video = null
   return {

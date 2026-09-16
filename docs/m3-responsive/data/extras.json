@@ -1,0 +1,169 @@
+{
+ "safeArea": [
+  {
+   "viewport": "844x390",
+   "insets": {
+    "top": 0,
+    "left": 47,
+    "right": 47,
+    "bottom": 21
+   },
+   "supported": true,
+   "safe": {
+    "t": 0,
+    "r": 47,
+    "b": 21,
+    "l": 47
+   },
+   "pad": 47,
+   "strip": 71,
+   "id": {
+    "l": 47,
+    "t": 28,
+    "r": 121,
+    "b": 42
+   },
+   "lang": {
+    "l": 784,
+    "t": 28,
+    "r": 797,
+    "b": 42
+   },
+   "hint": {
+    "l": 0,
+    "t": 319,
+    "r": 844,
+    "b": 390
+   },
+   "hintText": {
+    "l": 501,
+    "t": 337,
+    "r": 797,
+    "b": 351
+   }
+  },
+  {
+   "viewport": "390x844",
+   "insets": {
+    "top": 47,
+    "left": 0,
+    "right": 0,
+    "bottom": 34
+   },
+   "supported": true,
+   "safe": {
+    "t": 47,
+    "r": 0,
+    "b": 34,
+    "l": 0
+   },
+   "pad": 18,
+   "strip": 91,
+   "id": {
+    "l": 18,
+    "t": 62,
+    "r": 88,
+    "b": 75
+   },
+   "lang": {
+    "l": 359,
+    "t": 62,
+    "r": 372,
+    "b": 75
+   },
+   "hint": {
+    "l": 0,
+    "t": 753,
+    "r": 390,
+    "b": 844
+   },
+   "hintText": {
+    "l": 90,
+    "t": 775,
+    "r": 372,
+    "b": 788
+   }
+  }
+ ],
+ "reducedMotion": [
+  {
+   "viewport": "390x844",
+   "seen": {
+    "open": "index",
+    "about": "about",
+    "work": "work",
+    "world": "world",
+    "lab": "lab",
+    "contact": "rest",
+    "hScroll": false
+   },
+   "errors": []
+  },
+  {
+   "viewport": "820x1180",
+   "seen": {
+    "open": "index",
+    "about": "about",
+    "work": "work",
+    "world": "world",
+    "lab": "lab",
+    "contact": "rest",
+    "hScroll": false
+   },
+   "errors": []
+  },
+  {
+   "viewport": "844x390",
+   "seen": {
+    "open": "index",
+    "about": "about",
+    "work": "work",
+    "world": "world",
+    "lab": "lab",
+    "contact": "rest",
+    "hScroll": false
+   },
+   "errors": []
+  },
+  {
+   "viewport": "1366x768",
+   "seen": {
+    "open": "index",
+    "about": "about",
+    "work": "work",
+    "world": "world",
+    "lab": "lab",
+    "contact": "rest",
+    "hScroll": false
+   },
+   "errors": []
+  },
+  {
+   "viewport": "2560x1440",
+   "seen": {
+    "open": "index",
+    "about": "about",
+    "work": "work",
+    "world": "world",
+    "lab": "lab",
+    "contact": "rest",
+    "hScroll": false
+   },
+   "errors": []
+  }
+ ],
+ "shellLock": {
+  "active": {
+   "htmlOverflow": "hidden",
+   "bodyOverflow": "hidden",
+   "touchAction": "none",
+   "userSelect": "none"
+  },
+  "inactive": {
+   "htmlOverflow": "visible",
+   "bodyOverflow": "visible",
+   "touchAction": "auto",
+   "userSelect": "auto"
+  }
+ }
+}

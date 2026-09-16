@@ -1,0 +1,49 @@
+AXE {
+ "home": "none",
+ "creative": "none",
+ "work": "none",
+ "world": "none",
+ "lab": "none",
+ "contact": "none",
+ "about-wedge": "none",
+ "about-detail": "none"
+}
+ERRORS 0 []
+KEYBOARD
+  ArrowDown → Creative → {"key":"ArrowDown → Creative","mode":"index","base":1,"p":1,"wp":0,"k":0,"aboutOpen":false,"detail":false,"pins":0,"path":"/en","lang":"en","title":"Emrah Yücel — Creative Developer & Full-Stack Developer","active":"H2.sr «Creative Developer»","status":""}
+  ArrowDown → Full-Stack → {"key":"ArrowDown → Full-Stack","mode":"index","base":2,"p":2,"wp":0,"k":0,"aboutOpen":false,"detail":false,"pins":0,"path":"/en","lang":"en","title":"Emrah Yücel — Creative Developer & Full-Stack Developer","active":"H2.sr «Full-Stack Developer»","status":""}
+  ArrowDown → Work → {"key":"ArrowDown → Work","mode":"index","base":3,"p":3,"wp":0,"k":0,"aboutOpen":false,"detail":false,"pins":0,"path":"/en","lang":"en","title":"Emrah Yücel — Creative Developer & Full-Stack Developer","active":"H2.lbl «Work»","status":""}
+  ArrowRight → next work → {"key":"ArrowRight → next work","mode":"index","base":3,"p":3,"wp":0,"k":0,"aboutOpen":false,"detail":false,"pins":0,"path":"/en","lang":"en","title":"Emrah Yücel — Creative Developer & Full-Stack Developer","active":"H2.lbl «Work»","status":""}
+  ArrowLeft → back → {"key":"ArrowLeft → back","mode":"index","base":3,"p":3,"wp":0,"k":0,"aboutOpen":false,"detail":false,"pins":0,"path":"/en","lang":"en","title":"Emrah Yücel — Creative Developer & Full-Stack Developer","active":"H2.lbl «Work»","status":""}
+  Enter → open work → {"key":"Enter → open work","mode":"world","base":3,"p":3,"wp":0,"k":0,"aboutOpen":false,"detail":false,"pins":0,"path":"/en","lang":"en","title":"Emrah Yücel — Creative Developer & Full-Stack Developer","active":"H2. «İ tanbul Şehir İçi»","status":""}
+  ArrowDown → frame 1 → {"key":"ArrowDown → frame 1","mode":"world","base":3,"p":3,"wp":1,"k":0,"aboutOpen":false,"detail":false,"pins":0,"path":"/en","lang":"en","title":"Emrah Yücel — Creative Developer & Full-Stack Developer","active":"H2. «İ tanbul Şehir İçi»","status":""}
+  Escape → exit world → {"key":"Escape → exit world","mode":"index","base":3,"p":3,"wp":1,"k":0,"aboutOpen":false,"detail":false,"pins":0,"path":"/en","lang":"en","title":"Emrah Yücel — Creative Developer & Full-Stack Developer","active":"BUTTON.active visited «İ tanbul Şehir İçiOriginal digital direc»","status":""}
+  PageDown → Lab → {"key":"PageDown → Lab","mode":"index","base":4,"p":4,"wp":1,"k":0,"aboutOpen":false,"detail":false,"pins":1,"path":"/en","lang":"en","title":"Emrah Yücel — Creative Developer & Full-Stack Developer","active":"H2.lbl «Lab»","status":""}
+  Enter → Lab room → {"key":"Enter → Lab room","mode":"index","base":4,"p":4,"wp":1,"k":0,"aboutOpen":false,"detail":false,"pins":2,"path":"/en","lang":"en","title":"Emrah Yücel — Creative Developer & Full-Stack Developer","active":"H2.lbl «Lab»","status":""}
+  ArrowDown → Contact → {"key":"ArrowDown → Contact","mode":"index","base":5,"p":5,"wp":1,"k":0,"aboutOpen":false,"detail":false,"pins":2,"path":"/en","lang":"en","title":"Emrah Yücel — Creative Developer & Full-Stack Developer","active":"H2.sr «Contact»","status":""}
+  Home (not handled?) → {"key":"Home (not handled?)","mode":"index","base":5,"p":5,"wp":1,"k":0,"aboutOpen":false,"detail":false,"pins":2,"path":"/en","lang":"en","title":"Emrah Yücel — Creative Developer & Full-Stack Developer","active":"H2.sr «Contact»","status":""}
+  Enter on About (strip) → {"key":"Enter on About (strip)","mode":"index","base":0,"p":0,"wp":1,"k":0,"aboutOpen":true,"detail":false,"pins":2,"path":"/en","lang":"en","title":"Emrah Yücel — Creative Developer & Full-Stack Developer","active":"H2.sr «About»","status":""}
+  Enter on More about me → {"key":"Enter on More about me","mode":"index","base":0,"p":0,"wp":1,"k":0,"aboutOpen":true,"detail":true,"pins":2,"path":"/en/about","lang":"en","title":"About — Emrah Yücel","active":"H2.lbl «About»","status":""}
+  Escape in About detail → {"key":"Escape in About detail","mode":"index","base":0,"p":0,"wp":1,"k":0,"aboutOpen":true,"detail":false,"pins":2,"path":"/en","lang":"en","title":"Emrah Yücel — Creative Developer & Full-Stack Developer","active":"A.email «info@yucelemrah.com»","status":""}
+  Enter on language → {"key":"Enter on language","mode":"index","base":0,"p":0,"wp":1,"k":0,"aboutOpen":true,"detail":false,"pins":2,"path":"/tr","lang":"tr-TR","title":"Emrah Yücel — Creative Developer & Full-Stack Developer","active":"A.lang «EN»","status":""}
+TREE home landmarks ["banner","main","navigation: Plain navigation","navigation: Portfolio"]
+TREE home headings ["h1: Emrah Yücel — Creative Developer and Full-Stack Developer, Istanbul, Türkiye"]
+TREE home images [] live ["status live=polite: "]
+TABS home
+  1 a.skip | Skip to plain navigation | vis true  | inView true | obscured false | ring true | skip
+  2 a.id | Emrah Yücel | vis true  | inView true | obscured false | ring true | strip.top
+  3 button | Work | vis true  | inView true | obscured false | ring true | strip.top
+  4 button | About | vis true  | inView true | obscured false | ring true | strip.top
+  5 button | Lab | vis true  | inView true | obscured false | ring true | strip.top
+  6 button | Contact | vis true  | inView true | obscured false | ring true | strip.top
+  7 a.lang | TR — Türkçe | vis true  | inView true | obscured false | ring true | strip.top
+  8 a | İstanbul Şehir İçi — Original digital direction ↗ (opens in  | vis true  | inView true | obscured false | ring true | a11y
+  9 a | Ege Eşya — SEO at scale ↗ (opens in a new tab) | vis true  | inView true | obscured false | ring true | a11y
+  10 a | Evden Eve Nakliyat — The system behind the service ↗ (opens  | vis true  | inView true | obscured false | ring true | a11y
+  11 a.email | info@yucelemrah.com | vis true  | inView true | obscured false | ring true | a11y
+  12 a.phone | +90 506 519 96 91 | vis true  | inView true | obscured false | ring true | a11y
+  13 a | GitHub ↗ (opens in a new tab) | vis true  | inView true | obscured false | ring true | a11y
+  14 a | LinkedIn ↗ (opens in a new tab) | vis true  | inView true | obscured false | ring true | a11y
+  15 a | More about me | vis true  | inView true | obscured false | ring true | a11y
+  16 body | undefined | vis undefined  | inView undefined | obscured undefined | ring undefined | undefined
+  17 a.skip | Skip to plain navigation | vis true  | inView true | obscured false | ring true | skip

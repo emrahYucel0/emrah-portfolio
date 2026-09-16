@@ -1,0 +1,8 @@
+tr Work: mode index k 0 wLocked 0 | focus H2 «İşler» | open visible none
+tr activate Ege (select): mode index k 0 wLocked 1 | focus H2 «İşler» | open visible none
+tr activate Ege again (aria-current=true): mode world k 1 wLocked 1 | focus H2 «Ege Eşya» | open visible none
+tr All work: mode index k 1 wLocked 1 | focus BUTTON «Ege EşyaÖlçekte SEO» | open visible none
+en Work: mode index k 0 wLocked 0 | focus H2 «Work» | open visible none
+en activate Ege (select): mode index k 0 wLocked 1 | focus H2 «Work» | open visible none
+en activate Ege again (aria-current=true): mode world k 1 wLocked 1 | focus H2 «Ege Eşya» | open visible none
+en All work: mode index k 1 wLocked 1 | focus BUTTON «Ege EşyaSEO at scale» | open visible none

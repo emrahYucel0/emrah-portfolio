@@ -149,7 +149,15 @@ export interface LocaleCopy {
     lab: string
     world: string
   }
-  a11y: { plainNav: string; selectedWork: string; labStudies: string; aboutRegion: string; aboutDetail: string; capabilities: string; projectImages: string }
+  a11y: {
+    plainNav: string; selectedWork: string; labStudies: string; aboutRegion: string; aboutDetail: string; capabilities: string; projectImages: string
+    /** M4: keyboard instructions read by assistive technology, and the new-tab note on external links */
+    keys: string; workKeys: string; worldKeys: string; labKeys: string; newTab: string
+    /** M4: the name of the control that opens the registered project (its visible text is a pointer instruction) */
+    openProject: string
+    /** M4: description of that control — no hold is needed from a keyboard or a screen reader */
+    openHint: string
+  }
   localeSwitch: { label: string; to: string; short: string; hreflang: string }
   entry: { title: string; description: string; choose: string }
   notFound: { title: string; message: string }

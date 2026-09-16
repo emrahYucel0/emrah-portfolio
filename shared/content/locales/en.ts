@@ -133,6 +133,13 @@ export const en = {
     plainNav: 'Plain navigation', selectedWork: 'Selected work', labStudies: 'Lab studies',
     aboutRegion: 'About', aboutDetail: 'About Emrah Yücel', capabilities: 'Capabilities',
     projectImages: 'Images in this project:',
+    keys: 'Use the arrow keys, or Page Up and Page Down, to move through the portfolio.',
+    workKeys: 'Left and right arrow keys choose a project; Enter opens it.',
+    worldKeys: 'Arrow keys move through the project; Escape returns to all work.',
+    labKeys: 'Press Enter to make a room; each room shows the next study.',
+    newTab: '(opens in a new tab)',
+    openProject: 'Open project',
+    openHint: 'Activate with keyboard or screen reader.',
   },
   localeSwitch: { label: 'Language', to: 'Türkçe', short: 'TR', hreflang: 'tr-TR' },
   entry: {

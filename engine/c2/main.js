@@ -15,7 +15,7 @@ import gsap from 'gsap'
 import { createSurface, feature, gather, squeeze } from './surface.js'
 import { createPhysics } from './physics.js'
 import * as ST from './states.js'
-import { framesFor, GEOM, ABSENT } from './world.js'
+import { framesFor, GEOM, ABSENT, psiHTML } from './world.js'
 import { identity, about, capabilities, workIntro, works, lab, contact, previewOf, ui as TXT, applyLocale } from './content.js'
 import { termHtml } from '../../shared/content/term'
 import { mediaElement, placeMedia, loadImage, prepareTone, labElement, setMediaScale } from './media.js'
@@ -270,6 +270,7 @@ function endGesture() {
   if (ptr.touch) ptr.hover = false
 }
 addEventListener('pointerdown', (e) => {
+  A.kbd = false   // M4 A11Y: a pointer is in use — nothing moves focus on its behalf
   // the first finger of a gesture: nothing else is on the glass, whatever an interrupted gesture left behind
   if (e.pointerType === 'touch' && e.isPrimary && (touches.size || ptr.down)) endGesture()
   if (e.target.closest('a, button, .scroll')) { ptr.ui = true; return }
@@ -348,8 +349,13 @@ addEventListener('contextmenu', (e) => {
   e.preventDefault()
 })
 addEventListener('keydown', (e) => {
+  // M4 A11Y: a place reached from the keyboard takes keyboard focus with it (see arrived())
+  if (['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'PageDown', 'PageUp', ' ', 'Enter', 'Escape'].includes(e.key)) A.kbd = true
   if (e.key === 'Escape') { if (A.aboutDetail) leaveDetail(); else if (A.aboutOpen) closeAbout(); else exit(); return }
-  if (e.target.closest?.('button, a, .scroll') && ['Enter', ' ', 'ArrowDown', 'ArrowUp', 'PageDown', 'PageUp'].includes(e.key)) return
+  // M4 A11Y: Enter and Space belong to a focused control; the arrow and page keys have no meaning on a button or link, so
+  // they keep moving through the portfolio from wherever focus is (only a scrolling text keeps them)
+  if (e.target.closest?.('.scroll') && ['Enter', ' ', 'ArrowDown', 'ArrowUp', 'PageDown', 'PageUp'].includes(e.key)) return
+  if (e.target.closest?.('button, a') && ['Enter', ' '].includes(e.key)) return
   const onWork = settledAt(3)
   if (onWork && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) { A.wT = clamp(Math.round(A.wT) + (e.key === 'ArrowRight' ? 1 : -1), 0, N - 1); A.lastInput = performance.now(); return }
   if (['ArrowDown', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); if (A.aboutOpen) { if (!A.aboutDetail) closeAbout(); return } go((A.mode === 'world' ? A.wbase : A.base) + 1) }
@@ -602,6 +608,7 @@ function aboutFeature(open) {
 }
 function openAbout(f, tl) {
   A.about = f; A.aboutOpen = true; A.learned.open = true
+  arrived(() => D.about.querySelector('h2'), TXT.about.heading)
   const g = aboutFeature(1)
   A.aboutMark = { cx: g.cx, cy: g.cy, h: g.h, hw: g.hw, falloff: g.falloff, lip: g.lip, lipW: g.lipW, power: 2, reach: 0, top: 1, bottom: 1 }
   HOST.emit('aboutVisited', { open: true })
@@ -637,12 +644,14 @@ function expandAbout(push) {
   layoutAbout()
   const ad = D.detail.querySelector('.ad')
   ad.scrollTop = 0
-  gsap.to(A, { aboutDetailK: 1, duration: 1.5, ease: 'expo.inOut', onComplete: () => { if (A.aboutDetail) ad.focus({ preventScroll: true }) } })
+  gsap.to(A, { aboutDetailK: 1, duration: 1.5, ease: 'expo.inOut', onComplete: () => { if (A.aboutDetail) (ad.querySelector('h2') || ad).focus({ preventScroll: true }) } })
   const gy = IDX[0].layout.gapY
   phys.kick(gy - aboutHalf() - 24, -36); phys.kick(gy + aboutHalf() + 24, 36)
 }
 function collapseAbout(push) {
   if (!A.aboutDetail) return
+  // M4 A11Y: focus inside the long About returns to the link that opened it, not to the top of the document
+  if (D.detail.contains(document.activeElement)) wantFocus(() => D.about.querySelector('.more'))
   A.aboutDetail = false; A.detailPushed = false
   if (push) HOST.push(HOME_URL, { c2: 'home' })
   document.title = TITLE()
@@ -726,6 +735,7 @@ function enterWorld(k, f) {
   const full = worldFor(k)[lastFrame(k)]; gsap.killTweensOf(full); full.fill = 0; full.lod = ST.LOD_OFF
   Object.assign(A.world, worldGeom(0)); A.worldOn = true
   fillWorldDOM(k)
+  arrived(() => D.world.querySelector('.wsum h2'), works[k].name)
   document.body.classList.remove('releasing')
   A.releaseK = null; A.learned.work = true; A.arrivedAt = performance.now()
   A.busy = false
@@ -735,13 +745,16 @@ function exit() {
   if (A.mode !== 'world' || A.busy) return
   A.busy = true; A.mode = 'exit'
   const last = lastFrame(), fr = clamp(Math.round(A.wp), 0, last), k = A.k
+  // M4 A11Y: leaving a project from the keyboard (or from inside it) returns focus to that project in the index
+  const back = A.kbd || D.world.contains(document.activeElement)
   A.from = A.to = worldFor(k)[fr]; A.front = 1
   const full = worldGeom(last)
   gsap.timeline()
     .to(A.world, { cy: full.cy, sigma: full.sigma, Lm: full.Lm, s: full.s, duration: A.wp > last - 0.1 ? 0.01 : 0.9, ease: 'power3.inOut' })
     .add(() => { A.worldOn = false; A.from = worldFor(k)[fr]; A.to = WORKS[k]; A.front = 0; A.wT = A.wt = k; A.wLocked = k; WORKS[k].fill = 1; WORKS[k].lod = 0 })
     .to(A, { front: 1, duration: 1.3, ease: 'power2.inOut' })
-    .add(() => { A.mode = 'index'; A.p = A.pT = A.base = A.prevBase = 3; A.busy = false })
+    .add(() => { A.mode = 'index'; A.p = A.pT = A.base = A.prevBase = 3; A.busy = false; if (A.pending) return   /* leaving for another place: that arrival takes focus */
+      if (back || A.focusNext) { A.focusNext = 0; wantFocus(() => D.work.querySelector(`[data-work="${k}"]`)) } else announce(TXT.work.heading) })
 }
 
 // MOBILE ONLY → two fingers take hold of two rows; what is between them can only compress, and it resists
@@ -874,6 +887,8 @@ function unlockWork(i) {
 // ─── stops: what happens on arrival ──────────────────────────────────────────
 function onArrive(stop, prev) {
   A.arrivedAt = performance.now()
+  // on the way to the About room the room itself is the destination; the name is only passed through
+  if (!(stop === 0 && A.pending === 'about')) arrived(() => PLACE_HEADING[stop]?.(), PLACE_NAME[stop]?.())
   if (stop === 3 && prev !== 3) {
     // arriving on the work field, the first (or last) work is still in pieces
     if (prev > 3) { A.wT = N - 1; A.wt = N - 1 + 0.9 } else { A.wT = 0; A.wt = -0.9 }
@@ -915,10 +930,23 @@ ui.addEventListener('click', (e) => {
   const b = e.target.closest('[data-go], [data-work], [data-open], [data-world], [data-detail], [data-back]')
   if (!b) return
   if (b.dataset.go || b.hasAttribute('data-detail')) e.preventDefault()
-  if (b.dataset.go) navigate(b.dataset.go)
+  if (b.dataset.go) {
+    A.focusNext = performance.now()   // M4 A11Y
+    const stop = { name: 0, creative: 1, system: 2, work: 3, lab: 4, rest: 5 }[b.dataset.go]
+    // already there: nothing arrives, so focus goes now
+    if (stop != null && A.mode === 'index' && !A.aboutOpen && A.base === stop && Math.abs(A.p - stop) < 0.05) { A.focusNext = 0; wantFocus(PLACE_HEADING[stop]) }
+    navigate(b.dataset.go)
+  }
   if (b.hasAttribute('data-detail')) { if (A.aboutOpen) expandAbout(true); else { navigate('about'); A.pending = 'detail'; HOST.push(ABOUT_URL, { c2: 'about' }); A.detailPushedLater = true } }
   if (b.hasAttribute('data-back')) leaveDetail()
-  if (b.dataset.work) { A.wT = +b.dataset.work; A.lastInput = performance.now() - 200 }
+  if (b.dataset.work) {
+    // M4 A11Y: activating the project that is already in register opens it — on a phone the open button is not shown
+    // and a screen reader cannot reach the image, so the index itself carries the action
+    const i = +b.dataset.work
+    if (registeredWork() === i && A.mode === 'index' && !A.busy) { A.focusNext = performance.now(); const fr = WORKS[i].layout.frame; forcedPress(fr.x + fr.w / 2, fr.y + fr.h / 2, 0.8) }
+    else { A.wT = i; A.lastInput = performance.now() - 200 }
+  }
+  if (b.hasAttribute('data-open') || b.dataset.world) A.focusNext = performance.now()   // M4 A11Y
   if (b.hasAttribute('data-open')) { const st = current(), fr = st.layout.frame; if (fr) forcedPress(fr.x + fr.w / 2, fr.y + fr.h / 2, 0.8) }
   if (b.dataset.world === 'all') exit()
   if (b.dataset.world === 'next') { const last = lastFrame(); if (A.wbase === last && Math.abs(A.wp - last) < 0.05) { const fr = worldFor(A.k)[last].layout.frame; forcedPress(fr.x + fr.w / 2, fr.y + fr.h / 2, 0.75) } else { go(last); A.pending = 'next' } }
@@ -927,26 +955,35 @@ const D = {}
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
 const mail = `<a class="email" href="mailto:${contact.email}">${contact.email}</a>`
 const phone = `<a class="phone" href="tel:${contact.tel}">${contact.phone}</a>`
-const exits = () => contact.links.map((l) => `<a href="${l.href}" target="_blank" rel="noopener noreferrer" lang="en">${l.label} ↗</a>`).join('')
+// M4 A11Y: the label is English; the new-tab note is in the page language
+const exits = () => contact.links.map((l) => `<a href="${l.href}" target="_blank" rel="noopener noreferrer"><span lang="en">${l.label}</span> ↗<span class="sr"> ${TXT.a11y.newTab}</span></a>`).join('')
 function buildDOM() {
   ui.innerHTML = ''
   D.skip = h('a', 'skip', TXT.nav.skip); D.skip.href = '#plain'
   D.top = h('header', 'strip top', `
     <a class="id" href="${HOME_URL}" data-go="name">${identity.name}</a>
     <nav class="nav" aria-label="${TXT.nav.label}"><button data-go="work">${TXT.nav.work}</button><button data-go="about">${TXT.nav.about}</button><button data-go="lab">${TXT.nav.lab}</button><button data-go="rest">${TXT.nav.contact}</button><a class="lang" data-locale href="${HOST.localeHref}" hreflang="${TXT.localeSwitch.hreflang}" lang="${TXT.localeSwitch.hreflang}" aria-label="${TXT.localeSwitch.short} — ${TXT.localeSwitch.to}" title="${TXT.localeSwitch.label}: ${TXT.localeSwitch.to}">${TXT.localeSwitch.short}</a></nav>`)
-  D.bottom = h('footer', 'strip bottom', `<span class="roles" lang="en">${identity.primary} · ${identity.secondary}</span><span id="hint"></span>`)
+  // M4 A11Y: the bottom strip repeats the h1's roles and gives pointer instructions — visual only; keyboard instructions are below
+  D.bottom = h('div', 'strip bottom', `<span class="roles" lang="en">${identity.primary} · ${identity.secondary}</span><span id="hint"></span>`)
+  D.bottom.setAttribute('aria-hidden', 'true')
   D.h1 = h('h1', 'sr', `${identity.name} — ${identity.primary} ${TXT.roles.and} ${identity.secondary}, ${identity.location}`)
+  D.h1.tabIndex = -1
+  // the opening shows the name; its positioning line and how to move through the portfolio, for assistive technology
+  D.lead = h('p', 'sr', about.home.positioning)
+  D.keys = h('p', 'sr', TXT.a11y.keys)
+  // one polite status line: a place reached without the keyboard is named once
+  D.status = h('p', 'sr'); D.status.setAttribute('role', 'status')
 
-  D.about = h('section', 'layer about', `<div class="block"><h2 class="sr">${TXT.about.heading}</h2>
+  D.about = h('section', 'layer about', `<div class="block"><h2 class="sr" tabindex="-1">${TXT.about.heading}</h2>
     <p class="intro">${about.home.intro}</p>
     <p class="statement">${about.home.positioning}</p>
     <p class="avail lbl">${identity.city} · ${identity.status}</p>
     <a class="more" href="${ABOUT_URL}" data-detail>${about.home.more} →</a></div>`)
-  D.about.setAttribute('aria-label', TXT.a11y.aboutRegion)
+  // M4 A11Y: named by its own heading; a region label would read "About" twice
 
   const d = about.detail
   D.detail = h('section', 'layer about-detail', `<div class="ad scroll" tabindex="-1"><div class="ad-flow">
-      <div class="ab ab-intro"><h2 class="lbl">${TXT.about.heading}</h2><p class="ad-intro">${d.intro}</p></div>
+      <div class="ab ab-intro"><h2 class="lbl" tabindex="-1">${TXT.about.heading}</h2><p class="ad-intro">${d.intro}</p></div>
       <div class="ab ab-bg"><p>${d.background}</p></div>
       <div class="ab ab-tr"><p>${d.transition}</p></div>
       <div class="ab ab-now"><p>${d.current}</p><ul class="ad-caps" aria-label="${TXT.a11y.capabilities}">${d.capabilities.map((c) => `<li>${termHtml(c)}</li>`).join('')}</ul></div>
@@ -962,27 +999,26 @@ function buildDOM() {
   const face = (key) => {
     const c = capabilities[key], sys = key === 'system'
     const s = h('section', `layer face ${key}`)
-    s.setAttribute('aria-label', c.role)
-    s.innerHTML = `<h2 class="sr">${c.role}</h2>
+    s.innerHTML = `<h2 class="sr" tabindex="-1" lang="en">${c.role}</h2>
       <div class="pos"><p class="positioning">${sys ? identity.positioning[1] : identity.positioning[0]}</p>${sys ? `<p class="stack" lang="en">${capabilities.stack}</p>` : ''}</div>
       <ul class="list">${c.items.map((it) => `<li><span class="nm">${termHtml(it.name)}</span><span class="nt">${it.note}</span></li>`).join('')}</ul>
-      <p class="role">Developer</p>`
+      <p class="role" aria-hidden="true">Developer</p>`
     return s
   }
   D.creative = face('surface'); D.system = face('system')
 
   D.work = h('section', 'layer work', `
     <div class="col">
-      <div class="head"><h2 class="lbl">${TXT.work.heading}</h2><p class="wline">${workIntro.line}</p></div>
+      <div class="head"><h2 class="lbl" tabindex="-1">${TXT.work.heading}</h2><p class="wline">${workIntro.line}</p><p class="sr">${TXT.a11y.workKeys}</p></div>
       <ol class="index">${works.map((w, i) => `<li><button data-work="${i}"><span class="swatch"></span><span class="wid">${w.name}</span><span class="wk">${w.strength}</span></button></li>`).join('')}</ol>
-      <div class="current"><p class="wtitle"></p><p class="wmeta"></p><button class="open" data-open>${TXT.work.open}</button></div>
+      <div class="current"><p class="wtitle" aria-hidden="true"></p><p class="wmeta" aria-hidden="true"></p><button class="open" data-open aria-label="${TXT.work.open} — ${TXT.a11y.openProject}" aria-describedby="c2-open-hint">${TXT.work.open}</button><span id="c2-open-hint" class="sr">${TXT.a11y.openHint}</span></div>
     </div>`)
 
-  D.lab = h('section', 'layer lab', `<div class="cap"><h2 class="lbl">${lab.title}</h2><p class="ltext">${lab.line}</p></div>
+  D.lab = h('section', 'layer lab', `<div class="cap"><h2 class="lbl" tabindex="-1">${lab.title}</h2><p class="ltext">${lab.line}</p><p class="sr">${TXT.a11y.labKeys}</p></div>
     <p class="lab-now" aria-live="polite"></p>
     <ul class="sr">${lab.entries.map((e) => `<li>${e.n}: ${e.desc}</li>`).join('')}</ul>`)
 
-  D.rest = h('section', 'layer rest', `<div class="contact"><h2 class="sr">${TXT.contact.heading}</h2>
+  D.rest = h('section', 'layer rest', `<div class="contact"><h2 class="sr" tabindex="-1">${TXT.contact.heading}</h2>
     <p class="cname">${identity.name}</p>
     <p class="croles" lang="en">${identity.primary} / ${identity.secondary}</p>
     ${mail}${phone}
@@ -990,12 +1026,14 @@ function buildDOM() {
     <p class="cmeta">${identity.location} · ${identity.status}</p></div>`)
 
   D.world = h('section', 'layer world', `
-    <nav class="wnav strip" aria-label="${TXT.work.projectNav}"><button data-world="all">← ${TXT.work.allWork}</button><a class="wlink" href="${works[0].url}" target="_blank" rel="noopener noreferrer"><span class="wname"></span> <span class="whost" lang="en"></span> ↗</a><button data-world="next">${TXT.work.next}</button></nav>
+    <nav class="wnav strip" aria-label="${TXT.work.projectNav}"><button data-world="all">← ${TXT.work.allWork}</button><a class="wlink" href="${works[0].url}" target="_blank" rel="noopener noreferrer"><span class="sr">${TXT.work.visit} </span><span class="wname"></span> <span class="whost" lang="en"></span> ↗<span class="sr"> ${TXT.a11y.newTab}</span></a><button data-world="next">${TXT.work.next}</button></nav>
+    <div class="wsum sr"></div>
     <div class="wblocks"></div>`)
 
   // everything essential stays reachable without the surface: keyboard and assistive technology get a plain list
-  D.a11y = h('nav', 'a11y', `<p class="lbl">${TXT.a11y.selectedWork}</p>
-    <ul>${works.slice(0, 3).map((w) => `<li><a href="${w.url}" target="_blank" rel="noopener noreferrer">${w.name} — ${w.strength} ↗</a></li>`).join('')}</ul>
+  D.a11y = h('nav', 'a11y', `<ul class="a11y-places"><li><button data-go="creative" lang="en">${capabilities.surface.role}</button></li><li><button data-go="system" lang="en">${capabilities.system.role}</button></li></ul>
+    <p class="lbl">${TXT.a11y.selectedWork}</p>
+    <ul>${works.slice(0, 3).map((w) => `<li><a href="${w.url}" target="_blank" rel="noopener noreferrer">${w.name} — ${w.strength} ↗<span class="sr"> ${TXT.a11y.newTab}</span></a></li>`).join('')}</ul>
     <p class="lbl">${TXT.a11y.labStudies}</p><ul>${lab.entries.map((e) => `<li>${e.n} — ${e.desc}</li>`).join('')}</ul>
     <p>${mail} · ${phone}</p><p class="a11y-links">${exits()}</p>
     <a href="${ABOUT_URL}" data-detail>${about.home.more}</a>`)
@@ -1004,7 +1042,13 @@ function buildDOM() {
 
   D.main = h('main', 'layers')
   D.main.append(D.h1, D.about, D.detail, D.creative, D.system, D.work, D.lab, D.rest, D.world)
-  ui.append(D.skip, D.top, D.main, D.bottom, D.a11y)
+  lastSaid = ''
+  D.top.prepend(D.skip)
+  D.h1.after(D.lead, D.keys)
+  D.main.append(D.status)
+  // the project summary is read before the project's own navigation, so Tab from it reaches that navigation
+  D.world.prepend(D.world.querySelector('.wsum'))
+  ui.append(D.top, D.main, D.bottom, D.a11y)
   D.aboutBlocks = [...D.detail.querySelectorAll('.ab')]
   D.labNow = D.lab.querySelector('.lab-now')
   D.hint = $('#hint')
@@ -1016,7 +1060,7 @@ function buildDOM() {
 
 }
 function navigate(target) {
-  const stop = { name: 0, about: 0, work: 3, lab: 4, rest: 5 }[target]
+  const stop = { name: 0, about: 0, creative: 1, system: 2, work: 3, lab: 4, rest: 5 }[target]
   if (A.mode === 'world') { exit(); A.pending = target; return }
   if (A.aboutOpen && target !== 'about') closeAbout()
   if (A.mode !== 'index') return
@@ -1035,7 +1079,7 @@ function runPending() {
   } else if (A.pending === 'next' && A.mode === 'world' && Math.abs(A.wp - lastFrame()) < 0.02) {
     const full = worldFor(A.k)[lastFrame()]
     if (full.fill > 0.5) { A.pending = null; const fr = full.layout.frame; forcedPress(fr.x + fr.w / 2, fr.y + fr.h / 2, 0.75) }
-  } else if (['name', 'work', 'lab', 'rest'].includes(A.pending) && A.mode === 'index') { const t = A.pending; A.pending = null; navigate(t) }
+  } else if (['name', 'creative', 'system', 'work', 'lab', 'rest'].includes(A.pending) && A.mode === 'index') { const t = A.pending; A.pending = null; navigate(t) }
 }
 const px = (r) => `left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px`
 function fillWorldDOM(k) {
@@ -1044,7 +1088,7 @@ function fillWorldDOM(k) {
   const close = `<h2 class="wb-name">${w.name}</h2><p class="wb-line">${w.line}</p><p class="wb-role">${w.role}</p>
     <p class="wb-links"><a href="${w.url}" target="_blank" rel="noopener noreferrer">${TXT.work.visit} <span lang="en">${w.host}</span> ↗</a><button data-world="all">${TXT.work.allWork}</button></p>`
   const alts = [...new Set(frs.flatMap((fr) => (fr.media || []).map((mm) => mm.item.alt)))]
-  D.wblocks.innerHTML = `<p class="sr">${TXT.a11y.projectImages} ${alts.join(' ')}</p>` + frs.map((fr, i) => {
+  D.wblocks.innerHTML = frs.map((fr, i) => {
     const blocks = fr.full
       ? [{ rect: L.text, cls: 'wb-close', html: close }, { rect: { x: L.frame.x, y: L.frame.y - 30, w: L.frame.w, h: 22 }, cls: 'wb-next', html: N > 1 ? `${TXT.work.next} · ${next.name}` : TXT.work.again }]
       : fr.blocks || []
@@ -1052,7 +1096,51 @@ function fillWorldDOM(k) {
   }).join('')
   D.wbs = [...D.wblocks.querySelectorAll('.wb')]
   D.wbs.forEach((el) => { el.inert = true })
+  // M4 A11Y: the frames stage the same project content over time. Assistive technology gets it once, in order, from
+  // the same fields; the staged blocks leave the tree, and their links (duplicated by the project nav) leave the tab order.
+  D.wblocks.setAttribute('aria-hidden', 'true')
+  D.wblocks.querySelectorAll('a, button').forEach((el) => { el.tabIndex = -1 })
+  D.world.querySelector('.wsum').innerHTML = `<h2 tabindex="-1">${w.name}</h2><p>${w.line}</p><p>${w.role}</p>
+    <p>${w.strength}</p><ul>${w.facts.map((x) => `<li>${x}</li>`).join('')}</ul>${w.stack ? `<p lang="${w.stackLang}">${w.stack}</p>` : ''}
+    ${psiHTML(w)}<p>${TXT.a11y.projectImages} ${alts.join(' ')}</p><p>${TXT.a11y.worldKeys}</p>`
   lastWB = ''
+}
+// ─── M4 ACCESSIBILITY: where focus goes, and what is said ─────────────────────
+// A place reached from the keyboard moves focus to its own heading — the reader lands where the content is, and the
+// arrow keys keep working from there (headings are not controls). A place reached any other way (pointer, touch, a
+// screen reader's own activation) is named once in a polite status line. Nothing is announced per frame.
+const PLACE_HEADING = [() => D.h1, () => D.creative.querySelector('h2'), () => D.system.querySelector('h2'), () => D.work.querySelector('h2'), () => D.lab.querySelector('h2'), () => D.rest.querySelector('h2')]
+const PLACE_NAME = [() => identity.name, () => capabilities.surface.role, () => capabilities.system.role, () => TXT.work.heading, () => lab.title, () => TXT.contact.heading]
+let focusWant = null, lastSaid = ''
+// focus is taken as soon as the element exists and is no longer inert (layers turn on after their transition)
+function wantFocus(get) { focusWant = { get, until: performance.now() + 6000 } }
+function focusStep() {
+  if (!focusWant) return
+  if (performance.now() > focusWant.until) { focusWant = null; return }
+  const el = focusWant.get()
+  if (!el || !el.isConnected || el.closest('[inert]')) return
+  el.focus({ preventScroll: true })
+  focusWant = null
+}
+function announce(text) {
+  if (!text || !D.status || text === lastSaid) return
+  lastSaid = text
+  D.status.textContent = text
+}
+function arrived(heading, name) {
+  const asked = A.focusNext && performance.now() - A.focusNext < 9000
+  if (A.kbd || asked) { A.focusNext = 0; wantFocus(heading) }
+  else announce(name)
+}
+// the same control after the DOM is rebuilt in another language
+function focusKey(el) {
+  if (!el || !ui.contains(el)) return null
+  const c = el.closest('[data-locale], [data-go], [data-work], [data-world], [data-detail], [data-back], [data-open]')
+  if (c) for (const a of ['data-locale', 'data-go', 'data-work', 'data-world', 'data-detail', 'data-back', 'data-open']) if (c.hasAttribute(a)) return c.getAttribute(a) ? `[${a}="${c.getAttribute(a)}"]` : `[${a}]`
+  if (el === D.h1) return 'main > h1'
+  const layer = el.closest('.layer')
+  if (layer && el.matches('h2')) return `.${[...layer.classList].filter((x) => x !== 'on').join('.')} h2`
+  return null
 }
 const place = (el, r) => Object.assign(el.style, { left: `${r.x}px`, top: `${r.y}px`, width: `${r.w}px`, height: r.h != null ? `${r.h}px` : '' })
 function placeRest() { place(D.rest.querySelector('.contact'), IDX[5].layout.block) }
@@ -1103,12 +1191,14 @@ function stripTones(dom) {
   return [cover(V.strip / 2), cover(V.H - V.strip / 2)]
 }
 function domUpdate(from, to, front) {
+  focusStep()
   const dom = front < 0.5 ? from : to
   const idleIdx = A.mode === 'index' && !A.busy
   const loaded = (A.press && A.press.L > 0.1 && A.press.st.beneath !== 'pin') || !!A.squeeze
   const at = (i) => Math.abs(A.p - i) < 0.03 && Math.abs(A.p - A.base) < 0.2
   setOn(D.about, A.aboutOpen && !A.aboutDetail && A.aboutDetailK < 0.02 && !!A.about && A.about.h > aboutHalf() * 0.82 && A.about.h < aboutHalf() * 1.15)
   setOn(D.detail, A.aboutOpen && A.aboutDetail && A.aboutDetailK > 0.72)
+  if (D.lead.hidden !== A.aboutOpen) D.lead.hidden = A.aboutOpen
   setOn(D.creative, idleIdx && at(1) && !loaded)
   setOn(D.system, idleIdx && at(2) && !loaded)
   setOn(D.work, idleIdx && at(3) && !loaded)
@@ -1144,9 +1234,9 @@ function domUpdate(from, to, front) {
   const key = `${k}:${[...A.visited].join('')}`
   if (key !== lastWork) {
     lastWork = key
-    if (k >= 0) { D.wtitle.textContent = works[k].name; D.wmeta.textContent = works[k].strength }
+    if (k >= 0) { D.wtitle.textContent = works[k].name; D.wmeta.textContent = works[k].strength; D.current.querySelector('.open').setAttribute('aria-label', `${TXT.work.open} — ${TXT.a11y.openProject}: ${works[k].name}`) }
     D.current.classList.toggle('on', k >= 0)
-    D.work.querySelectorAll('[data-work]').forEach((b, i) => { b.classList.toggle('active', i === k); b.classList.toggle('visited', A.visited.has(i)) })
+    D.work.querySelectorAll('[data-work]').forEach((b, i) => { b.classList.toggle('active', i === k); b.classList.toggle('visited', A.visited.has(i)); if (i === k) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current') })
   }
   const hint = hintFor(Math.round(A.p))
   if (hint !== lastHint) { D.hint.textContent = hint; lastHint = hint }
@@ -1250,7 +1340,8 @@ function labMediaUpdate() {
   if (cap !== labCapKey) {
     labCapKey = cap
     const [text, desc, x, y, w] = cap.split('|')
-    D.labNow.innerHTML = text ? `${text}<span class="d"> — ${desc}</span>` : ''
+    const said = text ? `${text}|${desc}` : ''
+    if (said !== D.labNow.dataset.said) { D.labNow.dataset.said = said; D.labNow.innerHTML = text ? `${text}<span class="d"> — ${desc}</span>` : '' }
     D.labNow.classList.toggle('on', !!text)
     if (text) Object.assign(D.labNow.style, { left: `${x}px`, top: `${y}px`, width: `${w}px` })
   }
@@ -1542,6 +1633,7 @@ function restoreMemory(phase) {
 export function setLocale(next) {
   if (!applyLocale(next)) return false
   endGesture()   // M3 MOBILE BUG FIX
+  const refocus = focusKey(document.activeElement)   // M4 A11Y
   FR = {}                       // frame blocks carry copy; their geometry does not change, so WORLD textures stand
   buildDOM()
   lastHint = lastTone = lastTT = lastTB = lastBg = lastWork = lastWB = ''
@@ -1551,6 +1643,7 @@ export function setLocale(next) {
   if (A.mode === 'world' || A.mode === 'exit') { mediaFor(A.k); fillWorldDOM(A.k) }
   document.title = isAboutPath() ? TITLE_ABOUT() : TITLE()
   lastSig = ''
+  if (refocus) wantFocus(() => ui.querySelector(refocus))
   return true
 }
 

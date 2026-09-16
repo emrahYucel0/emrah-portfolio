@@ -1,0 +1,149 @@
+[
+ {
+  "state": "01-open",
+  "meanDiff": 0.03,
+  "pctOver8": 0,
+  "pctOver32": 0,
+  "maxDiff": 1
+ },
+ {
+  "state": "02-about",
+  "meanDiff": 0.01,
+  "pctOver8": 0,
+  "pctOver32": 0,
+  "maxDiff": 1
+ },
+ {
+  "state": "03-about-detail",
+  "meanDiff": 0,
+  "pctOver8": 0,
+  "pctOver32": 0,
+  "maxDiff": 1
+ },
+ {
+  "state": "04-creative",
+  "meanDiff": 0.03,
+  "pctOver8": 0,
+  "pctOver32": 0,
+  "maxDiff": 1
+ },
+ {
+  "state": "05-fullstack",
+  "meanDiff": 0.02,
+  "pctOver8": 0,
+  "pctOver32": 0,
+  "maxDiff": 1
+ },
+ {
+  "state": "06-work",
+  "meanDiff": 0,
+  "pctOver8": 0,
+  "pctOver32": 0,
+  "maxDiff": 1
+ },
+ {
+  "state": "07-istanbul-f0",
+  "meanDiff": 0,
+  "pctOver8": 0,
+  "pctOver32": 0,
+  "maxDiff": 0
+ },
+ {
+  "state": "07-istanbul-f1",
+  "meanDiff": 0,
+  "pctOver8": 0,
+  "pctOver32": 0,
+  "maxDiff": 0
+ },
+ {
+  "state": "07-istanbul-f2",
+  "meanDiff": 0,
+  "pctOver8": 0,
+  "pctOver32": 0,
+  "maxDiff": 0
+ },
+ {
+  "state": "07-istanbul-f3",
+  "meanDiff": 0,
+  "pctOver8": 0,
+  "pctOver32": 0,
+  "maxDiff": 0
+ },
+ {
+  "state": "08-ege-f0",
+  "meanDiff": 0,
+  "pctOver8": 0,
+  "pctOver32": 0,
+  "maxDiff": 0
+ },
+ {
+  "state": "08-ege-f1",
+  "meanDiff": 0,
+  "pctOver8": 0,
+  "pctOver32": 0,
+  "maxDiff": 0
+ },
+ {
+  "state": "08-ege-f2",
+  "meanDiff": 0,
+  "pctOver8": 0,
+  "pctOver32": 0,
+  "maxDiff": 0
+ },
+ {
+  "state": "08-ege-f3",
+  "meanDiff": 0.01,
+  "pctOver8": 0,
+  "pctOver32": 0,
+  "maxDiff": 1
+ },
+ {
+  "state": "09-evden-f0",
+  "meanDiff": 0,
+  "pctOver8": 0,
+  "pctOver32": 0,
+  "maxDiff": 0
+ },
+ {
+  "state": "09-evden-f1",
+  "meanDiff": 0,
+  "pctOver8": 0,
+  "pctOver32": 0,
+  "maxDiff": 0
+ },
+ {
+  "state": "09-evden-f2",
+  "meanDiff": 0,
+  "pctOver8": 0,
+  "pctOver32": 0,
+  "maxDiff": 0
+ },
+ {
+  "state": "09-evden-f3",
+  "meanDiff": 0,
+  "pctOver8": 0,
+  "pctOver32": 0,
+  "maxDiff": 0
+ },
+ {
+  "state": "09-evden-f4",
+  "meanDiff": 0,
+  "pctOver8": 0,
+  "pctOver32": 0,
+  "maxDiff": 1
+ },
+ {
+  "state": "10-lab",
+  "meanDiff": 0.03,
+  "pctOver8": 0,
+  "pctOver32": 0,
+  "maxDiff": 94
+ },
+ {
+  "state": "11-contact",
+  "meanDiff": 0.02,
+  "pctOver8": 0,
+  "pctOver32": 0,
+  "maxDiff": 1
+ }
+]

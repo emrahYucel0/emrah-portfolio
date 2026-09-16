@@ -1,0 +1,203 @@
+{
+ "steps": [
+  {
+   "label": "plain nav → Creative Developer",
+   "found": true,
+   "mode": "index",
+   "base": 1,
+   "aboutOpen": false,
+   "detail": false,
+   "path": "/tr",
+   "lang": "tr-TR",
+   "focus": "h2[lang=en] «Creative Developer»",
+   "status": ""
+  },
+  {
+   "label": "plain nav → Full-Stack Developer",
+   "found": true,
+   "mode": "index",
+   "base": 2,
+   "aboutOpen": false,
+   "detail": false,
+   "path": "/tr",
+   "lang": "tr-TR",
+   "focus": "h2[lang=en] «Full-Stack Developer»",
+   "status": ""
+  },
+  {
+   "label": "plain nav → Creative again (back up)",
+   "found": true,
+   "mode": "index",
+   "base": 1,
+   "aboutOpen": false,
+   "detail": false,
+   "path": "/tr",
+   "lang": "tr-TR",
+   "focus": "h2[lang=en] «Creative Developer»",
+   "status": ""
+  },
+  {
+   "label": "strip → Work",
+   "found": true,
+   "mode": "index",
+   "base": 3,
+   "aboutOpen": false,
+   "detail": false,
+   "path": "/tr",
+   "lang": "tr-TR",
+   "focus": "h2 «İşler»",
+   "status": ""
+  },
+  {
+   "label": "open project (button)",
+   "found": true,
+   "mode": "world",
+   "base": 3,
+   "aboutOpen": false,
+   "detail": false,
+   "path": "/tr",
+   "lang": "tr-TR",
+   "focus": "h2 «İstanbul Şehir İçi»",
+   "status": ""
+  },
+  {
+   "label": "project nav → All work",
+   "found": true,
+   "mode": "index",
+   "base": 3,
+   "aboutOpen": false,
+   "detail": false,
+   "path": "/tr",
+   "lang": "tr-TR",
+   "focus": "button «İstanbul Şehir İçiÖzgün dijital yön»",
+   "status": ""
+  },
+  {
+   "label": "open project again",
+   "found": true,
+   "mode": "world",
+   "base": 3,
+   "aboutOpen": false,
+   "detail": false,
+   "path": "/tr",
+   "lang": "tr-TR",
+   "focus": "h2 «İstanbul Şehir İçi»",
+   "status": ""
+  },
+  {
+   "label": "plain nav → Full-Stack from inside a project",
+   "found": true,
+   "mode": "index",
+   "base": 2,
+   "aboutOpen": false,
+   "detail": false,
+   "path": "/tr",
+   "lang": "tr-TR",
+   "focus": "h2[lang=en] «Full-Stack Developer»",
+   "status": ""
+  },
+  {
+   "label": "strip → Lab",
+   "found": true,
+   "mode": "index",
+   "base": 4,
+   "aboutOpen": false,
+   "detail": false,
+   "path": "/tr",
+   "lang": "tr-TR",
+   "focus": "h2 «Lab»",
+   "status": ""
+  },
+  {
+   "label": "strip → Contact",
+   "found": true,
+   "mode": "index",
+   "base": 5,
+   "aboutOpen": false,
+   "detail": false,
+   "path": "/tr",
+   "lang": "tr-TR",
+   "focus": "h2 «İletişim»",
+   "status": ""
+  },
+  {
+   "label": "language",
+   "found": true,
+   "mode": "index",
+   "base": 5,
+   "aboutOpen": false,
+   "detail": false,
+   "path": "/en",
+   "lang": "en",
+   "focus": "h2 «Contact»",
+   "status": ""
+  },
+  {
+   "label": "strip → About",
+   "found": true,
+   "mode": "index",
+   "base": 0,
+   "aboutOpen": true,
+   "detail": false,
+   "path": "/en",
+   "lang": "en",
+   "focus": "h2 «About»",
+   "status": ""
+  },
+  {
+   "label": "More about me",
+   "found": true,
+   "mode": "index",
+   "base": 0,
+   "aboutOpen": true,
+   "detail": true,
+   "path": "/en/about",
+   "lang": "en",
+   "focus": "h2 «About»",
+   "status": ""
+  },
+  {
+   "label": "← Back",
+   "found": true,
+   "mode": "index",
+   "base": 0,
+   "aboutOpen": true,
+   "detail": false,
+   "path": "/en",
+   "lang": "en",
+   "focus": "a «More about me →»",
+   "status": ""
+  },
+  {
+   "label": "plain nav → Creative from the About room",
+   "found": true,
+   "mode": "index",
+   "base": 1,
+   "aboutOpen": false,
+   "detail": false,
+   "path": "/en",
+   "lang": "en",
+   "focus": "h2[lang=en] «Creative Developer»",
+   "status": ""
+  }
+ ],
+ "names": [
+  "button: Creative Developer",
+  "button: Full-Stack Developer",
+  "link: İstanbul Şehir İçi — Özgün dijital yön ↗ (yeni sekmede açılır)",
+  "link: Ege Eşya — Ölçekte SEO ↗ (yeni sekmede açılır)",
+  "link: Evden Eve Nakliyat — Hizmetin arkasındaki sistem ↗ (yeni sekmede açılır)",
+  "link: info@yucelemrah.com",
+  "link: +90 506 519 96 91",
+  "link: GitHub ↗ (yeni sekmede açılır)",
+  "link: LinkedIn ↗ (yeni sekmede açılır)",
+  "link: Hakkımda daha fazla"
+ ],
+ "openName": "Açmak için görseli basılı tut — Projeyi aç: İstanbul Şehir İçi",
+ "regions": [],
+ "headings": [
+  "Emrah Yücel — Creative Developer and Full-Stack Developer, Istanbul, Türkiye",
+  "Creative Developer"
+ ],
+ "errors": []
+}

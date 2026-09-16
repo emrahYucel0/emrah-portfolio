@@ -1,0 +1,260 @@
+{
+ "home": [
+  {
+   "t": "Emrah Yücel",
+   "w": 70.4,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "Work",
+   "w": 33.6,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "About",
+   "w": 40,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "Lab",
+   "w": 27.2,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "Contact",
+   "w": 52.8,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "TR — Türkçe",
+   "w": 32.8,
+   "h": 30,
+   "pass": true
+  }
+ ],
+ "about": [
+  {
+   "t": "Emrah Yücel",
+   "w": 70.4,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "Work",
+   "w": 33.6,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "About",
+   "w": 40,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "Lab",
+   "w": 27.2,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "Contact",
+   "w": 52.8,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "TR — Türkçe",
+   "w": 32.8,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "More about me →",
+   "w": 100.3,
+   "h": 24.5,
+   "pass": true
+  }
+ ],
+ "work": [
+  {
+   "t": "Emrah Yücel",
+   "w": 70.4,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "Work",
+   "w": 33.6,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "About",
+   "w": 40,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "Lab",
+   "w": 27.2,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "Contact",
+   "w": 52.8,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "TR — Türkçe",
+   "w": 32.8,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "İstanbul Şehir İçiOriginal d",
+   "w": 284,
+   "h": 42.5,
+   "pass": true
+  },
+  {
+   "t": "Ege EşyaSEO at scale",
+   "w": 284,
+   "h": 42.5,
+   "pass": true
+  },
+  {
+   "t": "Evden Eve NakliyatThe system",
+   "w": 284,
+   "h": 42.5,
+   "pass": true
+  }
+ ],
+ "lab": [
+  {
+   "t": "Emrah Yücel",
+   "w": 70.4,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "Work",
+   "w": 33.6,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "About",
+   "w": 40,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "Lab",
+   "w": 27.2,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "Contact",
+   "w": 52.8,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "TR — Türkçe",
+   "w": 32.8,
+   "h": 30,
+   "pass": true
+  }
+ ],
+ "contact": [
+  {
+   "t": "Emrah Yücel",
+   "w": 70.4,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "Work",
+   "w": 33.6,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "About",
+   "w": 40,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "Lab",
+   "w": 27.2,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "Contact",
+   "w": 52.8,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "TR — Türkçe",
+   "w": 32.8,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "info@yucelemrah.com",
+   "w": 185.6,
+   "h": 36.8,
+   "pass": true
+  },
+  {
+   "t": "+90 506 519 96 91",
+   "w": 126.8,
+   "h": 35,
+   "pass": true
+  },
+  {
+   "t": "GitHub ↗ (opens in a new tab",
+   "w": 55.2,
+   "h": 24.5,
+   "pass": true
+  },
+  {
+   "t": "LinkedIn ↗ (opens in a new t",
+   "w": 68.6,
+   "h": 24.5,
+   "pass": true
+  }
+ ],
+ "world": [
+  {
+   "t": "← All work",
+   "w": 63.5,
+   "h": 30,
+   "pass": true
+  },
+  {
+   "t": "Visit Evden Eve Nakliyat eve",
+   "w": 128.4,
+   "h": 27,
+   "pass": true
+  },
+  {
+   "t": "Next",
+   "w": 25.6,
+   "h": 30,
+   "pass": true
+  }
+ ]
+}

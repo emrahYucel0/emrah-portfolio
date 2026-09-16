@@ -1,0 +1,38 @@
+{
+ "en": {
+  "url": "http://127.0.0.1:4411/en",
+  "lighthouse": "12.8.2",
+  "accessibility": 100,
+  "bestPractices": 100,
+  "seo": 100,
+  "failing": [],
+  "manual": 10
+ },
+ "tr": {
+  "url": "http://127.0.0.1:4411/tr",
+  "lighthouse": "12.8.2",
+  "accessibility": 100,
+  "bestPractices": 100,
+  "seo": 100,
+  "failing": [],
+  "manual": 10
+ },
+ "en-about": {
+  "url": "http://127.0.0.1:4411/en/about",
+  "lighthouse": "12.8.2",
+  "accessibility": 100,
+  "bestPractices": 100,
+  "seo": 100,
+  "failing": [],
+  "manual": 10
+ },
+ "tr-about": {
+  "url": "http://127.0.0.1:4411/tr/about",
+  "lighthouse": "12.8.2",
+  "accessibility": 100,
+  "bestPractices": 100,
+  "seo": 100,
+  "failing": [],
+  "manual": 10
+ }
+}

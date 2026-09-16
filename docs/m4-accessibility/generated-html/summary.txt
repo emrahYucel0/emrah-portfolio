@@ -1,0 +1,36 @@
+== index.html | lang en | title Emrah Yücel — Creative Developer &amp; Full-Stack Developer
+  landmarks header:0 nav:1 main:1 footer:0 section:0 article:0 address:0 aside:0
+   h1 ["Emrah Yücel"]
+  imgs []
+  lang parts 5 | text chars 157
+  TEXT: Emrah YücelCreative Developer / Full-Stack DeveloperChoose a language · Bir dil seçinTürkçeEnglish
+== en/index.html | lang en | title Emrah Yücel — Creative Developer &amp; Full-Stack Developer
+  landmarks header:1 nav:1 main:1 footer:1 section:3 article:0 address:1 aside:0
+   h1 ["Emrah Yücel"]
+   h2 ["Work","Lab","Contact"]
+   h3 ["İstanbul Şehir İçi","Ege Eşya","Evden Eve Nakliyat"]
+  imgs []
+  lang parts 9 | text chars 1417
+  TEXT: Skip to plain navigationEmrah Yücel— Creative Developer / Full-Stack DeveloperWorkAboutLabContactTürkçeEmrah YücelCreative Developer / Full-Stack DeveloperI’m Emrah Yücel, a Creative Developer and Full-Stack Developer based in Istanbul. I design expressive digital experiences and engineer the systems behind them.More about me →WorkThree production sites for service businesses — each designed and built end to end.İstanbul Şehir İçiOriginal digital directionCustom visual language and technical illustration39-district content approachBounded price calculatorAdmin / CMSVisit istanbulsehirici.com ↗ Ege EşyaSEO at scale968 sitemap URLs15 admin editing surfacesServer-rendered region and service contentDatabase-driven publishingVisit egeesya.com ↗ Evden Eve NakliyatThe system behind the serviceAdmin / CMSSSR SEO architecture — sitemap, robots, metadataResponsive mobile interfaceProduction deploy
+== tr/index.html | lang tr-TR | title Emrah Yücel — Creative Developer &amp; Full-Stack Developer
+  landmarks header:1 nav:1 main:1 footer:1 section:3 article:0 address:1 aside:0
+   h1 ["Emrah Yücel"]
+   h2 ["İşler","Lab","İletişim"]
+   h3 ["İstanbul Şehir İçi","Ege Eşya","Evden Eve Nakliyat"]
+  imgs []
+  lang parts 10 | text chars 1451
+  TEXT: Düz gezinmeye geçEmrah Yücel— Creative Developer / Full-Stack DeveloperİşlerHakkımdaLabİletişimEnglishEmrah YücelCreative Developer / Full-Stack DeveloperBen Emrah Yücel, İstanbul merkezli bir Creative Developer ve Full-Stack Developer’ım. Etkileyici dijital deneyimler tasarlıyor, arkalarındaki sistemleri kuruyorum.Hakkımda daha fazla →İşlerHizmet markaları için uçtan uca tasarlanıp geliştirilmiş üç production sitesi.İstanbul Şehir İçiÖzgün dijital yönÖzgün görsel dil ve teknik illüstrasyon39 ilçelik içerik yaklaşımıSınırlandırılmış fiyat hesaplayıcıAdmin / CMSSiteyi ziyaret et istanbulsehirici.com ↗ Ege EşyaÖlçekte SEO968 sitemap URL’si15 admin düzenleme alanıSunucu tarafında üretilen bölge ve hizmet içeriğiVeritabanı tabanlı yayınSiteyi ziyaret et egeesya.com ↗ Evden Eve NakliyatHizmetin arkasındaki sistemAdmin / CMSSSR SEO mimarisi — sitemap, robots, metadataDuyarlı mobil arayüzProduc
+== en/about/index.html | lang en | title About — Emrah Yücel
+  landmarks header:1 nav:1 main:1 footer:1 section:1 article:1 address:2 aside:0
+   h1 ["About"]
+   h2 ["Capabilities","Contact"]
+  imgs []
+  lang parts 5 | text chars 1321
+  TEXT: Skip to plain navigationEmrah Yücel— Creative Developer / Full-Stack DeveloperWorkAboutLabContactTürkçeAboutI’m Emrah Yücel, a Creative Developer and Full-Stack Developer based in Istanbul. I build digital experiences end to end — from interaction and frontend engineering to backend systems, CMS, performance and production.My path into software began in chemistry and industrial production. Working with formulation, quality control and technical constraints trained me to think in systems, test assumptions, measure what matters and care about repeatability.That mindset stayed with me when I moved into software. I still work the same way: understand the system, work with its constraints, then refine the result until the visual and technical parts feel like one thing.Today I work across creative development, frontend, full-stack systems, CMS/admin architecture, performance and technical SEO.
+== tr/about/index.html | lang tr-TR | title Hakkımda — Emrah Yücel
+  landmarks header:1 nav:1 main:1 footer:1 section:1 article:1 address:2 aside:0
+   h1 ["Hakkımda"]
+   h2 ["Yetkinlikler","İletişim"]
+  imgs []
+  lang parts 15 | text chars 1350
+  TEXT: Düz gezinmeye geçEmrah Yücel— Creative Developer / Full-Stack DeveloperİşlerHakkımdaLabİletişimEnglishHakkımdaBen Emrah Yücel, İstanbul merkezli bir Creative Developer ve Full-Stack Developer’ım. Dijital deneyimleri uçtan uca geliştiriyorum — etkileşim ve frontend mühendisliğinden backend sistemlerine, CMS yapılarına, performansa ve production süreçlerine kadar.Yazılıma giden yolum kimya ve endüstriyel üretimle başladı. Formülasyon, kalite kontrol ve teknik kısıtlarla çalışmak; sistemlerle düşünmeyi, varsayımları test etmeyi, önemli olanı ölçmeyi ve tekrarlanabilirliğe önem vermeyi öğretti.Bu yaklaşım, yazılıma geçtiğimde de benimle kaldı. Hâlâ aynı şekilde çalışıyorum: önce sistemi anlarım, kısıtlarıyla çalışırım, sonra görsel ve teknik taraf tek bir şeymiş gibi hissedene kadar sonucu rafine ederim.Bugün; creative development, frontend, full-stack sistemler, CMS/admin mimarisi, performa

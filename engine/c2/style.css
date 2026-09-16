@@ -34,6 +34,8 @@ a:hover { text-decoration: underline; text-decoration-thickness: 1px; text-under
 /* focus: a clear ring in the text's own colour, offset from it — visible on paper, night and every project ink */
 :focus-visible { outline: 2px solid currentColor; outline-offset: 4px; border-radius: 2px; }
 .scroll:focus-visible { outline-offset: -6px; }
+/* M4 A11Y: a heading that receives focus on arrival is a reading position, not a control — no ring */
+#ui h1[tabindex="-1"]:focus, #ui h2[tabindex="-1"]:focus { outline: none; }
 p, ul, ol, dl, dd, dt, h2, h3, address { margin: 0; padding: 0; font-weight: inherit; font-style: normal; }
 ul, ol { list-style: none; }
 abbr { text-decoration: none; }
@@ -59,6 +61,8 @@ abbr { text-decoration: none; }
 .nav { display: flex; gap: 26px; }
 /* M3 A11Y — the language control stays two quiet letters; its target is wider than its text (24px minimum, WCAG 2.2) */
 .strip .lang { padding: 10px 10px; margin: 0 -10px; }
+/* M4 A11Y: the strip's short words (Lab) reach 24px of target too; padding and margin cancel, nothing moves */
+.strip .nav button { padding-left: 4px; padding-right: 4px; margin: 0 -4px; }
 .roles { opacity: .82; }
 #hint { opacity: .78; overflow: hidden; text-overflow: ellipsis; min-width: 0; margin-left: auto; text-align: right; }   /* M3: it shrinks and keeps the right edge on a phone too */
 .strip[data-tone=dark] { color: var(--paper); }
@@ -174,6 +178,7 @@ body.in-world .bottom .roles { opacity: 0; }
 .wb-role { font: 380 14px/1.4 var(--sans); opacity: .88; }
 .psi { display: flex; flex-direction: column; gap: 5px; font: 400 10px/1.2 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
 .psi-head { opacity: .88; }
+.psi-rows { display: flex; flex-direction: column; gap: inherit; }
 .psi-row { display: grid; grid-template-columns: 62px minmax(0, 1fr); align-items: baseline; }
 .psi-row dt { opacity: .88; }
 .psi-row dd { display: flex; flex-wrap: wrap; gap: 4px 14px; }
@@ -198,7 +203,9 @@ body.in-world .bottom .roles { opacity: 0; }
 .a11y { position: absolute; z-index: 4; left: var(--pad); bottom: calc(var(--strip) + 12px); padding: 16px 18px; background: var(--paper); color: var(--ink); font: 380 14px/1.5 var(--sans); max-width: min(440px, calc(100% - var(--pad) * 2));
   clip-path: inset(50%); opacity: 0; pointer-events: none; }
 .a11y:focus, .a11y:focus-within { clip-path: none; opacity: 1; pointer-events: auto; outline: none; }
-.a11y a { pointer-events: auto; }
+.a11y a, .a11y button { pointer-events: auto; }
+.a11y .a11y-places { display: flex; gap: 18px; }
+.a11y .a11y-places button { padding: 4px 0; text-decoration: underline; text-underline-offset: 3px; }
 .a11y ul { margin: 4px 0 10px; }
 .a11y .a11y-links { display: flex; gap: 18px; }
 

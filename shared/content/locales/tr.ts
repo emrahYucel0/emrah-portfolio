@@ -138,6 +138,13 @@ export const tr = {
     plainNav: 'Düz gezinme', selectedWork: 'Seçili işler', labStudies: 'Lab çalışmaları',
     aboutRegion: 'Hakkımda', aboutDetail: 'Emrah Yücel hakkında', capabilities: 'Yetkinlikler',
     projectImages: 'Bu projedeki görseller:',
+    keys: 'Portfolyoda ilerlemek için ok tuşlarını ya da Page Up ve Page Down tuşlarını kullan.',
+    workKeys: 'Sol ve sağ ok tuşları proje seçer; Enter projeyi açar.',
+    worldKeys: 'Ok tuşları proje içinde ilerler; Escape tüm işlere döner.',
+    labKeys: 'Oda açmak için Enter’a bas; her oda sıradaki çalışmayı gösterir.',
+    newTab: '(yeni sekmede açılır)',
+    openProject: 'Projeyi aç',
+    openHint: 'Klavye veya ekran okuyucuyla etkinleştirin.',
   },
   localeSwitch: { label: 'Dil', to: 'English', short: 'EN', hreflang: 'en' },
   entry: {

@@ -29,7 +29,8 @@ export function psiHTML(w) {
     const v = vals.map((n, j) => (n == null ? '' : `<span><b>${n}</b> <abbr title="${labels[j]}">${short[j]}</abbr></span>`)).join('')
     return v ? `<div class="psi-row"><dt>${name}</dt><dd>${v}</dd></div>` : ''
   }
-  return `<dl class="psi"><div class="psi-head" lang="en">${w.psi.head}</div>${row(w.psi.mobileLabel, mobile)}${row(w.psi.desktopLabel, desktop)}</dl>`
+  // M4 A11Y: a description list may only hold its groups; the heading sits beside it (same flex column, same look)
+  return `<div class="psi"><p class="psi-head" lang="en">${w.psi.head}</p><dl class="psi-rows">${row(w.psi.mobileLabel, mobile)}${row(w.psi.desktopLabel, desktop)}</dl></div>`
 }
 const li = (list) => `<ul class="wb-list">${list.map((f) => `<li>${f}</li>`).join('')}</ul>`
 

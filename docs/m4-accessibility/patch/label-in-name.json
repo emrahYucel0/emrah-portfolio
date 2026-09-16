@@ -1,0 +1,42 @@
+{
+ "tr": {
+  "registered": {
+   "visible": {
+    "text": "Açmak için görseli basılı tut",
+    "rendered": "AÇMAK İÇİN GÖRSELİ BASILI TUT"
+   },
+   "name": "Açmak için görseli basılı tut — Projeyi aç: İstanbul Şehir İçi",
+   "description": "Klavye veya ekran okuyucuyla etkinleştirin.",
+   "nameStartsWithLabel": true
+  },
+  "afterSelectingEvden": {
+   "visible": {
+    "text": "Açmak için görseli basılı tut",
+    "rendered": "AÇMAK İÇİN GÖRSELİ BASILI TUT"
+   },
+   "name": "Açmak için görseli basılı tut — Projeyi aç: Evden Eve Nakliyat",
+   "description": "Klavye veya ekran okuyucuyla etkinleştirin.",
+   "nameStartsWithLabel": true
+  }
+ },
+ "en": {
+  "registered": {
+   "visible": {
+    "text": "Hold the image to open it",
+    "rendered": "HOLD THE IMAGE TO OPEN IT"
+   },
+   "name": "Hold the image to open it — Open project: İstanbul Şehir İçi",
+   "description": "Activate with keyboard or screen reader.",
+   "nameStartsWithLabel": true
+  },
+  "afterSelectingEvden": {
+   "visible": {
+    "text": "Hold the image to open it",
+    "rendered": "HOLD THE IMAGE TO OPEN IT"
+   },
+   "name": "Hold the image to open it — Open project: Evden Eve Nakliyat",
+   "description": "Activate with keyboard or screen reader.",
+   "nameStartsWithLabel": true
+  }
+ }
+}

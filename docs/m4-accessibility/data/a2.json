@@ -1,0 +1,198 @@
+{
+ "pointer": [
+  {
+   "label": "wheel → Creative",
+   "status": "Creative Developer",
+   "active": "body",
+   "base": 1
+  },
+  {
+   "label": "wheel → Full-Stack",
+   "status": "Full-Stack Developer",
+   "active": "body",
+   "base": 2
+  },
+  {
+   "label": "click nav Lab",
+   "status": "Lab",
+   "active": "button «Lab»",
+   "base": 4
+  },
+  {
+   "label": "click nav Contact",
+   "status": "Contact",
+   "active": "button «Contact»",
+   "base": 5
+  },
+  {
+   "label": "mouse hold opens work",
+   "status": "Evden Eve Nakliyat",
+   "active": "body",
+   "mode": "world"
+  },
+  {
+   "label": "click All work",
+   "status": "Evden Eve Nakliyat",
+   "active": "button.active «Evden Eve NakliyatThe system behind the »",
+   "mode": "index"
+  }
+ ],
+ "keyboard": [
+  {
+   "label": "Enter About",
+   "active": "h2.sr «Hakkımda»"
+  },
+  {
+   "label": "Tab in wedge",
+   "active": "a.more «Hakkımda daha fazla →»"
+  },
+  {
+   "label": "Enter More",
+   "active": "h2.lbl «Hakkımda»",
+   "path": "/tr/about"
+  },
+  {
+   "label": "Escape",
+   "active": "a.more «Hakkımda daha fazla →»",
+   "path": "/tr"
+  },
+  {
+   "label": "Back button",
+   "active": "a.more «Hakkımda daha fazla →»",
+   "path": "/tr"
+  },
+  {
+   "label": "direct /tr/about entry",
+   "active": "h2.lbl «Hakkımda»",
+   "title": "Hakkımda — Emrah Yücel"
+  },
+  {
+   "label": "Enter Lab",
+   "active": "h2.lbl «Lab»"
+  },
+  {
+   "label": "Enter ×5 in Lab",
+   "said": [
+    "01 / 05 — Tipografik büyütme çalışması",
+    "02 / 05 — Diyagonal blok çalışması",
+    "03 / 05 — Sıkışık dikey tipografi çalışması",
+    "04 / 05 — Tek çizgi çizim çalışması",
+    "05 / 05 — Satır yayılması çalışması"
+   ],
+   "pins": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ]
+  },
+  {
+   "label": "Escape then Tab in Lab",
+   "active": "a «İstanbul Şehir İçi — Özgün dijital yön ↗»"
+  }
+ ],
+ "localeInWorld": {
+  "before": {
+   "mode": "world",
+   "summary": "İstanbul Şehir İçi"
+  },
+  "after": {
+   "mode": "world",
+   "lang": "tr-TR",
+   "summary": "İstanbul Şehir İçi",
+   "facts": [
+    "Özgün görsel dil ve teknik illüstrasyon",
+    "39 ilçelik içerik yaklaşımı",
+    "Sınırlandırılmış fiyat hesaplayıcı",
+    "Admin / CMS"
+   ],
+   "dupSummaries": 1,
+   "canvases": 1
+  }
+ },
+ "forced": {
+  "active": "button.active «İstanbul Şehir İçiOriginal digital direc»",
+  "outline": "solid 2px rgb(26, 235, 255)"
+ },
+ "zoom200": {
+  "shape": "short",
+  "hScroll": false,
+  "walk": [
+   {
+    "el": "Düz gezinmeye geç",
+    "inView": true
+   },
+   {
+    "el": "Emrah Yücel",
+    "inView": true
+   },
+   {
+    "el": "İşler",
+    "inView": true
+   },
+   {
+    "el": "Hakkımda",
+    "inView": true
+   },
+   {
+    "el": "Lab",
+    "inView": true
+   },
+   {
+    "el": "İletişim",
+    "inView": true
+   },
+   {
+    "el": "EN",
+    "inView": true
+   },
+   {
+    "el": "İstanbul Şehir İçi — Özgün dij",
+    "inView": true
+   },
+   {
+    "el": "Ege Eşya — Ölçekte SEO ↗ (yeni",
+    "inView": true
+   }
+  ],
+  "contact": [
+   {
+    "t": "info@yucelemrah.com",
+    "inView": true
+   },
+   {
+    "t": "+90 506 519 96 91",
+    "inView": true
+   },
+   {
+    "t": "GitHub ↗ (yeni sekmede a",
+    "inView": true
+   },
+   {
+    "t": "LinkedIn ↗ (yeni sekmede",
+    "inView": true
+   }
+  ]
+ },
+ "darkFocus": {
+  "active": "button «← All work»",
+  "outline": "solid 2px rgb(231, 230, 224)"
+ },
+ "noJs": {
+  "lang": "tr-TR",
+  "h1": "Emrah Yücel",
+  "headings": [
+   "H1: Emrah Yücel",
+   "H2: İşler",
+   "H3: İstanbul Şehir İçi",
+   "H3: Ege Eşya",
+   "H3: Evden Eve Nakliyat",
+   "H2: Lab",
+   "H2: İletişim"
+  ],
+  "links": 15,
+  "textChars": 1467,
+  "c2": false
+ }
+}

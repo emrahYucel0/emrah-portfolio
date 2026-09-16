@@ -1,0 +1,2585 @@
+[
+  {
+    "state": "name",
+    "text": "Emrah Yücel",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "name",
+    "text": "İşler",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "name",
+    "text": "Hakkımda",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "name",
+    "text": "Lab",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "name",
+    "text": "İletişim",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "name",
+    "text": "EN",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "name",
+    "text": "Creative Developer · Full-Stack Developer",
+    "size": 10.5,
+    "mean": 9.36,
+    "worst10": 9.36,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "name",
+    "text": "İstanbul · Seçili freelance projelere açığım",
+    "size": 10.5,
+    "mean": 8.21,
+    "worst10": 8.21,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-home",
+    "text": "Emrah Yücel",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-home",
+    "text": "İşler",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-home",
+    "text": "Hakkımda",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-home",
+    "text": "Lab",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-home",
+    "text": "İletişim",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-home",
+    "text": "EN",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-home",
+    "text": "Ben Emrah Yücel, İstanbul merkezli bir Creat",
+    "size": 17,
+    "mean": 11.96,
+    "worst10": 11.96,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-home",
+    "text": "Nasıl hareket ettiğini tasarlıyorum, üzerind",
+    "size": 38,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 3,
+    "pass": true
+  },
+  {
+    "state": "about-home",
+    "text": "İstanbul · Seçili freelance projelere açığım",
+    "size": 10.5,
+    "mean": 8.6,
+    "worst10": 8.6,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-home",
+    "text": "Hakkımda daha fazla →",
+    "size": 10.5,
+    "mean": 11.96,
+    "worst10": 11.96,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-home",
+    "text": "Creative Developer · Full-Stack Developer",
+    "size": 10.5,
+    "mean": 9.36,
+    "worst10": 9.36,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "Emrah Yücel",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "İşler",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "Hakkımda",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "Lab",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "İletişim",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "EN",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "Hakkımda",
+    "size": 10.5,
+    "mean": 8.6,
+    "worst10": 8.6,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "Ben Emrah Yücel, İstanbul merkezli bir Creat",
+    "size": 30.24,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 3,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "Yazılıma giden yolum kimya ve endüstriyel ür",
+    "size": 16.128,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "Bu yaklaşım, yazılıma geçtiğimde de benimle ",
+    "size": 16.128,
+    "mean": 16.12,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "Bugün; creative development, frontend, full-",
+    "size": 16.128,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "Creative Development",
+    "size": 10.5,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "Motion & Interaction",
+    "size": 10.5,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "Frontend Engineering",
+    "size": 10.5,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "Full-Stack Development",
+    "size": 10.5,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "CMS / Admin Sistemleri",
+    "size": 10.5,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "Admin",
+    "size": 10.5,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "Performans & Teknik SEO",
+    "size": 10.5,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "Seçili freelance projelere açığım.",
+    "size": 15,
+    "mean": 16.1,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "İstanbul, Türkiye",
+    "size": 15,
+    "mean": 8.6,
+    "worst10": 8.6,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "info@yucelemrah.com",
+    "size": 15,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "+90 506 519 96 91",
+    "size": 15,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "GitHub ↗",
+    "size": 10.5,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "LinkedIn ↗",
+    "size": 10.5,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "← Geri",
+    "size": 10.5,
+    "mean": 11.23,
+    "worst10": 11.23,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "about-detail",
+    "text": "Creative Developer · Full-Stack Developer",
+    "size": 10.5,
+    "mean": 9.36,
+    "worst10": 9.36,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-creative",
+    "text": "Emrah Yücel",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-creative",
+    "text": "İşler",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-creative",
+    "text": "Hakkımda",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-creative",
+    "text": "Lab",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-creative",
+    "text": "İletişim",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-creative",
+    "text": "EN",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-creative",
+    "text": "Ben Emrah Yücel, İstanbul merkezli bir Creat",
+    "size": 17,
+    "mean": 11.96,
+    "worst10": 11.96,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-creative",
+    "text": "Nasıl hareket ettiğini tasarlıyorum, üzerind",
+    "size": 38,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 3,
+    "pass": true
+  },
+  {
+    "state": "face-creative",
+    "text": "İstanbul · Seçili freelance projelere açığım",
+    "size": 10.5,
+    "mean": 8.6,
+    "worst10": 8.6,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-creative",
+    "text": "Hakkımda daha fazla →",
+    "size": 10.5,
+    "mean": 11.96,
+    "worst10": 11.96,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-creative",
+    "text": "Dokunduğun yüzeyi kuruyorum",
+    "size": 63.36,
+    "mean": 10.73,
+    "worst10": 1.78,
+    "need": 3,
+    "pass": true
+  },
+  {
+    "state": "face-creative",
+    "text": "Creative development",
+    "size": 16,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-creative",
+    "text": "Özgün görsel sistemler · etkileşim",
+    "size": 13,
+    "mean": 8.6,
+    "worst10": 8.6,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-creative",
+    "text": "Motion & interaction",
+    "size": 16,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-creative",
+    "text": "Kaydırma · hareket · koreografi",
+    "size": 13,
+    "mean": 8.6,
+    "worst10": 8.6,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-creative",
+    "text": "Frontend engineering",
+    "size": 16,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-creative",
+    "text": "Vue · Nuxt · TypeScript · Tailwind CSS",
+    "size": 13,
+    "mean": 8.6,
+    "worst10": 8.6,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-creative",
+    "text": "Developer",
+    "size": 23.04,
+    "mean": 8.97,
+    "worst10": 3.49,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-creative",
+    "text": "Creative Developer · Full-Stack Developer",
+    "size": 10.5,
+    "mean": 9.36,
+    "worst10": 9.36,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-fullstack",
+    "text": "Emrah Yücel",
+    "size": 10.5,
+    "mean": 15.33,
+    "worst10": 15.33,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-fullstack",
+    "text": "İşler",
+    "size": 10.5,
+    "mean": 15.33,
+    "worst10": 15.33,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-fullstack",
+    "text": "Hakkımda",
+    "size": 10.5,
+    "mean": 15.33,
+    "worst10": 15.33,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-fullstack",
+    "text": "Lab",
+    "size": 10.5,
+    "mean": 15.33,
+    "worst10": 15.33,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-fullstack",
+    "text": "İletişim",
+    "size": 10.5,
+    "mean": 15.33,
+    "worst10": 15.33,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-fullstack",
+    "text": "EN",
+    "size": 10.5,
+    "mean": 15.33,
+    "worst10": 15.33,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-fullstack",
+    "text": "Ben Emrah Yücel, İstanbul merkezli bir Creat",
+    "size": 17,
+    "mean": 12.14,
+    "worst10": 12.14,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-fullstack",
+    "text": "Nasıl hareket ettiğini tasarlıyorum, üzerind",
+    "size": 38,
+    "mean": 15.65,
+    "worst10": 15.65,
+    "need": 3,
+    "pass": true
+  },
+  {
+    "state": "face-fullstack",
+    "text": "İstanbul · Seçili freelance projelere açığım",
+    "size": 10.5,
+    "mean": 9.63,
+    "worst10": 9.63,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-fullstack",
+    "text": "Hakkımda daha fazla →",
+    "size": 10.5,
+    "mean": 12.14,
+    "worst10": 12.14,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-fullstack",
+    "text": "ve altındaki sistemi",
+    "size": 63.36,
+    "mean": 15.65,
+    "worst10": 15.65,
+    "need": 3,
+    "pass": true
+  },
+  {
+    "state": "face-fullstack",
+    "text": "Nuxt · Vue · TypeScript · Tailwind CSS · GSA",
+    "size": 13,
+    "mean": 1.1,
+    "worst10": 1.02,
+    "need": 4.5,
+    "pass": false
+  },
+  {
+    "state": "face-fullstack",
+    "text": "Full-stack development",
+    "size": 16,
+    "mean": 15.65,
+    "worst10": 15.65,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-fullstack",
+    "text": "SSR · REST API · Prisma · kimlik doğrulama",
+    "size": 13,
+    "mean": 9.63,
+    "worst10": 9.63,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-fullstack",
+    "text": "CMS / admin sistemleri",
+    "size": 16,
+    "mean": 15.65,
+    "worst10": 15.65,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-fullstack",
+    "text": "Veritabanı tabanlı yayın ve düzenleme",
+    "size": 13,
+    "mean": 9.63,
+    "worst10": 9.63,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-fullstack",
+    "text": "Performans & teknik SEO",
+    "size": 16,
+    "mean": 15.65,
+    "worst10": 15.65,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-fullstack",
+    "text": "Metadata · routing · sitemap · yalın build",
+    "size": 13,
+    "mean": 9.63,
+    "worst10": 9.63,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-fullstack",
+    "text": "Developer",
+    "size": 23.04,
+    "mean": 11.61,
+    "worst10": 11.61,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "face-fullstack",
+    "text": "Creative Developer · Full-Stack Developer",
+    "size": 10.5,
+    "mean": 10.44,
+    "worst10": 10.44,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "work-field",
+    "text": "Emrah Yücel",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "work-field",
+    "text": "İşler",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "work-field",
+    "text": "Hakkımda",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "work-field",
+    "text": "Lab",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "work-field",
+    "text": "İletişim",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "work-field",
+    "text": "EN",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "work-field",
+    "text": "İşler",
+    "size": 10.5,
+    "mean": 9.36,
+    "worst10": 9.36,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "work-field",
+    "text": "Hizmet markaları için uçtan uca tasarlanıp g",
+    "size": 16,
+    "mean": 11.21,
+    "worst10": 11.21,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "work-field",
+    "text": "İstanbul Şehir İçi",
+    "size": 15,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "work-field",
+    "text": "Özgün dijital yön",
+    "size": 10,
+    "mean": 11.21,
+    "worst10": 11.21,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "work-field",
+    "text": "Ege Eşya",
+    "size": 15,
+    "mean": 6.62,
+    "worst10": 6.62,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "work-field",
+    "text": "Ölçekte SEO",
+    "size": 10,
+    "mean": 5.18,
+    "worst10": 5.18,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "work-field",
+    "text": "Evden Eve Nakliyat",
+    "size": 15,
+    "mean": 6.62,
+    "worst10": 6.62,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "work-field",
+    "text": "Hizmetin arkasındaki sistem",
+    "size": 10,
+    "mean": 5.18,
+    "worst10": 5.18,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "work-field",
+    "text": "İstanbul Şehir İçi",
+    "size": 41.76,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 3,
+    "pass": true
+  },
+  {
+    "state": "work-field",
+    "text": "Özgün dijital yön",
+    "size": 14,
+    "mean": 10.26,
+    "worst10": 10.26,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "work-field",
+    "text": "Açmak için görseli basılı tut",
+    "size": 10.5,
+    "mean": 9.36,
+    "worst10": 9.36,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "work-field",
+    "text": "Creative Developer · Full-Stack Developer",
+    "size": 10.5,
+    "mean": 9.36,
+    "worst10": 9.36,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "work-field",
+    "text": "kaydır · görseli basılı tut",
+    "size": 10.5,
+    "mean": 8.21,
+    "worst10": 8.21,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f0",
+    "text": "← Tüm işler",
+    "size": 10.5,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f0",
+    "text": "İstanbul Şehir İçi istanbulsehirici.com ↗",
+    "size": 13,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f0",
+    "text": "İstanbul Şehir İçi",
+    "size": 13,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f0",
+    "text": "istanbulsehirici.com",
+    "size": 10.5,
+    "mean": 4.92,
+    "worst10": 4.92,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f0",
+    "text": "Sonraki",
+    "size": 10.5,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f0",
+    "text": "İstanbul Şehir İçi",
+    "size": 13,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f0",
+    "text": "Özgün dijital yön",
+    "size": 10.5,
+    "mean": 5.07,
+    "worst10": 5.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f1",
+    "text": "← Tüm işler",
+    "size": 10.5,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f1",
+    "text": "İstanbul Şehir İçi istanbulsehirici.com ↗",
+    "size": 13,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f1",
+    "text": "İstanbul Şehir İçi",
+    "size": 13,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f1",
+    "text": "istanbulsehirici.com",
+    "size": 10.5,
+    "mean": 4.92,
+    "worst10": 4.92,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f1",
+    "text": "Sonraki",
+    "size": 10.5,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f1",
+    "text": "Teknik illüstrasyon",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f1",
+    "text": "Tipografi öncelikli açılış",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "← Tüm işler",
+    "size": 10.5,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "İstanbul Şehir İçi istanbulsehirici.com ↗",
+    "size": 13,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "İstanbul Şehir İçi",
+    "size": 13,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "istanbulsehirici.com",
+    "size": 10.5,
+    "mean": 4.92,
+    "worst10": 4.92,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "Sonraki",
+    "size": 10.5,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "Özgün dijital yön",
+    "size": 10.5,
+    "mean": 4.88,
+    "worst10": 3.34,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "Özgün görsel dil ve teknik illüstrasyon",
+    "size": 15,
+    "mean": 6.04,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "39 ilçelik içerik yaklaşımı",
+    "size": 15,
+    "mean": 6.04,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "Sınırlandırılmış fiyat hesaplayıcı",
+    "size": 15,
+    "mean": 6.04,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "Admin / CMS",
+    "size": 15,
+    "mean": 6.04,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "Nuxt SSR · projeye ait fontlar · özel görsel",
+    "size": 10.5,
+    "mean": 5.05,
+    "worst10": 5.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "Mobil",
+    "size": 10,
+    "mean": 5,
+    "worst10": 5.04,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "98",
+    "size": 13,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "PERF",
+    "size": 10,
+    "mean": 5.07,
+    "worst10": 5.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "100",
+    "size": 13,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "A11Y",
+    "size": 10,
+    "mean": 5.07,
+    "worst10": 5.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "100",
+    "size": 13,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "BP",
+    "size": 10,
+    "mean": 5.07,
+    "worst10": 5.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "100",
+    "size": 13,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "SEO",
+    "size": 10,
+    "mean": 5.07,
+    "worst10": 5.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "Masaüstü",
+    "size": 10,
+    "mean": 5.07,
+    "worst10": 5.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "100",
+    "size": 13,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "PERF",
+    "size": 10,
+    "mean": 5.07,
+    "worst10": 5.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "100",
+    "size": 13,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "A11Y",
+    "size": 10,
+    "mean": 5.07,
+    "worst10": 5.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "100",
+    "size": 13,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "BP",
+    "size": 10,
+    "mean": 5.07,
+    "worst10": 5.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "100",
+    "size": 13,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f2",
+    "text": "SEO",
+    "size": 10,
+    "mean": 5.07,
+    "worst10": 5.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f3",
+    "text": "← Tüm işler",
+    "size": 10.5,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f3",
+    "text": "İstanbul Şehir İçi istanbulsehirici.com ↗",
+    "size": 13,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f3",
+    "text": "İstanbul Şehir İçi",
+    "size": 13,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f3",
+    "text": "istanbulsehirici.com",
+    "size": 10.5,
+    "mean": 4.92,
+    "worst10": 4.92,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f3",
+    "text": "Sonraki",
+    "size": 10.5,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f3",
+    "text": "İstanbul Şehir İçi",
+    "size": 34.56,
+    "mean": 6.05,
+    "worst10": 6.07,
+    "need": 3,
+    "pass": true
+  },
+  {
+    "state": "world0-f3",
+    "text": "Alışılmış bir hizmet kategorisi, özgün bir d",
+    "size": 24.48,
+    "mean": 6.06,
+    "worst10": 6.07,
+    "need": 3,
+    "pass": true
+  },
+  {
+    "state": "world0-f3",
+    "text": "Özgün görsel yön, yaratıcı frontend mühendis",
+    "size": 14,
+    "mean": 5.06,
+    "worst10": 5.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f3",
+    "text": "Siteyi ziyaret et istanbulsehirici.com ↗",
+    "size": 10.5,
+    "mean": 6.04,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f3",
+    "text": "istanbulsehirici.com",
+    "size": 10.5,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world0-f3",
+    "text": "Tüm işler",
+    "size": 10.5,
+    "mean": 6.07,
+    "worst10": 6.07,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f0",
+    "text": "← Tüm işler",
+    "size": 10.5,
+    "mean": 9.2,
+    "worst10": 9.2,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f0",
+    "text": "Ege Eşya egeesya.com ↗",
+    "size": 13,
+    "mean": 9.2,
+    "worst10": 9.2,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f0",
+    "text": "Ege Eşya",
+    "size": 13,
+    "mean": 9.2,
+    "worst10": 9.2,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f0",
+    "text": "egeesya.com",
+    "size": 10.5,
+    "mean": 7.18,
+    "worst10": 7.18,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f0",
+    "text": "Sonraki",
+    "size": 10.5,
+    "mean": 9.2,
+    "worst10": 9.2,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f0",
+    "text": "Ege Eşya",
+    "size": 34.56,
+    "mean": 7.58,
+    "worst10": 2.37,
+    "need": 3,
+    "pass": true
+  },
+  {
+    "state": "world1-f0",
+    "text": "Yapılandırılmış içerik, SSR ve veritabanı ta",
+    "size": 17,
+    "mean": 9.06,
+    "worst10": 9.2,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f1",
+    "text": "← Tüm işler",
+    "size": 10.5,
+    "mean": 9.2,
+    "worst10": 9.2,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f1",
+    "text": "Ege Eşya egeesya.com ↗",
+    "size": 13,
+    "mean": 9.2,
+    "worst10": 9.2,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f1",
+    "text": "Ege Eşya",
+    "size": 13,
+    "mean": 9.2,
+    "worst10": 9.2,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f1",
+    "text": "egeesya.com",
+    "size": 10.5,
+    "mean": 7.18,
+    "worst10": 7.18,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f1",
+    "text": "Sonraki",
+    "size": 10.5,
+    "mean": 9.2,
+    "worst10": 9.2,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f1",
+    "text": "Ölçekte SEO",
+    "size": 10.5,
+    "mean": 5.34,
+    "worst10": 1.91,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f1",
+    "text": "968 sitemap URL’si",
+    "size": 34.56,
+    "mean": 9.16,
+    "worst10": 9.2,
+    "need": 3,
+    "pass": true
+  },
+  {
+    "state": "world1-f1",
+    "text": "Sunucu tarafında üretilen bölge ve hizmet iç",
+    "size": 15,
+    "mean": 9.18,
+    "worst10": 9.2,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f2",
+    "text": "← Tüm işler",
+    "size": 10.5,
+    "mean": 9.2,
+    "worst10": 9.2,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f2",
+    "text": "Ege Eşya egeesya.com ↗",
+    "size": 13,
+    "mean": 9.2,
+    "worst10": 9.2,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f2",
+    "text": "Ege Eşya",
+    "size": 13,
+    "mean": 9.2,
+    "worst10": 9.2,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f2",
+    "text": "egeesya.com",
+    "size": 10.5,
+    "mean": 7.18,
+    "worst10": 7.18,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f2",
+    "text": "Sonraki",
+    "size": 10.5,
+    "mean": 9.2,
+    "worst10": 9.2,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f2",
+    "text": "Yayın mimarisi",
+    "size": 10.5,
+    "mean": 7.66,
+    "worst10": 7.72,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f2",
+    "text": "15 admin düzenleme alanı",
+    "size": 34.56,
+    "mean": 9.15,
+    "worst10": 9.2,
+    "need": 3,
+    "pass": true
+  },
+  {
+    "state": "world1-f2",
+    "text": "Veritabanı tabanlı yayın",
+    "size": 15,
+    "mean": 9.15,
+    "worst10": 9.2,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f2",
+    "text": "Mobil",
+    "size": 10,
+    "mean": 7.39,
+    "worst10": 7.45,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f2",
+    "text": "100",
+    "size": 13,
+    "mean": 9.19,
+    "worst10": 9.08,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f2",
+    "text": "BP",
+    "size": 10,
+    "mean": 7.3,
+    "worst10": 6.54,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f2",
+    "text": "100",
+    "size": 13,
+    "mean": 9.19,
+    "worst10": 9.08,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f2",
+    "text": "SEO",
+    "size": 10,
+    "mean": 7.3,
+    "worst10": 6.54,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f2",
+    "text": "Masaüstü",
+    "size": 10,
+    "mean": 7.31,
+    "worst10": 6.89,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f2",
+    "text": "100",
+    "size": 13,
+    "mean": 7.82,
+    "worst10": 2.17,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f2",
+    "text": "BP",
+    "size": 10,
+    "mean": 5.61,
+    "worst10": 2.17,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f2",
+    "text": "100",
+    "size": 13,
+    "mean": 7.82,
+    "worst10": 2.17,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f2",
+    "text": "SEO",
+    "size": 10,
+    "mean": 5.61,
+    "worst10": 2.17,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f3",
+    "text": "← Tüm işler",
+    "size": 10.5,
+    "mean": 9.2,
+    "worst10": 9.2,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f3",
+    "text": "Ege Eşya egeesya.com ↗",
+    "size": 13,
+    "mean": 9.2,
+    "worst10": 9.2,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f3",
+    "text": "Ege Eşya",
+    "size": 13,
+    "mean": 9.2,
+    "worst10": 9.2,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f3",
+    "text": "egeesya.com",
+    "size": 10.5,
+    "mean": 7.18,
+    "worst10": 7.18,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f3",
+    "text": "Sonraki",
+    "size": 10.5,
+    "mean": 9.2,
+    "worst10": 9.2,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f3",
+    "text": "Ege Eşya",
+    "size": 34.56,
+    "mean": 9.16,
+    "worst10": 9.2,
+    "need": 3,
+    "pass": true
+  },
+  {
+    "state": "world1-f3",
+    "text": "Yapılandırılmış içerik, SSR ve veritabanı ta",
+    "size": 24.48,
+    "mean": 9.18,
+    "worst10": 9.2,
+    "need": 3,
+    "pass": true
+  },
+  {
+    "state": "world1-f3",
+    "text": "SEO mimarisi, ölçeklenebilir içerik yapısı v",
+    "size": 14,
+    "mean": 7.42,
+    "worst10": 7.45,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f3",
+    "text": "Siteyi ziyaret et egeesya.com ↗",
+    "size": 10.5,
+    "mean": 9.15,
+    "worst10": 9.2,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f3",
+    "text": "egeesya.com",
+    "size": 10.5,
+    "mean": 9.2,
+    "worst10": 9.2,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world1-f3",
+    "text": "Tüm işler",
+    "size": 10.5,
+    "mean": 9.2,
+    "worst10": 9.2,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f0",
+    "text": "← Tüm işler",
+    "size": 10.5,
+    "mean": 8.74,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f0",
+    "text": "Evden Eve Nakliyat evenakliyatevden.com ↗",
+    "size": 13,
+    "mean": 8.74,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f0",
+    "text": "Evden Eve Nakliyat",
+    "size": 13,
+    "mean": 8.74,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f0",
+    "text": "evenakliyatevden.com",
+    "size": 10.5,
+    "mean": 6.94,
+    "worst10": 6.94,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f0",
+    "text": "Sonraki",
+    "size": 10.5,
+    "mean": 8.74,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f0",
+    "text": "Evden Eve Nakliyat",
+    "size": 34.56,
+    "mean": 14.86,
+    "worst10": 14.57,
+    "need": 3,
+    "pass": true
+  },
+  {
+    "state": "world2-f0",
+    "text": "Genele açık deneyim ile yönetim sisteminin t",
+    "size": 17,
+    "mean": 13.62,
+    "worst10": 12.68,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f1",
+    "text": "← Tüm işler",
+    "size": 10.5,
+    "mean": 8.74,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f1",
+    "text": "Evden Eve Nakliyat evenakliyatevden.com ↗",
+    "size": 13,
+    "mean": 8.74,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f1",
+    "text": "Evden Eve Nakliyat",
+    "size": 13,
+    "mean": 8.74,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f1",
+    "text": "evenakliyatevden.com",
+    "size": 10.5,
+    "mean": 6.94,
+    "worst10": 6.94,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f1",
+    "text": "Sonraki",
+    "size": 10.5,
+    "mean": 8.74,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f1",
+    "text": "Hizmetin arkasındaki sistem",
+    "size": 34.56,
+    "mean": 8.7,
+    "worst10": 8.74,
+    "need": 3,
+    "pass": true
+  },
+  {
+    "state": "world2-f1",
+    "text": "Admin / CMS",
+    "size": 15,
+    "mean": 8.71,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f1",
+    "text": "SSR SEO mimarisi — sitemap, robots, metadata",
+    "size": 15,
+    "mean": 8.71,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f1",
+    "text": "Production kurulumu ve bakımı",
+    "size": 15,
+    "mean": 8.7,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f1",
+    "text": "Nuxt 4 · Vue · TypeScript · Tailwind CSS · P",
+    "size": 10.5,
+    "mean": 7.16,
+    "worst10": 7.18,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f2",
+    "text": "← Tüm işler",
+    "size": 10.5,
+    "mean": 8.74,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f2",
+    "text": "Evden Eve Nakliyat evenakliyatevden.com ↗",
+    "size": 13,
+    "mean": 8.74,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f2",
+    "text": "Evden Eve Nakliyat",
+    "size": 13,
+    "mean": 8.74,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f2",
+    "text": "evenakliyatevden.com",
+    "size": 10.5,
+    "mean": 6.94,
+    "worst10": 6.94,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f2",
+    "text": "Sonraki",
+    "size": 10.5,
+    "mean": 8.74,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f2",
+    "text": "Genele açık sitenin arkasındaki yönetim sist",
+    "size": 10.5,
+    "mean": 5.43,
+    "worst10": 2.67,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f2",
+    "text": "Admin",
+    "size": 10.5,
+    "mean": 5.61,
+    "worst10": 2.52,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "← Tüm işler",
+    "size": 10.5,
+    "mean": 8.74,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "Evden Eve Nakliyat evenakliyatevden.com ↗",
+    "size": 13,
+    "mean": 8.74,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "Evden Eve Nakliyat",
+    "size": 13,
+    "mean": 8.74,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "evenakliyatevden.com",
+    "size": 10.5,
+    "mean": 6.94,
+    "worst10": 6.94,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "Sonraki",
+    "size": 10.5,
+    "mean": 8.74,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "Yayında",
+    "size": 10.5,
+    "mean": 7.43,
+    "worst10": 7.43,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "Mobil",
+    "size": 10,
+    "mean": 7.02,
+    "worst10": 6.89,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "94",
+    "size": 13,
+    "mean": 8.71,
+    "worst10": 8.45,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "PERF",
+    "size": 10,
+    "mean": 7.17,
+    "worst10": 7.08,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "100",
+    "size": 13,
+    "mean": 8.71,
+    "worst10": 8.45,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "A11Y",
+    "size": 10,
+    "mean": 7.17,
+    "worst10": 7.08,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "100",
+    "size": 13,
+    "mean": 8.71,
+    "worst10": 8.45,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "BP",
+    "size": 10,
+    "mean": 7.17,
+    "worst10": 7.08,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "100",
+    "size": 13,
+    "mean": 8.71,
+    "worst10": 8.45,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "SEO",
+    "size": 10,
+    "mean": 7.17,
+    "worst10": 7.08,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "Masaüstü",
+    "size": 10,
+    "mean": 5.67,
+    "worst10": 2.96,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "95",
+    "size": 13,
+    "mean": 7.57,
+    "worst10": 3.39,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "PERF",
+    "size": 10,
+    "mean": 7.11,
+    "worst10": 6.89,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "97",
+    "size": 13,
+    "mean": 7.57,
+    "worst10": 3.39,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "A11Y",
+    "size": 10,
+    "mean": 7.11,
+    "worst10": 6.89,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "100",
+    "size": 13,
+    "mean": 7.57,
+    "worst10": 3.39,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "BP",
+    "size": 10,
+    "mean": 7.11,
+    "worst10": 6.89,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "100",
+    "size": 13,
+    "mean": 7.57,
+    "worst10": 3.39,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f3",
+    "text": "SEO",
+    "size": 10,
+    "mean": 7.11,
+    "worst10": 6.89,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f4",
+    "text": "← Tüm işler",
+    "size": 10.5,
+    "mean": 8.74,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f4",
+    "text": "Evden Eve Nakliyat evenakliyatevden.com ↗",
+    "size": 13,
+    "mean": 8.74,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f4",
+    "text": "Evden Eve Nakliyat",
+    "size": 13,
+    "mean": 8.74,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f4",
+    "text": "evenakliyatevden.com",
+    "size": 10.5,
+    "mean": 6.94,
+    "worst10": 6.94,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f4",
+    "text": "Sonraki",
+    "size": 10.5,
+    "mean": 8.74,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f4",
+    "text": "Evden Eve Nakliyat",
+    "size": 34.56,
+    "mean": 8.7,
+    "worst10": 8.74,
+    "need": 3,
+    "pass": true
+  },
+  {
+    "state": "world2-f4",
+    "text": "Genele açık deneyim ile yönetim sisteminin t",
+    "size": 24.48,
+    "mean": 8.72,
+    "worst10": 8.74,
+    "need": 3,
+    "pass": true
+  },
+  {
+    "state": "world2-f4",
+    "text": "CMS/admin sistemi, full-stack mimari ve prod",
+    "size": 14,
+    "mean": 7.14,
+    "worst10": 7.18,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f4",
+    "text": "Siteyi ziyaret et evenakliyatevden.com ↗",
+    "size": 10.5,
+    "mean": 8.7,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f4",
+    "text": "evenakliyatevden.com",
+    "size": 10.5,
+    "mean": 8.74,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "world2-f4",
+    "text": "Tüm işler",
+    "size": 10.5,
+    "mean": 8.74,
+    "worst10": 8.74,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "lab",
+    "text": "Emrah Yücel",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "lab",
+    "text": "İşler",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "lab",
+    "text": "Hakkımda",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "lab",
+    "text": "Lab",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "lab",
+    "text": "İletişim",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "lab",
+    "text": "EN",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "lab",
+    "text": "Lab",
+    "size": 10.5,
+    "mean": 8.6,
+    "worst10": 8.6,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "lab",
+    "text": "Yer açmak için basılı tut. Yüzeyin geri kala",
+    "size": 15,
+    "mean": 11.96,
+    "worst10": 11.96,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "lab",
+    "text": "01 / 05 — Tipografik büyütme çalışması",
+    "size": 10,
+    "mean": 9.85,
+    "worst10": 9.85,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "lab",
+    "text": "— Tipografik büyütme çalışması",
+    "size": 10,
+    "mean": 9.85,
+    "worst10": 9.85,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "lab",
+    "text": "Creative Developer · Full-Stack Developer",
+    "size": 10.5,
+    "mean": 9.36,
+    "worst10": 9.36,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "lab",
+    "text": "İstanbul · Seçili freelance projelere açığım",
+    "size": 10.5,
+    "mean": 8.21,
+    "worst10": 8.21,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "contact",
+    "text": "Emrah Yücel",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "contact",
+    "text": "İşler",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "contact",
+    "text": "Hakkımda",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "contact",
+    "text": "Lab",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "contact",
+    "text": "İletişim",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "contact",
+    "text": "EN",
+    "size": 10.5,
+    "mean": 14.98,
+    "worst10": 14.98,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "contact",
+    "text": "Emrah Yücel",
+    "size": 15,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "contact",
+    "text": "Creative Developer / Full-Stack Developer",
+    "size": 14,
+    "mean": 8.6,
+    "worst10": 8.6,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "contact",
+    "text": "info@yucelemrah.com",
+    "size": 22,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "contact",
+    "text": "+90 506 519 96 91",
+    "size": 15,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "contact",
+    "text": "GitHub ↗",
+    "size": 10.5,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "contact",
+    "text": "LinkedIn ↗",
+    "size": 10.5,
+    "mean": 16.13,
+    "worst10": 16.13,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "contact",
+    "text": "İstanbul, Türkiye · Seçili freelance projele",
+    "size": 13,
+    "mean": 8.6,
+    "worst10": 8.6,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "contact",
+    "text": "Creative Developer · Full-Stack Developer",
+    "size": 10.5,
+    "mean": 9.36,
+    "worst10": 9.36,
+    "need": 4.5,
+    "pass": true
+  },
+  {
+    "state": "contact",
+    "text": "İstanbul · Seçili freelance projelere açığım",
+    "size": 10.5,
+    "mean": 8.21,
+    "worst10": 8.21,
+    "need": 4.5,
+    "pass": true
+  }
+]

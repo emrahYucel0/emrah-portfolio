@@ -10,8 +10,9 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/base.css'],
 
-  // the future C2 engine lives outside the framework and is addressed by one alias
-  alias: { '#engine': new URL('./engine', import.meta.url).pathname },
+  // the C2 runtime lives outside the framework; it is imported by relative path from the adapter so that
+  // TypeScript and Vite resolve it identically, and it keeps no framework imports of its own
+
 
   runtimeConfig: {
     public: {

@@ -129,3 +129,17 @@ a:hover { text-decoration-style: solid; }
     scroll-behavior: auto !important;
   }
 }
+
+/*
+  M1 — C2 runtime host.
+  The semantic shell is what the document ships with and what a crawler or a no-JS visitor reads. When the
+  frozen C2 runtime has mounted (it sets data-c2 on <html>), the runtime's own DOM — which carries the same
+  content, its own landmarks and its own plain navigation — becomes the visible and accessible page, and
+  the shell steps aside. Nothing is hidden that is not replaced.
+*/
+html[data-c2='on'] #__nuxt { display: none; }
+
+/* the runtime's own DOM only exists while the runtime has the screen (the x-default entry keeps the shell) */
+html:not([data-c2='on']) #surface,
+html:not([data-c2='on']) #media,
+html:not([data-c2='on']) #ui { display: none; }

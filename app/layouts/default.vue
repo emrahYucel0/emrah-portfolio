@@ -11,6 +11,8 @@ useReducedMotion()
       <slot />
     </main>
     <SiteFooter />
+    <!-- the frozen C2 runtime; renders nothing here, owns its own DOM on document.body -->
+    <C2Surface />
   </div>
 </template>
 

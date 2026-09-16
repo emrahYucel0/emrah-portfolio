@@ -1,0 +1,588 @@
+{
+  "ege-esya-hero.png": {
+    "w": 1875,
+    "h": 788,
+    "avif": [
+      [
+        640,
+        "ege-esya-hero-640.avif",
+        13
+      ],
+      [
+        1080,
+        "ege-esya-hero-1080.avif",
+        26
+      ],
+      [
+        1600,
+        "ege-esya-hero-1600.avif",
+        42
+      ],
+      [
+        1875,
+        "ege-esya-hero-1875.avif",
+        47
+      ]
+    ],
+    "webp": [
+      [
+        640,
+        "ege-esya-hero-640.webp",
+        19
+      ],
+      [
+        1080,
+        "ege-esya-hero-1080.webp",
+        39
+      ],
+      [
+        1600,
+        "ege-esya-hero-1600.webp",
+        65
+      ],
+      [
+        1875,
+        "ege-esya-hero-1875.webp",
+        79
+      ]
+    ],
+    "sourceKB": 933,
+    "tone": [
+      "ege-esya-hero-tone.webp",
+      48
+    ]
+  },
+  "ege-esya-ipad.png": {
+    "w": 2048,
+    "h": 2732,
+    "avif": [
+      [
+        640,
+        "ege-esya-ipad-640.avif",
+        51
+      ],
+      [
+        1080,
+        "ege-esya-ipad-1080.avif",
+        112
+      ],
+      [
+        1600,
+        "ege-esya-ipad-1600.avif",
+        180
+      ],
+      [
+        2048,
+        "ege-esya-ipad-2048.avif",
+        220
+      ]
+    ],
+    "webp": [
+      [
+        640,
+        "ege-esya-ipad-640.webp",
+        68
+      ],
+      [
+        1080,
+        "ege-esya-ipad-1080.webp",
+        148
+      ],
+      [
+        1600,
+        "ege-esya-ipad-1600.webp",
+        246
+      ],
+      [
+        2048,
+        "ege-esya-ipad-2048.webp",
+        330
+      ]
+    ],
+    "sourceKB": 2009,
+    "tone": [
+      "ege-esya-ipad-tone.webp",
+      119
+    ]
+  },
+  "ege-esya-landing-page.png": {
+    "w": 1875,
+    "h": 1576,
+    "avif": [
+      [
+        640,
+        "ege-esya-landing-page-640.avif",
+        17
+      ],
+      [
+        1080,
+        "ege-esya-landing-page-1080.avif",
+        44
+      ],
+      [
+        1600,
+        "ege-esya-landing-page-1600.avif",
+        82
+      ],
+      [
+        1875,
+        "ege-esya-landing-page-1875.avif",
+        87
+      ]
+    ],
+    "webp": [
+      [
+        640,
+        "ege-esya-landing-page-640.webp",
+        23
+      ],
+      [
+        1080,
+        "ege-esya-landing-page-1080.webp",
+        60
+      ],
+      [
+        1600,
+        "ege-esya-landing-page-1600.webp",
+        113
+      ],
+      [
+        1875,
+        "ege-esya-landing-page-1875.webp",
+        141
+      ]
+    ],
+    "sourceKB": 832,
+    "tone": [
+      "ege-esya-landing-page-tone.webp",
+      74
+    ]
+  },
+  "ege-esya-mobile.png": {
+    "w": 1290,
+    "h": 2796,
+    "avif": [
+      [
+        640,
+        "ege-esya-mobile-640.avif",
+        44
+      ],
+      [
+        1080,
+        "ege-esya-mobile-1080.avif",
+        82
+      ],
+      [
+        1290,
+        "ege-esya-mobile-1290.avif",
+        99
+      ]
+    ],
+    "webp": [
+      [
+        640,
+        "ege-esya-mobile-640.webp",
+        68
+      ],
+      [
+        1080,
+        "ege-esya-mobile-1080.webp",
+        130
+      ],
+      [
+        1290,
+        "ege-esya-mobile-1290.webp",
+        159
+      ]
+    ],
+    "sourceKB": 1824,
+    "tone": [
+      "ege-esya-mobile-tone.webp",
+      61
+    ]
+  },
+  "evden-eve-nakliyat-admin.png": {
+    "w": 1908,
+    "h": 955,
+    "avif": [
+      [
+        640,
+        "evden-eve-nakliyat-admin-640.avif",
+        12
+      ],
+      [
+        1080,
+        "evden-eve-nakliyat-admin-1080.avif",
+        29
+      ],
+      [
+        1600,
+        "evden-eve-nakliyat-admin-1600.avif",
+        54
+      ],
+      [
+        1908,
+        "evden-eve-nakliyat-admin-1908.avif",
+        66
+      ]
+    ],
+    "webp": [
+      [
+        640,
+        "evden-eve-nakliyat-admin-640.webp",
+        16
+      ],
+      [
+        1080,
+        "evden-eve-nakliyat-admin-1080.webp",
+        38
+      ],
+      [
+        1600,
+        "evden-eve-nakliyat-admin-1600.webp",
+        69
+      ],
+      [
+        1908,
+        "evden-eve-nakliyat-admin-1908.webp",
+        87
+      ]
+    ],
+    "sourceKB": 417,
+    "tone": [
+      "evden-eve-nakliyat-admin-tone.webp",
+      46
+    ]
+  },
+  "evden-eve-nakliyat-hero.png": {
+    "w": 1875,
+    "h": 788,
+    "avif": [
+      [
+        640,
+        "evden-eve-nakliyat-hero-640.avif",
+        16
+      ],
+      [
+        1080,
+        "evden-eve-nakliyat-hero-1080.avif",
+        31
+      ],
+      [
+        1600,
+        "evden-eve-nakliyat-hero-1600.avif",
+        51
+      ],
+      [
+        1875,
+        "evden-eve-nakliyat-hero-1875.avif",
+        56
+      ]
+    ],
+    "webp": [
+      [
+        640,
+        "evden-eve-nakliyat-hero-640.webp",
+        21
+      ],
+      [
+        1080,
+        "evden-eve-nakliyat-hero-1080.webp",
+        45
+      ],
+      [
+        1600,
+        "evden-eve-nakliyat-hero-1600.webp",
+        74
+      ],
+      [
+        1875,
+        "evden-eve-nakliyat-hero-1875.webp",
+        90
+      ]
+    ],
+    "sourceKB": 1592,
+    "tone": [
+      "evden-eve-nakliyat-hero-tone.webp",
+      57
+    ]
+  },
+  "evden-eve-nakliyat-ipad-2.png": {
+    "w": 1536,
+    "h": 2048,
+    "avif": [
+      [
+        640,
+        "evden-eve-nakliyat-ipad-2-640.avif",
+        38
+      ],
+      [
+        1080,
+        "evden-eve-nakliyat-ipad-2-1080.avif",
+        72
+      ],
+      [
+        1536,
+        "evden-eve-nakliyat-ipad-2-1536.avif",
+        96
+      ]
+    ],
+    "webp": [
+      [
+        640,
+        "evden-eve-nakliyat-ipad-2-640.webp",
+        54
+      ],
+      [
+        1080,
+        "evden-eve-nakliyat-ipad-2-1080.webp",
+        100
+      ],
+      [
+        1536,
+        "evden-eve-nakliyat-ipad-2-1536.webp",
+        154
+      ]
+    ],
+    "sourceKB": 1812,
+    "tone": [
+      "evden-eve-nakliyat-ipad-2-tone.webp",
+      91
+    ]
+  },
+  "evden-eve-nakliyat-mobile-2.png": {
+    "w": 1320,
+    "h": 2868,
+    "avif": [
+      [
+        640,
+        "evden-eve-nakliyat-mobile-2-640.avif",
+        43
+      ],
+      [
+        1080,
+        "evden-eve-nakliyat-mobile-2-1080.avif",
+        77
+      ],
+      [
+        1320,
+        "evden-eve-nakliyat-mobile-2-1320.avif",
+        82
+      ]
+    ],
+    "webp": [
+      [
+        640,
+        "evden-eve-nakliyat-mobile-2-640.webp",
+        68
+      ],
+      [
+        1080,
+        "evden-eve-nakliyat-mobile-2-1080.webp",
+        122
+      ],
+      [
+        1320,
+        "evden-eve-nakliyat-mobile-2-1320.webp",
+        147
+      ]
+    ],
+    "sourceKB": 1626,
+    "tone": [
+      "evden-eve-nakliyat-mobile-2-tone.webp",
+      64
+    ]
+  },
+  "istanbul-sehir-ici-hero.png": {
+    "w": 2560,
+    "h": 1440,
+    "avif": [
+      [
+        640,
+        "istanbul-sehir-ici-hero-640.avif",
+        26
+      ],
+      [
+        1080,
+        "istanbul-sehir-ici-hero-1080.avif",
+        65
+      ],
+      [
+        1600,
+        "istanbul-sehir-ici-hero-1600.avif",
+        116
+      ],
+      [
+        2400,
+        "istanbul-sehir-ici-hero-2400.avif",
+        186
+      ]
+    ],
+    "webp": [
+      [
+        640,
+        "istanbul-sehir-ici-hero-640.webp",
+        39
+      ],
+      [
+        1080,
+        "istanbul-sehir-ici-hero-1080.webp",
+        97
+      ],
+      [
+        1600,
+        "istanbul-sehir-ici-hero-1600.webp",
+        173
+      ],
+      [
+        2400,
+        "istanbul-sehir-ici-hero-2400.webp",
+        285
+      ]
+    ],
+    "sourceKB": 3314,
+    "tone": [
+      "istanbul-sehir-ici-hero-tone.webp",
+      126
+    ]
+  },
+  "istanbul-sehir-ici-ipad.png": {
+    "w": 1536,
+    "h": 2048,
+    "avif": [
+      [
+        640,
+        "istanbul-sehir-ici-ipad-640.avif",
+        31
+      ],
+      [
+        1080,
+        "istanbul-sehir-ici-ipad-1080.avif",
+        55
+      ],
+      [
+        1536,
+        "istanbul-sehir-ici-ipad-1536.avif",
+        76
+      ]
+    ],
+    "webp": [
+      [
+        640,
+        "istanbul-sehir-ici-ipad-640.webp",
+        41
+      ],
+      [
+        1080,
+        "istanbul-sehir-ici-ipad-1080.webp",
+        78
+      ],
+      [
+        1536,
+        "istanbul-sehir-ici-ipad-1536.webp",
+        115
+      ]
+    ],
+    "sourceKB": 905,
+    "tone": [
+      "istanbul-sehir-ici-ipad-tone.webp",
+      70
+    ]
+  },
+  "istanbul-sehir-ici-landing.png": {
+    "w": 1920,
+    "h": 988,
+    "avif": [
+      [
+        640,
+        "istanbul-sehir-ici-landing-640.avif",
+        9
+      ],
+      [
+        1080,
+        "istanbul-sehir-ici-landing-1080.avif",
+        14
+      ],
+      [
+        1600,
+        "istanbul-sehir-ici-landing-1600.avif",
+        21
+      ],
+      [
+        1920,
+        "istanbul-sehir-ici-landing-1920.avif",
+        21
+      ]
+    ],
+    "webp": [
+      [
+        640,
+        "istanbul-sehir-ici-landing-640.webp",
+        12
+      ],
+      [
+        1080,
+        "istanbul-sehir-ici-landing-1080.webp",
+        20
+      ],
+      [
+        1600,
+        "istanbul-sehir-ici-landing-1600.webp",
+        30
+      ],
+      [
+        1920,
+        "istanbul-sehir-ici-landing-1920.webp",
+        36
+      ]
+    ],
+    "sourceKB": 135,
+    "tone": [
+      "istanbul-sehir-ici-landing-tone.webp",
+      24
+    ]
+  },
+  "istanbul-sehir-ici-mobile.png": {
+    "w": 1320,
+    "h": 2868,
+    "avif": [
+      [
+        640,
+        "istanbul-sehir-ici-mobile-640.avif",
+        51
+      ],
+      [
+        1080,
+        "istanbul-sehir-ici-mobile-1080.avif",
+        100
+      ],
+      [
+        1320,
+        "istanbul-sehir-ici-mobile-1320.avif",
+        113
+      ]
+    ],
+    "webp": [
+      [
+        640,
+        "istanbul-sehir-ici-mobile-640.webp",
+        72
+      ],
+      [
+        1080,
+        "istanbul-sehir-ici-mobile-1080.webp",
+        145
+      ],
+      [
+        1320,
+        "istanbul-sehir-ici-mobile-1320.webp",
+        184
+      ]
+    ],
+    "sourceKB": 1308,
+    "tone": [
+      "istanbul-sehir-ici-mobile-tone.webp",
+      62
+    ]
+  }
+}

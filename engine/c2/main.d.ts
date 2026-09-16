@@ -5,3 +5,6 @@ import type { C2MountOptions } from './types'
 export declare function configure(options: C2MountOptions): void
 export declare function routeChanged(): void
 export declare function mountC2(): Promise<void>
+
+/** Change the language of everything the runtime paints, without restarting it. */
+export declare function setLocale(locale: import('./types').C2Locale): boolean

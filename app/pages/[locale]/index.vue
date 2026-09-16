@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { profile } from '~/data/profile'
-import { projects } from '~/data/projects'
-import { studies } from '~/data/lab'
+import { profile, projects, studies } from '~~/shared/content'
 
 definePageMeta({
   // unknown languages 404 instead of rendering an English page at a Turkish URL
@@ -15,26 +13,25 @@ useLocaleSeo('home')
 <template>
   <div class="u-wrap page">
     <section class="intro" aria-labelledby="name">
-      <h1 id="name" class="name">Emrah Yücel</h1>
-      <p class="roles">{{ copy.roles.creative }} / {{ copy.roles.fullStack }}</p>
+      <h1 id="name" class="name">{{ profile.name }}</h1>
+      <p class="roles" lang="en">{{ copy.roles.creative }} / {{ copy.roles.fullStack }}</p>
       <p class="u-measure lead">{{ copy.home.intro }}</p>
-      <p><NuxtLink class="more" :to="path('/about')">{{ copy.home.aboutLink }} →</NuxtLink></p>
+      <p><NuxtLink class="more" :to="path('/about')">{{ copy.home.more }} →</NuxtLink></p>
     </section>
 
     <section id="work" class="block" aria-labelledby="work-heading">
-      <h2 id="work-heading" class="u-label">{{ copy.home.workHeading }}</h2>
+      <h2 id="work-heading" class="u-label">{{ copy.work.heading }}</h2>
+      <p class="u-measure">{{ copy.work.intro }}</p>
       <ul class="works">
         <li v-for="project in projects" :key="project.id" class="work">
           <h3 class="work-name">{{ project.name }}</h3>
-          <p class="work-line">{{ copy.work.lines[project.id] }}</p>
-          <p class="work-roles">
-            <span v-for="(role, i) in project.roles" :key="role">
-              <span v-if="i">· </span>{{ copy.work.roleLabels[role] }}
-            </span>
-          </p>
+          <p class="work-line">{{ copy.work.projects[project.id].strength }}</p>
+          <ul class="work-facts">
+            <li v-for="fact in copy.work.projects[project.id].facts" :key="fact">{{ fact }}</li>
+          </ul>
           <p>
             <a class="work-link" :href="project.url" target="_blank" rel="noopener noreferrer">
-              {{ copy.work.visit }} {{ project.host }} ↗
+              {{ copy.work.visit }} <span lang="en">{{ project.host }}</span> ↗
             </a>
           </p>
         </li>
@@ -42,8 +39,8 @@ useLocaleSeo('home')
     </section>
 
     <section id="lab" class="block" aria-labelledby="lab-heading">
-      <h2 id="lab-heading" class="u-label">{{ copy.home.labHeading }}</h2>
-      <p class="u-measure">{{ copy.home.labLine }}</p>
+      <h2 id="lab-heading" class="u-label">{{ copy.lab.title }}</h2>
+      <p class="u-measure">{{ copy.lab.line }}</p>
       <ul class="studies">
         <li v-for="study in studies" :key="study.id">
           <span class="study-id">{{ study.id }}</span>
@@ -52,7 +49,7 @@ useLocaleSeo('home')
       </ul>
     </section>
 
-    <p class="u-sr">{{ profile.email }} · {{ profile.phone.display }}</p>
+    <p class="u-sr">{{ profile.email }} · {{ profile.phone }}</p>
   </div>
 </template>
 
@@ -68,7 +65,8 @@ useLocaleSeo('home')
 .work { display: grid; gap: var(--space-2xs); border-block-start: 1px solid var(--rule); padding-block-start: var(--space-s); }
 .work-name { font-size: var(--step-2); letter-spacing: -0.02em; font-weight: 600; }
 .work-line { font-size: var(--step-1); }
-.work-roles { color: var(--ink-muted); font-size: var(--step--1); }
+.work-facts { color: var(--ink-muted); font-size: var(--step--1); }
+.work-facts { display: grid; gap: 2px; margin-block-start: var(--space-2xs); }
 .work-link {
   display: inline-block;
   padding-block: var(--space-2xs);

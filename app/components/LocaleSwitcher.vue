@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { HTML_LANG } from '~/locales'
+import { HTML_LANG } from '~~/shared/content'
 
 const { locale, other, copy, switchPath } = useLocale()
 const { setLanguage } = useVisit()
@@ -12,6 +12,7 @@ watchEffect(() => setLanguage(locale.value))
   <NuxtLink
     class="switch"
     :to="switchPath"
+    replace
     :hreflang="HTML_LANG[other]"
     :lang="HTML_LANG[other]"
     :aria-label="`${copy.localeSwitch.label}: ${copy.localeSwitch.to}`"

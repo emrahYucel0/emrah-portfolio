@@ -1,5 +1,5 @@
 import type { C2Event, C2MountOptions } from '../../engine/c2/types'
-import { PROJECT_IDS, projects } from '~/data/projects'
+import { PROJECT_IDS, projects, type Locale } from '~~/shared/content'
 
 /**
  * Nuxt to C2 adapter — the smallest boundary that lets the shell host the frozen runtime.
@@ -12,6 +12,7 @@ interface C2Module {
   configure: (o: C2MountOptions) => void
   routeChanged: () => void
   mountC2: () => Promise<void>
+  setLocale: (locale: Locale) => boolean
 }
 
 let modulePromise: Promise<C2Module> | null = null
@@ -32,14 +33,17 @@ function createHostDom() {
 export function useC2Engine() {
   const route = useRoute()
   const router = useRouter()
-  const { locale, path } = useLocale()
-  const { visit, openProject, markAbout } = useVisit()
+  const { locale, path, switchPath } = useLocale()
+  const { visit, openProject, markAbout, setLanguage } = useVisit()
 
   const options = (): C2MountOptions => ({
+    locale: locale.value,
+    localeHref: switchPath.value,
     homeUrl: path('/'),
     aboutUrl: path('/about'),
     isAboutPath: () => /\/about\/?$/.test(route.path),
     push: (url) => { void router.push(url) },
+    replace: (url) => { void router.replace(url) },
     back: () => router.back(),
     emit: (type, payload) => onEvent(type, payload),
   })
@@ -48,8 +52,8 @@ export function useC2Engine() {
   const onEvent = (type: C2Event['type'], payload: Record<string, unknown>) => {
     if (type === 'projectOpened') {
       const index = Number(payload.index)
-      const id = PROJECT_IDS[index]
-      if (id) openProject(id, projects[index]?.ink)
+      const id = PROJECT_IDS[index % PROJECT_IDS.length]
+      if (id) openProject(id, projects[index % projects.length]?.ink)
     } else if (type === 'aboutVisited') {
       markAbout({ open: Boolean(payload.open) })
     } else if (type === 'labRoomCommitted') {
@@ -66,6 +70,8 @@ export function useC2Engine() {
     ;(globalThis as Record<string, unknown>).__c2Hosted = true
     // Nuxt serves /public at app.baseURL; Vite's BASE_URL points at the build-asset directory instead
     ;(globalThis as Record<string, unknown>).__c2Base = useRuntimeConfig().app.baseURL
+    // the runtime is told its language; it never guesses one from the URL
+    ;(globalThis as Record<string, unknown>).__c2Locale = locale.value
     modulePromise ??= import('../../engine/c2/main.js').then(async (mod: unknown) => {
       const m = mod as C2Module
       m.configure(options())
@@ -76,11 +82,13 @@ export function useC2Engine() {
     return modulePromise
   }
 
-  /** the shell owns the URL: every route change (push, back, forward, locale) is handed over */
+  /** the shell owns the URL and the language: every change is handed over, the runtime keeps running */
   const syncRoute = async () => {
     const m = await modulePromise
     if (!m) return
     m.configure(options())
+    m.setLocale(locale.value)
+    setLanguage(locale.value)
     m.routeChanged()
   }
 

@@ -137,7 +137,7 @@ export function face(V, which) {
   if (!P) {
     const posBlock = { x: pad, y: strip + 46, w: Math.min(W * 0.56, 840), h: Math.round(H * 0.25) }
     let size = Infinity, capR = 0.72
-    for (const w of ['CREATIVE', 'FULL-STACK']) { const f = fit(w, W - pad * 2, H * 0.3); if (f.size < size) { size = f.size; capR = f.capR } }
+    for (const w of [capabilities.surface.word, capabilities.system.word]) { const f = fit(w, W - pad * 2, H * 0.3); if (f.size < size) { size = f.size; capR = f.capR } }
     const cap = size * capR
     const base = H - strip - 28
     MCTX.font = `900 ${size}px ${FAMILY}`
@@ -150,7 +150,7 @@ export function face(V, which) {
   } else {
     // portrait: the word turns and runs up the left edge; the statement takes the rest of the width
     let size = Infinity, capR = 0.72
-    for (const w of ['CREATIVE', 'FULL-STACK']) {
+    for (const w of [capabilities.surface.word, capabilities.system.word]) {
       MCTX.font = `900 100px ${FAMILY}`
       const w100 = MCTX.measureText(w).width, r = MCTX.measureText('H').actualBoundingBoxAscent / 100
       const s = Math.min(((H - strip * 2 - 34) * 100) / w100, (W * 0.3) / r)

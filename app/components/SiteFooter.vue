@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { profile } from '~/data/profile'
+import { profile } from '~~/shared/content'
 
 const { copy } = useLocale()
 </script>
@@ -10,23 +10,23 @@ const { copy } = useLocale()
       <h2 class="u-label">{{ copy.contact.heading }}</h2>
 
       <address class="lines">
-        <p class="name">Emrah Yücel</p>
-        <p class="roles">{{ copy.roles.creative }} / {{ copy.roles.fullStack }}</p>
+        <p class="name">{{ profile.name }}</p>
+        <p class="roles" lang="en">{{ copy.roles.creative }} / {{ copy.roles.fullStack }}</p>
         <p>
           <a :href="`mailto:${profile.email}`">{{ profile.email }}</a>
         </p>
         <p>
-          <a :href="profile.phone.href">{{ profile.phone.display }}</a>
+          <a :href="`tel:${profile.tel}`">{{ profile.phone }}</a>
         </p>
       </address>
 
       <ul class="links">
         <li v-for="link in profile.links" :key="link.id">
-          <a :href="link.href" target="_blank" rel="noopener noreferrer">{{ link.label }} ↗</a>
+          <a :href="link.href" target="_blank" rel="noopener noreferrer" lang="en">{{ link.label }} ↗</a>
         </li>
       </ul>
 
-      <p class="meta">{{ copy.contact.location }} · {{ copy.contact.status }}</p>
+      <p class="meta">{{ copy.identity.location }} · {{ copy.identity.status }}</p>
     </div>
   </footer>
 </template>

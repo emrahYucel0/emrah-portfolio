@@ -143,3 +143,11 @@ html[data-c2='on'] #__nuxt { display: none; }
 html:not([data-c2='on']) #surface,
 html:not([data-c2='on']) #media,
 html:not([data-c2='on']) #ui { display: none; }
+
+/*
+  M2 patch — Turkish hero measure.
+  The approved Turkish positioning sentence is two clauses, like the English one. At the English measure
+  (21ch) the browser split "üzerinde | çalıştığı" mid-phrase over three lines; at 24ch, same type size,
+  each clause takes one line. Locale-specific measure only: type, placement and the surface are unchanged.
+*/
+html[lang='tr-TR'] #ui .about .statement { max-width: 24ch; }

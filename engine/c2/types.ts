@@ -20,6 +20,10 @@ export interface C2Command {
 }
 
 export interface C2MountOptions {
+  /** the language the host is showing; the runtime never guesses it from the URL */
+  locale?: C2Locale
+  /** the same page in the other language, for the runtime's quiet language control */
+  localeHref?: string
   /** absolute path of the surface's home route, e.g. /en */
   homeUrl?: string
   /** absolute path of the grown-room About route, e.g. /en/about */
@@ -28,6 +32,8 @@ export interface C2MountOptions {
   isAboutPath?: () => boolean
   /** the runtime asks the host to navigate; the host owns history */
   push?: (url: string, state: unknown) => void
+  /** the runtime asks the host to change the URL without adding a history entry (language changes) */
+  replace?: (url: string, state: unknown) => void
   /** the runtime asks the host to go back */
   back?: () => void
   /** semantic checkpoints out */

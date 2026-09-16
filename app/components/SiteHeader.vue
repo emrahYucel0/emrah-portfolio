@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { profile } from '~~/shared/content'
+
 const { copy, path } = useLocale()
 </script>
 
@@ -6,7 +8,7 @@ const { copy, path } = useLocale()
   <header class="head">
     <div class="u-wrap head-inner">
       <NuxtLink class="id" :to="path('/')">
-        <span class="id-name">Emrah Yücel</span>
+        <span class="id-name">{{ profile.name }}</span>
         <span class="u-sr">— {{ copy.roles.creative }} / {{ copy.roles.fullStack }}</span>
       </NuxtLink>
 

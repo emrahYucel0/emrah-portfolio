@@ -1,6 +1,4 @@
-import type { Locale } from '~/locales'
-import type { ProjectId } from '~/data/projects'
-import type { StudyId } from '~/data/lab'
+import type { Locale, ProjectId, StudyId } from '~~/shared/content'
 
 /**
  * SESSION STATE CONTRACT — the shape the C2 memory engine will fill later.
@@ -38,7 +36,7 @@ export interface VisitState {
   startedAt: number
 }
 
-const VISIT_KEY = 'ey.visit.v1'
+const VISIT_KEY = 'ey.visit.v2'
 const LOCALE_KEY = 'ey.locale'
 
 const emptyVisit = (): VisitState => ({

@@ -1,18 +1,22 @@
 <script setup lang="ts">
 import type { NuxtError } from '#app'
+import { HTML_LANG, messages, profile } from '~~/shared/content'
 
 defineProps<{ error: NuxtError }>()
-useHead({ htmlAttrs: { lang: 'en' }, title: 'Not found — Emrah Yücel' })
+// the language of a missing URL cannot be trusted, so the page answers in both
+const en = messages('en')
+const tr = messages('tr')
+useHead({ htmlAttrs: { lang: HTML_LANG.en }, title: `${en.notFound.title} — ${profile.name}` })
 </script>
 
 <template>
   <main class="err">
     <h1>{{ error?.statusCode ?? 404 }}</h1>
-    <p lang="en">This page does not exist.</p>
-    <p lang="tr-TR">Bu sayfa bulunamadı.</p>
+    <p :lang="HTML_LANG.en">{{ en.notFound.message }}</p>
+    <p :lang="HTML_LANG.tr">{{ tr.notFound.message }}</p>
     <ul class="err-links">
-      <li><NuxtLink to="/tr" hreflang="tr-TR" lang="tr-TR">Türkçe</NuxtLink></li>
-      <li><NuxtLink to="/en" hreflang="en" lang="en">English</NuxtLink></li>
+      <li><NuxtLink to="/tr" :hreflang="HTML_LANG.tr" :lang="HTML_LANG.tr">{{ en.localeSwitch.to }}</NuxtLink></li>
+      <li><NuxtLink to="/en" :hreflang="HTML_LANG.en" :lang="HTML_LANG.en">{{ tr.localeSwitch.to }}</NuxtLink></li>
     </ul>
   </main>
 </template>

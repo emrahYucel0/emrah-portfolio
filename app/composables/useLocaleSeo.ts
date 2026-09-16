@@ -1,5 +1,5 @@
 import type { ResolvableLink } from '@unhead/vue'
-import { HTML_LANG, LOCALES, OG_LOCALE } from '~/locales'
+import { HTML_LANG, LOCALES, OG_LOCALE, profile } from '~~/shared/content'
 
 type Page = 'home' | 'about'
 
@@ -36,7 +36,7 @@ export function useLocaleSeo(page: Page) {
     ogDescription: () => meta.value.description,
     ogType: 'website',
     ogUrl: () => canonical.value,
-    ogSiteName: 'Emrah Yücel',
+    ogSiteName: profile.name,
     ogLocale: () => OG_LOCALE[locale.value],
     ogLocaleAlternate: () => LOCALES.filter((l) => l !== locale.value).map((l) => OG_LOCALE[l]),
     twitterCard: 'summary_large_image',

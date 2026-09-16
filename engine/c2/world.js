@@ -29,7 +29,7 @@ export function psiHTML(w) {
     const v = vals.map((n, j) => (n == null ? '' : `<span><b>${n}</b> <abbr title="${labels[j]}">${short[j]}</abbr></span>`)).join('')
     return v ? `<div class="psi-row"><dt>${name}</dt><dd>${v}</dd></div>` : ''
   }
-  return `<dl class="psi"><div class="psi-head">PageSpeed Insights</div>${row('Mobile', mobile)}${row('Desktop', desktop)}</dl>`
+  return `<dl class="psi"><div class="psi-head" lang="en">${w.psi.head}</div>${row(w.psi.mobileLabel, mobile)}${row(w.psi.desktopLabel, desktop)}</dl>`
 }
 const li = (list) => `<ul class="wb-list">${list.map((f) => `<li>${f}</li>`).join('')}</ul>`
 
@@ -59,7 +59,7 @@ export function framesFor(V, w) {
           { item: m.hero, rect: R(0, strip, W, c.top - strip + 6), pos: P ? '40% top' : 'center top' },
           { item: m.landing, rect: R(0, c.bot - 6, W, H - strip - c.bot + 6), pos: 'left top' },
         ],
-        blocks: [{ rect: R(pad, H / 2 - 6, W - pad * 2, 12), cls: 'wb-cap', html: '<span>Technical illustration</span><span>Type-led landing</span>' }],
+        blocks: [{ rect: R(pad, H / 2 - 6, W - pad * 2, 12), cls: 'wb-cap', html: `<span>${w.captions.illustration}</span><span>${w.captions.landing}</span>` }],
       })
     }
     // 3 · the surface returns and keeps two rooms: tablet and phone, each at its own size
@@ -84,7 +84,7 @@ export function framesFor(V, w) {
     F.push({
       g: 'full', rooms: [tab, mob], voids: [txt],
       media: [{ item: m.tablet, rect: tab }, { item: m.mobile, rect: mob }],
-      blocks: [{ rect: txtBlock, cls: 'wb-facts', html: `<p class="wb-kicker">${w.strength}</p>${li(w.facts)}<p class="wb-stack">${w.stack}</p>${psiHTML(w)}` }],
+      blocks: [{ rect: txtBlock, cls: 'wb-facts', html: `<p class="wb-kicker">${w.strength}</p>${li(w.facts)}<p class="wb-stack" lang="${w.stackLang}">${w.stack}</p>${psiHTML(w)}` }],
     })
     F.push(close)
   } else if (w.rhythm === 'scale') {
@@ -135,7 +135,7 @@ export function framesFor(V, w) {
     const t2 = R(pad, ty2, P ? W - pad * 2 : W * 0.52, H - strip - 12 - ty2)
     F.push({
       g: 'full', tone: { item: pageS, rect: S }, rooms: slits, voids: [t2], media: [{ item: pageS, rect: S, pos: 'left top' }],
-      blocks: [{ rect: t2, cls: 'wb-facts wb-bottom', html: `<p class="wb-kicker">Publishing architecture</p><p class="wb-big">${w.facts[1]}</p>${li([w.facts[3]])}${psiHTML(w)}` }],
+      blocks: [{ rect: t2, cls: 'wb-facts wb-bottom', html: `<p class="wb-kicker">${w.captions.structure}</p><p class="wb-big">${w.facts[1]}</p>${li([w.facts[3]])}${psiHTML(w)}` }],
     })
     F.push(close)
   } else {
@@ -149,7 +149,7 @@ export function framesFor(V, w) {
     const sysT = P ? R(pad, strip + H * 0.14, W - pad * 2, H * 0.6) : R(W * 0.3, strip + (H - strip * 2) * 0.18, W * 0.44, (H - strip * 2) * 0.64)
     F.push({
       g: 'full', dense: true, voids: [sysT],
-      blocks: [{ rect: sysT, cls: 'wb-facts wb-system', html: `<p class="wb-big">${w.strength}</p>${li([w.facts[0], w.facts[1], w.facts[3]])}<p class="wb-stack">${w.stack}</p>` }],
+      blocks: [{ rect: sysT, cls: 'wb-facts wb-system', html: `<p class="wb-big">${w.strength}</p>${li([w.facts[0], w.facts[1], w.facts[3]])}<p class="wb-stack" lang="${w.stackLang}">${w.stack}</p>` }],
     })
 
     // 3 · ADMIN — the dense surface yields one large room, and the real management system is in it
@@ -160,7 +160,7 @@ export function framesFor(V, w) {
       const at = R(ax, ty, W - pad - ax, Math.max(28, H - strip - 10 - ty))
       F.push({
         g: 'full', dense: true, rooms: [ar], voids: [at], media: [{ item: m.admin, rect: ar }],
-        blocks: [{ rect: at, cls: 'wb-facts wb-admin', html: '<p class="wb-kicker">The management system behind the public site · Admin / CMS</p>' }],
+        blocks: [{ rect: at, cls: 'wb-facts wb-admin', html: `<p class="wb-kicker">${w.captions.admin}</p>` }],
       })
     }
 
@@ -184,7 +184,7 @@ export function framesFor(V, w) {
     }
     F.push({
       g: 'full', rooms: [mob, tab], voids: [pt], media: [{ item: m.mobile, rect: mob }, { item: m.tablet, rect: tab }],
-      blocks: [{ rect: pt, cls: 'wb-facts wb-bottom', html: `<p class="wb-kicker">In production</p>${psiHTML(w)}` }],
+      blocks: [{ rect: pt, cls: 'wb-facts wb-bottom', html: `<p class="wb-kicker">${w.captions.production}</p>${psiHTML(w)}` }],
     })
     F.push(close)
   }

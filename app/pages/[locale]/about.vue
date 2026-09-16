@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { profile } from '~/data/profile'
+import { profile, termHtml, termLang, termText } from '~~/shared/content'
 
 definePageMeta({
   validate: (route) => ['tr', 'en'].includes(String(route.params.locale)),
@@ -25,7 +25,7 @@ onMounted(() => markAbout({ visited: true }))
       <section aria-labelledby="capabilities">
         <h2 id="capabilities" class="u-label">{{ copy.about.capabilitiesHeading }}</h2>
         <ul class="caps">
-          <li v-for="capability in copy.about.capabilities" :key="capability">{{ capability }}</li>
+          <li v-for="capability in copy.about.capabilities" :key="termText(capability)" :lang="termLang(capability)" v-html="termHtml(capability)" />
         </ul>
       </section>
 
@@ -33,7 +33,7 @@ onMounted(() => markAbout({ visited: true }))
 
       <address class="contact">
         <a :href="`mailto:${profile.email}`">{{ profile.email }}</a>
-        <a :href="profile.phone.href">{{ profile.phone.display }}</a>
+        <a :href="`tel:${profile.tel}`">{{ profile.phone }}</a>
       </address>
 
       <p><NuxtLink class="back" :to="path('/')">← {{ copy.about.back }}</NuxtLink></p>

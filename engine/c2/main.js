@@ -16,7 +16,8 @@ import { createSurface, feature, gather, squeeze } from './surface.js'
 import { createPhysics } from './physics.js'
 import * as ST from './states.js'
 import { framesFor, GEOM, ABSENT } from './world.js'
-import { identity, about, capabilities, workIntro, works, lab, contact, previewOf } from './content.js'
+import { identity, about, capabilities, workIntro, works, lab, contact, previewOf, ui as TXT, applyLocale } from './content.js'
+import { termHtml } from '../../shared/content/term'
 import { mediaElement, placeMedia, loadImage, prepareTone, labElement } from './media.js'
 
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -41,18 +42,25 @@ let HOME_URL = ROOT + location.search, ABOUT_URL = `${ROOT}about${location.searc
 let isAboutPath = () => /\/about\/?$/.test(location.pathname)
 const HOST = {
   push: (url, state) => history.pushState(state, '', url),
+  // M2: a language change replaces the current entry — Back returns to the previous place, not the previous language
+  replace: (url, state) => history.replaceState(state, '', url),
   back: () => history.back(),
   emit: () => {},
+  // M2: the same page in the other language, supplied by the host (the runtime never builds locale URLs)
+  localeHref: '',
 }
 export function configure(o = {}) {
   if (o.homeUrl) HOME_URL = o.homeUrl
   if (o.aboutUrl) ABOUT_URL = o.aboutUrl
   if (o.isAboutPath) isAboutPath = o.isAboutPath
   if (o.push) HOST.push = o.push
+  if (o.replace) HOST.replace = o.replace
   if (o.back) HOST.back = o.back
   if (o.emit) HOST.emit = o.emit
+  if (o.localeHref) { HOST.localeHref = o.localeHref; if (D.lang) D.lang.href = o.localeHref }
 }
-const TITLE = 'Emrah Yücel — Creative Developer & Full-Stack Developer', TITLE_ABOUT = 'About — Emrah Yücel'
+// document titles follow the active language; the host sets them on its own route changes too
+const TITLE = () => TXT.meta.home.title, TITLE_ABOUT = () => TXT.meta.about.title
 
 const canvas = $('#surface')
 const surface = createSurface(canvas)
@@ -525,7 +533,7 @@ function openAbout(f, tl) {
 function closeAbout() {
   if (!A.aboutOpen || A.busy) return
   const f = A.about
-  if (A.aboutDetail) { A.aboutDetail = false; A.detailPushed = false; document.title = TITLE; if (isAboutPath()) HOST.push(HOME_URL, { c2: 'home' }) }
+  if (A.aboutDetail) { A.aboutDetail = false; A.detailPushed = false; document.title = TITLE(); if (isAboutPath()) HOST.push(HOME_URL, { c2: 'home' }) }
   A.aboutOpen = false; A.busy = true
   gsap.killTweensOf(f)
   // leaving from the long About: its rooms close first, then the name's room
@@ -546,7 +554,7 @@ function expandAbout(push) {
   if (!A.aboutOpen || A.busy || A.mode !== 'index') { A.pending = 'detail'; return }
   A.aboutDetail = true; A.detailPushed = !!push
   if (push) HOST.push(ABOUT_URL, { c2: 'about' })
-  document.title = TITLE_ABOUT
+  document.title = TITLE_ABOUT()
   gsap.killTweensOf(A.about); gsap.killTweensOf(A, 'aboutDetailK')
   layoutAbout()
   const ad = D.detail.querySelector('.ad')
@@ -559,7 +567,7 @@ function collapseAbout(push) {
   if (!A.aboutDetail) return
   A.aboutDetail = false; A.detailPushed = false
   if (push) HOST.push(HOME_URL, { c2: 'home' })
-  document.title = TITLE
+  document.title = TITLE()
   gsap.killTweensOf(A, 'aboutDetailK')
   gsap.to(A, { aboutDetailK: 0, duration: 1.15, ease: 'expo.inOut' })
 }
@@ -820,49 +828,64 @@ function onArrive(stop, prev) {
 
 // ─── DOM: semantic text, always stable, placed where the material has made room ─
 const ui = $('#ui')
+// delegated once, on the element itself: buildDOM() replaces the contents, never the container, so a
+// language change refreshes every label without ever attaching a second listener
+ui.addEventListener('click', (e) => {
+  if (e.target.closest('[data-locale]')) { e.preventDefault(); if (HOST.localeHref) HOST.replace(HOST.localeHref, { c2: 'locale' }); return }
+  const b = e.target.closest('[data-go], [data-work], [data-open], [data-world], [data-detail], [data-back]')
+  if (!b) return
+  if (b.dataset.go || b.hasAttribute('data-detail')) e.preventDefault()
+  if (b.dataset.go) navigate(b.dataset.go)
+  if (b.hasAttribute('data-detail')) { if (A.aboutOpen) expandAbout(true); else { navigate('about'); A.pending = 'detail'; HOST.push(ABOUT_URL, { c2: 'about' }); A.detailPushedLater = true } }
+  if (b.hasAttribute('data-back')) leaveDetail()
+  if (b.dataset.work) { A.wT = +b.dataset.work; A.lastInput = performance.now() - 200 }
+  if (b.hasAttribute('data-open')) { const st = current(), fr = st.layout.frame; if (fr) forcedPress(fr.x + fr.w / 2, fr.y + fr.h / 2, 0.8) }
+  if (b.dataset.world === 'all') exit()
+  if (b.dataset.world === 'next') { const last = lastFrame(); if (A.wbase === last && Math.abs(A.wp - last) < 0.05) { const fr = worldFor(A.k)[last].layout.frame; forcedPress(fr.x + fr.w / 2, fr.y + fr.h / 2, 0.75) } else { go(last); A.pending = 'next' } }
+})
 const D = {}
 const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e }
 const mail = `<a class="email" href="mailto:${contact.email}">${contact.email}</a>`
 const phone = `<a class="phone" href="tel:${contact.tel}">${contact.phone}</a>`
-const exits = contact.links.map((l) => `<a href="${l.href}" target="_blank" rel="noopener noreferrer">${l.label} ↗</a>`).join('')
+const exits = () => contact.links.map((l) => `<a href="${l.href}" target="_blank" rel="noopener noreferrer" lang="en">${l.label} ↗</a>`).join('')
 function buildDOM() {
   ui.innerHTML = ''
-  D.skip = h('a', 'skip', 'Skip to plain navigation'); D.skip.href = '#plain'
+  D.skip = h('a', 'skip', TXT.nav.skip); D.skip.href = '#plain'
   D.top = h('header', 'strip top', `
     <a class="id" href="${HOME_URL}" data-go="name">${identity.name}</a>
-    <nav class="nav" aria-label="Portfolio"><button data-go="work">Work</button><button data-go="about">About</button><button data-go="lab">Lab</button><button data-go="rest">Contact</button></nav>`)
-  D.bottom = h('footer', 'strip bottom', `<span class="roles">${identity.primary} · ${identity.secondary}</span><span id="hint"></span>`)
-  D.h1 = h('h1', 'sr', `${identity.name} — ${identity.primary} and ${identity.secondary}, ${identity.location}`)
+    <nav class="nav" aria-label="${TXT.nav.label}"><button data-go="work">${TXT.nav.work}</button><button data-go="about">${TXT.nav.about}</button><button data-go="lab">${TXT.nav.lab}</button><button data-go="rest">${TXT.nav.contact}</button><a class="lang" data-locale href="${HOST.localeHref}" hreflang="${TXT.localeSwitch.hreflang}" lang="${TXT.localeSwitch.hreflang}" aria-label="${TXT.localeSwitch.short} — ${TXT.localeSwitch.to}" title="${TXT.localeSwitch.label}: ${TXT.localeSwitch.to}">${TXT.localeSwitch.short}</a></nav>`)
+  D.bottom = h('footer', 'strip bottom', `<span class="roles" lang="en">${identity.primary} · ${identity.secondary}</span><span id="hint"></span>`)
+  D.h1 = h('h1', 'sr', `${identity.name} — ${identity.primary} ${TXT.roles.and} ${identity.secondary}, ${identity.location}`)
 
-  D.about = h('section', 'layer about', `<div class="block"><h2 class="sr">About</h2>
+  D.about = h('section', 'layer about', `<div class="block"><h2 class="sr">${TXT.about.heading}</h2>
     <p class="intro">${about.home.intro}</p>
     <p class="statement">${about.home.positioning}</p>
     <p class="avail lbl">${identity.city} · ${identity.status}</p>
     <a class="more" href="${ABOUT_URL}" data-detail>${about.home.more} →</a></div>`)
-  D.about.setAttribute('aria-label', 'About')
+  D.about.setAttribute('aria-label', TXT.a11y.aboutRegion)
 
   const d = about.detail
   D.detail = h('section', 'layer about-detail', `<div class="ad scroll" tabindex="-1"><div class="ad-flow">
-      <div class="ab ab-intro"><h2 class="lbl">About</h2><p class="ad-intro">${d.intro}</p></div>
+      <div class="ab ab-intro"><h2 class="lbl">${TXT.about.heading}</h2><p class="ad-intro">${d.intro}</p></div>
       <div class="ab ab-bg"><p>${d.background}</p></div>
       <div class="ab ab-tr"><p>${d.transition}</p></div>
-      <div class="ab ab-now"><p>${d.current}</p><ul class="ad-caps" aria-label="Capabilities">${d.capabilities.map((c) => `<li>${c}</li>`).join('')}</ul></div>
+      <div class="ab ab-now"><p>${d.current}</p><ul class="ad-caps" aria-label="${TXT.a11y.capabilities}">${d.capabilities.map((c) => `<li>${termHtml(c)}</li>`).join('')}</ul></div>
       <div class="ab ab-meta">
         <p class="ad-status">${d.status}</p>
         <address class="ad-contact"><span>${identity.location}</span>${mail}${phone}</address>
-        <p class="ad-links">${exits}</p>
-        <button class="ad-back" data-back>← Back</button>
+        <p class="ad-links">${exits()}</p>
+        <button class="ad-back" data-back>← ${TXT.about.back}</button>
       </div>
     </div></div>`)
-  D.detail.setAttribute('aria-label', 'About Emrah Yücel')
+  D.detail.setAttribute('aria-label', TXT.a11y.aboutDetail)
 
   const face = (key) => {
     const c = capabilities[key], sys = key === 'system'
     const s = h('section', `layer face ${key}`)
     s.setAttribute('aria-label', c.role)
     s.innerHTML = `<h2 class="sr">${c.role}</h2>
-      <div class="pos"><p class="positioning">${sys ? identity.positioning[1] : identity.positioning[0]}</p>${sys ? `<p class="stack">${capabilities.stack}</p>` : ''}</div>
-      <ul class="list">${c.items.map((it) => `<li><span class="nm">${it.name}</span><span class="nt">${it.note}</span></li>`).join('')}</ul>
+      <div class="pos"><p class="positioning">${sys ? identity.positioning[1] : identity.positioning[0]}</p>${sys ? `<p class="stack" lang="en">${capabilities.stack}</p>` : ''}</div>
+      <ul class="list">${c.items.map((it) => `<li><span class="nm">${termHtml(it.name)}</span><span class="nt">${it.note}</span></li>`).join('')}</ul>
       <p class="role">Developer</p>`
     return s
   }
@@ -870,34 +893,34 @@ function buildDOM() {
 
   D.work = h('section', 'layer work', `
     <div class="col">
-      <div class="head"><h2 class="lbl">Work</h2><p class="wline">${workIntro.line}</p></div>
+      <div class="head"><h2 class="lbl">${TXT.work.heading}</h2><p class="wline">${workIntro.line}</p></div>
       <ol class="index">${works.map((w, i) => `<li><button data-work="${i}"><span class="swatch"></span><span class="wid">${w.name}</span><span class="wk">${w.strength}</span></button></li>`).join('')}</ol>
-      <div class="current"><p class="wtitle"></p><p class="wmeta"></p><button class="open" data-open>Hold the image to open it</button></div>
+      <div class="current"><p class="wtitle"></p><p class="wmeta"></p><button class="open" data-open>${TXT.work.open}</button></div>
     </div>`)
 
   D.lab = h('section', 'layer lab', `<div class="cap"><h2 class="lbl">${lab.title}</h2><p class="ltext">${lab.line}</p></div>
     <p class="lab-now" aria-live="polite"></p>
-    <ul class="sr">${lab.entries.map((e) => `<li>Study ${e.n}: ${e.desc}</li>`).join('')}</ul>`)
+    <ul class="sr">${lab.entries.map((e) => `<li>${e.n}: ${e.desc}</li>`).join('')}</ul>`)
 
-  D.rest = h('section', 'layer rest', `<div class="contact"><h2 class="sr">Contact</h2>
+  D.rest = h('section', 'layer rest', `<div class="contact"><h2 class="sr">${TXT.contact.heading}</h2>
     <p class="cname">${identity.name}</p>
-    <p class="croles">${identity.primary} / ${identity.secondary}</p>
+    <p class="croles" lang="en">${identity.primary} / ${identity.secondary}</p>
     ${mail}${phone}
-    <p class="clinks">${exits}</p>
+    <p class="clinks">${exits()}</p>
     <p class="cmeta">${identity.location} · ${identity.status}</p></div>`)
 
   D.world = h('section', 'layer world', `
-    <nav class="wnav strip" aria-label="Project"><button data-world="all">← All work</button><a class="wlink" href="${works[0].url}" target="_blank" rel="noopener noreferrer"><span class="wname"></span> <span class="whost"></span> ↗</a><button data-world="next">Next</button></nav>
+    <nav class="wnav strip" aria-label="${TXT.work.projectNav}"><button data-world="all">← ${TXT.work.allWork}</button><a class="wlink" href="${works[0].url}" target="_blank" rel="noopener noreferrer"><span class="wname"></span> <span class="whost" lang="en"></span> ↗</a><button data-world="next">${TXT.work.next}</button></nav>
     <div class="wblocks"></div>`)
 
   // everything essential stays reachable without the surface: keyboard and assistive technology get a plain list
-  D.a11y = h('nav', 'a11y', `<p class="lbl">Selected work</p>
+  D.a11y = h('nav', 'a11y', `<p class="lbl">${TXT.a11y.selectedWork}</p>
     <ul>${works.slice(0, 3).map((w) => `<li><a href="${w.url}" target="_blank" rel="noopener noreferrer">${w.name} — ${w.strength} ↗</a></li>`).join('')}</ul>
-    <p class="lbl">Lab studies</p><ul>${lab.entries.map((e) => `<li>${e.n} — ${e.desc}</li>`).join('')}</ul>
-    <p>${mail} · ${phone}</p><p class="a11y-links">${exits}</p>
+    <p class="lbl">${TXT.a11y.labStudies}</p><ul>${lab.entries.map((e) => `<li>${e.n} — ${e.desc}</li>`).join('')}</ul>
+    <p>${mail} · ${phone}</p><p class="a11y-links">${exits()}</p>
     <a href="${ABOUT_URL}" data-detail>${about.home.more}</a>`)
   D.a11y.id = 'plain'; D.a11y.tabIndex = -1
-  D.a11y.setAttribute('aria-label', 'Plain navigation')
+  D.a11y.setAttribute('aria-label', TXT.a11y.plainNav)
 
   D.main = h('main', 'layers')
   D.main.append(D.h1, D.about, D.detail, D.creative, D.system, D.work, D.lab, D.rest, D.world)
@@ -905,23 +928,12 @@ function buildDOM() {
   D.aboutBlocks = [...D.detail.querySelectorAll('.ab')]
   D.labNow = D.lab.querySelector('.lab-now')
   D.hint = $('#hint')
+  D.lang = D.top.querySelector('[data-locale]')
   D.current = D.work.querySelector('.current')
   D.wtitle = D.current.querySelector('.wtitle'); D.wmeta = D.current.querySelector('.wmeta')
   D.wlink = D.world.querySelector('.wlink'); D.wname = D.world.querySelector('.wname'); D.whost = D.world.querySelector('.whost')
   D.wblocks = D.world.querySelector('.wblocks'); D.wbs = []
 
-  ui.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-go], [data-work], [data-open], [data-world], [data-detail], [data-back]')
-    if (!b) return
-    if (b.dataset.go || b.hasAttribute('data-detail')) e.preventDefault()
-    if (b.dataset.go) navigate(b.dataset.go)
-    if (b.hasAttribute('data-detail')) { if (A.aboutOpen) expandAbout(true); else { navigate('about'); A.pending = 'detail'; HOST.push(ABOUT_URL, { c2: 'about' }); A.detailPushedLater = true } }
-    if (b.hasAttribute('data-back')) leaveDetail()
-    if (b.dataset.work) { A.wT = +b.dataset.work; A.lastInput = performance.now() - 200 }
-    if (b.hasAttribute('data-open')) { const st = current(), fr = st.layout.frame; if (fr) forcedPress(fr.x + fr.w / 2, fr.y + fr.h / 2, 0.8) }
-    if (b.dataset.world === 'all') exit()
-    if (b.dataset.world === 'next') { const last = lastFrame(); if (A.wbase === last && Math.abs(A.wp - last) < 0.05) { const fr = worldFor(A.k)[last].layout.frame; forcedPress(fr.x + fr.w / 2, fr.y + fr.h / 2, 0.75) } else { go(last); A.pending = 'next' } }
-  })
 }
 function navigate(target) {
   const stop = { name: 0, about: 0, work: 3, lab: 4, rest: 5 }[target]
@@ -950,11 +962,11 @@ function fillWorldDOM(k) {
   const w = works[k], frs = framesOf(k), full = worldFor(k)[frs.length - 1], L = full.layout, next = works[L.next]
   D.wlink.href = w.url; D.wname.textContent = w.name; D.whost.textContent = w.host
   const close = `<h2 class="wb-name">${w.name}</h2><p class="wb-line">${w.line}</p><p class="wb-role">${w.role}</p>
-    <p class="wb-links"><a href="${w.url}" target="_blank" rel="noopener noreferrer">Visit ${w.host} ↗</a><button data-world="all">All work</button></p>`
+    <p class="wb-links"><a href="${w.url}" target="_blank" rel="noopener noreferrer">${TXT.work.visit} <span lang="en">${w.host}</span> ↗</a><button data-world="all">${TXT.work.allWork}</button></p>`
   const alts = [...new Set(frs.flatMap((fr) => (fr.media || []).map((mm) => mm.item.alt)))]
-  D.wblocks.innerHTML = `<p class="sr">Images in this project: ${alts.join(' ')}</p>` + frs.map((fr, i) => {
+  D.wblocks.innerHTML = `<p class="sr">${TXT.a11y.projectImages} ${alts.join(' ')}</p>` + frs.map((fr, i) => {
     const blocks = fr.full
-      ? [{ rect: L.text, cls: 'wb-close', html: close }, { rect: { x: L.frame.x, y: L.frame.y - 30, w: L.frame.w, h: 22 }, cls: 'wb-next', html: N > 1 ? `Next · ${next.name}` : 'Again' }]
+      ? [{ rect: L.text, cls: 'wb-close', html: close }, { rect: { x: L.frame.x, y: L.frame.y - 30, w: L.frame.w, h: 22 }, cls: 'wb-next', html: N > 1 ? `${TXT.work.next} · ${next.name}` : TXT.work.again }]
       : fr.blocks || []
     return blocks.map((b) => `<div class="wb ${b.cls}" data-f="${i}" style="${px(b.rect)}">${b.html}</div>`).join('')
   }).join('')
@@ -988,13 +1000,14 @@ const setOn = (el, on) => { if (onState.get(el) !== on) { onState.set(el, on); e
 let lastHint = '', lastTone = '', lastTT = '', lastTB = '', lastBg = '', lastWork = '', lastWB = ''
 function hintFor(stop) {
   const since = performance.now() - A.arrivedAt
-  const quiet = `${identity.city} · ${identity.status}`
-  if (A.mode === 'world') return Math.round(A.wp) === 0 && !A.learned.world && since > 3500 ? 'scroll' : ''
+  const H = TXT.hints
+  const quiet = `${identity.city}${H.quietSeparator}${identity.status}`
+  if (A.mode === 'world') return Math.round(A.wp) === 0 && !A.learned.world && since > 3500 ? H.world : ''
   if (A.mode !== 'index' || A.aboutOpen) return ''
-  if (stop === 0) return !A.learned.open && since > 6500 ? (TOUCH ? 'hold between the names' : 'press and hold') : quiet
-  if (stop === 1 || stop === 2) return !A.learned.face && since > 2500 ? (TOUCH ? 'squeeze with two fingers' : 'hold') : quiet
-  if (stop === 3) return !A.learned.work && since > 2500 ? (TOUCH ? 'slide sideways · hold the image' : 'scroll · hold the image') : quiet
-  if (stop === 4) return !A.learned.lab && since > 2500 ? 'hold anywhere' : quiet
+  if (stop === 0) return !A.learned.open && since > 6500 ? (TOUCH ? H.openTouch : H.open) : quiet
+  if (stop === 1 || stop === 2) return !A.learned.face && since > 2500 ? (TOUCH ? H.faceTouch : H.face) : quiet
+  if (stop === 3) return !A.learned.work && since > 2500 ? (TOUCH ? H.workTouch : H.work) : quiet
+  if (stop === 4) return !A.learned.lab && since > 2500 ? H.lab : quiet
   return quiet
 }
 function stripTones(dom) {
@@ -1051,7 +1064,7 @@ function domUpdate(from, to, front) {
   const key = `${k}:${[...A.visited].join('')}`
   if (key !== lastWork) {
     lastWork = key
-    if (k >= 0) { D.wtitle.textContent = works[k].name; D.wmeta.innerHTML = `${works[k].strength}<span class="wrole"> · ${works[k].role}</span>` }
+    if (k >= 0) { D.wtitle.textContent = works[k].name; D.wmeta.textContent = works[k].strength }
     D.current.classList.toggle('on', k >= 0)
     D.work.querySelectorAll('[data-work]').forEach((b, i) => { b.classList.toggle('active', i === k); b.classList.toggle('visited', A.visited.has(i)) })
   }
@@ -1441,7 +1454,26 @@ function restoreMemory(phase) {
   }
 }
 
-window.__lab = { A, V, ptr, phys, surface, works, configure, routeChanged, previewOf, go, forcedPress, navigate, exit, expandAbout, collapseAbout, startBridge, freeSpot, replayIntro: playIntro, IDX: () => IDX, WORKS: () => WORKS, WORLD: () => WORLD, frames: framesOf, touches, sig: () => lastSig, redraw: () => { lastSig = '' } }
+// ─── LANGUAGE ────────────────────────────────────────────────────────────────
+// Nothing the surface paints as material is language-dependent: the name, the two face words and the
+// project media are the same in every locale, and every localised word lives in the DOM. A locale change
+// therefore refreshes the DOM and the project world's frame copy — and touches no texture, no image, no
+// physics state, no Lab room and no memory.
+export function setLocale(next) {
+  if (!applyLocale(next)) return false
+  FR = {}                       // frame blocks carry copy; their geometry does not change, so WORLD textures stand
+  buildDOM()
+  lastHint = lastTone = lastTT = lastTB = lastBg = lastWork = lastWB = ''
+  mediaShown = ''; labCapKey = ''
+  onState.clear()
+  layoutDOM()
+  if (A.mode === 'world' || A.mode === 'exit') { mediaFor(A.k); fillWorldDOM(A.k) }
+  document.title = isAboutPath() ? TITLE_ABOUT() : TITLE()
+  lastSig = ''
+  return true
+}
+
+window.__lab = { A, V, ptr, phys, surface, works, configure, routeChanged, setLocale, locale: () => TXT,  previewOf, go, forcedPress, navigate, exit, expandAbout, collapseAbout, startBridge, freeSpot, replayIntro: playIntro, IDX: () => IDX, WORKS: () => WORKS, WORLD: () => WORLD, frames: framesOf, touches, sig: () => lastSig, redraw: () => { lastSig = '' } }
 let rt = 0, booted = false
 // a resize before the surface exists (a phone's URL bar settling during load) is picked up once start() finishes
 addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(async () => { if (!booted) return; measure(); await ensurePreviews(); rebuild() }, 140) })
@@ -1459,7 +1491,7 @@ async function start() {
   booted = true
   if (Math.abs(innerWidth - V.W) > 1 || Math.abs(innerHeight - V.H) > 1) { measure(); await ensurePreviews(); rebuild() }
   A.from = A.to = IDX[0]; A.front = 1
-  if (isAboutPath()) { A.pending = 'detail'; document.title = TITLE_ABOUT } else document.title = TITLE
+  if (isAboutPath()) { A.pending = 'detail'; document.title = TITLE_ABOUT() } else document.title = TITLE()
   requestAnimationFrame((t) => { last = t; frame(t) })
   if (REDUCED) { A.mode = 'index'; A.introReg = 0; A.nameAmp = 0; return }
   playIntro()

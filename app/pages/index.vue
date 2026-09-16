@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { LOCALES, messages } from '~/locales'
+import { HTML_LANG, LOCALES, OG_LOCALE, messages, profile } from '~~/shared/content'
 
 // x-default entry. It resolves a language; it is not a third version of the portfolio.
 definePageMeta({ layout: false })
 
 const site = useRuntimeConfig().public.siteUrl
-const copy = messages.en
+const copy = messages('en')
 
 useHead({
   htmlAttrs: { lang: 'en' },
@@ -23,6 +23,9 @@ useSeoMeta({
   ogDescription: copy.entry.description,
   ogUrl: `${site}/`,
   ogType: 'website',
+  ogSiteName: profile.name,
+  ogLocale: OG_LOCALE.en,
+  ogLocaleAlternate: [OG_LOCALE.tr],
 })
 
 // Resolution happens after hydration, so the prerendered HTML stays a real, crawlable x-default page
@@ -37,14 +40,14 @@ onMounted(() => {
 
 <template>
   <main class="entry">
-    <h1 class="entry-name">Emrah Yücel</h1>
-    <p class="entry-roles">Creative Developer / Full-Stack Developer</p>
+    <h1 class="entry-name">{{ profile.name }}</h1>
+    <p class="entry-roles" lang="en">{{ copy.roles.creative }} / {{ copy.roles.fullStack }}</p>
 
-    <nav aria-label="Language">
-      <p id="choose" class="u-label">{{ messages.en.entry.choose }} · {{ messages.tr.entry.choose }}</p>
+    <nav :aria-label="`${messages('en').localeSwitch.label} · ${messages('tr').localeSwitch.label}`">
+      <p id="choose" class="u-label">{{ messages('en').entry.choose }} · {{ messages('tr').entry.choose }}</p>
       <ul class="entry-langs" aria-labelledby="choose">
-        <li><NuxtLink to="/tr" hreflang="tr-TR" lang="tr-TR">Türkçe</NuxtLink></li>
-        <li><NuxtLink to="/en" hreflang="en" lang="en">English</NuxtLink></li>
+        <li><NuxtLink to="/tr" :hreflang="HTML_LANG.tr" :lang="HTML_LANG.tr">{{ messages('en').localeSwitch.to }}</NuxtLink></li>
+        <li><NuxtLink to="/en" :hreflang="HTML_LANG.en" :lang="HTML_LANG.en">{{ messages('tr').localeSwitch.to }}</NuxtLink></li>
       </ul>
     </nav>
   </main>

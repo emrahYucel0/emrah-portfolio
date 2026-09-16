@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { HTML_LANG, LOCALES, OG_LOCALE, messages, profile } from '~~/shared/content'
+import { SOCIAL_IMAGE } from '~~/shared/site'
 
 // x-default entry. It resolves a language; it is not a third version of the portfolio.
 definePageMeta({ layout: false })
@@ -26,6 +27,17 @@ useSeoMeta({
   ogSiteName: profile.name,
   ogLocale: OG_LOCALE.en,
   ogLocaleAlternate: [OG_LOCALE.tr],
+  ogImage: `${site}${SOCIAL_IMAGE.path}`,
+  ogImageSecureUrl: `${site}${SOCIAL_IMAGE.path}`,
+  ogImageType: SOCIAL_IMAGE.type,
+  ogImageWidth: SOCIAL_IMAGE.width,
+  ogImageHeight: SOCIAL_IMAGE.height,
+  ogImageAlt: copy.meta.imageAlt,
+  twitterCard: 'summary_large_image',
+  twitterTitle: copy.entry.title,
+  twitterDescription: copy.entry.description,
+  twitterImage: `${site}${SOCIAL_IMAGE.path}`,
+  twitterImageAlt: copy.meta.imageAlt,
 })
 
 // Resolution happens after hydration, so the prerendered HTML stays a real, crawlable x-default page

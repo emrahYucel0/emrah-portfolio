@@ -1,0 +1,203 @@
+{
+ "routes": {
+  "/": {
+   "status": "file present",
+   "lang": "en",
+   "title": "Emrah Yücel — Creative Developer & Full-Stack Developer",
+   "description": "Creative Developer and Full-Stack Developer in Istanbul. Choose a language.",
+   "canonical": "https://yucelemrah.com/",
+   "hreflangTR": "https://yucelemrah.com/tr",
+   "hreflangEN": "https://yucelemrah.com/en",
+   "xDefault": "https://yucelemrah.com/",
+   "ogTitle": "Emrah Yücel — Creative Developer & Full-Stack Developer",
+   "ogDescription": "Creative Developer and Full-Stack Developer in Istanbul. Choose a language.",
+   "ogType": "website",
+   "ogUrl": "https://yucelemrah.com/",
+   "ogImage": "https://yucelemrah.com/og/emrah-yucel-portfolio.jpg",
+   "ogImageW": "1200",
+   "ogImageH": "630",
+   "ogImageAlt": "Emrah Yücel — Creative Developer and Full-Stack Developer. The name set in horizontal rows of ink on paper.",
+   "ogLocale": "en_US",
+   "ogLocaleAlternate": "tr_TR",
+   "twitterCard": "summary_large_image",
+   "twitterImage": "https://yucelemrah.com/og/emrah-yucel-portfolio.jpg",
+   "twitterTitle": "Emrah Yücel — Creative Developer & Full-Stack Developer",
+   "robots": "(none → indexable)",
+   "icons": "/favicon.ico /favicon.svg /favicon-32x32.png /apple-touch-icon.png",
+   "jsonLd": []
+  },
+  "/tr": {
+   "status": "file present",
+   "lang": "tr-TR",
+   "title": "Emrah Yücel — Creative Developer & Full-Stack Developer",
+   "description": "Emrah Yücel, İstanbul merkezli bir Creative Developer ve Full-Stack Developer: etkileşim, frontend mühendisliği, backend sistemler, CMS, performans ve teknik SEO.",
+   "canonical": "https://yucelemrah.com/tr",
+   "hreflangTR": "https://yucelemrah.com/tr",
+   "hreflangEN": "https://yucelemrah.com/en",
+   "xDefault": "https://yucelemrah.com/",
+   "ogTitle": "Emrah Yücel — Creative Developer & Full-Stack Developer",
+   "ogDescription": "Emrah Yücel, İstanbul merkezli bir Creative Developer ve Full-Stack Developer: etkileşim, frontend mühendisliği, backend sistemler, CMS, performans ve teknik SEO.",
+   "ogType": "website",
+   "ogUrl": "https://yucelemrah.com/tr",
+   "ogImage": "https://yucelemrah.com/og/emrah-yucel-portfolio.jpg",
+   "ogImageW": "1200",
+   "ogImageH": "630",
+   "ogImageAlt": "Emrah Yücel — Creative Developer ve Full-Stack Developer. Kâğıt üzerinde yatay mürekkep satırlarıyla dizilmiş isim.",
+   "ogLocale": "tr_TR",
+   "ogLocaleAlternate": "en_US",
+   "twitterCard": "summary_large_image",
+   "twitterImage": "https://yucelemrah.com/og/emrah-yucel-portfolio.jpg",
+   "twitterTitle": "Emrah Yücel — Creative Developer & Full-Stack Developer",
+   "robots": "(none → indexable)",
+   "icons": "/favicon.ico /favicon.svg /favicon-32x32.png /apple-touch-icon.png",
+   "jsonLd": [
+    {
+     "@context": "https://schema.org",
+     "@type": "Person",
+     "@id": "https://yucelemrah.com/#person",
+     "name": "Emrah Yücel",
+     "url": "https://yucelemrah.com/",
+     "jobTitle": "Creative Developer / Full-Stack Developer",
+     "email": "mailto:info@yucelemrah.com",
+     "sameAs": [
+      "https://github.com/emrahYucel0",
+      "https://www.linkedin.com/in/emrah-yucel/"
+     ]
+    }
+   ]
+  },
+  "/en": {
+   "status": "file present",
+   "lang": "en",
+   "title": "Emrah Yücel — Creative Developer & Full-Stack Developer",
+   "description": "Emrah Yücel is a Creative Developer and Full-Stack Developer in Istanbul: interaction, frontend engineering, backend systems, CMS, performance and technical SEO.",
+   "canonical": "https://yucelemrah.com/en",
+   "hreflangTR": "https://yucelemrah.com/tr",
+   "hreflangEN": "https://yucelemrah.com/en",
+   "xDefault": "https://yucelemrah.com/",
+   "ogTitle": "Emrah Yücel — Creative Developer & Full-Stack Developer",
+   "ogDescription": "Emrah Yücel is a Creative Developer and Full-Stack Developer in Istanbul: interaction, frontend engineering, backend systems, CMS, performance and technical SEO.",
+   "ogType": "website",
+   "ogUrl": "https://yucelemrah.com/en",
+   "ogImage": "https://yucelemrah.com/og/emrah-yucel-portfolio.jpg",
+   "ogImageW": "1200",
+   "ogImageH": "630",
+   "ogImageAlt": "Emrah Yücel — Creative Developer and Full-Stack Developer. The name set in horizontal rows of ink on paper.",
+   "ogLocale": "en_US",
+   "ogLocaleAlternate": "tr_TR",
+   "twitterCard": "summary_large_image",
+   "twitterImage": "https://yucelemrah.com/og/emrah-yucel-portfolio.jpg",
+   "twitterTitle": "Emrah Yücel — Creative Developer & Full-Stack Developer",
+   "robots": "(none → indexable)",
+   "icons": "/favicon.ico /favicon.svg /favicon-32x32.png /apple-touch-icon.png",
+   "jsonLd": [
+    {
+     "@context": "https://schema.org",
+     "@type": "Person",
+     "@id": "https://yucelemrah.com/#person",
+     "name": "Emrah Yücel",
+     "url": "https://yucelemrah.com/",
+     "jobTitle": "Creative Developer / Full-Stack Developer",
+     "email": "mailto:info@yucelemrah.com",
+     "sameAs": [
+      "https://github.com/emrahYucel0",
+      "https://www.linkedin.com/in/emrah-yucel/"
+     ]
+    }
+   ]
+  },
+  "/tr/about": {
+   "status": "file present",
+   "lang": "tr-TR",
+   "title": "Hakkımda — Emrah Yücel",
+   "description": "Kimya ve endüstriyel üretimden creative development ve full-stack sistemlere — Emrah Yücel nasıl çalışır, ne kurar.",
+   "canonical": "https://yucelemrah.com/tr/about",
+   "hreflangTR": "https://yucelemrah.com/tr/about",
+   "hreflangEN": "https://yucelemrah.com/en/about",
+   "xDefault": "https://yucelemrah.com/",
+   "ogTitle": "Hakkımda — Emrah Yücel",
+   "ogDescription": "Kimya ve endüstriyel üretimden creative development ve full-stack sistemlere — Emrah Yücel nasıl çalışır, ne kurar.",
+   "ogType": "profile",
+   "ogUrl": "https://yucelemrah.com/tr/about",
+   "ogImage": "https://yucelemrah.com/og/emrah-yucel-portfolio.jpg",
+   "ogImageW": "1200",
+   "ogImageH": "630",
+   "ogImageAlt": "Emrah Yücel — Creative Developer ve Full-Stack Developer. Kâğıt üzerinde yatay mürekkep satırlarıyla dizilmiş isim.",
+   "ogLocale": "tr_TR",
+   "ogLocaleAlternate": "en_US",
+   "twitterCard": "summary_large_image",
+   "twitterImage": "https://yucelemrah.com/og/emrah-yucel-portfolio.jpg",
+   "twitterTitle": "Hakkımda — Emrah Yücel",
+   "robots": "(none → indexable)",
+   "icons": "/favicon.ico /favicon.svg /favicon-32x32.png /apple-touch-icon.png",
+   "jsonLd": [
+    {
+     "@context": "https://schema.org",
+     "@type": "Person",
+     "@id": "https://yucelemrah.com/#person",
+     "name": "Emrah Yücel",
+     "url": "https://yucelemrah.com/",
+     "jobTitle": "Creative Developer / Full-Stack Developer",
+     "email": "mailto:info@yucelemrah.com",
+     "sameAs": [
+      "https://github.com/emrahYucel0",
+      "https://www.linkedin.com/in/emrah-yucel/"
+     ]
+    }
+   ]
+  },
+  "/en/about": {
+   "status": "file present",
+   "lang": "en",
+   "title": "About — Emrah Yücel",
+   "description": "From chemistry and industrial production to creative development and full-stack systems — how Emrah Yücel works, and what he builds.",
+   "canonical": "https://yucelemrah.com/en/about",
+   "hreflangTR": "https://yucelemrah.com/tr/about",
+   "hreflangEN": "https://yucelemrah.com/en/about",
+   "xDefault": "https://yucelemrah.com/",
+   "ogTitle": "About — Emrah Yücel",
+   "ogDescription": "From chemistry and industrial production to creative development and full-stack systems — how Emrah Yücel works, and what he builds.",
+   "ogType": "profile",
+   "ogUrl": "https://yucelemrah.com/en/about",
+   "ogImage": "https://yucelemrah.com/og/emrah-yucel-portfolio.jpg",
+   "ogImageW": "1200",
+   "ogImageH": "630",
+   "ogImageAlt": "Emrah Yücel — Creative Developer and Full-Stack Developer. The name set in horizontal rows of ink on paper.",
+   "ogLocale": "en_US",
+   "ogLocaleAlternate": "tr_TR",
+   "twitterCard": "summary_large_image",
+   "twitterImage": "https://yucelemrah.com/og/emrah-yucel-portfolio.jpg",
+   "twitterTitle": "About — Emrah Yücel",
+   "robots": "(none → indexable)",
+   "icons": "/favicon.ico /favicon.svg /favicon-32x32.png /apple-touch-icon.png",
+   "jsonLd": [
+    {
+     "@context": "https://schema.org",
+     "@type": "Person",
+     "@id": "https://yucelemrah.com/#person",
+     "name": "Emrah Yücel",
+     "url": "https://yucelemrah.com/",
+     "jobTitle": "Creative Developer / Full-Stack Developer",
+     "email": "mailto:info@yucelemrah.com",
+     "sameAs": [
+      "https://github.com/emrahYucel0",
+      "https://www.linkedin.com/in/emrah-yucel/"
+     ]
+    }
+   ]
+  }
+ },
+ "broken": [],
+ "checked": 205,
+ "localhost": [],
+ "noindex": [
+  "404.html"
+ ],
+ "externals": [
+  "https://github.com/emrahYucel0",
+  "https://www.linkedin.com/in/emrah-yucel/",
+  "https://istanbulsehirici.com/",
+  "https://egeesya.com/",
+  "https://evenakliyatevden.com/"
+ ]
+}

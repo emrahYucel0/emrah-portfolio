@@ -1,0 +1,26 @@
+{"step":"tap on material","inputAtRest":true} base=0 mode=index pins=0 lang=en
+{"step":"swipe hero→creative","inputAtRest":true,"moved":true} base=1 mode=index pins=0 lang=en
+{"step":"hold creative → full-stack","inputAtRest":true,"pushedThrough":true} base=2 mode=index pins=0 lang=en
+{"step":"cancelled hold → swipe","inputAtRest":true,"moved":true} base=3 mode=index pins=0 lang=en
+{"step":"work sideways → next work","inputAtRest":true,"registered":true} base=3 mode=index pins=0 lang=en
+{"step":"work hit target","hit":"BODY"} 
+{"step":"3 short holds on work","inputAtRest":true,"stillIndex":true} base=3 mode=index pins=0 lang=en
+{"step":"swipe right after holds","inputAtRest":true,"moved":true} base=2 mode=index pins=0 lang=en
+{"step":"full hold opens work","inputAtRest":true,"entered":true} base=3 mode=world pins=0 lang=en
+{"step":"swipe through world → return","inputAtRest":true,"returned":true} base=3 mode=index pins=0 lang=en
+{"step":"two-finger squeeze on work","inputAtRest":true,"entered":true} base=3 mode=world pins=0 lang=en
+{"step":"swipe work → lab (bridge)","inputAtRest":true,"inLab":true} base=4 mode=index pins=3 lang=en
+{"step":"lab hold","inputAtRest":true,"roomMade":true} base=4 mode=index pins=4 lang=en
+{"step":"lab video","videos":[{"paused":false,"t":4.08,"playsinline":true,"muted":true}]} 
+{"step":"second lab hold","inputAtRest":true,"roomMade":true} base=4 mode=index pins=5 lang=en
+{"step":"lab: loaded hold then swipe away","inputAtRest":true,"moved":true,"roomKept":true} base=5 mode=index pins=5 lang=en
+{"step":"swipe right after lab holds","note":"already moved by the previous swipe","moved":true} 
+{"step":"tap language control","inputAtRest":true,"switched":true,"samePins":true,"sameVisits":true,"histSame":true,"target":{"x":365.59375,"y":22,"w":32.8125,"h":30}} base=4 mode=index pins=5 lang=tr-TR
+{"step":"lab hold after switch","inputAtRest":true,"roomMade":true} base=4 mode=index pins=5 lang=tr-TR
+{"step":"swipe after switch","inputAtRest":true,"moved":true} base=5 mode=index pins=5 lang=tr-TR
+{"step":"about detail","inputAtRest":true,"detail":true} base=0 mode=index pins=5 lang=tr-TR
+{"step":"browser back","inputAtRest":true,"collapsed":true} base=0 mode=index pins=5 lang=tr-TR
+{"step":"swipe after back","inputAtRest":true,"moved":true} base=0 mode=index pins=5 lang=tr-TR
+{"step":"landscape","inputAtRest":true,"canvas":[1266,585,1]} base=0 mode=index pins=5 lang=tr-TR
+{"step":"swipe after rotation","inputAtRest":true,"moved":true} base=1 mode=index pins=5 lang=tr-TR
+allAtRest true errors 0

@@ -12,6 +12,7 @@ export const en = {
       description:
         'From chemistry and industrial production to creative development and full-stack systems — how Emrah Yücel works, and what he builds.',
     },
+    imageAlt: 'Emrah Yücel — Creative Developer and Full-Stack Developer. The name set in horizontal rows of ink on paper.',
   },
   nav: { skip: 'Skip to plain navigation', label: 'Portfolio', work: 'Work', about: 'About', lab: 'Lab', contact: 'Contact' },
   roles: { creative: 'Creative Developer', fullStack: 'Full-Stack Developer', and: 'and' },

@@ -6,7 +6,7 @@ defineProps<{ error: NuxtError }>()
 // the language of a missing URL cannot be trusted, so the page answers in both
 const en = messages('en')
 const tr = messages('tr')
-useHead({ htmlAttrs: { lang: HTML_LANG.en }, title: `${en.notFound.title} — ${profile.name}` })
+useHead({ htmlAttrs: { lang: HTML_LANG.en }, title: `${en.notFound.title} — ${profile.name}`, meta: [{ name: 'robots', content: 'noindex' }] })
 </script>
 
 <template>

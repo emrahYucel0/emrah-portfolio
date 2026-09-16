@@ -15,6 +15,7 @@ export const tr = {
       description:
         'Kimya ve endüstriyel üretimden creative development ve full-stack sistemlere — Emrah Yücel nasıl çalışır, ne kurar.',
     },
+    imageAlt: 'Emrah Yücel — Creative Developer ve Full-Stack Developer. Kâğıt üzerinde yatay mürekkep satırlarıyla dizilmiş isim.',
   },
   nav: { skip: 'Düz gezinmeye geç', label: 'Portfolyo', work: 'İşler', about: 'Hakkımda', lab: 'Lab', contact: 'İletişim' },
   roles: { creative: 'Creative Developer', fullStack: 'Full-Stack Developer', and: 've' },

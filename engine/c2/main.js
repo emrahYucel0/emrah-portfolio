@@ -29,7 +29,8 @@ const lerp = (a, b, t) => a + (b - a) * t
 const damp = (a, b, l, dt) => a + (b - a) * (1 - Math.exp(-l * dt))
 const smooth = (e0, e1, x) => { const t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t) }
 const ez = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
-const haptic = (p) => { try { navigator.vibrate?.(p) } catch {} }
+// M5: a device only vibrates after the visitor has interacted; before that Chrome logs every call as an error
+const haptic = (p) => { try { if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return; navigator.vibrate?.(p) } catch {} }
 const $ = (s, r = document) => r.querySelector(s)
 const inRect = (x, y, r, m = 0) => x >= r.x - m && x <= r.x + r.w + m && y >= r.y - m && y <= r.y + r.h + m
 const idle = typeof requestIdleCallback === 'function' ? (f) => requestIdleCallback(f, { timeout: 700 }) : (f) => setTimeout(() => f({ timeRemaining: () => 12 }), 40)

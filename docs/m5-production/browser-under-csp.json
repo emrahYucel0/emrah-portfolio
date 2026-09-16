@@ -1,0 +1,122 @@
+{
+ "routes": {
+  "/": {
+   "status": 200,
+   "reload": 200,
+   "path": "/tr",
+   "lang": "tr-TR",
+   "canonical": "https://yucelemrah.com/tr",
+   "cspViolations": 0,
+   "console": [],
+   "failed": [],
+   "bad": []
+  },
+  "/tr": {
+   "status": 200,
+   "reload": 200,
+   "path": "/tr",
+   "lang": "tr-TR",
+   "canonical": "https://yucelemrah.com/tr",
+   "cspViolations": 0,
+   "console": [],
+   "failed": [],
+   "bad": []
+  },
+  "/en": {
+   "status": 200,
+   "reload": 200,
+   "path": "/en",
+   "lang": "en",
+   "canonical": "https://yucelemrah.com/en",
+   "cspViolations": 0,
+   "console": [],
+   "failed": [],
+   "bad": []
+  },
+  "/tr/about": {
+   "status": 200,
+   "reload": 200,
+   "path": "/tr/about",
+   "lang": "tr-TR",
+   "canonical": "https://yucelemrah.com/tr/about",
+   "cspViolations": 0,
+   "console": [],
+   "failed": [],
+   "bad": []
+  },
+  "/en/about": {
+   "status": 200,
+   "reload": 200,
+   "path": "/en/about",
+   "lang": "en",
+   "canonical": "https://yucelemrah.com/en/about",
+   "cspViolations": 0,
+   "console": [],
+   "failed": [],
+   "bad": []
+  }
+ },
+ "notFound": {
+  "status": 404,
+  "title": "Not found · Sayfa bulunamadı — Emrah Yücel",
+  "lang": "en",
+  "links": [
+   "/tr",
+   "/en"
+  ],
+  "robots": "noindex",
+  "console": [
+   "[error] Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ]
+ },
+ "back": {
+  "afterMore": "/tr/about",
+  "afterBack": "/tr",
+  "detail": false,
+  "icons": [],
+  "console": [],
+  "csp": []
+ },
+ "journey": {
+  "1440x900": {
+   "video": [
+    {
+     "paused": false,
+     "t": 3.5,
+     "w": 1282
+    }
+   ],
+   "workerRequests": 2,
+   "media": {
+    "woff2": 5,
+    "webp": 9,
+    "avif": 13,
+    "mp4": 3
+   },
+   "cspViolations": 0,
+   "console": [],
+   "failed": [],
+   "bad": []
+  },
+  "390x844": {
+   "video": [
+    {
+     "paused": false,
+     "t": 3.5,
+     "w": 1282
+    }
+   ],
+   "workerRequests": 2,
+   "media": {
+    "woff2": 5,
+    "webp": 8,
+    "avif": 10,
+    "mp4": 3
+   },
+   "cspViolations": 0,
+   "console": [],
+   "failed": [],
+   "bad": []
+  }
+ }
+}

@@ -96,6 +96,8 @@ export interface LocaleCopy {
   meta: {
     home: { title: string; description: string }
     about: { title: string; description: string }
+    /** M5: text alternative of the social share image */
+    imageAlt: string
   }
   nav: { skip: string; label: string; work: string; about: string; lab: string; contact: string }
   /** professional positioning terms — English in both locales, by decision */

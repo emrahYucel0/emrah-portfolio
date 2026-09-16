@@ -1,0 +1,48 @@
+== redirects (expected: one 301 to https://yucelemrah.com<same path+query>)
+http  yucelemrah.com /                                     200  text/html; charset=utf-8
+http  www.yucelemrah.com /                                 200  text/html; charset=utf-8
+https www.yucelemrah.com /                                 200  text/html; charset=utf-8
+https yucelemrah.com / (final)                             200  text/html; charset=utf-8
+http  www /tr/about?ref=x                                  301 http://www.yucelemrah.com/tr/about/?ref=x text/html; charset=iso-8859-1
+http  yucelemrah.com /en?utm=1                             301 http://yucelemrah.com/en/?utm=1 text/html; charset=iso-8859-1
+== pages over https (expected 200, no slash hop)
+GET /                                                      200  text/html; charset=utf-8
+GET /tr                                                    301 http://yucelemrah.com/tr/ text/html; charset=iso-8859-1
+GET /en                                                    301 http://yucelemrah.com/en/ text/html; charset=iso-8859-1
+GET /tr/about                                              301 http://yucelemrah.com/tr/about/ text/html; charset=iso-8859-1
+GET /en/about                                              301 http://yucelemrah.com/en/about/ text/html; charset=iso-8859-1
+== trailing slash (expected 301 → no slash)
+GET /tr/                                                   200  text/html; charset=utf-8
+GET /en/about/                                             200  text/html; charset=utf-8
+== not found (expected 404 with the 404 document)
+GET /this-page-does-not-exist-m5-test                      404  text/html; charset=utf-8
+GET /tr/nope                                               404  text/html; charset=utf-8
+GET /_nuxt/ (directory)                                    200  text/html;charset=ISO-8859-1
+GET /opt (directory)                                       301 http://yucelemrah.com/opt/ text/html; charset=iso-8859-1
+<title>Not found · Sayfa bulunamadı — Emrah Yücel</title>
+== crawl + icons + share image
+GET /robots.txt                                            200  text/plain; charset=utf-8
+GET /sitemap.xml                                           200  application/xml; charset=utf-8
+GET /favicon.ico                                           200  image/x-icon
+GET /favicon.svg                                           200  image/svg+xml; charset=utf-8
+GET /favicon-32x32.png                                     200  image/png
+GET /apple-touch-icon.png                                  200  image/png
+GET /og/emrah-yucel-portfolio.jpg                          200  image/jpeg
+== MIME of build and media assets
+GET /_nuxt/BW19sCz5.js                                     200  text/javascript; charset=utf-8
+GET /_nuxt/_locale_.DbXIhpeg.css                           200  text/css; charset=utf-8
+GET /_nuxt/big-shoulders-display-latin-ext-wght-normal.EP2r9iG4.woff2 200  font/woff2
+GET /opt/img/ege-esya-hero-1080.avif                       200  image/avif
+GET /opt/img/ege-esya-hero-1080.webp                       200  image/webp
+GET /opt/lab/lab-01.mp4                                    200  video/mp4
+GET /tr/_payload.json                                      200  application/json; charset=utf-8
+== headers: /tr (HTML)
+HTTP/1.1 301 Moved Permanently
+Content-Type: text/html; charset=iso-8859-1
+== headers: /_nuxt/BW19sCz5.js
+HTTP/1.1 200 OK
+Content-Type: text/javascript; charset=utf-8
+== headers: /opt/img/ege-esya-hero-1080.avif, /og image, /_nuxt/builds json
+Content-Type: image/avif
+Content-Type: image/jpeg
+HTTP/1.1 200 OK

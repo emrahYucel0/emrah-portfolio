@@ -120,15 +120,17 @@ That is a separate phase and was not changed here.
 - **Safari < 16.4 harness:** 5/5 routes boot, C2 starts, no error view.
 - **Software-rendered journeys** (390 TR, 1440 EN): starting static, every checkpoint reaches the same state as the 60 fps GPU journey, and the canvas redraws at every step.
 
-## Real-device validation: pending
-iPhone 7 Plus, iOS 15.8.8, Safari, after deployment. The static hero must **not** activate on this device.
+## Real-device validation: PASS
+iPhone 7 Plus, iOS 15.8.8, Safari, on the deployed production build. The device has a hardware GPU, so the static hero must **not** activate here — and it did not: the visit began with the normal WebGL intro, and the software-renderer fallback never falsely activated.
 
-- [ ] Intro plays normally
-- [ ] Hero ambient wave continues after the intro
-- [ ] Creative ↔ Full-Stack
-- [ ] Work / project
-- [ ] Lab / video
-- [ ] Hold → swipe
-- [ ] Rotate
-- [ ] Background → foreground
-- [ ] 60 s idle: the wave is still moving
+- [x] Intro plays normally
+- [x] Hero ambient wave continues after the intro
+- [x] Creative ↔ Full-Stack
+- [x] Work → project → back
+- [x] Lab / video
+- [x] Hold → swipe
+- [x] Rotate
+- [x] Background → foreground
+- [x] 60 s idle: the wave is still moving
+- [x] TR ↔ EN
+- [x] About → Back

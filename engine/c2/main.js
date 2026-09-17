@@ -70,6 +70,24 @@ export function configure(o = {}) {
 const TITLE = () => TXT.meta.home.title, TITLE_ABOUT = () => TXT.meta.about.title
 
 const canvas = $('#surface')
+// POST-M5 PERF — SOFTWARE RENDERER PROBE. Before the full-size surface exists, a 1×1 canvas asks the graphics stack one
+// question: is WebGL here rendered in software? Two signals, either is enough: the browser refuses a context that
+// asks to fail on a major performance caveat, or the renderer names a known software rasteriser. Nothing is sent or
+// kept; both probe contexts are released at once. Browser, user agent or automation are never looked at.
+const SOFTWARE_GL = (() => {
+  const release = (gl) => { try { gl?.getExtension('WEBGL_lose_context')?.loseContext() } catch {} }
+  const probe = () => { const c = document.createElement('canvas'); c.width = c.height = 1; return c }
+  let strict = null, plain = null, soft = false
+  try {
+    strict = probe().getContext('webgl2', { failIfMajorPerformanceCaveat: true })
+    if (!strict) soft = true
+    const gl = strict || (plain = probe().getContext('webgl2') || probe().getContext('webgl'))
+    const info = gl?.getExtension('WEBGL_debug_renderer_info')
+    if (info && /swiftshader|llvmpipe|softpipe|basic render driver/i.test(String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL)))) soft = true
+  } catch {}
+  release(strict); release(plain)
+  return soft
+})()
 const surface = createSurface(canvas)
 const phys = createPhysics()
 
@@ -146,6 +164,7 @@ const A = {
   features: new Set(), press: null, about: null, aboutOpen: false, aboutDetail: false, detailPushed: false, squeeze: null, introF: null,
   world: gather(), worldOn: false, faceF: feature({ kind: 1 }),
   constrained: false, timeHeld: 0,   // POST-M5 PERF: render capacity (see noteFrame)
+  staticHero: false,                 // POST-M5 PERF: software renderer, WebGL not yet drawn (see startStaticHero)
   introReg: 1, nameAmp: 1, restReg: 0, restOpen: 0, nextReg: 1, nextArmed: false, regDrag: 0, regDragT: 0, quality: {}, shiver: 0,
   wt: 0, wT: 0, wLocked: -1, visited: new Set(), visitOrder: [], releaseK: null,
   pins: [], yieldMarks: [], seeded: 0, aboutMark: null, scarcity: 0, restK: 0.62,
@@ -200,6 +219,7 @@ function rebuild() {
   if (BRIDGE) { BRIDGE.dead = true; surface.release(BRIDGE); BRIDGE = null }
   if (A.mode === 'bridge') { A.mode = 'index'; A.p = A.pT = A.base = A.prevBase = 4; A.bridgeF = null; A.bridgePK = 1 }
   if (A.mode === 'intro') { A.mode = 'index'; A.introReg = 0 }
+  if (A.staticHero) { A.nameAmp = 0; paintStaticHero() }
   if (A.mode === 'exit') { A.mode = 'index'; A.p = A.pT = A.base = A.prevBase = 3; A.worldOn = false }
   if (A.base === 5) A.restOpen = 1
   layoutDOM()
@@ -1483,8 +1503,9 @@ function noteFrame(drawn, et) {
 let last = performance.now()
 function frame(now) {
   // POST-M5 PERF: two clocks. `et` is the real time since the last frame (up to a stall) and drives the closed-form
-  // convergences: place and frame position, work tuning, registration drag, imprint visibility, pointer velocity decay.
-  // `dt` keeps its 50 ms cap for everything that integrates: the material physics, hold load, squeeze, Lab rooms.
+  // convergences: place and frame position, work tuning, registration drag, imprint visibility, pointer velocity decay,
+  // and the material physics, which integrates it in steps of at most 50 ms (at 60 fps: one step, as before).
+  // `dt` keeps its 50 ms cap for hold load, squeeze and the Lab rooms.
   const et = Math.min(STALL, Math.max(0, (now - last) / 1000))
   const dt = Math.min(0.05, et)
   last = now
@@ -1569,7 +1590,8 @@ function frame(now) {
   const src = { x: ptr.x, y: ptr.y, vx: ptr.vx, vy: ptr.vy, hover: ptr.hover }
   const pr = A.press
   const devs = pr && pr.st.beneath !== 'pin' ? [{ x: pr.f.cx, y: pr.f.cy, ax: pr.f.hw * 1.25, ay: 36 + pr.f.h * 0.9, amt: clamp(pr.L * 1.35, 0, 1) }] : []
-  phys.step(dt / 2, [src], devs); phys.step(dt / 2, [src], devs)
+  const physSteps = Math.min(40, Math.max(1, Math.ceil(et / 0.05 - 1e-9))), ph = et / physSteps
+  for (let i = 0; i < physSteps; i++) { phys.step(ph / 2, [src], devs); phys.step(ph / 2, [src], devs) }
   ptr.vx *= Math.exp(-et * 9); ptr.vy *= Math.exp(-et * 9)
   surface.phys(phys)
 
@@ -1601,12 +1623,77 @@ function frame(now) {
     const moving = ambient || A.shiver > 0.001 || surface.pen[2] > 0
     const sig = moving ? '' : stillSig(from, to, fs, overlay, front)
     let drawn = false
-    if (moving || sig !== lastSig || (stillMem !== lastMem && now - lastMemT > (A.constrained ? CAP.memGap : 400))) { surface.render(); drawn = true; lastMem = stillMem; lastMemT = now }
+    let draw = moving || sig !== lastSig || (stillMem !== lastMem && now - lastMemT > (A.constrained ? CAP.memGap : 400))
+    // POST-M5 PERF: while the static hero stands nothing is drawn; the first real change (input, a place, a press, a
+    // resize that changed more than the layout the hero was repainted for) draws WebGL and retires the hero
+    if (A.staticHero) {
+      if (staticSig === null) staticSig = sig
+      if (moving || sig !== staticSig) { A.staticHero = false; staticSig = null; draw = true; retireStaticHero() }
+      else draw = false
+    }
+    if (draw) { surface.render(); drawn = true; lastMem = stillMem; lastMemT = now }
     lastSig = sig; A.cleared = false
     noteFrame(drawn, et)
   } else if (!A.cleared) { surface.clear(); A.cleared = true; lastSig = ''; capReset() }
   A.jsMs = lerp(A.jsMs || 0, performance.now() - now, 0.05)
   requestAnimationFrame(frame)
+}
+
+// ─── POST-M5 PERF: static hero for a software renderer ───────────────────────
+// Where WebGL is rendered in software every drawn frame blocks the page for most of a second. There the visit begins
+// on the settled name plate, drawn once in 2D from the name state's own masks and layout: rows at the state's spacing,
+// thin on the paper, full inside the letters, absent in the strips — the rows WebGL draws at rest. WebGL draws the
+// first time something really changes, and the plate is removed two frames later, once that frame is on screen.
+let staticEl = null, staticSig = null
+function startStaticHero() {
+  A.staticHero = true; A.constrained = true
+  A.mode = 'index'; A.introReg = 0; A.nameAmp = 0; A.arrivedAt = performance.now()
+  staticEl = document.createElement('canvas')
+  staticEl.setAttribute('aria-hidden', 'true')
+  Object.assign(staticEl.style, { position: 'fixed', inset: '0', width: '100%', height: '100%', display: 'block', zIndex: '1', pointerEvents: 'none' })
+  canvas.after(staticEl)
+  paintStaticHero()
+}
+function paintStaticHero() {
+  if (!staticEl) return
+  staticSig = null   // the next frame takes the repainted layout as the resting state: a resize alone does not wake WebGL
+  const st = IDX[0], dpr = V.dpr * V.u, W = V.W, H = V.H, s = st.spacing
+  staticEl.width = Math.round(W * dpr); staticEl.height = Math.round(H * dpr)
+  const ctx = staticEl.getContext('2d'), [tone, solid, voids] = st.c.draw(), tw = tone.width, th = tone.height
+  const px = (c) => c.getContext('2d').getImageData(0, 0, tw, th).data
+  const T = px(tone), So = px(solid), Vo = px(voids)
+  const at = (D, y, x) => D[(y * tw + x) * 4]
+  const bilinear = (D, fy, fx) => {
+    const y0 = clamp(Math.floor(fy), 0, th - 1), y1 = Math.min(th - 1, y0 + 1), ky = clamp(fy - y0, 0, 1)
+    const x0 = clamp(Math.floor(fx), 0, tw - 1), x1 = Math.min(tw - 1, x0 + 1), kx = clamp(fx - x0, 0, 1)
+    return ((at(D, y0, x0) * (1 - kx) + at(D, y0, x1) * kx) * (1 - ky) + (at(D, y1, x0) * (1 - kx) + at(D, y1, x1) * kx) * ky) / 255
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  ctx.fillStyle = st.bg; ctx.fillRect(0, 0, W, H)
+  ctx.fillStyle = ST.PAPER; ctx.fillRect(0, V.strip, W, H - V.strip * 2)
+  ctx.fillStyle = ST.INK
+  // the shader's tone gain follows the ambient amplitude, which is 0 at rest; row ends taper across sub-texel samples
+  // (three on a phone, two on a wide screen, where texels are already finer than the rows)
+  const gain = Math.min(1, A.nameAmp * (st.ampK ?? 1)), sub = V.W < 700 ? 3 : 2, cols = tw * sub, cw = W / cols
+  for (let r = 0; r * s <= H + s; r++) {
+    const y = r * s - 0.5 / dpr, fy = ((r * s) / H) * th - 0.5   // row centres on the WebGL pixel-centre grid
+    let runX = 0, runHw = -1
+    for (let cx = 0; cx <= cols; cx++) {
+      let hw = 0
+      if (cx < cols) {
+        const fx = (cx + 0.5) / sub - 0.5
+        hw = st.thick * (0.5 + bilinear(T, fy, fx) * 1.15 * gain)
+        hw += (s * 0.36 - hw) * bilinear(So, fy, fx)
+        hw = Math.round(hw * (1 - bilinear(Vo, fy, fx)) * 16) / 16
+      }
+      if (cx === cols || hw !== runHw) { if (runHw > 0.05) ctx.fillRect(runX, y - runHw, cx * cw - runX, runHw * 2); runX = cx * cw; runHw = hw }
+    }
+  }
+}
+function retireStaticHero() {
+  const el = staticEl
+  staticEl = null
+  if (el) requestAnimationFrame(() => requestAnimationFrame(() => el.remove()))
 }
 
 // ─── opening ─────────────────────────────────────────────────────────────────
@@ -1721,6 +1808,7 @@ async function start() {
   A.from = A.to = IDX[0]; A.front = 1
   if (isAboutPath()) { A.pending = 'detail'; document.title = TITLE_ABOUT() } else document.title = TITLE()
   requestAnimationFrame((t) => { last = t; frame(t) })
+  if (SOFTWARE_GL) { startStaticHero(); return }
   if (REDUCED) { A.mode = 'index'; A.introReg = 0; A.nameAmp = 0; return }
   playIntro()
 }

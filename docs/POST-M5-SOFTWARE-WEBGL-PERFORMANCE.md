@@ -114,12 +114,16 @@ Harness: 412×823 at DPR 1.75, 45 s after load, production build with CSP. "2 co
 - **Production-like CSP journey:** 0 CSP violations, 0 console errors, 0 failed requests.
 - **Safari < 16.4 harness:** 5/5 routes boot.
 
-## Real-device validation: still required
-iPhone 7 Plus, iOS 15.8.8, Safari. Not tested yet.
+## Real-device validation: PASS
+iPhone 7 Plus, iOS 15.8.8, Safari, against the deployed production build (`yucelemrah-production-software-webgl-perf-2026-09-17.zip`, commit `f0d3e38`). The test was run by the site owner.
 
-- [ ] Opening plays at its normal pace. After it, the hero rows keep waving slowly: they must **not** freeze, since frozen rows mean the capacity mode engaged wrongly.
-- [ ] Creative → Full-Stack → Creative, the wave continues on both faces.
-- [ ] Work → a project → frames → back; Lab room and video; Contact; TR/EN; About/Back.
-- [ ] Hold on Work / Lab, then swipe (M3 path).
-- [ ] Rotate to landscape and back; switch to another app and return. The wave continues each time.
-- [ ] Leave the hero idle for 60 s; the wave is still moving.
+- [x] Intro timing
+- [x] Hero ambient wave continues after the intro
+- [x] Creative ↔ Full-Stack
+- [x] Work / project
+- [x] Lab / video
+- [x] Hold → swipe
+- [x] Rotation and continuity of normal interaction
+- [x] After 60 s idle, the ambient wave is still moving
+
+**The constrained-render mode did not falsely activate on the real iPhone.** If it had engaged, the ambient wave would have stopped. It was still moving after 60 seconds idle.

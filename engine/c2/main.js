@@ -24,6 +24,12 @@ const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches
 const TOUCH = matchMedia('(pointer: coarse)').matches
 const RM = REDUCED ? 5 : 1
 if (REDUCED) gsap.globalTimeline.timeScale(6)
+// POST-M5 PERF: authored time is real time. Where a frame takes most of a second (WebGL rendered in software), GSAP's
+// default lag smoothing (a gap over 500 ms advances only 33 ms) and a 50 ms frame step stretched the 3.5 s opening to
+// ~26 s. Gaps up to STALL now advance by the time that passed; a longer gap is a stall (a hidden tab, a debugger) and
+// is still smoothed. At 60 fps nothing changes.
+const STALL = 2
+gsap.ticker.lagSmoothing(STALL * 1000, 33)
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
 const lerp = (a, b, t) => a + (b - a) * t
 const damp = (a, b, l, dt) => a + (b - a) * (1 - Math.exp(-l * dt))
@@ -139,6 +145,7 @@ const A = {
   from: null, to: null, front: 1, k: 0,
   features: new Set(), press: null, about: null, aboutOpen: false, aboutDetail: false, detailPushed: false, squeeze: null, introF: null,
   world: gather(), worldOn: false, faceF: feature({ kind: 1 }),
+  constrained: false, timeHeld: 0,   // POST-M5 PERF: render capacity (see noteFrame)
   introReg: 1, nameAmp: 1, restReg: 0, restOpen: 0, nextReg: 1, nextArmed: false, regDrag: 0, regDragT: 0, quality: {}, shiver: 0,
   wt: 0, wT: 0, wLocked: -1, visited: new Set(), visitOrder: [], releaseK: null,
   pins: [], yieldMarks: [], seeded: 0, aboutMark: null, scarcity: 0, restK: 0.62,
@@ -177,6 +184,7 @@ function rebuild() {
   WORKS = works.map((w, i) => ST.workState(V, w, i))
   IDX = [ST.name(V), ST.face(V, 'surface'), ST.face(V, 'system'), WORKS[0], ST.labState(V), ST.rest(V, A.visitOrder, A.aboutMark)]
   if (REDUCED) for (const s of IDX) s.ampK = 0
+  capReset()
   WORLD = {}; FR = {}
   for (const list of Object.values(MEDIA)) list.flat().forEach((me) => me.el.remove())
   MEDIA = {}; mediaShown = ''
@@ -333,7 +341,7 @@ addEventListener('pointercancel', up)
 // M3 MOBILE BUG FIX — every way the page can lose a gesture ends it
 addEventListener('blur', endGesture)
 addEventListener('pagehide', endGesture)
-document.addEventListener('visibilitychange', () => { if (document.hidden) endGesture() })
+document.addEventListener('visibilitychange', () => { if (document.hidden) { endGesture(); capReset() } })
 // WebKit still delivers touch events when the pointer stream was taken: once no finger is left on the glass, no
 // gesture is left either. Checked a moment later, so a normal pointerup (and its tap) always runs first.
 const settleTouches = (e) => {
@@ -1444,15 +1452,47 @@ function stillSig(from, to, fs, overlay, front) {
   return s + c
 }
 const scaled = (st, k) => (k < 0.001 ? [] : (st.features || []).map((f) => (f.kind === 2 ? { ...f, s: f.s * k } : { ...f, h: f.h * k })))
+// POST-M5 PERF — RENDER CAPACITY. Without a GPU the browser renders WebGL in software and must read every drawn frame
+// back before it can show it: each frame blocks the page for most of a second. Capacity is measured from the surface's
+// own consecutive drawn frames only, never from the browser, the device or its name.
+//   constrained  when the lower median of the last n intervals between consecutive drawn frames is over `slow` ms
+//                (with n = 6: at least four of the last six)
+//                (the first `warm` intervals after start, a rebuild, a hidden tab or an absent surface are not counted;
+//                a gap of STALL or more is a stall, not a frame)
+//   released     after `fastRun` consecutive drawn frames each under `fast` ms
+// While constrained only the ambient row wave rests, and material memory redraws every `memGap` ms instead of 400 ms.
+// Everything that is a change of state — input, places, faces, work, worlds, Lab, language, resize — still draws.
+const CAP = { n: 6, slow: 150, warm: 2, fast: 50, fastRun: 3, memGap: 10000 }
+const cap = { iv: [], prev: false, warm: CAP.warm, fastRun: 0 }
+function capReset() { cap.iv.length = 0; cap.prev = false; cap.warm = CAP.warm; cap.fastRun = 0 }
+function noteFrame(drawn, et) {
+  const consecutive = drawn && cap.prev
+  cap.prev = drawn
+  if (!consecutive || et >= STALL) return
+  if (cap.warm > 0) { cap.warm--; return }
+  const ms = et * 1000
+  if (A.constrained) {
+    cap.fastRun = ms < CAP.fast ? cap.fastRun + 1 : 0
+    if (cap.fastRun >= CAP.fastRun) { A.constrained = false; cap.iv.length = 0; cap.fastRun = 0 }
+    return
+  }
+  cap.iv.push(ms)
+  if (cap.iv.length > CAP.n) cap.iv.shift()
+  if (cap.iv.length === CAP.n && [...cap.iv].sort((a, b) => a - b)[(CAP.n >> 1) - 1] > CAP.slow) { A.constrained = true; cap.iv.length = 0; cap.fastRun = 0 }
+}
 let last = performance.now()
 function frame(now) {
-  const dt = Math.min(0.05, (now - last) / 1000)
+  // POST-M5 PERF: two clocks. `et` is the real time since the last frame (up to a stall) and drives the closed-form
+  // convergences: place and frame position, work tuning, registration drag, imprint visibility, pointer velocity decay.
+  // `dt` keeps its 50 ms cap for everything that integrates: the material physics, hold load, squeeze, Lab rooms.
+  const et = Math.min(STALL, Math.max(0, (now - last) / 1000))
+  const dt = Math.min(0.05, et)
   last = now
   // positions land exactly on their stop: a place that has arrived is still, so it is not drawn again
-  if (A.mode === 'index') { snap('pT', 'base', LAST, now, dt); A.p = damp(A.p, A.pT, 3.4 * RM, dt); if (Math.abs(A.p - A.pT) < 5e-4 && A.pT === A.base) A.p = A.pT }
-  if (A.mode === 'world') { snap('wpT', 'wbase', lastFrame(), now, dt); A.wp = damp(A.wp, A.wpT, 3.4 * RM, dt); if (Math.abs(A.wp - A.wpT) < 5e-4 && A.wpT === A.wbase) A.wp = A.wpT }
+  if (A.mode === 'index') { snap('pT', 'base', LAST, now, et); A.p = damp(A.p, A.pT, 3.4 * RM, et); if (Math.abs(A.p - A.pT) < 5e-4 && A.pT === A.base) A.p = A.pT }
+  if (A.mode === 'world') { snap('wpT', 'wbase', lastFrame(), now, et); A.wp = damp(A.wp, A.wpT, 3.4 * RM, et); if (Math.abs(A.wp - A.wpT) < 5e-4 && A.wpT === A.wbase) A.wp = A.wpT }
   if (A.mode === 'index' && A.base !== A.prevBase) { onArrive(A.base, A.prevBase); A.prevBase = A.base }
-  tuneWork(now, dt)
+  tuneWork(now, et)
   IDX[3] = WORKS[clamp(Math.round(A.wt), 0, N - 1)]
 
   let from, to, front, overlay = 0
@@ -1469,7 +1509,7 @@ function frame(now) {
   } else if (A.mode === 'world') [from, to, front] = scrub(worldFor(A.k), A.wp)
   else { from = A.from; to = A.to; front = A.front }
 
-  registration(now, dt)
+  registration(now, et)
   updatePress(now, dt)
   updateSqueeze(dt)
   runPending()
@@ -1524,13 +1564,13 @@ function frame(now) {
   // how much of the visit's imprint each place lets show; at rest everything else is straight, so it shows most
   const stop = Math.round(A.p)
   const impT = A.mode !== 'index' ? 0 : stop === 4 ? 1 : stop === 5 ? 1.35 : 0.75
-  phys.impVis = damp(phys.impVis, impT, stop === 5 ? 1.1 : 3, dt)
+  phys.impVis = damp(phys.impVis, impT, stop === 5 ? 1.1 : 3, et)
 
   const src = { x: ptr.x, y: ptr.y, vx: ptr.vx, vy: ptr.vy, hover: ptr.hover }
   const pr = A.press
   const devs = pr && pr.st.beneath !== 'pin' ? [{ x: pr.f.cx, y: pr.f.cy, ax: pr.f.hw * 1.25, ay: 36 + pr.f.h * 0.9, amt: clamp(pr.L * 1.35, 0, 1) }] : []
   phys.step(dt / 2, [src], devs); phys.step(dt / 2, [src], devs)
-  ptr.vx *= Math.exp(-dt * 9); ptr.vy *= Math.exp(-dt * 9)
+  ptr.vx *= Math.exp(-et * 9); ptr.vy *= Math.exp(-et * 9)
   surface.phys(phys)
 
   const [px0, py0, idx] = penAt(to, front)
@@ -1540,7 +1580,10 @@ function frame(now) {
   surface.penCol = to.ink
   surface.pair(from, to, front)
   surface.overlay = overlay
-  surface.time = now / 1000
+  // POST-M5 PERF: while render capacity is constrained the ambient clock stands still (a shiver keeps it running), so the
+  // rows keep the shape they had and a redraw for a real change shows them exactly as they were. Otherwise 0: unchanged.
+  if (A.constrained && A.shiver <= 0.001) A.timeHeld += et
+  surface.time = now / 1000 - A.timeHeld
   surface.shiver = A.shiver
   surface.strip = V.strip
   // a study shows only through a real opening: where Lab media exists the voids are left transparent
@@ -1552,12 +1595,16 @@ function frame(now) {
   // while the work has the whole screen, the surface is not there at all — do not draw it
   const absent = A.mode === 'world' && !A.busy && ABSENT.has(framesOf(A.k)[clamp(Math.round(A.wp), 0, lastFrame())].g) && Math.abs(A.wp - Math.round(A.wp)) < 0.003
   if (!absent) {
-    // a still surface is not drawn again: only waving rows, a shiver or the scan pen need every frame
-    const moving = [from, to, A.beneathSt].some((s) => s && s.amp * (s.ampK ?? 1) > 0.001) || A.shiver > 0.001 || surface.pen[2] > 0
+    // a still surface is not drawn again: only waving rows, a shiver or the scan pen need every frame. POST-M5 PERF: the
+    // waving rows are ambient — they count as motion only while the device can render them (see noteFrame)
+    const ambient = !A.constrained && [from, to, A.beneathSt].some((s) => s && s.amp * (s.ampK ?? 1) > 0.001)
+    const moving = ambient || A.shiver > 0.001 || surface.pen[2] > 0
     const sig = moving ? '' : stillSig(from, to, fs, overlay, front)
-    if (moving || sig !== lastSig || (stillMem !== lastMem && now - lastMemT > 400)) { surface.render(); lastMem = stillMem; lastMemT = now }
+    let drawn = false
+    if (moving || sig !== lastSig || (stillMem !== lastMem && now - lastMemT > (A.constrained ? CAP.memGap : 400))) { surface.render(); drawn = true; lastMem = stillMem; lastMemT = now }
     lastSig = sig; A.cleared = false
-  } else if (!A.cleared) { surface.clear(); A.cleared = true; lastSig = '' }
+    noteFrame(drawn, et)
+  } else if (!A.cleared) { surface.clear(); A.cleared = true; lastSig = ''; capReset() }
   A.jsMs = lerp(A.jsMs || 0, performance.now() - now, 0.05)
   requestAnimationFrame(frame)
 }

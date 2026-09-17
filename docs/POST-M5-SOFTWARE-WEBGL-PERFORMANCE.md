@@ -125,5 +125,10 @@ iPhone 7 Plus, iOS 15.8.8, Safari, against the deployed production build (`yucel
 - [x] Hold → swipe
 - [x] Rotation and continuity of normal interaction
 - [x] After 60 s idle, the ambient wave is still moving
+- [x] App sent to the background, then brought back to the foreground:
+  - no stale visual state;
+  - no input lock;
+  - the hero ambient wave resumed correctly;
+  - the constrained-render mode did not falsely activate.
 
 **The constrained-render mode did not falsely activate on the real iPhone.** If it had engaged, the ambient wave would have stopped. It was still moving after 60 seconds idle.

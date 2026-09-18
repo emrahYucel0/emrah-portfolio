@@ -16,6 +16,18 @@ interface C2Module {
 }
 
 let modulePromise: Promise<C2Module> | null = null
+/** the runtime has put its first frame on the screen — only then may the semantic shell step aside */
+let presented = false
+
+/**
+ * POST-M5 LCP/HANDOFF — the moment the runtime's first frame is on the screen.
+ * mountC2() resolves when the runtime is ready to draw, one frame before it has drawn. The runtime's own
+ * loop is already queued, so the next animation frame draws it and the one after that runs with those
+ * pixels composited — the same two-frame confirmation the runtime uses to retire its static hero.
+ */
+const firstFrameOnScreen = () => new Promise<void>((resolve) => {
+  requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+})
 
 function createHostDom() {
   if (document.getElementById('surface')) return
@@ -76,6 +88,12 @@ export function useC2Engine() {
       const m = mod as C2Module
       m.configure(options())
       await m.mountC2()
+      // the shell keeps the screen until there is something to hand it over to: on a slow connection the
+      // runtime's chunk, its fonts and its textures arrive long after Vue has mounted, and retiring the
+      // shell at mount left the visitor with an empty page for as long as that took (measured: 3.4 s on
+      // Slow 4G, 12 s on a severe link). Nothing is hidden before something has replaced it.
+      await firstFrameOnScreen()
+      presented = true
       document.documentElement.dataset.c2 = 'on'
       return m
     })
@@ -94,7 +112,8 @@ export function useC2Engine() {
 
   const setActive = (on: boolean) => {
     if (!import.meta.client) return
-    if (on) document.documentElement.dataset.c2 = 'on'
+    // returning to a locale route hands the screen back at once — the runtime is already on it
+    if (on) { if (presented) document.documentElement.dataset.c2 = 'on' }
     else delete document.documentElement.dataset.c2
   }
 

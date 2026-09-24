@@ -74,6 +74,18 @@ body.in-world .bottom .roles { opacity: 0; }
 
 .layer { position: absolute; inset: 0; opacity: 0; transition: opacity .6s ease; pointer-events: none; }
 .layer.on { opacity: 1; transition-delay: .1s; }
+/* Reduced motion: a destination's text is shown or it is not — the fade is switched off, so a layer is never
+   left part-way through one and nothing of a place the visitor has left can be painted over the place they are in.
+   The state is carried by opacity alone, on the layer itself. `visibility: hidden` for the inactive layers was
+   tried and is not safe here: WebKit does not reliably restore an inherited `visible` through the About reading
+   panel's scroll container when its layer stops being hidden, and stating it on every descendant does not help
+   either — the descendants' styles are not always recomputed when the class on their layer changes. Either way
+   the destination's own text stays unpainted under a live layer, which is the failure this is here to prevent.
+   Opacity has no such problem: it applies to the layer as a whole and is never inherited. */
+@media (prefers-reduced-motion: reduce) {
+  .layer { opacity: 0; transition: none; }
+  .layer.on { opacity: 1; transition: none; transition-delay: 0s; }
+}
 .layer.on a, .layer.on button, .layer.on .scroll { pointer-events: auto; }
 .layer > * { position: absolute; }
 

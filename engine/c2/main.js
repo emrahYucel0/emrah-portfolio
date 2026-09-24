@@ -13,6 +13,7 @@ import '@fontsource/geist-mono/400.css'
 import './style.css'
 import gsap from 'gsap'
 import { createSurface, feature, gather, squeeze } from './surface.js'
+import { createFlat, paintFlat } from './flat.js'
 import { createPhysics } from './physics.js'
 import * as ST from './states.js'
 import { framesFor, GEOM, ABSENT, psiHTML } from './world.js'
@@ -88,7 +89,10 @@ const SOFTWARE_GL = (() => {
   release(strict); release(plain)
   return soft
 })()
-const surface = createSurface(canvas)
+// Reduced motion draws the surface directly in 2D (flat.js): the visible pixels are produced by that renderer, so
+// there is no WebGL frame to present and nothing that can be presented late. Normal motion is the WebGL engine,
+// unchanged. The two renderers take the same state objects and the same features — one composition, two renderers.
+const surface = REDUCED ? createFlat(canvas) : createSurface(canvas)
 const phys = createPhysics()
 
 const V = { W: 1, H: 1, u: 1, P: false, T: false, S: false, dpr: 1, pad: 36, strip: 50 }
@@ -1194,6 +1198,16 @@ function layoutDOM() {
 }
 const onState = new Map()
 const setOn = (el, on) => { if (onState.get(el) !== on) { onState.set(el, on); el.classList.toggle('on', on); el.inert = !on } }
+// the destination the UI belongs to, read from the fields that already own it: the mode, the stop the engine has
+// been sent to, and whether the About room is open. No second state machine — these are the same fields routing,
+// history and the surface are driven by.
+const DEST_AT = ['name', 'creative', 'system', 'work', 'lab', 'rest']
+function uiDestination() {
+  if (A.mode === 'world' || A.mode === 'exit') return 'world'
+  if (A.aboutOpen) return A.aboutDetail ? 'about-detail' : 'about'
+  if (A.mode !== 'index') return 'name'
+  return DEST_AT[clamp(A.base, 0, DEST_AT.length - 1)]
+}
 let lastHint = '', lastTone = '', lastTT = '', lastTB = '', lastBg = '', lastWork = '', lastWB = ''
 function hintFor(stop) {
   const since = performance.now() - A.arrivedAt
@@ -1231,16 +1245,31 @@ function domUpdate(from, to, front) {
   const idleIdx = A.mode === 'index' && !A.busy
   const loaded = (A.press && A.press.L > 0.1 && A.press.st.beneath !== 'pin') || !!A.squeeze
   const at = (i) => (Math.abs(A.p - i) < 0.03 && Math.abs(A.p - A.base) < 0.2) || face === IDX[i]
-  setOn(D.about, A.aboutOpen && !A.aboutDetail && A.aboutDetailK < 0.02 && !!A.about && A.about.h > aboutHalf() * 0.82 && A.about.h < aboutHalf() * 1.15)
-  setOn(D.detail, A.aboutOpen && A.aboutDetail && A.aboutDetailK > 0.72)
+  if (REDUCED) {
+    // the destination owns its text. In normal motion a layer arrives with the picture, so it is asked for from
+    // the picture — how far the composition has travelled, how open the room has grown. Reduced motion has no
+    // travel to read and no room to wait for: it names the destination and the layer that belongs to it.
+    const d = uiDestination()
+    setOn(D.about, d === 'about')
+    setOn(D.detail, d === 'about-detail')
+    setOn(D.creative, d === 'creative')
+    setOn(D.system, d === 'system')
+    setOn(D.work, d === 'work')
+    setOn(D.lab, d === 'lab')
+    setOn(D.rest, d === 'rest')
+    setOn(D.world, d === 'world')
+  } else {
+    setOn(D.about, A.aboutOpen && !A.aboutDetail && A.aboutDetailK < 0.02 && !!A.about && A.about.h > aboutHalf() * 0.82 && A.about.h < aboutHalf() * 1.15)
+    setOn(D.detail, A.aboutOpen && A.aboutDetail && A.aboutDetailK > 0.72)
+    setOn(D.creative, idleIdx && at(1) && !loaded)
+    setOn(D.system, idleIdx && at(2) && !loaded)
+    setOn(D.work, idleIdx && at(3) && !loaded)
+    setOn(D.lab, A.mode === 'index' && at(4))
+    setOn(D.rest, idleIdx && at(5) && A.restOpen > 0.72)
+    setOn(D.world, A.mode === 'world' || A.mode === 'exit')
+  }
   if (D.lead.hidden !== A.aboutOpen) D.lead.hidden = A.aboutOpen
-  setOn(D.creative, idleIdx && at(1) && !loaded)
-  setOn(D.system, idleIdx && at(2) && !loaded)
-  setOn(D.work, idleIdx && at(3) && !loaded)
-  setOn(D.lab, A.mode === 'index' && at(4))
-  setOn(D.rest, idleIdx && at(5) && A.restOpen > 0.72)
   const inWorld = A.mode === 'world'
-  setOn(D.world, inWorld || A.mode === 'exit')
   const fi = clamp(Math.round(A.wp), 0, lastFrame())
   const near = inWorld && !A.busy && Math.abs(A.wp - fi) < 0.05
   const full = inWorld && WORLD[A.k] ? WORLD[A.k][lastFrame()] : null
@@ -1460,6 +1489,9 @@ function stillSig(from, to, fs, overlay, front) {
   let s = `${from.id}|${to.id}|${from.visitKey || ''}|${to.visitKey || ''}|${q2(front * 100)}|${overlay}|${surface.fill}|${A.beneathSt?.id}|${surface.beneathStart},${surface.beneathCount}|${surface.devId}|${surface.visited.join('')}|`
   for (const st of [from, to]) { const g = st.reg; s += `${q2(g.a0)},${q2(g.a1)},${q2(g.va0)},${q2(g.va1)},${q2(g.holdA)},${q2(st.fill)},${q2(st.flash)},${q2(st.vis)},${q2(st.lod)}|` }
   for (const f of fs) s += `${f.kind},${q2(f.cx)},${q2(f.cy)},${q2(f.h)},${q2(f.hw)},${q2(f.sigma)},${q2(f.s)},${q2(f.y1)},${q2(f.y2)},${q2(f.falloff)},${q2(f.lip)};`
+  // The flat renderer draws none of the physics — no displacement, no development, no memory — so none of it may
+  // ask for a redraw either: a settled reduced page would otherwise keep redrawing for a grid it never reads.
+  if (surface.flat) { stillMem = 0; return s }
   // memory decays a byte at a time somewhere on the grid almost every frame (0.25%/s): it gets its own hash and may
   // only ask for a redraw every 400ms. Displacement, develop and disturbance are hashed exactly.
   let c = 0, mh = 0
@@ -1500,6 +1532,32 @@ function noteFrame(drawn, et) {
   if (cap.iv.length > CAP.n) cap.iv.shift()
   if (cap.iv.length === CAP.n && [...cap.iv].sort((a, b) => a - b)[(CAP.n >> 1) - 1] > CAP.slow) { A.constrained = true; cap.iv.length = 0; cap.fastRun = 0 }
 }
+// ─── reduced motion: the destination, never the way there ────────────────────
+// Reduced motion keeps the whole engine — routing, history, focus, locale, the places themselves — and gives up
+// only the travel between places. Tweens still run (they own state, history and focus, and their onComplete work
+// must happen); what changes is that nothing the surface draws is ever a sample of one. Every continuous quantity
+// the renderer reads is set here to the value it holds once everything has finished, so the first frame after a
+// navigation is already the destination's canonical composition and the signature then holds still.
+function canonical() {
+  // only what is shown is canonical: the targets stay where the gesture put them, so a drag still carries the
+  // visitor between places (snap() promotes it to a stop) — it is the picture that never shows the way there.
+  if (A.mode === 'index') A.p = A.base
+  if (A.mode === 'world') A.wp = A.wbase
+  A.wt = clamp(Math.round(A.wT), 0, N - 1)
+  A.aboutDetailK = A.aboutDetail ? 1 : 0
+  // the About room: open on the name plate, or mapped onto the detail's blocks. The detail room is derived by
+  // aboutRoomFeatures() from aboutDetailK, which is canonical above; the resting room is stated here.
+  if (A.about) {
+    if (!A.aboutOpen) A.about.h = 0
+    else if (!A.aboutDetail) {
+      const g = aboutFeature(1)
+      A.about.cx = g.cx; A.about.cy = g.cy; A.about.h = g.h; A.about.hw = g.hw
+      A.about.falloff = g.falloff; A.about.power = 2; A.about.lip = 5; A.about.lipW = 7
+    }
+  }
+  A.restOpen = A.base === 5 && !A.aboutOpen ? 1 : 0
+  A.introReg = 0; A.nameAmp = 0
+}
 let last = performance.now()
 function frame(now) {
   // POST-M5 PERF: two clocks. `et` is the real time since the last frame (up to a stall) and drives the closed-form
@@ -1514,6 +1572,7 @@ function frame(now) {
   if (A.mode === 'world') { snap('wpT', 'wbase', lastFrame(), now, et); A.wp = damp(A.wp, A.wpT, 3.4 * RM, et); if (Math.abs(A.wp - A.wpT) < 5e-4 && A.wpT === A.wbase) A.wp = A.wpT }
   if (A.mode === 'index' && A.base !== A.prevBase) { onArrive(A.base, A.prevBase); A.prevBase = A.base }
   tuneWork(now, et)
+  if (REDUCED) canonical()
   IDX[3] = WORKS[clamp(Math.round(A.wt), 0, N - 1)]
 
   let from, to, front, overlay = 0
@@ -1657,38 +1716,11 @@ function startStaticHero() {
 function paintStaticHero() {
   if (!staticEl) return
   staticSig = null   // the next frame takes the repainted layout as the resting state: a resize alone does not wake WebGL
-  const st = IDX[0], dpr = V.dpr * V.u, W = V.W, H = V.H, s = st.spacing
-  staticEl.width = Math.round(W * dpr); staticEl.height = Math.round(H * dpr)
-  const ctx = staticEl.getContext('2d'), [tone, solid, voids] = st.c.draw(), tw = tone.width, th = tone.height
-  const px = (c) => c.getContext('2d').getImageData(0, 0, tw, th).data
-  const T = px(tone), So = px(solid), Vo = px(voids)
-  const at = (D, y, x) => D[(y * tw + x) * 4]
-  const bilinear = (D, fy, fx) => {
-    const y0 = clamp(Math.floor(fy), 0, th - 1), y1 = Math.min(th - 1, y0 + 1), ky = clamp(fy - y0, 0, 1)
-    const x0 = clamp(Math.floor(fx), 0, tw - 1), x1 = Math.min(tw - 1, x0 + 1), kx = clamp(fx - x0, 0, 1)
-    return ((at(D, y0, x0) * (1 - kx) + at(D, y0, x1) * kx) * (1 - ky) + (at(D, y1, x0) * (1 - kx) + at(D, y1, x1) * kx) * ky) / 255
-  }
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-  ctx.fillStyle = st.bg; ctx.fillRect(0, 0, W, H)
-  ctx.fillStyle = ST.PAPER; ctx.fillRect(0, V.strip, W, H - V.strip * 2)
-  ctx.fillStyle = ST.INK
-  // the shader's tone gain follows the ambient amplitude, which is 0 at rest; row ends taper across sub-texel samples
-  // (three on a phone, two on a wide screen, where texels are already finer than the rows)
-  const gain = Math.min(1, A.nameAmp * (st.ampK ?? 1)), sub = V.W < 700 ? 3 : 2, cols = tw * sub, cw = W / cols
-  for (let r = 0; r * s <= H + s; r++) {
-    const y = r * s - 0.5 / dpr, fy = ((r * s) / H) * th - 0.5   // row centres on the WebGL pixel-centre grid
-    let runX = 0, runHw = -1
-    for (let cx = 0; cx <= cols; cx++) {
-      let hw = 0
-      if (cx < cols) {
-        const fx = (cx + 0.5) / sub - 0.5
-        hw = st.thick * (0.5 + bilinear(T, fy, fx) * 1.15 * gain)
-        hw += (s * 0.36 - hw) * bilinear(So, fy, fx)
-        hw = Math.round(hw * (1 - bilinear(Vo, fy, fx)) * 16) / 16
-      }
-      if (cx === cols || hw !== runHw) { if (runHw > 0.05) ctx.fillRect(runX, y - runHw, cx * cw - runX, runHw * 2); runX = cx * cw; runHw = hw }
-    }
-  }
+  const dpr = V.dpr * V.u
+  staticEl.width = Math.round(V.W * dpr); staticEl.height = Math.round(V.H * dpr)
+  // the plate is drawn by the same 2D primitive reduced motion draws its whole surface with (flat.js): one row
+  // loop, one set of masks, one visual language. The tone gain follows the ambient amplitude, which is 0 at rest.
+  paintFlat(staticEl.getContext('2d'), IDX[0], { W: V.W, H: V.H, dpr, features: [], fill: 1, amp: A.nameAmp * (IDX[0].ampK ?? 1) })
 }
 function retireStaticHero() {
   const el = staticEl
@@ -1808,7 +1840,8 @@ async function start() {
   A.from = A.to = IDX[0]; A.front = 1
   if (isAboutPath()) { A.pending = 'detail'; document.title = TITLE_ABOUT() } else document.title = TITLE()
   requestAnimationFrame((t) => { last = t; frame(t) })
-  if (SOFTWARE_GL) { startStaticHero(); return }
+  // the static plate exists because software WebGL is slow to draw; reduced motion never draws WebGL at all
+  if (SOFTWARE_GL && !REDUCED) { startStaticHero(); return }
   if (REDUCED) { A.mode = 'index'; A.introReg = 0; A.nameAmp = 0; return }
   playIntro()
 }

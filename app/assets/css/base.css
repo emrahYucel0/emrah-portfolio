@@ -139,6 +139,43 @@ a:hover { text-decoration-style: solid; }
 */
 html[data-c2='on'] #__nuxt { display: none; }
 
+/*
+  FIRST PAINT (see components/C2Plate.vue). The plate ships in the HTML and is painted with the document, so the
+  first thing on screen is the portfolio's own material rather than the semantic shell in document flow. It covers
+  the shell without hiding it — the shell keeps its place in the accessibility tree — and it takes the pointer, so
+  a click during boot cannot land on something the visitor cannot see. The runtime removes it by taking the screen.
+
+  The row metrics are the runtime's own, from states.js: 7px apart and 0.85px of ink on a landscape screen, 5.2 and
+  0.72 on a portrait one, beginning under the top strip. Same paper, same ink, same spacing — so when the runtime
+  arrives it continues this field instead of replacing it.
+*/
+#c2-plate {
+  --p-ink: #121212;
+  --p-space: 7px;
+  --p-thick: 0.85px;
+  --p-strip: calc(50px + env(safe-area-inset-top, 0px));
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  background: var(--ground);
+}
+@media (max-aspect-ratio: 4 / 5) {
+  #c2-plate { --p-space: 5.2px; --p-thick: 0.72px; --p-strip: calc(44px + env(safe-area-inset-top, 0px)); }
+}
+/* a tablet held upright is portrait, but keeps the wider screen's strip */
+@media (max-aspect-ratio: 4 / 5) and (min-width: 700px) {
+  #c2-plate { --p-strip: calc(50px + env(safe-area-inset-top, 0px)); }
+}
+#c2-plate .rows {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--p-strip);
+  bottom: 0;
+  background-image: repeating-linear-gradient(to bottom, var(--p-ink) 0 var(--p-thick), transparent var(--p-thick) var(--p-space));
+}
+html[data-c2='on'] #c2-plate { display: none; }
+
 /* the runtime's own DOM only exists while the runtime has the screen (the x-default entry keeps the shell) */
 html:not([data-c2='on']) #surface,
 html:not([data-c2='on']) #media,

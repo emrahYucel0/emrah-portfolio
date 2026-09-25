@@ -36,17 +36,3 @@ export function imageSource(manifest: Manifest, base: string, media: MediaFile, 
     avif: set(m.avif), webp: set(m.webp), src: opt(mid[1]), toneSrc: opt(m.tone[0]),
   }
 }
-
-export interface ClipSource {
-  n: string
-  w: number
-  h: number
-  aspect: number
-  mp4: string
-  poster: string
-  desc: string
-}
-
-export function clipSource(base: string, n: string, w: number, h: number, desc: string): ClipSource {
-  return { n, w, h, aspect: w / h, mp4: `${base}opt/lab/lab-${n}.mp4`, poster: `${base}opt/lab/lab-${n}.webp`, desc }
-}

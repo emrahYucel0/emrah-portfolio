@@ -7,8 +7,8 @@ const route = useRoute()
 const { start, syncRoute, setActive } = useC2Engine()
 
 onMounted(() => {
-  void start()
   setActive(true)
+  void start()
 })
 
 // the shell owns the URL; the runtime is told after every change, including back/forward and locale

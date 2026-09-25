@@ -1,0 +1,162 @@
+/*
+  LAB — the transplanted bench and its three studies, scoped to the Lab routes.
+
+  The studies were authored against the research site's shell, which gives them `--pad`, a `[data-strip]` strip of a
+  known height and a real width axis. This file supplies exactly that contract and nothing else: it is loaded only
+  by the Lab pages, so no other page's type, spacing or fonts change. Everything here is either a variable the
+  transplanted components read, or a rule that lets their fixed stages live under this site's chrome.
+*/
+
+/*
+  The site's own two faces. The C2 runtime imports them and declares them as its `--mono` and `--sans`, so every
+  word of chrome on the site is set in them — but the runtime is not mounted on the Lab routes, so neither are its
+  faces, and the Lab was left reading in the system stack. That is a visible seam at exactly the boundary this
+  file exists to close: the strip here must be the strip there. They are the research site's faces too, so the
+  studies are also returned to the type they were composed in. Route-local, like everything else here.
+*/
+@import '@fontsource-variable/geist';
+@import '@fontsource/geist-mono/400.css';
+
+/* the WEIGHT study needs a real width axis (62–125); this site's display face has none */
+@font-face {
+  font-family: 'Archivo Var';
+  src: url('/fonts/archivo-wdth.woff2') format('woff2-variations'), url('/fonts/archivo-wdth.woff2') format('woff2');
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: swap;
+}
+
+/*
+  The Lab routes hand the screen back to the document: the C2 runtime is not mounted here (see layouts/default.vue),
+  so the page scrolls natively — which is what the studies read their parameter from. This is route-local: every
+  other route keeps the runtime and its gesture ownership exactly as before.
+
+  The two measures below are the ones the studies compose against, and they are the research site's own values, to
+  the character: a strip of exactly one row, and the same edge. Both this site's runtime strip and the research
+  site's strip are 50px, 44px on a portrait screen, plus whatever a notch takes — so the field a study is given
+  here is the field it was authored in, and nothing is lost to chrome that wrapped.
+*/
+.lab-route {
+  --pad: max(clamp(18px, 2.5vw, 36px), env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+  --strip: calc(50px + env(safe-area-inset-top, 0px));
+  --sans: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (max-aspect-ratio: 4 / 5) {
+  .lab-route { --strip: calc(44px + env(safe-area-inset-top, 0px)); }
+}
+.lab-route main { padding: 0; }
+
+/*
+  LAB HOME IS ONE DESTINATION, NOT A PAGE. The bench occupies the screen the way any other destination does, and a
+  vertical gesture on it means the site's index (useLabSpine), not a document being scrolled. So the document is not
+  a scroller here at all: there is nothing below the bench to reach, and nothing of another place can appear in the
+  same frame. The studies are documents, and keep every bit of their scroll.
+*/
+/*
+  THIS SELECTOR HAS TO OUT-SPECIFY base.css, AND THAT IS THE POINT. The runtime's stylesheet locks the document for
+  its own gestures; base.css unlocks it again with `html:not([data-c2='on']) body` for the pages the runtime does
+  not own — the entry, the error page. The Lab routes are exactly that: the runtime is deliberately unmounted, so
+  `data-c2` is absent and the unlock applied here too, at specificity (0,1,2) against this rule's (0,1,0).
+
+  So Lab Home was handed back to the browser: `overflow: visible`, `touch-action: auto`. On a desktop that is
+  invisible, because a wheel event arrives whatever touch-action says. On a phone it is the whole bug — Safari
+  claimed the vertical swipe as a page pan, cancelled the pointer stream before the threshold was reached, and
+  rubber-banded (which is the scrollbar the review saw). The unlock's own comment in base.css describes this
+  failure exactly; it simply did not know about a route that is neither the runtime's nor an ordinary document.
+
+  Lab Home is one destination and owns its vertical gesture. The studies are documents and keep the unlock.
+*/
+html:not([data-c2='on']) body.lab-route--home,
+html body.lab-route--home {
+  height: 100svh;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+/*
+  touch-action does not inherit, but the browser intersects it up the ancestor chain — the sheet states it too.
+
+  And the bench keeps a floor under itself: on the research site it was a section of a page that scrolled, so a very
+  short screen could simply be scrolled through. Here it is the destination itself, and a destination is one screen,
+  so the floor is lifted and the bench composes in the height it actually has. Nothing about the bench changes to
+  suit this; its own short-screen rules, which it already carries, are what it composes by.
+*/
+.lab-route--home .lab-stage { touch-action: none; min-height: 0; }
+
+/*
+  ONE RETURN, AND IT IS THE STUDY'S OWN. A visitor inside WEIGHT, LINE or TONE needs the way back to the bench
+  where they are looking, not folded into the strip's list of places — so the study's own ← LAB is the control,
+  and the strip drops its Lab entry on these routes (LabChrome) so the two never compete. The link used to point
+  at the research site's home-page anchor, which on this site went nowhere near the bench; it points at the bench.
+
+  It is given the target the rest of the site gives a control — 44px of height, its own ground so it is legible
+  over whatever the experiment has drawn under it, and a ring that clears the text.
+*/
+.lab-route .study .back {
+  top: calc(var(--strip) + 10px);
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 10px;
+  margin-right: -10px;
+  background: color-mix(in srgb, var(--ground) 86%, transparent);
+  backdrop-filter: blur(3px);
+  color: var(--ink);
+}
+.lab-route .study .back:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/*
+  THE BENCH: THREE STUDIES, AND THEY CAN BE ENTERED. The sheet is dense and the registered record is large, so the
+  other two could read as annotation on a drawing rather than as the two studies you have not opened. Nothing about
+  the bench's composition changes — the register, the datum, the row geometry and the registered record's dominance
+  are untouched. The unregistered records are given a little more optical weight, a pointer, and an answer when the
+  visitor reaches them: the record takes its own ground and comes up to full ink. That is the affordance.
+*/
+.lab-route .lab-stage .rec { cursor: pointer; }
+.lab-route .lab-stage .rec .nm { font-size: 20px; font-variation-settings: 'wdth' 86, 'wght' 480; }
+/* reaching a record registers it a little: full ink, and the width axis opens — the sheet's own language, not a card */
+.lab-route .lab-stage .rec:hover,
+.lab-route .lab-stage .rec:focus-visible { color: var(--ink); }
+.lab-route .lab-stage .rec:hover .nm,
+.lab-route .lab-stage .rec:focus-visible .nm { font-variation-settings: 'wdth' 92, 'wght' 580; }
+/* the second, misregistered impression is what says "not registered"; it comes into register as the record is reached */
+.lab-route .lab-stage .rec:hover .nm::after,
+.lab-route .lab-stage .rec:focus-visible .nm::after { opacity: 0.07; }
+.lab-route .lab-stage .rec[aria-current] { cursor: default; }
+@media (max-width: 760px) { .lab-route .lab-stage .rec .nm { font-size: 17px; } }
+@media (max-height: 470px) { .lab-route .lab-stage .rec .nm { font-size: 16px; } }
+
+/*
+  THE SMALLEST PHONE STILL IN SERVICE. At 320×568 the sheet has to carry three records, the datum's terminal and a
+  four-line note between a 44px strip and a 32px foot, and there was not enough room between the lowest record and
+  the note for the terminal to stand clear of both. The composition is unchanged; the note and the terminal are
+  simply set at the measure this screen can hold, which frees the rows they needed.
+*/
+@media (max-width: 360px) {
+  .lab-route .lab-stage .note { font-size: 9px; line-height: 1.6; max-width: none; }
+  .lab-route .lab-stage .open-link { padding: 6px 0 6px 14px; }
+  .lab-route .lab-stage .open .t2 { margin-top: 5px; }
+}
+
+/*
+  LINE'S QUIET STATES ARE STATES, NOT A STALL. At the taut end the field is one line on an empty ground, and a
+  first-time visitor can read that as a render that stopped. The experiment is not touched and the field is not
+  filled: what changes is that the two things already on screen which say otherwise — the state's name, and the
+  ledger saying how much of the line is still at the edge — are given enough presence to be read first.
+*/
+.lab-route .study-line .state b { font-size: 12.5px; letter-spacing: 0.1em; }
+.lab-route .study-line .state span { color: color-mix(in srgb, var(--ink) 62%, transparent); }
+.lab-route .study-line .ledger { color: color-mix(in srgb, var(--ink) 68%, transparent); }
+.lab-route .study-line .ledger b { font-size: 12.5px; }
+
+/*
+  TONE'S THREE SOURCES ARE CONTROLS. They sit on the experiment's own ground, so at 10.5px muted they could be
+  missed altogether. They keep their size and their place — a tab bar would overpower the field — and gain the
+  target, the pointer and the answer that any control on this site has.
+*/
+.lab-route .study-tone .src button { min-height: 44px; padding-inline: 8px; margin-inline: -8px; }
+.lab-route .study-tone .src button:hover { color: var(--ink); }
+.lab-route .study-tone .src button:hover i { background: color-mix(in srgb, currentColor 40%, transparent); }
+.lab-route .study-tone .src button[aria-current='true'] { letter-spacing: 0.14em; }
+.lab-route .study-tone .rows { color: color-mix(in srgb, var(--ink) 68%, transparent); }

@@ -15,8 +15,16 @@ export type Locale = (typeof LOCALES)[number]
 export const PROJECT_IDS = ['istanbul', 'ege', 'evden'] as const
 export type ProjectId = (typeof PROJECT_IDS)[number]
 
-export const STUDY_IDS = ['01', '02', '03', '04', '05'] as const
+export const STUDY_IDS = ['weight', 'line', 'tone'] as const
 export type StudyId = (typeof STUDY_IDS)[number]
+
+/** one study, as the bench and the study itself name it */
+export interface StudyCopy {
+  name: string
+  prim: string
+  note: string
+  question: string
+}
 
 /** PageSpeed Insights, as verified. null means not verified, and is never shown. */
 export type PsiRow = [number | null, number | null, number | null, number | null]
@@ -45,12 +53,6 @@ export interface ProjectFacts {
   stack: string
   psi: Psi
   media: Record<string, MediaFile>
-}
-
-export interface StudyFacts {
-  id: StudyId
-  w: number
-  h: number
 }
 
 export interface ProfileFacts {
@@ -96,6 +98,7 @@ export interface LocaleCopy {
   meta: {
     home: { title: string; description: string }
     about: { title: string; description: string }
+    lab: { title: string; description: string }
     /** M5: text alternative of the social share image */
     imageAlt: string
   }
@@ -137,18 +140,36 @@ export interface LocaleCopy {
     projectNav: string
     projects: Record<ProjectId, ProjectCopy>
   }
-  lab: { title: string; line: string; heading: string; studies: Record<StudyId, string> }
+  lab: {
+    title: string
+    line: string
+    heading: string
+    /** the bench's own notation */
+    registered: string
+    registering: string
+    open: string
+    count: string
+    back: string
+    studies: Record<StudyId, StudyCopy>
+    /** what each study says as it is read */
+    line_states: string[]
+    line_says: string[]
+    line_spent: string
+    line_held: string
+    tone_sources: string[]
+    tone_rows: string
+    weight_holds: string
+  }
   contact: { heading: string; emailLabel: string; phoneLabel: string }
   psi: { head: string; mobile: string; desktop: string; labels: [string, string, string, string]; short: [string, string, string, string] }
+  /** the pointer instruction a place shows while it still asks something of the visitor — the hero and the Lab
+   *  stop no longer do (About is a control on the hero; the Lab is a route that opens on arrival) */
   hints: {
     quietSeparator: string
-    open: string
-    openTouch: string
     face: string
     faceTouch: string
     work: string
     workTouch: string
-    lab: string
     world: string
   }
   a11y: {

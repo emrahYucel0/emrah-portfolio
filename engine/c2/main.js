@@ -19,7 +19,7 @@ import * as ST from './states.js'
 import { framesFor, GEOM, ABSENT, psiHTML } from './world.js'
 import { identity, about, capabilities, workIntro, works, lab, contact, previewOf, ui as TXT, applyLocale } from './content.js'
 import { termHtml } from '../../shared/content/term'
-import { mediaElement, placeMedia, loadImage, prepareTone, labElement, setMediaScale } from './media.js'
+import { mediaElement, placeMedia, loadImage, prepareTone, setMediaScale } from './media.js'
 
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches
 const TOUCH = matchMedia('(pointer: coarse)').matches
@@ -46,11 +46,17 @@ const idle = typeof requestIdleCallback === 'function' ? (f) => requestIdleCallb
 // M1 TRANSPLANT: the host application owns routing (its routes are locale-prefixed) and receives the
 // semantic checkpoints. The defaults below reproduce the standalone prototype exactly.
 const ROOT = location.pathname.replace(/about\/?$/, '') || '/'
-let HOME_URL = ROOT + location.search, ABOUT_URL = `${ROOT}about${location.search}`
+let HOME_URL = ROOT + location.search, ABOUT_URL = `${ROOT}about${location.search}`, LAB_URL = `${ROOT}lab${location.search}`
 let isAboutPath = () => /\/about\/?$/.test(location.pathname)
+/**
+ * The place the visitor asked for on their way back from the Lab. The bench is a route of its own, so leaving it
+ * is a route change and the runtime is mounted again already owing the visitor a destination. The host keeps that
+ * intent on the history entry — not in the URL — and hands it over here, once.
+ */
+let takeArrival = () => null
 const HOST = {
   push: (url, state) => history.pushState(state, '', url),
-  // M2: a language change replaces the current entry — Back returns to the previous place, not the previous language
+  // replacing the current entry, for a change of URL that is not a step the visitor took
   replace: (url, state) => history.replaceState(state, '', url),
   back: () => history.back(),
   emit: () => {},
@@ -60,7 +66,9 @@ const HOST = {
 export function configure(o = {}) {
   if (o.homeUrl) HOME_URL = o.homeUrl
   if (o.aboutUrl) ABOUT_URL = o.aboutUrl
+  if (o.labUrl) LAB_URL = o.labUrl
   if (o.isAboutPath) isAboutPath = o.isAboutPath
+  if (o.arrival) takeArrival = o.arrival
   if (o.push) HOST.push = o.push
   if (o.replace) HOST.replace = o.replace
   if (o.back) HOST.back = o.back
@@ -145,7 +153,7 @@ function measure() {
 
 const LAST = 5
 const N = works.length
-let IDX = [], WORKS = [], WORLD = {}, FR = {}, BLANK = null, MEDIA = {}, BRIDGE = null, LABM = null
+let IDX = [], WORKS = [], WORLD = {}, FR = {}, BLANK = null, MEDIA = {}, BRIDGE = null
 const framesOf = (k) => (FR[k] ??= framesFor(V, works[k]))
 const lastFrame = (k = A.k) => framesOf(k).length - 1
 const worldFor = (k) => {
@@ -171,10 +179,12 @@ const A = {
   staticHero: false,                 // POST-M5 PERF: software renderer, WebGL not yet drawn (see startStaticHero)
   introReg: 1, nameAmp: 1, restReg: 0, restOpen: 0, nextReg: 1, nextArmed: false, regDrag: 0, regDragT: 0, quality: {}, shiver: 0,
   wt: 0, wT: 0, wLocked: -1, visited: new Set(), visitOrder: [], releaseK: null,
-  pins: [], yieldMarks: [], seeded: 0, aboutMark: null, scarcity: 0, restK: 0.62,
-  learned: { open: false, face: false, work: false, pinch: false, lab: false, world: false }, arrivedAt: 0,
+  yieldMarks: [], seeded: 0, aboutMark: null,
+  learned: { open: false, face: false, work: false, pinch: false, lab: false, world: false, next: false }, arrivedAt: 0,
   pending: null, lastIdx: 0, lastTo: null, cleared: false,
-  aboutDetailK: 0, labNext: 0, labActive: null, bridgeF: null, bridgePK: 0,
+  // the Lab stop hands over to the bench when travel settles on it, never when a state is restored onto it
+  labArmed: false, hush: 0,
+  aboutDetailK: 0, bridgeF: null, bridgePK: 0,
 }
 const ptr = { x: -1e4, y: -1e4, vx: 0, vy: 0, t: 0, hover: false, touch: false, down: false, downT: 0, sx: 0, sy: 0, moved: 0, axis: null, rub: 0, ui: false }
 const touches = new Map()
@@ -252,6 +262,11 @@ function warmStep(deadline) {
 const settledAt = (i) => A.mode === 'index' && A.base === i && Math.abs(A.p - i) < 0.04
 function scrollBy(d, touch = false) {
   const now = performance.now()
+  // A gesture that already carried the visitor to this place does not also carry them past it. Leaving the Lab
+  // hands over on the threshold, while the finger is still down and while a trackpad is still coasting, so the
+  // runtime takes the screen back mid-gesture: what arrives here first is a tail with no gesture behind it. It is
+  // spent, not obeyed — the hush re-arms for as long as the tail keeps coming and ends at the first real gap.
+  if (A.hush) { if (now < A.hush) { A.hush = now + 140; return } A.hush = 0 }
   if (A.busy || A.squeeze || A.mode === 'intro') return
   // in the long About the wheel reads; it never throws the reader out of the room
   if (A.aboutOpen) { if (!A.aboutDetail && A.aboutDetailK < 0.01 && now - A.lastInput > 120) closeAbout(); A.lastInput = now; return }
@@ -276,15 +291,16 @@ function scrollBy(d, touch = false) {
     A.wpT = clamp(A.wpT + d, 0, last)
     A.learned.world = true
   } else return
-  A.gesture = true; A.lastInput = now
+  A.gesture = true; A.lastInput = now; A.labArmed = true
 }
 function go(i) {
   if (A.mode === 'index') { if (i === 4 && settledAt(3)) { startBridge(); return } A.base = A.pT = clamp(i, 0, LAST) }
   else if (A.mode === 'world') { A.wbase = A.wpT = clamp(i, 0, lastFrame()) }
-  A.gesture = false; A.lastInput = -1e9
+  A.gesture = false; A.lastInput = -1e9; A.labArmed = true
 }
 const canScroll = (el, dy) => (dy > 0 ? el.scrollTop + el.clientHeight < el.scrollHeight - 1 : el.scrollTop > 0)
 addEventListener('wheel', (e) => {
+  if (!owns()) return
   const sc = e.target.closest?.('.scroll')
   if (sc && canScroll(sc, e.deltaY)) return   // reading text scrolls the text, not the surface
   e.preventDefault()
@@ -296,6 +312,13 @@ addEventListener('wheel', (e) => {
 // squeeze (or nothing, where no squeeze is possible), and swiping never worked again. One idempotent ending, used
 // by every path that can end a gesture, puts the input back to rest; a non-forced press releases itself on the
 // next frame exactly as if the finger had lifted.
+/**
+ * ROUTE-LOCAL HANDOFF. The runtime keeps running and keeps its visit, but on a route it does not own — the Lab,
+ * where the document scrolls and a study reads that scroll — it answers nothing and draws nothing. Ownership is
+ * the same flag the shell uses to show the surface at all, so the two can never disagree.
+ */
+const owns = () => document.documentElement.dataset.c2 === 'on'
+
 function endGesture() {
   touches.clear()
   if (A.squeeze) endSqueeze()
@@ -303,18 +326,28 @@ function endGesture() {
   if (ptr.touch) ptr.hover = false
 }
 addEventListener('pointerdown', (e) => {
+  if (!owns()) return
   A.kbd = false   // M4 A11Y: a pointer is in use — nothing moves focus on its behalf
   // the first finger of a gesture: nothing else is on the glass, whatever an interrupted gesture left behind
   if (e.pointerType === 'touch' && e.isPrimary && (touches.size || ptr.down)) endGesture()
-  if (e.target.closest('a, button, .scroll')) { ptr.ui = true; return }
+  /*
+   * A CONTROL ON THE MATERIAL CANNOT BE A DEAD PATCH OF SCREEN. Every other control on the surface sits in a strip
+   * or in an opened room, at the edge of what the thumb does; the hero's About sits in the middle of the field,
+   * where a swipe naturally begins. Marked `data-through`, the gesture is still tracked, so it travels to Creative
+   * from there like anywhere else — but the pointer stays marked as UI, so it never loads the material and never
+   * taps it, and the click a swipe ends in is swallowed below. One gesture still means one thing.
+   */
+  const on = e.target.closest('a, button, .scroll')
+  if (on && !on.hasAttribute('data-through')) { ptr.ui = true; return }
   if (e.pointerType === 'touch') {
     touches.set(e.pointerId, { x: e.clientX / V.u, y: e.clientY / V.u })
     if (touches.size === 2) { startSqueeze(); return }
     if (touches.size > 2) return
   }
-  Object.assign(ptr, { down: true, downT: performance.now(), sx: e.clientX / V.u, sy: e.clientY / V.u, x: e.clientX / V.u, y: e.clientY / V.u, moved: 0, axis: null, rub: 0, ui: false, touch: e.pointerType !== 'mouse' })
+  Object.assign(ptr, { down: true, downT: performance.now(), sx: e.clientX / V.u, sy: e.clientY / V.u, x: e.clientX / V.u, y: e.clientY / V.u, moved: 0, axis: null, rub: 0, ui: !!on, swiped: false, touch: e.pointerType !== 'mouse' })
 })
 addEventListener('pointermove', (e) => {
+  if (!owns()) return
   const now = performance.now(), dts = Math.max(8, now - ptr.t) / 1000
   if (e.pointerType === 'touch' && touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX / V.u, y: e.clientY / V.u })
   if (A.squeeze) return
@@ -356,6 +389,8 @@ const up = (e) => {
   }
   // a cancelled gesture was not a tap
   if (e?.type !== 'pointercancel' && ptr.down && !ptr.ui && now - ptr.downT < 200 && ptr.moved < 8) tap(ptr.x, ptr.y)
+  // a gesture that travelled was not a click on what it started on (see the swallow in the UI's click handler)
+  ptr.swiped = ptr.down && (ptr.axis !== null || ptr.moved > 12)
   ptr.down = false; ptr.axis = null; ptr.ui = false; ptr.rub = 0
   if (ptr.touch) ptr.hover = false
   A.lastInput = now
@@ -395,8 +430,7 @@ addEventListener('keydown', (e) => {
   if (['ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); if (A.aboutOpen) { if (!A.aboutDetail) closeAbout(); return } go((A.mode === 'world' ? A.wbase : A.base) - 1) }
   if (e.key === 'Enter') {
     const st = current()
-    if (A.mode === 'index' && st.beneath === 'pin') { const p = freeSpot(); forcedPress(p.x, p.y, 1.6) }
-    else if (A.mode === 'index' && st.beneath === 'about') forcedPress(aboutX(), st.layout.gapY)
+    if (A.mode === 'index' && st.beneath === 'about') forcedPress(aboutX(), st.layout.gapY)
     else if (A.mode === 'index' && st.beneath === 'state') forcedPress(V.W * 0.5, st.weak())
     else if ((A.mode === 'index' && st.beneath === 'work') || (A.mode === 'world' && st.beneath === 'next')) { const fr = st.layout.frame; forcedPress(fr.x + fr.w / 2, fr.y + fr.h / 2) }
   }
@@ -431,7 +465,7 @@ function pressable(st, x, y) {
   return false
 }
 function newPress(x, y, st, forced) {
-  const pr = { x, y, L: 0, st, forced, f: feature({ cx: x, cy: y, falloff: st.beneath === 'pin' ? 20 : 24, kind: st.beneath === 'state' ? 1 : 0 }) }
+  const pr = { x, y, L: 0, st, forced, f: feature({ cx: x, cy: y, falloff: 24, kind: st.beneath === 'state' ? 1 : 0 }) }
   A.press = pr; A.features.add(pr.f)
   return pr
 }
@@ -447,14 +481,22 @@ function updatePress(now, dt) {
   if (holding && !pr) { const st = current(); if (pressable(st, ptr.x, ptr.y)) pr = newPress(ptr.x, ptr.y, st, false) }
   if (!pr || pr.done) return
   const st = pr.st
-  if (st.beneath === 'pin') return updatePin(pr, holding, dt)
   if (!pr.forced) {
     if (!holding) return releasePress(pr)
     // worked material is weaker: earlier marks and visited work lower the capacity
     const worked = clamp(phys.memAt(pr.x, st.weak(pr.x, pr.y)) * 1.4, 0, 1)
     const visited = st.workIndex != null && A.visited.has(st.workIndex)
     const cap = (Number.isFinite(st.capacity) ? st.capacity : 2) * (1 - 0.5 * worked) * (visited ? 0.55 : 1)
-    const maxL = Number.isFinite(st.capacity) && st.beneath ? 1 : 0.5
+    /*
+     * THE HERO'S PRESS IS AN ANSWER, NOT A DOOR. About was opened by holding the name — a gesture nothing on screen
+     * taught, and one a visitor could only find by accident. It has a control of its own now (.hero-about), so the
+     * hold is no longer the way in, and must not be: resting a thumb on the field is not a request to leave it.
+     * The material still answers the finger exactly as before — it loads, marks and springs back on release — but
+     * the load stops half way and never yields, which is what the sheet already does wherever there is nothing
+     * beneath it. A forced press is the door and is not capped: the control, the strip, Enter and /about all go
+     * through forcedPress, and open the room the same way they always have.
+     */
+    const maxL = Number.isFinite(st.capacity) && st.beneath && st.beneath !== 'about' ? 1 : 0.5
     pr.L = Math.min(maxL, pr.L + ((1 + ptr.rub * 1.8) / cap) * dt * RM)
     pr.x = damp(pr.x, ptr.x, 2.5, dt)
   }
@@ -485,7 +527,7 @@ function yieldPress(pr) {
   const st = pr.st, f = pr.f
   phys.mark(f.cx, f.cy, V.W * 0.28, 30 + f.h, 0.4, 0.9)
   // the place where the surface gave way is remembered by the sheet
-  if (A.mode === 'index') { A.yieldMarks.push({ x: f.cx, y: st.beneath === 'about' ? IDX[0].layout.gapY : f.cy, big: st.beneath !== 'state' }); HOST.emit('scarCommitted', { x: f.cx / V.W, y: f.cy / V.H, source: st.beneath === 'about' ? 'about' : st.beneath === 'pin' ? 'lab' : 'work' }) }
+  if (A.mode === 'index') { A.yieldMarks.push({ x: f.cx, y: st.beneath === 'about' ? IDX[0].layout.gapY : f.cy, big: st.beneath !== 'state' }); HOST.emit('scarCommitted', { x: f.cx / V.W, y: f.cy / V.H, source: st.beneath === 'about' ? 'about' : 'work' }) }
   haptic([12, 50, 26])
   const tl = gsap.timeline()
   tl.to(A, { shiver: 1, duration: 0.06, ease: 'none' }).to(A, { shiver: 0, duration: 0.28, ease: 'power2.out' })
@@ -495,141 +537,51 @@ function yieldPress(pr) {
   else if (st.beneath === 'next') releaseInto(f, st.layout.next, tl)
 }
 
-// ─── LAB: one budget of material ─────────────────────────────────────────────
-// Holding makes room, and room stays made. But the sheet has only so much free material: every room draws on
-// the same budget. When a room grows past what is left, every other room gives material back; the scarcer the
-// material, the further each push reaches through the rows; and rooms that would overlap push each other apart
-// — across the rows and along them — until the whole field has found a new equilibrium.
-const LAB_AR = () => (V.P ? 2.1 : 2.8)
-// the scarcer the free material, the further each push reaches — bounded, so the reach stays physical and cheap
-// (scarcity is read in steps of 0.05 so the reach settles instead of creeping)
-const reachOf = (f) => (f.base || 18) + (V.P ? 24 : 40) * Math.round(clamp(A.scarcity, 0, 1.2) * 20) / 20
-const labBudget = () => V.W * (V.H - V.strip * 2) * (V.P ? 0.36 : 0.3)
-const roomArea = (f, k = 1) => 2 * f.h * k * f.hw * (0.6 + 0.4 * k) * 1.77
-function updatePin(pr, holding, dt) {
-  const f = pr.f
-  if (!holding && !pr.forced) {
-    A.press = null; pr.done = true
-    A.features.delete(f)
-    if (f.h < 16) { const g = { ...f }; A.features.add(g); gsap.to(g, { h: 0, duration: 0.5, ease: 'power2.out', onComplete: () => A.features.delete(g) }); return }
-    commitPin(f)
-    return
-  }
-  pr.L = Math.min(1, pr.L + (dt / 2.4) * RM)
-  const e = 1 - Math.pow(1 - pr.L, 2.2)
-  f.cx = pr.x; f.cy = pr.y
-  f.ar = LAB_AR(); f.base = 18 + e * 14
-  f.h = (V.P ? 8 : 10) + e * (V.P ? 70 : 118)
-  f.hw = f.h * f.ar
-  f.falloff = reachOf(f)
-  assignEntry(f)
-  if (pr.L >= 1 && !pr.buzzed) { pr.buzzed = true; haptic(10) }
-  // a room made from the keyboard is held for its full length, then kept
-  if (pr.forced && pr.L >= 1) { A.press = null; pr.done = true; A.features.delete(f); commitPin(f) }
+// ─── LAB: the entry ──────────────────────────────────────────────────────────
+/** the three studies, named for a reader who never sees the canvas */
+const STUDY_LIST = () => Object.values(TXT.lab.studies)
+// The Lab is its own place now: the bench at /lab, with the three studies on their own routes. What used to be
+// here — holding to make a room, rooms relaxing against a budget of free material, the five recorded studies
+// playing inside them — is retired. The material memory those rooms left behind (scars, the visit's order, the
+// About mark) is not: it belongs to the sheet, not to the Lab, and Contact still reads it.
+function openLab() {
+  A.learned.lab = true
+  A.labArmed = false
+  HOST.push(LAB_URL, { c2: 'lab' })
 }
-function commitPin(f) {
-  A.pins.push(f); A.learned.lab = true
-  HOST.emit('labRoomCommitted', { x: f.cx / V.W, y: f.cy / V.H, height: f.h })
-  assignEntry(f)
-  if (f.entry != null) A.labActive = f
-  phys.kick(f.cy - f.h - 6, f.h * 1.1, f.cx - f.hw, f.cx + f.hw)
-  phys.kick(f.cy + f.h + 6, -f.h * 1.1, f.cx - f.hw, f.cx + f.hw)
-  haptic(6)
-  while (A.pins.length > 5) {
-    const old = A.pins.shift()
-    phys.scar(old.cx, old.cy, old.hw * 0.4, 5)   // a room that closes leaves its seam behind
-    const g = { ...old }; A.features.add(g)
-    gsap.to(g, { h: 0, duration: 1.3, ease: 'power2.inOut', onComplete: () => A.features.delete(g) })
-  }
-}
-const atRest = () => Math.abs(A.p - 5) < 0.5
-// history at rest is art-directed, not erased: the five largest rooms stay open; the others are already scars
-const REST_ROOMS = () => (V.P ? 3 : 5)
-const shownPins = () => (atRest() ? [...A.pins].sort((a, b) => b.h - a.h).slice(0, REST_ROOMS()) : A.pins)
-const pinScale = () => Math.max(1 - smooth(0.5, 1, Math.abs(A.p - 4)), (1 - smooth(0.5, 1, Math.abs(A.p - 5))) * A.restK)
-function relaxPins(dt, k, P) {
-  const kw = 0.6 + 0.4 * k
-  const act = A.press && !A.press.done && A.press.st.beneath === 'pin' ? A.press.f : null
-  const fixed = []
-  if (act) fixed.push({ f: act, k: 1, kw: 1 })
-  const wedge = IDX[5].features[0]
-  if (Math.abs(A.p - 5) < 0.75 && wedge && wedge.h > 1) fixed.push({ f: wedge, k: 1, kw: 1 })
-  if (Math.abs(A.p - 4) < 0.75) {
-    const c = IDX[4].layout.cap
-    fixed.push({ f: { cx: c.x + c.w / 2, cy: c.y + c.h / 2, h: c.h / 2 + 6, hw: V.P ? 1e5 : c.w * 0.8, falloff: 0 }, k: 1, kw: 1 })
-  }
-  // CONSERVATION: one budget of free material for every room on the sheet
-  if (k > 0.95) {
-    const budget = labBudget()
-    const held = act ? roomArea(act) : 0
-    const others = P.reduce((s, f) => s + roomArea(f), 0)
-    const used = held + others
-    const sT = clamp(used / budget, 0, 1.4)
-    A.scarcity = Math.abs(sT - A.scarcity) < 0.004 ? sT : damp(A.scarcity, sT, 3, dt)
-    // over budget (beyond a 1% tolerance), every room not being held gives material back — until the budget balances,
-    // and then it stops exactly: no sub-pixel creep, so the equilibrium is truly still
-    if (used > budget * 1.01 && others > 1) {
-      if (!A.shrinkTo) {
-        const s = clamp(1 - (used - budget) / others, 0.5, 1)
-        A.shrinkTo = new Map(P.filter((f) => !f.gT).map((f) => [f, Math.max(8, f.h * s)]))
-      }
-    } else A.shrinkTo = null
-    if (A.shrinkTo) {
-      const r = 1 - Math.exp(-2.4 * dt)
-      let done = true
-      for (const [f, target] of A.shrinkTo) {
-        f.h = Math.abs(f.h - target) < 0.25 ? target : lerp(f.h, target, r)
-        if (f.h !== target) done = false
-      }
-      if (done) A.shrinkTo = null
-    }
-  }
-  for (const f of P) { f.hw = f.h * (f.ar || LAB_AR()); f.falloff = reachOf(f) }
-  if (act) act.falloff = reachOf(act)
-  const lo = V.strip + 10, hi = V.H - V.strip - 10
-  const rate = 1 - Math.exp(-5 * dt)
-  const push = (a, b, kb, kwb, both) => {
-    // the height two rooms need between them is the most they both take at any point along the rows they share
-    // a room that is only starting to open has no width yet: never divide by it
-    const dx = b.cx - a.cx, ha = a.h * k, hb = b.h * kb, wa = Math.max(1, a.hw * kw), wb = Math.max(1, b.hw * kwb)
-    let need = 0
-    for (let t = 0; t <= 1.001; t += 0.25) {
-      const ea = (t * dx) / wa, eb = ((1 - t) * dx) / wb
-      need = Math.max(need, ha * Math.exp(-ea * ea) + hb * Math.exp(-eb * eb))
-    }
-    need += Math.min(1, need / Math.max(1, Math.min(ha, hb))) * ((V.P ? 10 : 14) + 0.3 * (a.falloff + b.falloff))
-    const dy = a.cy - b.cy, over = need - Math.abs(dy)
-    if (over <= 0.5) return
-    a.crowd = Math.max(a.crowd || 0, over)
-    if (both) b.crowd = Math.max(b.crowd || 0, over)
-    // side by side, rooms slide along the rows; stacked, they move across them
-    const side = clamp(Math.abs(dx) / ((wa + wb) * 0.9), 0, 1)
-    const d = over * rate
-    const sy = (Math.abs(dy) < 0.5 ? (a.cx <= b.cx ? -1 : 1) : Math.sign(dy)) * d * (1 - 0.55 * side)
-    const sx = (Math.abs(dx) < 0.5 ? (a.cy <= b.cy ? -1 : 1) : -Math.sign(dx)) * d * 1.6 * side
-    if (both) { a.cy += sy / 2; b.cy -= sy / 2; a.cx += sx / 2; b.cx -= sx / 2 } else { a.cy += sy; a.cx += sx }
-  }
-  const key = `${P.length}|${Math.round(A.p * 200)}|${Math.round(A.scarcity * 50)}|${fixed.map((o) => `${Math.round(o.f.cx)},${Math.round(o.f.cy)},${Math.round(o.f.h)}`).join(';')}|${P.map((f) => `${Math.round(f.h)},${Math.round(f.cx)}`).join(',')}`
-  // settled — or, as a guarantee, still searching after four seconds with nothing new to answer: leave it be
-  if (key === A.relaxKey && (A.relaxStill > 20 || performance.now() - A.relaxSince > 4000)) return
-  if (key !== A.relaxKey) { A.relaxKey = key; A.relaxStill = 0; A.relaxSince = performance.now() }
-  const before = P.map((f) => f.cy + f.cx)
-  for (const f of P) f.crowd = 0
-  for (let i = 0; i < P.length; i++) {
-    for (let j = i + 1; j < P.length; j++) push(P[i], P[j], k, kw, true)
-    for (const o of fixed) if (o.f !== P[i]) push(P[i], o.f, o.k, o.kw, false)
-  }
-  let moved = 0
-  P.forEach((f, i) => {
-    if (!Number.isFinite(f.cy) || !Number.isFinite(f.cx)) { f.cy = (lo + hi) / 2; f.cx = V.W / 2 }
-    f.cy = clamp(f.cy, lo + f.h * k, hi - f.h * k)
-    f.cx = clamp(f.cx, V.pad, V.W - V.pad)
-    moved += Math.abs(f.cy + f.cx - before[i])
-    // a room with nowhere left to go is pressed smaller: the sheet keeps its rows, not its rooms
-    f.crowdT = f.crowd > 5 ? (f.crowdT || 0) + dt : 0
-    if (f.crowdT > 0.5 && !f.gT) f.h = Math.max(8, f.h - 20 * dt)
-  })
-  A.relaxStill = moved < 0.25 ? (A.relaxStill || 0) + 1 : 0
+
+/**
+ * COMING BACK FROM THE LAB. The bench is the fifth destination and it lives on its own route, so the visitor who
+ * gestures out of it is asking for a place on this index — Work above, Contact below. The runtime is mounted again
+ * one route later and must already BE there: travelling to it would mean travelling from wherever the index last
+ * stood, which on a cold arrival is the name. So the index is set where that travel would have left it, and the
+ * arrival itself is announced by the same onArrive() every other arrival goes through (prevBase is the Lab, which
+ * is true: it is where the visitor came from, and it is what tells the work field which way to assemble).
+ *
+ * This is not a second state machine. It writes the same fields go() writes, once, and then the loop takes over.
+ */
+function arriveAt(target) {
+  // every place on the index except the Lab itself: the Lab is a route, not somewhere this index arrives
+  const stop = { name: 0, creative: 1, system: 2, work: 3, rest: 5 }[target]
+  if (stop == null) return false
+  endGesture()
+  gsap.killTweensOf(A)
+  if (A.press) cancelPress(A.press)
+  if (A.introF) { A.features.delete(A.introF); A.introF = null }
+  if (A.bridgeF) { gsap.killTweensOf(A.bridgeF); A.features.delete(A.bridgeF); A.bridgeF = null }
+  if (A.about) { gsap.killTweensOf(A.about); A.features.delete(A.about); A.about = null }
+  A.aboutOpen = false; A.aboutDetail = false; A.detailPushed = false; A.aboutDetailK = 0
+  A.mode = 'index'; A.worldOn = false; A.busy = false; A.pending = null
+  A.shiver = 0; A.bridgePK = 1; A.introReg = 0; A.nameAmp = REDUCED ? 0 : 1
+  A.p = A.pT = A.base = stop
+  A.prevBase = 4        // the Lab: the frame loop announces the arrival and composes the field accordingly
+  A.restOpen = 0
+  A.gesture = false; A.lastInput = -1e9
+  A.labArmed = false
+  A.hush = performance.now() + 420
+  document.title = TITLE()
+  lastSig = ''
+  return true
 }
 
 // ─── NAME → beneath the name is the person ────────────────────────────────────
@@ -734,8 +686,10 @@ function layoutAbout() {
 function leaveDetail() { if (A.detailPushed) HOST.back(); else collapseAbout(true) }
 export function routeChanged() {
   endGesture()   // M3 MOBILE BUG FIX
-  if (isAboutPath()) { if (A.mode === 'world') { exit(); A.pending = 'detail' } else expandAbout(false) }
-  else if (A.aboutDetail) collapseAbout(false)
+  if (isAboutPath()) { if (A.mode === 'world') { exit(); A.pending = 'detail' } else expandAbout(false); return }
+  // the visitor gestured out of the Lab: this entry carries the place they gestured towards
+  if (arriveAt(takeArrival())) return
+  if (A.aboutDetail) collapseAbout(false)
 }
 if (!globalThis.__c2Hosted) addEventListener('popstate', routeChanged)
 
@@ -927,30 +881,17 @@ function onArrive(stop, prev) {
     if (prev > 3) { A.wT = N - 1; A.wt = N - 1 + 0.9 } else { A.wT = 0; A.wt = -0.9 }
     tonesReady.then(() => queueWarm(WORKS))
   }
-  if (stop === 4) ensureLab()
-  if (stop === 4 && A.seeded < A.yieldMarks.length) {
-    // wherever the surface gave way earlier, the Lab's material already makes a little room
-    A.yieldMarks.slice(A.seeded).forEach((y, j) => {
-      const f = feature({ cx: y.x, cy: y.y, h: 0, hw: 30, falloff: 18 })
-      f.ar = 3.9; f.base = 18; f.gT = true
-      A.pins.unshift(f)
-      gsap.to(f, { h: y.big ? 15 : 10, duration: 1.6, delay: 1.1 + j * 0.3, ease: 'expo.out', onComplete: () => { f.gT = false } })
-    })
-    A.seeded = A.yieldMarks.length
-  }
   if (stop === 5) {
     const key = `${A.visitOrder.join(',')}|${A.aboutMark ? 'a' : 'd'}`
     if (IDX[5].visitKey !== key) { const old = IDX[5]; IDX[5] = ST.rest(V, A.visitOrder, A.aboutMark); if (A.from !== old && A.to !== old) { old.dead = true; surface.release(old) } placeRest() }
-    // density governor: however much was done, the rest keeps a readable hierarchy
-    const shown = [...A.pins].sort((a, b) => b.h - a.h).slice(0, REST_ROOMS())
-    const area = shown.reduce((s, f) => s + roomArea(f), 0)
-    A.restK = area > 1 ? clamp(Math.sqrt((V.W * V.H * (V.P ? 0.05 : 0.1)) / area), 0.28, 0.62) : 0.62
-    for (const f of A.pins) if (!shown.includes(f) && !f.scarred) { f.scarred = true; phys.scar(f.cx, f.cy, f.hw * 0.4, 6) }
     gsap.killTweensOf(A, 'restReg,restOpen')
     A.restReg = 1; A.restOpen = 0
-    gsap.to(A, { restReg: 0, duration: 1.8, delay: 0.5, ease: 'expo.inOut' })
-    // the same opening, with the same motion, as when the name gave way to the person
-    gsap.to(A, { restOpen: 1, duration: 1.35, delay: 2.1, ease: 'expo.out' })
+    // Contact registers, then opens — the same two movements as when the name gave way to the person. The lead-in
+    // was 2.1 s of a screen holding almost nothing before the opening began, which measured as the longest dead
+    // stretch anywhere on the site (1.47 s of it with nothing changing at all). The movements keep their shape and
+    // their order; the waiting before them does not.
+    gsap.to(A, { restReg: 0, duration: 1.15, delay: 0.25, ease: 'expo.inOut' })
+    gsap.to(A, { restOpen: 1, duration: 1, delay: 0.85, ease: 'expo.out' })
   }
 }
 
@@ -959,7 +900,14 @@ const ui = $('#ui')
 // delegated once, on the element itself: buildDOM() replaces the contents, never the container, so a
 // language change refreshes every label without ever attaching a second listener
 ui.addEventListener('click', (e) => {
-  if (e.target.closest('[data-locale]')) { e.preventDefault(); if (HOST.localeHref) HOST.replace(HOST.localeHref, { c2: 'locale' }); return }
+  // The tail of a swipe that began on a control the gesture passes through: the gesture has already been spent on
+  // the index, so the click it ends in is not a second intention. Nothing else on the surface is reached this way.
+  if (ptr.swiped && e.target.closest('[data-through]')) { e.preventDefault(); return }
+  // A language change is a step the visitor took, so Back undoes it and returns them to the place they were
+  // reading in the language they were reading it in. (M2 replaced the entry instead, so Back left the site
+  // altogether; the destination survives either way, because changing language never moves the index.)
+  if (e.target.closest('[data-locale]')) { e.preventDefault(); if (HOST.localeHref) HOST.push(HOST.localeHref, { c2: 'locale' }); return }
+  if (e.target.closest('[data-lab]')) { e.preventDefault(); openLab(); return }
   const b = e.target.closest('[data-go], [data-work], [data-open], [data-world], [data-detail], [data-back]')
   if (!b) return
   if (b.dataset.go || b.hasAttribute('data-detail')) e.preventDefault()
@@ -1007,6 +955,15 @@ function buildDOM() {
   // one polite status line: a place reached without the keyboard is named once
   D.status = h('p', 'sr'); D.status.setAttribute('role', 'status')
 
+  /*
+   * THE HERO'S OWN DOOR. About was behind a press-and-hold on the name: a gesture the composition never showed, and
+   * the only way in that a visitor had to be told about. It is a control now, set in the fold between the names on
+   * the composition's own right axis (see layoutDOM) — the place the room opens from, in the site's own utility
+   * type. It does exactly what the strip's ABOUT does, through the same `data-go`: there is one About, and two ways
+   * to reach it — the strip, which is chrome and is there at every stop, and this, which belongs to the hero.
+   */
+  D.heroAct = h('div', 'layer hero-act', `<div class="ha-line"><button class="hero-about" data-go="about" data-through>${TXT.nav.about}</button></div>`)
+
   D.about = h('section', 'layer about', `<div class="block"><h2 class="sr" tabindex="-1">${TXT.about.heading}</h2>
     <p class="intro">${about.home.intro}</p>
     <p class="statement">${about.home.positioning}</p>
@@ -1047,9 +1004,10 @@ function buildDOM() {
       <div class="current"><p class="wtitle" aria-hidden="true"></p><p class="wmeta" aria-hidden="true"></p><button class="open" data-open aria-label="${TXT.work.open} — ${TXT.a11y.openProject}" aria-describedby="c2-open-hint">${TXT.work.open}</button><span id="c2-open-hint" class="sr">${TXT.a11y.openHint}</span></div>
     </div>`)
 
-  D.lab = h('section', 'layer lab', `<div class="cap"><h2 class="lbl" tabindex="-1">${lab.title}</h2><p class="ltext">${lab.line}</p><p class="sr">${TXT.a11y.labKeys}</p></div>
+  D.lab = h('section', 'layer lab', `<div class="cap"><h2 class="lbl" tabindex="-1">${lab.title}</h2><p class="ltext">${lab.line}</p>
+    <p class="lopen"><a href="${LAB_URL}" data-lab>${lab.open} — ${lab.count}</a></p></div>
     <p class="lab-now" aria-live="polite"></p>
-    <ul class="sr">${lab.entries.map((e) => `<li>${e.n}: ${e.desc}</li>`).join('')}</ul>`)
+    <ul class="sr">${STUDY_LIST().map((e) => `<li>${e.name}: ${e.note}</li>`).join('')}</ul>`)
 
   D.rest = h('section', 'layer rest', `<div class="contact"><h2 class="sr" tabindex="-1">${TXT.contact.heading}</h2>
     <p class="cname">${identity.name}</p>
@@ -1067,14 +1025,14 @@ function buildDOM() {
   D.a11y = h('nav', 'a11y', `<ul class="a11y-places"><li><button data-go="creative" lang="en">${capabilities.surface.role}</button></li><li><button data-go="system" lang="en">${capabilities.system.role}</button></li></ul>
     <p class="lbl">${TXT.a11y.selectedWork}</p>
     <ul>${works.slice(0, 3).map((w) => `<li><a href="${w.url}" target="_blank" rel="noopener noreferrer">${w.name} — ${w.strength} ↗<span class="sr"> ${TXT.a11y.newTab}</span></a></li>`).join('')}</ul>
-    <p class="lbl">${TXT.a11y.labStudies}</p><ul>${lab.entries.map((e) => `<li>${e.n} — ${e.desc}</li>`).join('')}</ul>
+    <p class="lbl">${TXT.a11y.labStudies}</p><ul>${STUDY_LIST().map((e) => `<li><a href="${LAB_URL}" data-lab>${e.name} — ${e.note}</a></li>`).join('')}</ul>
     <p>${mail} · ${phone}</p><p class="a11y-links">${exits()}</p>
     <a href="${ABOUT_URL}" data-detail>${about.home.more}</a>`)
   D.a11y.id = 'plain'; D.a11y.tabIndex = -1
   D.a11y.setAttribute('aria-label', TXT.a11y.plainNav)
 
   D.main = h('main', 'layers')
-  D.main.append(D.h1, D.about, D.detail, D.creative, D.system, D.work, D.lab, D.rest, D.world)
+  D.main.append(D.h1, D.heroAct, D.about, D.detail, D.creative, D.system, D.work, D.lab, D.rest, D.world)
   lastSaid = ''
   D.top.prepend(D.skip)
   D.h1.after(D.lead, D.keys)
@@ -1083,7 +1041,6 @@ function buildDOM() {
   D.world.prepend(D.world.querySelector('.wsum'))
   ui.append(D.top, D.main, D.bottom, D.a11y)
   D.aboutBlocks = [...D.detail.querySelectorAll('.ab')]
-  D.labNow = D.lab.querySelector('.lab-now')
   D.hint = $('#hint')
   D.lang = D.top.querySelector('[data-locale]')
   D.current = D.work.querySelector('.current')
@@ -1111,7 +1068,9 @@ function runPending() {
     else if (atName) forcedPress(aboutX(), IDX[0].layout.gapY)
   } else if (A.pending === 'next' && A.mode === 'world' && Math.abs(A.wp - lastFrame()) < 0.02) {
     const full = worldFor(A.k)[lastFrame()]
-    if (full.fill > 0.5) { A.pending = null; const fr = full.layout.frame; forcedPress(fr.x + fr.w / 2, fr.y + fr.h / 2, 0.75) }
+    // the press begins as the frame comes solid, not after it has finished doing so; and once the visitor has
+    // opened a project or two, pressing through takes the shorter of the two authored durations
+    if (full.fill > 0.25) { A.pending = null; const fr = full.layout.frame; forcedPress(fr.x + fr.w / 2, fr.y + fr.h / 2, A.visited.size >= 2 ? 0.45 : 0.7) }
   } else if (['name', 'creative', 'system', 'work', 'lab', 'rest'].includes(A.pending) && A.mode === 'index') { const t = A.pending; A.pending = null; navigate(t) }
 }
 const px = (r) => `left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px`
@@ -1169,6 +1128,8 @@ function arrived(heading, name) {
 function focusKey(el) {
   if (!el || !ui.contains(el)) return null
   const c = el.closest('[data-locale], [data-go], [data-work], [data-world], [data-detail], [data-back], [data-open]')
+  // the hero's About and the strip's are the same action, so they answer to the same key: this one says which
+  if (c?.classList.contains('hero-about')) return '.hero-about'
   if (c) for (const a of ['data-locale', 'data-go', 'data-work', 'data-world', 'data-detail', 'data-back', 'data-open']) if (c.hasAttribute(a)) return c.getAttribute(a) ? `[${a}="${c.getAttribute(a)}"]` : `[${a}]`
   if (el === D.h1) return 'main > h1'
   const layer = el.closest('.layer')
@@ -1178,9 +1139,17 @@ function focusKey(el) {
 const place = (el, r) => Object.assign(el.style, { left: `${r.x}px`, top: `${r.y}px`, width: `${r.w}px`, height: r.h != null ? `${r.h}px` : '' })
 function placeRest() { place(D.rest.querySelector('.contact'), IDX[5].layout.block) }
 function layoutDOM() {
-  const [nm, cre, sys, , lb] = IDX
+  const [nm, cre, sys] = IDX
   const ah = aboutHalf(), gy = nm.layout.gapY
   place(D.about.querySelector('.block'), { x: V.pad, y: gy - ah + 14, w: Math.min(V.W - V.pad * 2, 760), h: ah * 2 - 28 })
+  /*
+   * The hero's About sits in the fold between the names and ends on the page's right margin — the axis the strip's
+   * navigation above it and the status line below it are already set to. The fold is the one band of the hero with
+   * no ink in it: EMRAH puts no descender into it and YÜCEL reaches it only with the diaeresis on the Ü, which is
+   * at the left of the measure, while the names are set from the left margin and never reach the right one. So the
+   * word is clear of the composition at every screen the composition is set for, without being fitted to any of them.
+   */
+  place(D.heroAct.querySelector('.ha-line'), { x: V.pad, y: Math.round(gy - 22), w: V.W - V.pad * 2, h: 44 })
   layoutAbout()
   for (const [el, st] of [[D.creative, cre], [D.system, sys]]) {
     const L = st.layout
@@ -1193,7 +1162,10 @@ function layoutDOM() {
   const wk = WORKS[0].layout
   // the index column's text stays on its solid part, clear of the tapering edge
   place(D.work.querySelector('.col'), { x: 0, y: wk.col.y, w: wk.col.w - (V.P ? 0 : 24), h: wk.col.h - (V.P ? 60 : 0) })
-  place(D.lab.querySelector('.cap'), lb.layout.cap)
+  // The Lab stop keeps its place on the index but no longer shows a composition of its own — the Lab is a route,
+  // and arriving at the stop opens it. Its retired layer is stood down once, here, rather than every frame: inert,
+  // so it is neither drawn nor reachable, and the way to the Lab for a reader is the plain navigation, as before.
+  setOn(D.lab, false)
   placeRest()
 }
 const onState = new Map()
@@ -1215,10 +1187,11 @@ function hintFor(stop) {
   const quiet = `${identity.city}${H.quietSeparator}${identity.status}`
   if (A.mode === 'world') return Math.round(A.wp) === 0 && !A.learned.world && since > 3500 ? H.world : ''
   if (A.mode !== 'index' || A.aboutOpen) return ''
-  if (stop === 0) return !A.learned.open && since > 6500 ? (TOUCH ? H.openTouch : H.open) : quiet
+  // The hero taught the hold that opened About, and the Lab stop taught the hold that made a room. Neither is true
+  // any more: About is a control on the hero, and the Lab is a route that opens on arrival. A place teaches only
+  // what it still asks for — the two faces and the work field do; the hero and the Lab stop stay quiet.
   if (stop === 1 || stop === 2) return !A.learned.face && since > 2500 ? (TOUCH ? H.faceTouch : H.face) : quiet
   if (stop === 3) return !A.learned.work && since > 2500 ? (TOUCH ? H.workTouch : H.work) : quiet
-  if (stop === 4) return !A.learned.lab && since > 2500 ? H.lab : quiet
   return quiet
 }
 function stripTones(dom) {
@@ -1250,21 +1223,23 @@ function domUpdate(from, to, front) {
     // the picture — how far the composition has travelled, how open the room has grown. Reduced motion has no
     // travel to read and no room to wait for: it names the destination and the layer that belongs to it.
     const d = uiDestination()
+    setOn(D.heroAct, d === 'name')
     setOn(D.about, d === 'about')
     setOn(D.detail, d === 'about-detail')
     setOn(D.creative, d === 'creative')
     setOn(D.system, d === 'system')
     setOn(D.work, d === 'work')
-    setOn(D.lab, d === 'lab')
     setOn(D.rest, d === 'rest')
     setOn(D.world, d === 'world')
   } else {
+    // it belongs to the hero, so it is there whenever the hero is: from the first frame of the opening, and gone
+    // while the room it opens is opening — the room's own text arrives in its place
+    setOn(D.heroAct, idleIdx && at(0) && !loaded && !A.aboutOpen)
     setOn(D.about, A.aboutOpen && !A.aboutDetail && A.aboutDetailK < 0.02 && !!A.about && A.about.h > aboutHalf() * 0.82 && A.about.h < aboutHalf() * 1.15)
     setOn(D.detail, A.aboutOpen && A.aboutDetail && A.aboutDetailK > 0.72)
     setOn(D.creative, idleIdx && at(1) && !loaded)
     setOn(D.system, idleIdx && at(2) && !loaded)
     setOn(D.work, idleIdx && at(3) && !loaded)
-    setOn(D.lab, A.mode === 'index' && at(4))
     setOn(D.rest, idleIdx && at(5) && A.restOpen > 0.72)
     setOn(D.world, A.mode === 'world' || A.mode === 'exit')
   }
@@ -1339,79 +1314,6 @@ function mediaUpdate() {
   mediaRoot.style.background = kk >= 0 ? works[kk].ink : ''
 }
 
-// ─── LAB STUDIES: media needs material ───────────────────────────────────────
-// A study exists only inside a room large enough to hold it, and the shared budget decides that: when another room
-// takes the material, a study's room is pressed smaller and the study is covered again. Only the latest study plays;
-// the others keep a still frame, and their decoders are released.
-const VIABLE = () => (V.P ? 58 : 84)
-function ensureLab() {
-  if (!LABM && lab.entries.length) LABM = lab.entries.map((e) => { const m = labElement(e); mediaRoot.appendChild(m.el); return m })
-  return LABM
-}
-function assignEntry(f) {
-  if (f.entry != null || !lab.entries.length || f.h < VIABLE()) return
-  const used = new Set(A.pins.map((p) => p.entry).filter((x) => x != null))
-  for (let j = 0; j < lab.entries.length; j++) {
-    const e = (A.labNext + j) % lab.entries.length
-    if (!used.has(e)) { f.entry = e; A.labNext = e + 1; A.labActive = f; return }
-  }
-}
-function freeSpot() {
-  let best = { x: V.W / 2, y: V.H / 2 }, bestD = -1
-  const c = IDX[4].layout.cap
-  for (let i = 1; i < 8; i++) for (let j = 1; j < 6; j++) {
-    const x = (V.W * i) / 8, y = V.strip + ((V.H - V.strip * 2) * j) / 6
-    if (inRect(x, y, c, 90)) continue
-    let d = 1e9
-    for (const p of A.pins) d = Math.min(d, Math.hypot((x - p.cx) / 2.4, y - p.cy))
-    if (d > bestD) { bestD = d; best = { x, y } }
-  }
-  return best
-}
-let labCapKey = ''
-function labMediaUpdate() {
-  if (!LABM) return false
-  const at = A.mode === 'index' ? 1 - smooth(0.2, 0.6, Math.abs(A.p - 4)) : 0
-  // rooms remembered from earlier in the visit carry studies again
-  if (at > 0) for (const p of A.pins) if (p.entry == null) assignEntry(p)
-  const v = VIABLE(), act = A.press && !A.press.done && A.press.st.beneath === 'pin' ? A.press.f : null
-  const rooms = act ? [...A.pins, act] : A.pins
-  let any = false, cap = ''
-  const opOf = (f) => (f ? smooth(v * 0.9, v * 1.12, f.h) * at : 0)
-  // the one playing study: the latest room that can hold one, else the latest committed room that still can
-  let live = A.labActive && opOf(A.labActive) > 0.6 ? A.labActive : null
-  if (!live) for (let i = A.pins.length - 1; i >= 0; i--) if (A.pins[i].entry != null && opOf(A.pins[i]) > 0.6) { live = A.pins[i]; break }
-  LABM.forEach((m, e) => {
-    const f = at > 0 ? rooms.find((p) => p.entry === e) : null
-    const op = opOf(f)
-    if (op > 0.001) {
-      // the study is as large as its room allows, and never leaves the screen
-      let hh = f.h * 1.2, ww = hh * m.entry.aspect
-      const maxW = Math.min(f.hw * 1.3, V.W - V.pad * 2)
-      if (ww > maxW) { ww = maxW; hh = ww / m.entry.aspect }
-      // the study and its caption line are centred in the room together, so the caption never sits on the rows
-      const x = clamp(f.cx - ww / 2, V.pad, V.W - V.pad - ww), y = clamp(f.cy - (hh + 20) / 2, V.strip + 8, V.H - V.strip - 28 - hh)
-      const key = `${Math.round(x)},${Math.round(y)},${Math.round(ww)}`
-      if (m.key !== key) { m.key = key; Object.assign(m.el.style, { left: `${x}px`, top: `${y}px`, width: `${ww}px`, height: `${hh}px` }) }
-      any = true
-      if (f === live) { const cw = V.P && !V.T ? ww : Math.max(ww, 280), cx = Math.min(x, V.W - V.pad - cw); cap = `${m.entry.n} / ${String(LABM.length).padStart(2, '0')}|${m.entry.desc}|${Math.round(cx)}|${Math.round(y + hh + 6)}|${Math.round(cw)}` }
-    }
-    const o = Math.round(op * 100) / 100
-    if (m.op !== o) { m.op = o; m.el.style.opacity = String(o) }
-    const active = !!f && f === live && !REDUCED
-    if (active && !m.playing) { m.playing = true; m.play() } else if (!active && m.playing) { m.playing = false; m.release() }
-  })
-  if (cap !== labCapKey) {
-    labCapKey = cap
-    const [text, desc, x, y, w] = cap.split('|')
-    const said = text ? `${text}|${desc}` : ''
-    if (said !== D.labNow.dataset.said) { D.labNow.dataset.said = said; D.labNow.innerHTML = text ? `${text}<span class="d"> — ${desc}</span>` : '' }
-    D.labNow.classList.toggle('on', !!text)
-    if (text) Object.assign(D.labNow.style, { left: `${x}px`, top: `${y}px`, width: `${w}px` })
-  }
-  return any
-}
-
 // ─── WORK → LAB: the system changes mode ─────────────────────────────────────
 // Past the last work, the whole work field is folded into one stored band — the same stored material the site opened
 // with — and the works this visit opened lie inside it as threads in their own inks. It holds; and it unfolds again,
@@ -1433,20 +1335,26 @@ function startBridge() {
   const s0 = V.P ? 13 : 20, L0 = V.H * (V.P ? 0.15 : 0.12)
   const u = { t: 0 }
   const set = () => { f.sigma = Math.exp(lerp(Math.log(V.H * 2.6), Math.log(s0), u.t)); f.Lm = Math.exp(lerp(Math.log(V.H * 0.64), Math.log(L0), u.t)); f.s = smooth(0, 0.3, u.t) }
+  // The fold keeps all four of its movements — the field gathers, the sheet registers, it opens into the Lab, and
+  // the Lab's own place takes over — but not the waiting between them. Measured, the visitor saw nothing of where
+  // they were going for 4.3 s: most of it was the hold after the gather, and a reopening that went on long after
+  // the composition could be read. Both are shorter; nothing is removed, and the order is untouched.
   gsap.timeline()
-    .to(A, { front: 1, duration: 1.0, ease: 'power2.inOut' }, 0)
-    .to(u, { t: 1, duration: 1.2, ease: 'power3.in', onUpdate: set }, 0)
-    .add(() => { A.shiver = 0.32; haptic([10, 40, 10]) }, 1.2)
-    .to(A, { shiver: 0, duration: 0.55, ease: 'power2.in' }, 1.3)
-    .add(() => { A.from = BRIDGE; A.to = IDX[4]; A.front = 0 }, 1.85)
-    .to(A, { front: 1, duration: 1.7, ease: 'power2.inOut' }, 1.85)
-    .to(u, { t: 0, duration: 2.1, ease: 'expo.inOut', onUpdate: set }, 1.85)
-    .to(A, { bridgePK: 1, duration: 1.3, ease: 'expo.out' }, 2.9)
-    .add(finishBridge, 3.95)
+    .to(A, { front: 1, duration: 0.8, ease: 'power2.inOut' }, 0)
+    .to(u, { t: 1, duration: 0.95, ease: 'power3.in', onUpdate: set }, 0)
+    .add(() => { A.shiver = 0.32; haptic([10, 40, 10]) }, 0.95)
+    .to(A, { shiver: 0, duration: 0.45, ease: 'power2.in' }, 1.02)
+    .add(() => { A.from = BRIDGE; A.to = IDX[4]; A.front = 0 }, 1.25)
+    .to(A, { front: 1, duration: 1.15, ease: 'power2.inOut' }, 1.25)
+    .to(u, { t: 0, duration: 1.35, ease: 'expo.inOut', onUpdate: set }, 1.25)
+    .to(A, { bridgePK: 1, duration: 0.9, ease: 'expo.out' }, 1.95)
+    .add(finishBridge, 2.5)
 }
 function finishBridge() {
   A.bridgeF = null; A.shiver = 0; A.bridgePK = 1
   A.mode = 'index'; A.p = A.pT = A.base = 4; A.prevBase = 3; A.busy = false
+  // the field folded into the Lab, and the Lab is its own place: the bench opens as the fold finishes
+  openLab()
 }
 
 // ─── loop ────────────────────────────────────────────────────────────────────
@@ -1569,7 +1477,16 @@ function frame(now) {
   last = now
   // positions land exactly on their stop: a place that has arrived is still, so it is not drawn again
   if (A.mode === 'index') { snap('pT', 'base', LAST, now, et); A.p = damp(A.p, A.pT, 3.4 * RM, et); if (Math.abs(A.p - A.pT) < 5e-4 && A.pT === A.base) A.p = A.pT }
-  if (A.mode === 'world') { snap('wpT', 'wbase', lastFrame(), now, et); A.wp = damp(A.wp, A.wpT, 3.4 * RM, et); if (Math.abs(A.wp - A.wpT) < 5e-4 && A.wpT === A.wbase) A.wp = A.wpT }
+  if (A.mode === 'world') {
+    snap('wpT', 'wbase', lastFrame(), now, et)
+    // Travelling a project's frames is reading it, and reads at the pace the visitor sets. Being carried to the
+    // end because they asked for the NEXT project is not reading — it is the way out, across material they have
+    // chosen to leave. That one crossing goes quicker, and quicker again once this visit has done it before.
+    const leaving = A.pending === 'next'
+    const rate = leaving ? (A.visited.size >= 2 ? 9 : 5.5) : 3.4
+    A.wp = damp(A.wp, A.wpT, rate * RM, et)
+    if (Math.abs(A.wp - A.wpT) < 5e-4 && A.wpT === A.wbase) A.wp = A.wpT
+  }
   if (A.mode === 'index' && A.base !== A.prevBase) { onArrive(A.base, A.prevBase); A.prevBase = A.base }
   tuneWork(now, et)
   if (REDUCED) canonical()
@@ -1593,19 +1510,42 @@ function frame(now) {
   updatePress(now, dt)
   updateSqueeze(dt)
   runPending()
+  // THE FIFTH DESTINATION. Travel that settles on the Lab stop hands over to the bench, the way the Work → Lab
+  // bridge already ends: reached from Work it is the bridge, reached from Contact it is this. Only travel arms it,
+  // so a state restored onto the Lab stop — coming back to this entry, or returning from the bench itself — sits
+  // there quietly instead of pushing the route again.
+  if (A.labArmed && A.mode === 'index' && A.base === 4 && Math.abs(A.p - 4) < 0.02 && Math.abs(A.pT - 4) < 0.02 && !A.busy && !A.aboutOpen && !ptr.down && owns()) openLab()
   if (A.mode === 'world' && !A.busy) Object.assign(A.world, worldGeom(A.wp))
   const lf = A.mode === 'world' ? lastFrame() : 0
   if (A.mode === 'world' && A.wp > lf - 0.1 && !A.nextArmed) {
     A.nextArmed = true
     const full = worldFor(A.k)[lf]
-    gsap.to(A, {
-      nextReg: 0, duration: 1.7, delay: 0.3, ease: 'expo.inOut',
-      onComplete: () => {
-        gsap.to(full, { lod: 0, duration: 0.24, ease: 'expo.out' })
-        gsap.to(full, { fill: 1, duration: 0.5, delay: 0.05, ease: 'power3.out' })
-        haptic(8); mediaFor(full.layout.next); queueWarm(worldFor(full.layout.next))
-      },
-    })
+    const ready = () => { haptic(8); mediaFor(full.layout.next); queueWarm(worldFor(full.layout.next)) }
+    // reduced motion is not asked to watch the next project register itself: it is simply there (§ the approved
+    // direct architecture — this is the same state, set rather than travelled)
+    /*
+     * The next project coming into register is worth watching once. It was watched every time: two full seconds
+     * before the frame was even solid enough to be pressed, on every project-to-project move, which is the whole
+     * of the repetition the review called tiring. The movement is the same and in the same order; after the
+     * visitor has seen it, it takes the time of a transition rather than the time of a reveal. What counts as
+     * "seen" is the runtime's own memory of what this visit has learned — nothing new is tracked.
+     */
+    const firstTime = !A.learned.next
+    A.learned.next = true
+    if (REDUCED) {
+      // reduced motion is not asked to watch the next project register itself: it is simply there. Same state,
+      // set rather than travelled — the architecture the rest of reduced motion already uses.
+      A.nextReg = 0; full.lod = 0; full.fill = 1; ready()
+    } else {
+      gsap.to(A, {
+        nextReg: 0, duration: firstTime ? 1.35 : 0.5, delay: firstTime ? 0.18 : 0.04, ease: 'expo.inOut',
+        onComplete: () => {
+          gsap.to(full, { lod: 0, duration: firstTime ? 0.24 : 0.16, ease: 'expo.out' })
+          gsap.to(full, { fill: 1, duration: firstTime ? 0.44 : 0.26, delay: 0.03, ease: 'power3.out' })
+          ready()
+        },
+      })
+    }
   }
   if (A.mode === 'world' && A.wp < lf - 0.6 && A.nextArmed) { gsap.killTweensOf(A, 'nextReg'); A.nextArmed = false; A.nextReg = 1; const full = worldFor(A.k)[lf]; gsap.killTweensOf(full); full.fill = 0; full.lod = ST.LOD_OFF }
 
@@ -1623,13 +1563,6 @@ function frame(now) {
   if (overlay || from === to) fs.push(...scaled(to, 1))
   else { fs.push(...scaled(from, 1 - front)); fs.push(...scaled(to, front)) }
   const staticCount = fs.length - staticStart
-  // room made in the Lab stays with the sheet as far as the rest state
-  if ((A.mode === 'index' || A.mode === 'bridge') && A.pins.length) {
-    const bridging = A.mode === 'bridge'
-    const pk = bridging ? A.bridgePK : pinScale(), shown = bridging ? A.pins : shownPins()
-    if (!bridging) relaxPins(dt, Math.max(pk, 0.3), shown)
-    if (pk > 0.001) for (const f of shown) if (fs.length < surface.MAXF - 1) fs.push({ ...f, h: f.h * pk, hw: f.hw * (0.6 + 0.4 * pk) })
-  }
   if (A.worldOn) fs.push(A.world)
   if (A.bridgeF) fs.push(A.bridgeF)
   surface.features = fs
@@ -1668,13 +1601,12 @@ function frame(now) {
   surface.shiver = A.shiver
   surface.strip = V.strip
   // a study shows only through a real opening: where Lab media exists the voids are left transparent
-  const labMedia = labMediaUpdate()
-  surface.fill = (A.mode === 'index' || A.mode === 'intro' || A.mode === 'bridge') && A.releaseK == null && !labMedia ? 1 : 0
+  surface.fill = (A.mode === 'index' || A.mode === 'intro' || A.mode === 'bridge') && A.releaseK == null ? 1 : 0
 
   domUpdate(from, to, front)
   mediaUpdate()
   // while the work has the whole screen, the surface is not there at all — do not draw it
-  const absent = A.mode === 'world' && !A.busy && ABSENT.has(framesOf(A.k)[clamp(Math.round(A.wp), 0, lastFrame())].g) && Math.abs(A.wp - Math.round(A.wp)) < 0.003
+  const absent = !owns() || (A.mode === 'world' && !A.busy && ABSENT.has(framesOf(A.k)[clamp(Math.round(A.wp), 0, lastFrame())].g) && Math.abs(A.wp - Math.round(A.wp)) < 0.003)
   if (!absent) {
     // a still surface is not drawn again: only waving rows, a shiver or the scan pen need every frame. POST-M5 PERF: the
     // waving rows are ambient — they count as motion only while the device can render them (see noteFrame)
@@ -1746,25 +1678,32 @@ function playIntro() {
   gsap.killTweensOf(A)
   if (A.introF) A.features.delete(A.introF)
   const gapY = IDX[0].layout.gapY
-  Object.assign(A, { mode: 'intro', from: IDX[0], to: IDX[0], front: 1, introReg: 1, nameAmp: 0, p: 0, pT: 0, base: 0, prevBase: 0 })
-  const s0 = V.P ? 13 : 20, L0 = V.H * (V.P ? 0.15 : 0.12), s1 = V.H * 2.6, L1 = V.H * 0.64
-  const f = A.introF = gather({ cx: V.W / 2, cy: gapY, sigma: s0, Lm: L0, s: 1 })
+  /*
+   * THE OPENING PLAYS OVER A HERO THAT IS ALREADY THERE. It used to build one: the field began collapsed to a line
+   * and opened over 2.2 s, and the name rose from nothing over 4 s more, so the composition was not complete until
+   * about 9.5 s. Everything before that was a partly assembled hero — which is what a visitor reads as "still
+   * loading", and what the document's own first-paint plate would have had to hide.
+   *
+   * So the index starts where it belongs: at the name, at full presence, open. What plays is the registration — the
+   * sheet drawing itself into register, the same movement it makes at every other arrival — over the finished
+   * picture rather than in place of it. The visitor can travel from the first frame; nothing has to finish first.
+   */
+  Object.assign(A, { mode: 'index', from: IDX[0], to: IDX[0], front: 1, introReg: 0.03, nameAmp: 1, p: 0, pT: 0, base: 0, prevBase: 0 })
+  const s1 = V.H * 2.6, L1 = V.H * 0.64
+  const f = A.introF = gather({ cx: V.W / 2, cy: gapY, sigma: s1 * 0.68, Lm: L1 * 0.7, s: 0.2 })
   A.features.add(f)
-  A.shiver = 0.22
-  const u = { t: 0 }, strain = { v: 0 }
+  A.shiver = 0.14
+  const u = { t: 0 }
   gsap.timeline()
-    .to(strain, { v: 1, duration: 0.85, ease: 'sine.inOut', onUpdate: () => { f.sigma = s0 * (1 - 0.12 * Math.sin(strain.v * Math.PI)) } }, 0)
-    .to(A, { shiver: 0, duration: 0.45, ease: 'power2.in' }, 0.55)
+    .to(A, { shiver: 0, duration: 0.3, ease: 'power2.in' }, 0)
     .to(u, {
-      t: 1, duration: 2.2, ease: 'expo.inOut',
-      onUpdate: () => { f.sigma = Math.exp(lerp(Math.log(s0), Math.log(s1), u.t)); f.Lm = Math.exp(lerp(Math.log(L0), Math.log(L1), u.t)); f.s = 1 - smooth(0.72, 1, u.t) },
-    }, 0.85)
-    .add(() => { A.features.delete(f); A.introF = null }, 3.1)
-    .to(A, { introReg: 0.035, duration: 1.05, ease: 'power3.inOut' }, 2.35)
-    .to(A, { introReg: 0, duration: 0.1, ease: 'power2.in' }, 3.4)
-    .add(() => { A.mode = 'index'; A.arrivedAt = performance.now() }, 3.55)
-    .to(A, { nameAmp: 1, duration: 4, ease: 'sine.inOut' }, 5.45)
-  breathe(6.65)
+      t: 1, duration: 0.8, ease: 'expo.out',
+      onUpdate: () => { f.sigma = Math.exp(lerp(Math.log(s1 * 0.68), Math.log(s1), u.t)); f.Lm = Math.exp(lerp(Math.log(L1 * 0.7), Math.log(L1), u.t)); f.s = 0.2 * (1 - smooth(0, 1, u.t)) },
+    }, 0)
+    .add(() => { A.features.delete(f); A.introF = null }, 0.85)
+    .to(A, { introReg: 0, duration: 0.75, ease: 'power3.inOut' }, 0.1)
+    .add(() => { A.arrivedAt = performance.now() }, 0.9)
+  breathe(2.1)
 }
 
 // ─── the visit's memory survives a reload, not only a route change ─────────────
@@ -1775,7 +1714,6 @@ function saveMemory() {
   try {
     sessionStorage.setItem(MEM_KEY, JSON.stringify({
       W: V.W, H: V.H, aboutMark: A.aboutMark, yieldMarks: A.yieldMarks, visitOrder: A.visitOrder, seeded: A.seeded, learned: A.learned,
-      pins: A.pins.map((f) => ({ cx: f.cx, cy: f.cy, h: f.h, ar: f.ar, base: f.base })),
       cols: phys.cols, rows: phys.rows, mem: b64(phys.mem), imp: b64(phys.imp),
     }))
   } catch {}
@@ -1789,7 +1727,6 @@ function restoreMemory(phase) {
   if (phase === 'history') {
     if (!same) return   // geometry from another viewport would lie; keep only what does not depend on it
     Object.assign(A, { aboutMark: m.aboutMark, yieldMarks: m.yieldMarks || [], seeded: m.seeded || 0 })
-    A.pins = (m.pins || []).map((p) => Object.assign(feature({ cx: p.cx, cy: p.cy, h: p.h, falloff: 18 }), { ar: p.ar, base: p.base, hw: p.h * (p.ar || 2.8) }))
     Object.assign(A.learned, m.learned || {})
   }
   if (phase === 'order') { A.visitOrder = m.visitOrder || []; A.visitOrder.forEach((k) => { if (k < N) { A.visited.add(k); surface.visited[k] = 1 } }) }
@@ -1810,7 +1747,7 @@ export function setLocale(next) {
   FR = {}                       // frame blocks carry copy; their geometry does not change, so WORLD textures stand
   buildDOM()
   lastHint = lastTone = lastTT = lastTB = lastBg = lastWork = lastWB = ''
-  mediaShown = ''; labCapKey = ''
+  mediaShown = ''
   onState.clear()
   layoutDOM()
   if (A.mode === 'world' || A.mode === 'exit') { mediaFor(A.k); fillWorldDOM(A.k) }
@@ -1820,7 +1757,7 @@ export function setLocale(next) {
   return true
 }
 
-window.__lab = { A, V, ptr, phys, surface, works, configure, routeChanged, setLocale, locale: () => TXT,  previewOf, go, forcedPress, navigate, exit, expandAbout, collapseAbout, startBridge, freeSpot, replayIntro: playIntro, IDX: () => IDX, WORKS: () => WORKS, WORLD: () => WORLD, frames: framesOf, touches, sig: () => lastSig, redraw: () => { lastSig = '' } }
+window.__lab = { A, V, ptr, phys, surface, works, configure, routeChanged, setLocale, locale: () => TXT,  previewOf, go, forcedPress, navigate, exit, expandAbout, collapseAbout, startBridge, openLab, arriveAt, replayIntro: playIntro, IDX: () => IDX, WORKS: () => WORKS, WORLD: () => WORLD, frames: framesOf, touches, sig: () => lastSig, redraw: () => { lastSig = '' } }
 let rt = 0, booted = false
 // a resize before the surface exists (a phone's URL bar settling during load) is picked up once start() finishes
 addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(async () => { if (!booted) return; measure(); await ensurePreviews(); rebuild() }, 140) })
@@ -1840,6 +1777,9 @@ async function start() {
   A.from = A.to = IDX[0]; A.front = 1
   if (isAboutPath()) { A.pending = 'detail'; document.title = TITLE_ABOUT() } else document.title = TITLE()
   requestAnimationFrame((t) => { last = t; frame(t) })
+  // arriving from the Lab on a cold start: the visitor asked for a place, not for the opening — and not for the
+  // hero either, so neither the introduction nor the static plate is played over the place they asked for
+  if (!isAboutPath() && arriveAt(takeArrival())) return
   // the static plate exists because software WebGL is slow to draw; reduced motion never draws WebGL at all
   if (SOFTWARE_GL && !REDUCED) { startStaticHero(); return }
   if (REDUCED) { A.mode = 'index'; A.introReg = 0; A.nameAmp = 0; return }

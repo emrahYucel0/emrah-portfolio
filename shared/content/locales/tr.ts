@@ -15,6 +15,11 @@ export const tr = {
       description:
         'Kimya ve endüstriyel üretimden creative development ve full-stack sistemlere — Emrah Yücel nasıl çalışır, ne kurar.',
     },
+    lab: {
+      title: 'Lab — Emrah Yücel',
+      description:
+        'Aynı malzeme, benim adım dışında bir şey üzerinde: alan ve bölüşüm, uzunluk ve yapı, satır ağırlığıyla kurulan görüntü.',
+    },
     imageAlt: 'Emrah Yücel — Creative Developer ve Full-Stack Developer. Kâğıt üzerinde yatay mürekkep satırlarıyla dizilmiş isim.',
   },
   nav: { skip: 'Düz gezinmeye geç', label: 'Portfolyo', work: 'İşler', about: 'Hakkımda', lab: 'Lab', contact: 'İletişim' },
@@ -112,15 +117,47 @@ export const tr = {
   },
   lab: {
     title: 'Lab',
-    line: 'Yer açmak için basılı tut. Yüzeyin geri kalanı o yeri vermek zorunda.',
+    line: 'Aynı malzeme, benim adım dışında bir şey üzerinde. Her çalışma tek bir özelliği sınar.',
     heading: 'Lab çalışmaları',
+    registered: 'kayıtlı',
+    registering: 'yeniden kaydediliyor',
+    open: 'aç',
+    count: 'Lab · 03 çalışma',
+    back: 'Lab',
     studies: {
-      '01': 'Tipografik büyütme çalışması',
-      '02': 'Diyagonal blok çalışması',
-      '03': 'Sıkışık dikey tipografi çalışması',
-      '04': 'Tek çizgi çizim çalışması',
-      '05': 'Satır yayılması çalışması',
+      weight: {
+        name: 'Weight',
+        prim: 'alan · bölüşüm',
+        note: 'Sabit bir alan ve birbirinden yer almak zorunda olan kelimeler. Kurallar kayar; sayfa kendini yeniden bölüşür.',
+        question: 'Dikkat nereye giderse alan oraya gider mi?',
+      },
+      line: {
+        name: 'Line',
+        prim: 'uzunluk · yapı',
+        note: 'Sabit uzunlukta tek bir çizgi. Her yapı aynı koşudan harcanır; kalan uzunluk kenarda bekler.',
+        question: 'Bir çizgi ne kadar yapı taşıyabilir?',
+      },
+      tone: {
+        name: 'Tone',
+        prim: 'görüntü · satır ağırlığı',
+        note: 'Ton bilgisi satırların ağırlığıyla taşınır. Altında resim yok — satırlar resmin kendisi.',
+        question: 'Bir görüntü yalnızca satır ağırlığıyla kurulabilir mi?',
+      },
     },
+    line_states: ['gergin', 'eğri', 'açıklık', 'toplanmış', 'bırakılmış', 'sınır'],
+    line_says: [
+      'Gergin — bütün koşu tek bir uzunlukta yatıyor.',
+      'Eğri — aynı uzunluk, tek bir yavaş bükülme.',
+      'Açıklık — çizgi açılıyor; yapı uzunlukla satın alınıyor.',
+      'Toplanmış — koşu tek, sıkı bir makaraya sarılıyor.',
+      'Bırakılmış — aynı uzunluk, alana yeniden açılıyor.',
+      'Sınır — çizgi geçmediği bir kenara varıyor; kalanı orada dinleniyor.',
+    ],
+    line_spent: 'harcandı',
+    line_held: 'hâlâ kenarda',
+    tone_sources: ['fotoğraf', 'arayüz', 'malzeme'],
+    tone_rows: 'satır',
+    weight_holds: 'sayfayı tutuyor',
   },
   contact: { heading: 'İletişim', emailLabel: 'E-posta', phoneLabel: 'Telefon' },
   psi: {
@@ -130,10 +167,9 @@ export const tr = {
   },
   hints: {
     quietSeparator: ' · ',
-    open: 'basılı tut', openTouch: 'isimlerin arasında basılı tut',
     face: 'basılı tut', faceTouch: 'iki parmakla sıkıştır',
     work: 'kaydır · görseli basılı tut', workTouch: 'yana kaydır · görseli basılı tut',
-    lab: 'herhangi bir yerde basılı tut', world: 'kaydır',
+    world: 'kaydır',
   },
   a11y: {
     plainNav: 'Düz gezinme', selectedWork: 'Seçili işler', labStudies: 'Lab çalışmaları',

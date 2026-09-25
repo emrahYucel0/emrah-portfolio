@@ -49,10 +49,10 @@ export function applyLocale(next) {
   Object.assign(capabilities, c.capabilities)
   Object.assign(workIntro, c.workIntro)
   Object.assign(ui, c.ui)
-  lab.title = c.lab.title
-  lab.line = c.lab.line
-  // keep every entry object: the Lab holds poster and video elements against them
-  c.lab.entries.forEach((e, i) => { if (lab.entries[i]) lab.entries[i].desc = e.desc })
+  // The Lab used to hold poster and video elements against its entry objects, so each field was copied across
+  // by hand to keep those objects' identity. The Lab is its own route now and holds no elements against this
+  // copy, so it is replaced whole — which is also what keeps the way through to the bench in the new language.
+  Object.assign(lab, c.lab)
   c.works.forEach((nw, i) => {
     const w = works[i]
     if (!w) return

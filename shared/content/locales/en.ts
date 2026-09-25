@@ -12,6 +12,11 @@ export const en = {
       description:
         'From chemistry and industrial production to creative development and full-stack systems — how Emrah Yücel works, and what he builds.',
     },
+    lab: {
+      title: 'Lab — Emrah Yücel',
+      description:
+        'The same material on something other than my name: area and share, length and structure, an image built from row weight alone.',
+    },
     imageAlt: 'Emrah Yücel — Creative Developer and Full-Stack Developer. The name set in horizontal rows of ink on paper.',
   },
   nav: { skip: 'Skip to plain navigation', label: 'Portfolio', work: 'Work', about: 'About', lab: 'Lab', contact: 'Contact' },
@@ -107,15 +112,47 @@ export const en = {
   },
   lab: {
     title: 'Lab',
-    line: 'Hold to make room. The rest of the surface has to give it.',
+    line: 'The same material, tried on something other than my name. Each study tests one property.',
     heading: 'Lab studies',
+    registered: 'registered',
+    registering: 're-registering',
+    open: 'open',
+    count: 'Lab · 03 studies',
+    back: 'Lab',
     studies: {
-      '01': 'Typographic magnification study',
-      '02': 'Diagonal slab study',
-      '03': 'Condensed vertical type study',
-      '04': 'Single-line drawing study',
-      '05': 'Row-smear type study',
+      weight: {
+        name: 'Weight',
+        prim: 'area · partition',
+        note: 'A fixed area, and words that must take room from each other. The rules move; the sheet re-shares itself.',
+        question: 'Where attention goes, does the area follow?',
+      },
+      line: {
+        name: 'Line',
+        prim: 'length · structure',
+        note: 'One line of fixed length. Every structure is spent from the same run; what is left waits at the edge.',
+        question: 'How much structure can one line carry?',
+      },
+      tone: {
+        name: 'Tone',
+        prim: 'image · row weight',
+        note: 'Tonal information carried by the weight of the rows themselves. No picture underneath — the rows are the picture.',
+        question: 'Can an image be built from row weight alone?',
+      },
     },
+    line_states: ['taut', 'curve', 'aperture', 'gathered', 'released', 'boundary'],
+    line_says: [
+      'Taut — the whole run lies in one length.',
+      'Curve — the same length, given one slow bend.',
+      'Aperture — the line opens; structure is bought with length.',
+      'Gathered — the run is wound into one close spool.',
+      'Released — the same length, opened back out into the field.',
+      'Boundary — the line reaches an edge it does not cross, and what is left rests on it.',
+    ],
+    line_spent: 'spent',
+    line_held: 'still at the edge',
+    tone_sources: ['photograph', 'interface', 'material'],
+    tone_rows: 'rows',
+    weight_holds: 'holds the page',
   },
   contact: { heading: 'Contact', emailLabel: 'Email', phoneLabel: 'Phone' },
   psi: {
@@ -125,10 +162,9 @@ export const en = {
   },
   hints: {
     quietSeparator: ' · ',
-    open: 'press and hold', openTouch: 'hold between the names',
     face: 'hold', faceTouch: 'squeeze with two fingers',
     work: 'scroll · hold the image', workTouch: 'slide sideways · hold the image',
-    lab: 'hold anywhere', world: 'scroll',
+    world: 'scroll',
   },
   a11y: {
     plainNav: 'Plain navigation', selectedWork: 'Selected work', labStudies: 'Lab studies',

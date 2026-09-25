@@ -1,6 +1,6 @@
 import { profile, projects, studies } from './facts'
 import { copies, DEFAULT_LOCALE, HTML_LANG, OG_LOCALE } from './locales'
-import { clipSource, imageSource, type Manifest } from './media'
+import { imageSource, type Manifest } from './media'
 import { LOCALES, type Locale, type LocaleCopy, type ProjectId } from './types'
 import { termHtml } from './term'
 
@@ -79,10 +79,12 @@ export function c2Content(locale: Locale, options: C2ContentOptions) {
     capabilities: { surface: copy.faces.surface, system: copy.faces.system, stack: copy.faces.stack },
     workIntro: { line: copy.work.intro },
     works,
+    // what the runtime's own Lab stop paints: its name, its line, and the way through to the bench
     lab: {
       title: copy.lab.title,
       line: copy.lab.line,
-      entries: studies.map((s) => clipSource(options.base, s.id, s.w, s.h, copy.lab.studies[s.id])),
+      open: copy.lab.open,
+      count: copy.lab.count,
     },
     /** every label, hint and aria name the runtime paints, in the active language */
     ui: copy,

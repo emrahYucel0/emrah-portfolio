@@ -28,8 +28,16 @@ export interface C2MountOptions {
   homeUrl?: string
   /** absolute path of the grown-room About route, e.g. /en/about */
   aboutUrl?: string
+  /** where the Lab bench lives, in the reading language */
+  labUrl?: string
   /** does the current URL mean "About is open"? */
   isAboutPath?: () => boolean
+  /**
+   * The place the visitor gestured towards when they left the Lab, taken once. The Lab is the fifth destination
+   * and a route of its own, so leaving it is a route change: the host keeps the intent on the history entry —
+   * never in the URL — and the runtime asks for it when it is mounted again.
+   */
+  arrival?: () => string | null
   /** the runtime asks the host to navigate; the host owns history */
   push?: (url: string, state: unknown) => void
   /** the runtime asks the host to change the URL without adding a history entry (language changes) */

@@ -1,4 +1,4 @@
-import type { ProfileFacts, ProjectFacts, StudyFacts } from './types'
+import type { ProfileFacts, ProjectFacts } from './types'
 
 /** Verified, locale-independent. Nothing here may be invented, and nothing here is translated. */
 export const profile: ProfileFacts = {
@@ -65,11 +65,5 @@ export const projects: ProjectFacts[] = [
   },
 ]
 
-/** The five real studies. Their clips and posters are shared by both locales. */
-export const studies: StudyFacts[] = [
-  { id: '01', w: 1918, h: 956 },
-  { id: '02', w: 1918, h: 954 },
-  { id: '03', w: 1858, h: 954 },
-  { id: '04', w: 1868, h: 956 },
-  { id: '05', w: 1866, h: 960 },
-]
+/** The three studies the Lab bench registers. Each is an experiment, not a recording: it has no media. */
+export const studies = ['weight', 'line', 'tone'] as const

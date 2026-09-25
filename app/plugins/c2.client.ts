@@ -5,7 +5,10 @@
  * as soon as it is ready. Without it the opening began about a second late (measured), which is a visible
  * difference in the very first thing a visitor sees.
  *
- * It starts only on the locale routes: the x-default entry at / is a language chooser, not the surface.
+ * It starts only on the routes the runtime owns: the x-default entry at / is a language chooser, not the surface,
+ * and the Lab routes are the document's own (layouts/default.vue does not mount the runtime there). A head start
+ * on a Lab route would fetch the engine, its fonts and its textures, and take a WebGL context, for a surface that
+ * is never shown and never asked anything — and the visitor is reading a study while it happens.
  */
 export default defineNuxtPlugin({
   name: 'c2-runtime',
@@ -13,7 +16,7 @@ export default defineNuxtPlugin({
   setup() {
     if (!import.meta.client) return
     const path = useRouter().currentRoute.value.path
-    if (!/^\/(tr|en)(\/|$)/.test(path)) return
+    if (!/^\/(tr|en)(\/|$)/.test(path) || /^\/(tr|en)\/lab(\/|$)/.test(path)) return
     const { start } = useC2Engine()
     void start()
   },

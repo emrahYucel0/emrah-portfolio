@@ -90,6 +90,20 @@ body.in-world .bottom .roles { opacity: 0; }
 .layer > * { position: absolute; }
 
 /* about, on the home surface: an introduction, and one positioning line — not equal */
+/* The hero's About. Utility type, on the name's own right axis, in the fold between the names — the site's language
+   for a small action, not a button: no chip, no fill, no border. The rule under the word is the affordance, and it
+   is the fold's own line continuing under it; reaching the control brings the rule up to full ink. Its target is
+   44px tall and wider than the word (WCAG 2.5.8), and the padding is cancelled by the margin, so nothing moves. */
+.hero-act .ha-line { display: flex; justify-content: flex-end; align-items: center; }
+.hero-about {
+  font: 400 10.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase;
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 13px; margin-right: -13px;
+  text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  transition: text-decoration-color .25s ease;
+}
+.hero-about:hover, .hero-about:focus-visible { text-decoration-color: currentColor; }
+
 .about .block { display: flex; flex-direction: column; justify-content: center; gap: 16px; }
 .about .intro { font: 380 clamp(15px, 1.2vw, 17px)/1.5 var(--sans); max-width: 46ch; opacity: .88; text-wrap: pretty; }
 .about .statement { font: 360 clamp(25px, 2.7vw, 38px)/1.12 var(--sans); letter-spacing: -.022em; max-width: 21ch; text-wrap: balance; }

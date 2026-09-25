@@ -2,18 +2,19 @@ import type { ResolvableLink } from '@unhead/vue'
 import { HTML_LANG, LOCALES, OG_LOCALE, profile } from '~~/shared/content'
 import { SOCIAL_IMAGE } from '~~/shared/site'
 
-type Page = 'home' | 'about'
+type Page = 'home' | 'about' | 'lab'
 
 /**
  * One call per page: html lang, title, description, canonical, hreflang tr / en / x-default, Open Graph, Twitter and
  * the Person structured data. Everything is static, so it all lands in the prerendered HTML, and every URL derives
  * from the one site origin (runtimeConfig.public.siteUrl).
  */
-export function useLocaleSeo(page: Page) {
+export function useLocaleSeo(page: Page, override?: { title?: string; description?: string }) {
   const { locale, copy, pathWithoutLocale } = useLocale()
   const site = useRuntimeConfig().public.siteUrl
 
-  const meta = computed(() => copy.value.meta[page])
+  // a study names itself; everything else takes the page's own metadata as written
+  const meta = computed(() => ({ ...copy.value.meta[page], ...override }))
   const canonical = computed(() => `${site}/${locale.value}${pathWithoutLocale.value}`)
   const image = `${site}${SOCIAL_IMAGE.path}`
 

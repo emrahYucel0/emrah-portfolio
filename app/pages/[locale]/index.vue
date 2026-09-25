@@ -42,11 +42,12 @@ useLocaleSeo('home')
       <h2 id="lab-heading" class="u-label">{{ copy.lab.title }}</h2>
       <p class="u-measure">{{ copy.lab.line }}</p>
       <ul class="studies">
-        <li v-for="study in studies" :key="study.id">
-          <span class="study-id">{{ study.id }}</span>
-          {{ copy.lab.studies[study.id] }}
+        <li v-for="(id, i) in studies" :key="id">
+          <span class="study-id">{{ String(i + 1).padStart(2, '0') }}</span>
+          <NuxtLink :to="path(`/lab/${id}`)">{{ copy.lab.studies[id].name }}</NuxtLink> — {{ copy.lab.studies[id].note }}
         </li>
       </ul>
+      <p><NuxtLink class="more" :to="path('/lab')">{{ copy.lab.open }} →</NuxtLink></p>
     </section>
 
     <p class="u-sr">{{ profile.email }} · {{ profile.phone }}</p>

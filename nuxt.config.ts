@@ -51,6 +51,12 @@ export default defineNuxtConfig({
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1, viewport-fit=cover',
       meta: [{ name: 'theme-color', content: '#efeee9' }],
+      /*
+        Without script there is no runtime to wait for, so there is nothing for the first-paint plate to stand in
+        for: the semantic shell IS the page, and the plate would only cover it. This is the one rule that decides
+        which of the two owns the screen, and it is decided by the document, before anything runs.
+      */
+      noscript: [{ innerHTML: '<style>#c2-plate{display:none}</style>', tagPosition: 'head' }],
       link: [
         { rel: 'icon', href: ICONS.ico, sizes: '32x32' },
         { rel: 'icon', href: ICONS.svg, type: 'image/svg+xml' },

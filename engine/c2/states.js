@@ -234,17 +234,23 @@ export function workState(V, w, i) {
 }
 
 // ─── lab: open rows and nothing else — the composition is made by what is held here ───
+/**
+ * THE LAB STOP IS A HANDOFF, NOT A SCENE. The Lab is its own route now — the registered bench — so this place on
+ * the index no longer has a composition of its own to show. It used to: a caption room held open in the sheet by
+ * an `opening`, which is the white capsule the visitor still saw for a moment on the way through, after the room
+ * IA it belonged to had been retired. That opening, and the room it framed, are gone.
+ *
+ * What is left is the sheet itself — the same rows, the same strips, at rest — which is the field every transition
+ * on this site passes through. Travelling to the Lab now crosses neutral material and arrives at the bench.
+ */
 export function labState(V) {
-  const { W, H, P, pad, strip } = V
-  const cap = P ? { x: pad, y: H - strip - 96, w: W - pad * 2, h: 80 } : { x: pad, y: H - strip - 104, w: 460, h: 84 }
+  const { H, P } = V
   const img = build(V, H, ({ voids }) => {
     strips(voids, V)
   })
-  // the caption keeps a real room of its own, fixed on the screen: rooms held elsewhere push rows around it, never across it
   return mk(V, {
     id: 'lab', spacing: rowSpacing(V), freq: 0.1, thick: P ? 0.72 : 0.82, amp: 0, memThick: 0.8, memTone: 0,
-    ...img, layout: { cap }, beneath: 'pin', capacity: Infinity,
-    features: [opening(cap, P ? 10 : 40, 12, { falloff: 22 })],
+    ...img,
   })
 }
 

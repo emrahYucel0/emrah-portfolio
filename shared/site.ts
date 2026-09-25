@@ -5,6 +5,7 @@
  * derive from `siteUrl()`, which nuxt.config.ts resolves once from NUXT_PUBLIC_SITE_URL (e.g. for a staging build);
  * a production build refuses an origin that is not HTTPS or that points at localhost.
  */
+import { studies } from './content/facts'
 import { LOCALES } from './content/types'
 
 export const PRODUCTION_ORIGIN = 'https://yucelemrah.com'
@@ -20,8 +21,12 @@ export function siteUrl(raw?: string): string {
   return url.origin
 }
 
-/** public pages, without the locale prefix */
-export const PUBLIC_PAGES = ['', '/about'] as const
+/**
+ * Public pages, without the locale prefix. The Lab's bench and its three studies are pages of this site like any
+ * other — each prerendered, each with its own title, canonical and hreflang — so they belong here, which is what
+ * puts them in the sitemap and in the prerender list rather than leaving them to be found by crawling.
+ */
+export const PUBLIC_PAGES: readonly string[] = ['', '/about', '/lab', ...studies.map((s) => `/lab/${s}`)]
 
 /** every public, indexable route: the x-default entry and each page in each language */
 export const PUBLIC_ROUTES: string[] = ['/', ...LOCALES.flatMap((l) => PUBLIC_PAGES.map((p) => `/${l}${p}`))]

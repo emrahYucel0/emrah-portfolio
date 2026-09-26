@@ -27,6 +27,22 @@ npm run preview    # serve .output/public locally
 npx nuxt typecheck # vue-tsc over the whole app
 ```
 
+## Checks
+
+The harnesses the site is held to live in [`tools/diag/`](tools/diag/README.md) — in the repository, because a
+check that can be lost is not a check. They drive a **built** artifact through a real browser. `tools/` is source
+and never ships: only `.output/public` is uploaded.
+
+```bash
+cd tools/diag && sh run6.sh 4500 4600   # the whole flag-off gate -> out/final6.log
+```
+
+Restart the servers after every rebuild; the CSP in `.htaccess` carries a hash of the HTML. `run6.sh` preflights
+both ports and tells you which one is wrong.
+
+Defects that are understood and deliberately unfixed are in [`docs/KNOWN-ISSUES.md`](docs/KNOWN-ISSUES.md), each
+with what was already tried.
+
 ## Shape
 
 ```

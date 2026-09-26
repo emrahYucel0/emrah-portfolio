@@ -19,6 +19,17 @@ npx --prefix tools/diag playwright install webkit chromium
 
 ## Running
 
+### The baseline build
+
+`nonlab.cjs` needs a **second built artifact** to compare against, served on its own port. Keep that artifact
+somewhere durable and inside no temp directory — the original baseline was lost to a temp sweep, and a server whose
+directory has been deleted still answers, with 404, which surfaces as `window.__lab.A is undefined` rather than as
+"your baseline is gone". `run6.sh` now preflights both ports and says which one is wrong.
+
+The honest substitute, when the recorded baseline is gone, is the merge target: build `main` into its own directory
+and serve that. Say in the report which baseline was used — a comparison against a different baseline is a different
+measurement.
+
 ```bash
 npm run generate                                   # build first
 cp tools/diag/node_modules/axe-core/axe.min.js .output/public/   # only for the a11y runs
@@ -48,8 +59,8 @@ every test fails in the same confusing way. More than one afternoon has gone int
 | `labboot.cjs` | every Lab route is styled at first paint, with its chunk held back |
 | `boot.cjs` | the cold load: who owns the paint, and when |
 | `bootresp.cjs` | the same, across the screens the composition is set for |
-| `proj.cjs` | how long a project transition makes the visitor wait, and for what |
-| `edge.cjs` | WEIGHT's rotated type against its clip edges (see its header: known false positive) |
+| `proj.cjs` | how long a project transition makes the visitor wait, and for what — measured from the one activation that opens the project, with the carousel positioning done before the clock starts |
+| `edge.cjs` | **UNVERIFIED** — rewritten from a description that does not match the code; asserts nothing. See its header |
 | `labaxe.cjs` | axe over the Lab routes, both languages, both motion settings |
 | `heroaxe.cjs` | axe over the hero, and the About control's place in the keyboard order |
 | `hero.cjs`, `herolayout.cjs`, `herotouch.cjs`, `herolocale.cjs` | the hero's About control |
@@ -61,8 +72,13 @@ every test fails in the same confusing way. More than one afternoon has gone int
 
 ## Reading the results
 
-**A pixel delta is weather.** The ambient wave means two runs of the same build differ by a few tenths of a
-percent. `nonlab.cjs` prints the delta but asserts the **state**: mode, stop, which layers are up, which
-destinations exist. A state difference is a real change; a delta on its own is not.
+**A pixel delta is weather.** The ambient wave is always moving, so two runs of the *same build* differ a lot:
+measured 2026-09-26, one build against a byte-identical copy of itself gave **19.3% on the hero, 18.1% after a
+drag, 6.8% on About** and 0 on Work and Contact. Treat anything in that band as nothing. `nonlab.cjs` prints the
+delta but asserts the **state**: mode, stop, which layers are up, which destinations exist. A state difference is a
+real change; a delta on its own is not.
+
+**To compare pixels, compare in reduced motion.** `nonlabred.cjs` stops the wave, and two builds that really are
+the same then come out at **0 on every stop** — which is the only pixel comparison worth asserting on.
 
 Recorded values live in the report each branch produced, not here — a number in a README goes stale in a week.

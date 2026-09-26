@@ -14,16 +14,18 @@ const [port, engine = 'webkit', path = '/tr'] = process.argv.slice(2)
   p.on('pageerror', (e) => errs.push(e.message))
 
   await p.addInitScript(() => {
-    window.__t0 = performance.now()
+    // performance.now() is already milliseconds since this document's navigation start, which is the origin the
+    // header promises. Capturing a t0 here instead would silently subtract however long it took to reach this
+    // init script, and make every number uncomparable between runs and machines.
     window.__marks = {}
-    const mark = (k) => { if (window.__marks[k] === undefined) window.__marks[k] = Math.round(performance.now() - window.__t0) }
+    const mark = (k) => { if (window.__marks[k] === undefined) window.__marks[k] = Math.round(performance.now()) }
     window.__mark = mark
     document.addEventListener('DOMContentLoaded', () => mark('dom-content-loaded'))
     document.fonts?.ready?.then(() => mark('fonts-ready'))
     // who owns the paint, sampled every frame
     window.__own = []
     const tick = () => {
-      const t = Math.round(performance.now() - window.__t0)
+      const t = Math.round(performance.now())
       const plate = document.getElementById('c2-plate')
       const surf = document.getElementById('surface')
       const c2 = document.documentElement.dataset.c2 === 'on'

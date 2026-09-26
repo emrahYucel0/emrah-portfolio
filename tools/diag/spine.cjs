@@ -102,7 +102,7 @@ const swipe = async (p, dy) => {
   await sleep(settle)
   s = await p.evaluate(state)
   let path1 = await p.evaluate(seen)
-  ok(s.path === '/tr' && s.c2 === 'on' && s.base === 3, 'Lab → Work', `at ${s.path} base ${s.base} p ${s.p}`)
+  ok(s.path === '/tr' && s.c2 === 'on' && s.base === 3, 'Lab → Work', `at ${s.path} c2 ${s.c2} mode ${s.mode} base ${s.base} p ${s.p}`)
   ok(!path1.some((v) => v < 2.5), 'no flash through Name on the way to Work', `p seen: ${Math.min(...path1)}…${Math.max(...path1)}`)
 
   await fresh('/tr/lab')
@@ -112,7 +112,7 @@ const swipe = async (p, dy) => {
   await sleep(settle)
   s = await p.evaluate(state)
   path1 = await p.evaluate(seen)
-  ok(s.path === '/tr' && s.base === 5, 'Lab → Contact', `at ${s.path} base ${s.base} p ${s.p}`)
+  ok(s.path === '/tr' && s.base === 5, 'Lab → Contact', `at ${s.path} c2 ${s.c2} mode ${s.mode} base ${s.base} p ${s.p}`)
   ok(!path1.some((v) => v < 4.5), 'no flash through Name on the way to Contact', `p seen: ${Math.min(...path1)}…${Math.max(...path1)}`)
 
   // ── trackpad momentum: the tail must not carry a second stop ──────────────
@@ -122,7 +122,7 @@ const swipe = async (p, dy) => {
     await momentum(p, dir)
     await sleep(settle)
     s = await p.evaluate(state)
-    ok(s.path === '/tr' && s.base === want, `${label} (momentum) — one gesture, one stop`, `base ${s.base} (wanted ${want})`)
+    ok(s.path === '/tr' && s.base === want, `${label} (momentum) — one gesture, one stop`, `at ${s.path} c2 ${s.c2} base ${s.base} (wanted ${want})`)
   }
 
   // ── touch swipe ───────────────────────────────────────────────────────────
@@ -133,7 +133,7 @@ const swipe = async (p, dy) => {
     await swipe(p, dy)
     await sleep(settle)
     s = await p.evaluate(state)
-    ok(s.path === '/tr' && s.base === want, `${label} (swipe) — one gesture, one stop`, `base ${s.base} (wanted ${want})`)
+    ok(s.path === '/tr' && s.base === want, `${label} (swipe) — one gesture, one stop`, `at ${s.path} c2 ${s.c2} base ${s.base} (wanted ${want})`)
   }
 
   // ── Contact → Lab, the reverse of the same grammar ─────────────────────────

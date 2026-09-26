@@ -1,0 +1,23 @@
+/*
+  The site's own two faces. The C2 runtime imports them and declares them as its `--mono` and `--sans`, so every
+  word of chrome on the site is set in them — but the runtime is not mounted on the Lab routes, so neither are its
+  faces, and the Lab was left reading in the system stack. That is a visible seam at exactly the boundary this
+  file exists to close: the strip here must be the strip there. They are the research site's faces too, so the
+  studies are also returned to the type they were composed in. Route-local, like everything else here.
+
+  They are loaded WITH the route's chunk rather than inlined with the contract: a face arriving a moment late is
+  a swap against the fallback stack the contract already declares, while a contract arriving late is the page
+  painting raw. Only the second one is worth putting in every Lab page's HTML (see LabChrome).
+*/
+@import '@fontsource-variable/geist';
+@import '@fontsource/geist-mono/400.css';
+
+/* the WEIGHT study needs a real width axis (62–125); this site's display face has none */
+@font-face {
+  font-family: 'Archivo Var';
+  src: url('/fonts/archivo-wdth.woff2') format('woff2-variations'), url('/fonts/archivo-wdth.woff2') format('woff2');
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: swap;
+}
+

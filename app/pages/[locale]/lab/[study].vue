@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import '~/assets/css/lab.css'
+import '~/assets/css/lab-fonts.css'
 import { studies, type StudyId } from '~~/shared/content'
 
 /**

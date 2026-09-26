@@ -8,25 +8,6 @@
 */
 
 /*
-  The site's own two faces. The C2 runtime imports them and declares them as its `--mono` and `--sans`, so every
-  word of chrome on the site is set in them — but the runtime is not mounted on the Lab routes, so neither are its
-  faces, and the Lab was left reading in the system stack. That is a visible seam at exactly the boundary this
-  file exists to close: the strip here must be the strip there. They are the research site's faces too, so the
-  studies are also returned to the type they were composed in. Route-local, like everything else here.
-*/
-@import '@fontsource-variable/geist';
-@import '@fontsource/geist-mono/400.css';
-
-/* the WEIGHT study needs a real width axis (62–125); this site's display face has none */
-@font-face {
-  font-family: 'Archivo Var';
-  src: url('/fonts/archivo-wdth.woff2') format('woff2-variations'), url('/fonts/archivo-wdth.woff2') format('woff2');
-  font-weight: 100 900;
-  font-stretch: 62% 125%;
-  font-display: swap;
-}
-
-/*
   The Lab routes hand the screen back to the document: the C2 runtime is not mounted here (see layouts/default.vue),
   so the page scrolls natively — which is what the studies read their parameter from. This is route-local: every
   other route keeps the runtime and its gesture ownership exactly as before.

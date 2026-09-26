@@ -60,6 +60,16 @@ const go = (e: MouseEvent, to: LabExit) => {
   </header>
 </template>
 
+<!--
+  THE LAB'S CONTRACT TRAVELS WITH ITS CHROME. It used to be imported as a stylesheet from the two page files,
+  which meant it arrived with the route's JavaScript chunk: a component's own <style> is inlined into the
+  prerendered HTML, an imported stylesheet is not. Until that chunk landed the Lab painted raw — no --pad, no
+  --strip, the strip collapsed and the text unwrapped, for as long as the network took. A <style src> is a
+  component style, so the contract is in the HTML with the page that needs it, and the file stays one file.
+  This component is rendered on every Lab route (layouts/default.vue), which is exactly where it is needed.
+-->
+<style src="~/assets/css/lab.css"></style>
+
 <style>
 /* unscoped: the strip is the Lab routes' chrome, and lab.css owns the variables it is measured in */
 .lab-strip {

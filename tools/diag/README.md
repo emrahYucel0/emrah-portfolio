@@ -88,6 +88,7 @@ ports before it starts them.
 | `labboot.cjs` | every Lab route is styled at first paint, with its chunk held back |
 | `boot.cjs` | the cold load: who owns the paint, and when |
 | `bootresp.cjs` | the same, across the screens the composition is set for |
+| `titlefit.cjs` | a project's name through the release: readable against its ground, and clear of the capture |
 | `proj.cjs` | how long a project transition makes the visitor wait, and for what — measured from the one activation that opens the project, with the carousel positioning done before the clock starts |
 | `labaxe.cjs` | axe over the Lab routes, both languages, both motion settings |
 | `heroaxe.cjs` | axe over the hero, and the About control's place in the keyboard order |

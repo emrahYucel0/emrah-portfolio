@@ -83,6 +83,9 @@ say "BOOT RESPONSIVE webkit";   MSYS_NO_PATHCONV=1 node bootresp.cjs $CUR webkit
 say "PROJECT TRANSITIONS";      MSYS_NO_PATHCONV=1 node proj.cjs $CUR 2>&1 | tail -7 >> $L
 # NOTE: shell.cjs and spine.cjs both end with the same two "one control back to the Lab" checks — the two were
 # restored from overlapping descriptions. Duplicated coverage, not a wrong result; worth deduplicating.
+say "PROJECT TITLES — CONTRAST AND CLEARANCE"
+MSYS_NO_PATHCONV=1 node titlefit.cjs $CUR tr 1440 900 gate 2>&1 | tail -4 >> $L
+MSYS_NO_PATHCONV=1 node titlefit.cjs $CUR en 1280 720 gate 2>&1 | tail -4 >> $L
 say "LAB SHELL / RESPONSIVE";   node shell.cjs $CUR          2>&1 | tail -10 >> $L
 say "LAB A11Y";                 node labaxe.cjs $CUR         2>&1 | tail -3  >> $L
 say "JOURNEY TR NORMAL";        node journey.cjs $CUR tr     2>&1 | tail -5  >> $L

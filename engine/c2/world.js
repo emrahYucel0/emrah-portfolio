@@ -157,14 +157,23 @@ export function framesFor(V, w) {
     // read through it, doubled against the captured page's own heading, for as long as the release took. The two
     // other rhythms both put the room at the top of the screen and the name in the material below it — `scale` with
     // exactly this geometry — so this one does the same, and the name can no longer be behind anything.
-    // Desktop is untouched: there the capture is a full-width band along the bottom and the box never met it.
+    //
+    // On a desktop screen the box was `wb-band`, which is the ONE block class set in `--ink`. Inside a project the
+    // ground is near-black and a void is where the rows stop, so a void is dark — and dark type on it cannot be
+    // read. The name survived only because the material happens to be dense where the band opens; the two lines
+    // beneath it fell past the rows onto the bare ground, and on a short screen onto the capture's own navigation.
+    // `authored` sets its name in the strip and `scale` sets its in `wb-facts`; both inherit `.wb`'s `--paper` and
+    // both stay legible on the dark. This one now does the same, in a box tall enough for three lines of either
+    // language, held clear of the capture.
+    const NAME_BOX = 150   // the name plus up to three lines of the line, at the largest type step
+    const capTop = P ? 0 : Math.max(H - W / lead.aspect, strip + 14 + NAME_BOX + 18)
     const leadR = P
       ? (() => { const hh = H - strip * 2 - 230, ww = hh * lead.aspect; return R((W - ww) / 2, strip + 26, ww, hh) })()
-      : R(0, H - W / lead.aspect, W, W / lead.aspect)
+      : R(0, capTop, W, W / lead.aspect)
     const tTop = P
       ? (() => { const ty = outer(leadR).b + 14; return R(pad, ty, W - pad * 2, H - strip - 12 - ty) })()
-      : R(pad, strip + 14, Math.min(W * 0.46, 620), 112)
-    F.push({ g: 'full', rooms: [leadR], voids: [tTop], media: [{ item: lead, rect: leadR }], blocks: [{ rect: tTop, cls: P ? 'wb-facts wb-bottom' : 'wb-band wb-at-top', html: title }] })
+      : R(pad, strip + 14, Math.min(W * 0.52, 720), NAME_BOX)
+    F.push({ g: 'full', rooms: [leadR], voids: [tTop], media: [{ item: lead, rect: leadR }], blocks: [{ rect: tTop, cls: P ? 'wb-facts wb-bottom' : 'wb-facts', html: title }] })
 
     // 2 · SYSTEM DENSITY — the densest material in the site, and what the system does
     const sysT = P ? R(pad, strip + H * 0.14, W - pad * 2, H * 0.6) : R(W * 0.3, strip + (H - strip * 2) * 0.18, W * 0.44, (H - strip * 2) * 0.64)

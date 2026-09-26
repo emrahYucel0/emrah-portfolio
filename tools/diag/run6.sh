@@ -34,15 +34,18 @@ say(){ echo "" >> $L; echo "########## $1 ##########" >> $L; }
 say "RETIRED LAB — TR NORMAL";  MSYS_NO_PATHCONV=1 node labflash.cjs $CUR normal  tr 2>&1 | tail -7 >> $L
 say "RETIRED LAB — TR REDUCED"; MSYS_NO_PATHCONV=1 node labflash.cjs $CUR reduced tr 2>&1 | tail -7 >> $L
 say "RETIRED LAB — EN NORMAL";  MSYS_NO_PATHCONV=1 node labflash.cjs $CUR normal  en 2>&1 | tail -7 >> $L
-say "DESKTOP SPINE";            node spine.cjs $CUR          2>&1 | tail -8  >> $L
-say "DESKTOP SPINE REDUCED";    node spine.cjs $CUR reduced  2>&1 | tail -4  >> $L
+say "DESKTOP SPINE";            node spine.cjs $CUR          2>&1 | tail -34 >> $L
+# tail -4 used to cut the reason off: the log said "SPINE: FAIL (1)" with nothing above it
+say "DESKTOP SPINE REDUCED";    node spine.cjs $CUR reduced  2>&1 | tail -34 >> $L
 say "ONE GESTURE = ONE STOP";   MSYS_NO_PATHCONV=1 node gesture2.cjs $CUR 2>&1 | tail -4 >> $L
 say "INITIAL LOAD webkit";      MSYS_NO_PATHCONV=1 node boot.cjs $CUR webkit /tr 2>&1 | tail -11 >> $L
 say "INITIAL LOAD chrome";      MSYS_NO_PATHCONV=1 node boot.cjs $CUR chrome /tr 2>&1 | tail -11 >> $L
 say "BOOT RESPONSIVE webkit";   MSYS_NO_PATHCONV=1 node bootresp.cjs $CUR webkit 2>&1 | tail -3 >> $L
 say "PROJECT TRANSITIONS";      MSYS_NO_PATHCONV=1 node proj.cjs $CUR 2>&1 | tail -7 >> $L
 say "WEIGHT CLIPPING";          node edge.cjs $CUR webkit    2>&1 | tail -5  >> $L
-say "LAB SHELL / RESPONSIVE";   node shell.cjs $CUR          2>&1 | tail -8  >> $L
+# NOTE: shell.cjs and spine.cjs both end with the same two "one control back to the Lab" checks — the two
+# were restored from overlapping descriptions. Duplicated coverage, not a wrong result; worth deduplicating.
+say "LAB SHELL / RESPONSIVE";   node shell.cjs $CUR          2>&1 | tail -10 >> $L
 say "LAB A11Y";                 node labaxe.cjs $CUR         2>&1 | tail -3  >> $L
 say "JOURNEY TR NORMAL";        node journey.cjs $CUR tr     2>&1 | tail -4  >> $L
 say "JOURNEY EN REDUCED";       node journey.cjs $CUR en reduced 2>&1 | tail -4 >> $L

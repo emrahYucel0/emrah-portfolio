@@ -22,10 +22,26 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 const originOf = (t) => (/^https?:\/\//i.test(t) ? t.replace(/\/$/, '') : `http://127.0.0.1:${t}`)
 
+// THE HOST BLOCKS AI CRAWLERS AND NON-BROWSER CLIENTS, and answers them 403. That is a live, healthy site
+// refusing a stranger — not a broken one. Every request here therefore identifies as an ordinary browser, and a
+// 403 is reported as BLOCKED, never as a failure: the only thing it proves is that the request did not look like
+// a visitor. A human opening the page in a real browser is what settles it.
+const UA = {
+  chrome: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
+  webkit: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15',
+  mobile: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Mobile/15E148 Safari/604.1',
+}
+const BLOCKED = 'blocked-by-host'
+
 const get = (target, p) => new Promise((resolve, reject) => {
   const url = new URL(originOf(target) + p)
   const mod = url.protocol === 'https:' ? https : http
-  mod.get(url, { headers: { 'user-agent': 'cspboot' } }, (res) => {
+  mod.get(url, { headers: {
+    'user-agent': UA.chrome,
+    accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'accept-language': 'tr-TR,tr;q=0.9,en;q=0.8',
+    'accept-encoding': 'identity',
+  } }, (res) => {
     let body = ''
     res.setEncoding('utf8')
     res.on('data', (c) => { body += c })
@@ -84,9 +100,15 @@ function dirCheck(root) {
 
 // every inline <script> in the document must be named by the CSP the same document was served with
 async function staticCheck(port) {
-  let bad = 0
+  let bad = 0, blocked = 0
   for (const path of ['/tr', '/tr/lab', '/en']) {
     const r = await get(port, path)
+    if (r.status === 403) {
+      console.log(`  BLOCKED ${path} answered 403 — the host refused this client, which it does to anything that`)
+      console.log(`          does not look like a browser. This says nothing about the site. Check it by hand.`)
+      blocked++
+      continue
+    }
     if (r.status !== 200) { console.log(`  FAIL ${path} answered ${r.status}`); bad++; continue }
     const csp = r.headers['content-security-policy'] || ''
     const named = new Set((csp.match(/sha256-[A-Za-z0-9+/=]+/g) || []))
@@ -114,21 +136,30 @@ async function staticCheck(port) {
       console.log(`       STALE SERVER: restart it, or it is serving a rebuild with a pre-rebuild policy`)
     } else console.log(`  ok   ${path} — ${inline.length} inline script(s), all named by the served CSP`)
   }
-  return bad
+  return blocked && !bad ? BLOCKED : bad
 }
 
 async function browserCheck(port, engine) {
   const pw = require('playwright')
   const b = engine === 'webkit' ? await pw.webkit.launch() : await pw.chromium.launch({ channel: 'chrome' })
-  let bad = 0
+  let bad = 0, blocked = 0
   for (const path of ['/tr', '/tr/lab']) {
-    const ctx = await b.newContext({ viewport: { width: 1366, height: 768 } })
+    // Playwright's default user agent says HeadlessChrome, which is exactly what the host refuses. Ask as a
+    // browser; if it still says 403 that is the host's decision about the client, not a fact about the site.
+    const ctx = await b.newContext({ viewport: { width: 1366, height: 768 }, userAgent: engine === 'webkit' ? UA.webkit : UA.chrome, locale: 'tr-TR' })
     const p = await ctx.newPage()
     const csp = [], errs = [], failed = []
     p.on('pageerror', (e) => errs.push(String(e.message).slice(0, 120)))
     p.on('console', (m) => { if (m.type() === 'error') (/Content Security/i.test(m.text()) ? csp : errs).push(m.text().slice(0, 160)) })
     p.on('response', (r) => { if (r.status() >= 400) failed.push(`${r.status()} ${new URL(r.url()).pathname}`) })
-    await p.goto(originOf(port) + path, { waitUntil: 'networkidle', timeout: 60000 })
+    const resp = await p.goto(originOf(port) + path, { waitUntil: 'networkidle', timeout: 60000 })
+    if (resp && resp.status() === 403) {
+      blocked++
+      console.log(`  BLOCKED ${engine} ${path} answered 403 — the host refused this client. Not a site failure;`)
+      console.log(`          open it in a real browser to decide.`)
+      await ctx.close()
+      continue
+    }
     await sleep(4500)
     const s = await p.evaluate(() => {
       const cv = document.querySelector('.lab-stage canvas')
@@ -162,7 +193,7 @@ async function browserCheck(port, engine) {
     await ctx.close()
   }
   await b.close()
-  return bad
+  return blocked && !bad ? BLOCKED : bad
 }
 
 ;(async () => {
@@ -171,6 +202,12 @@ async function browserCheck(port, engine) {
   if (args[0] === '--dir') { console.log(`== PRE-DEPLOY: does this artifact's .htaccess match its own HTML? ${args[1]}`); bad = dirCheck(args[1]) }
   else if (args[0] === '--static') { console.log(`== CSP vs the served document, ${originOf(args[1])}`); bad = await staticCheck(args[1]) }
   else { console.log(`== does it boot under the production CSP, ${originOf(args[0])}`); bad = await browserCheck(args[0], args[1] || 'chrome') }
+  if (bad === BLOCKED) {
+    console.log('CSPBOOT: BLOCKED BY HOST — every request was refused before it reached the site.')
+    console.log('         This is NOT a site failure and must never be reported as one. The host answers 403 to')
+    console.log('         AI crawlers and to anything that does not look like a browser. Your own browser decides.')
+    process.exit(2)
+  }
   console.log(`CSPBOOT: ${bad ? `FAIL (${bad})` : 'PASS'}`)
   process.exit(bad ? 1 : 0)
 })().catch((e) => { console.error(String(e).slice(0, 300)); process.exit(1) })

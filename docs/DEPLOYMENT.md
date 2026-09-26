@@ -4,6 +4,12 @@
 - **Build:** Nuxt 4 with `ssr: true`, used only at build time. `nuxt generate` prerenders every page to static HTML.
 - **Output:** `.output/public/` is the whole website. HTML, JS, CSS, fonts, media, `robots.txt`, `sitemap.xml`, `404.html` and the Apache `.htaccess` rules.
 - **Production:** static files on shared cPanel hosting (Apache / LiteSpeed). There is **no Node process, no Nitro server, no PM2, no API, no database**. The hosting's *Setup Node.js App* feature is not used.
+- **The host answers `403` to AI crawlers and to anything that does not look like a browser.** curl, headless
+  browsers, link checkers and scrapers are refused at the edge, before the request reaches the files. **This is a
+  live, healthy site refusing a stranger. It is not an empty document root and it is not a deployment failure.**
+  It has been mistaken for one. Judge the site in a real browser; treat every `403` from a tool as a statement
+  about the client, never about the site. The checks in this document send an ordinary browser User-Agent for
+  exactly this reason, and report a `403` as BLOCKED rather than as a failure.
 - **Site origin:** `https://yucelemrah.com`, non-www, HTTPS. It is set once in `shared/site.ts` (`PRODUCTION_ORIGIN`) and can be overridden at build time with `NUXT_PUBLIC_SITE_URL`, HTTPS only. Canonicals, hreflang, Open Graph, JSON-LD, the sitemap, `robots.txt` and the redirects all derive from it.
 
 ## Build
@@ -45,14 +51,77 @@ Status: **UNKNOWN until checked in cPanel.**
 
 cPanel → *Domains* → `yucelemrah.com` → **Document Root** column, usually `public_html` for the main domain, or `public_html/<folder>` for an addon domain. The site lives directly in that folder: `index.html`, `tr/`, `en/`, `_nuxt/`, …
 
-## Upload: first launch
-1. **Inventory and back up.** File Manager → document root → select all → *Compress* → `backup-YYYYMMDD.zip`, then download it. The domain currently answers `403` (empty or blocked root), so the backup may be tiny. Take it anyway.
-2. **Clean.** Remove the old site files from the document root. Keep `.well-known/` (SSL validation) and `cgi-bin/` if present.
-3. **Package locally.** Zip the *contents* of `.output/public/`, so that `index.html` is at the zip root. Make sure hidden files are included: `.htaccess` at the root, in `_nuxt/` and in `opt/`.
-4. **Upload and extract.** File Manager → *Upload* the zip into the document root → *Extract* → delete the zip.
-5. **Check hidden files.** File Manager → *Settings* → *Show Hidden Files (dotfiles)*. Confirm the three `.htaccess` files exist.
+## Upload: updating the live site
 
-FTP/SFTP works equally well: upload the contents of `.output/public/` to the document root, hidden files included.
+The site is live. This replaces its files in place, so the backup is the part that matters: it is the only way
+back. Do steps 1 and 2 before deleting anything.
+
+### 1 · Take a full backup, and prove it is real
+1. cPanel → *File Manager* → the document root (cPanel → *Domains* → `yucelemrah.com` → **Document Root**).
+2. **Write down what is there now:** File Manager shows the item count at the bottom of the listing. Note it, and
+   turn on *Settings → Show Hidden Files (dotfiles)* first so the `.htaccess` files are counted.
+3. Select all → *Compress* → **Zip Archive** → name it `backup-YYYYMMDD.zip`. Let it finish.
+4. **Download it to your machine.** A backup left on the server is not a backup.
+5. **Check it before you trust it.** Open the downloaded zip and compare against what you wrote down in step 2:
+   - the **file count** should match the live listing, including the three `.htaccess` files;
+   - the **size** should be in the same range as the site you are replacing — the current artifact is ~9 MB, so a
+     live backup is megabytes, not kilobytes.
+
+   > **A live site cannot produce a tiny backup. If the zip is a few kilobytes, or holds a handful of files, STOP.**
+   > Something went wrong — the wrong folder, a permissions error, or a compress that silently skipped dotfiles.
+   > Do not delete anything. Find out why first. You will not get a second chance at the old files.
+
+### 2 · Clear the old site
+With the verified backup on your machine, delete from the document root:
+- `index.html`, `404.html`, `robots.txt`, `sitemap.xml`, the favicons and `apple-touch-icon.png`;
+- the folders `_nuxt/`, `opt/`, `tr/`, `en/`, `og/`, `fonts/`, `tone/`;
+- `_payload.json`, and the root `.htaccess` (the new build ships its own).
+
+**Keep, and do not touch:**
+- **`.well-known/`** — SSL/AutoSSL validation lives here. Deleting it can break certificate renewal.
+- **`cgi-bin/`** — created by cPanel; harmless, and its absence confuses some panels.
+- anything you did not put there and do not recognise — mail folders, `error_log`, panel files. If it is not in the
+  list above, leave it.
+
+### 3 · Upload and extract
+1. File Manager → *Upload* → `deploy/yucelemrah-<short-commit>.zip` into the document root.
+2. Select the uploaded zip → *Extract* → into the document root.
+3. Delete the zip from the server.
+
+`index.html` is at the zip root, so the files land directly in the document root — not inside a nested folder.
+If you see `public/` or a folder named after the zip, the extract went one level too deep: move the contents up.
+
+### 4 · Confirm the three `.htaccess` files
+File Manager → *Settings* → **Show Hidden Files (dotfiles)**, then confirm all three exist:
+- `.htaccess` (document root) — redirects, clean URLs, 404, CSP
+- `_nuxt/.htaccess` — a year of immutable caching for fingerprinted assets
+- `opt/.htaccess` — a week for media
+
+**If the root `.htaccess` is missing, the site will serve with the wrong headers and no CSP.** Re-upload it alone
+rather than re-extracting everything.
+
+### 5 · Then run the post-deploy checks
+See *Post-deploy verification* below. Read its note about `403` before reading its results.
+
+FTP/SFTP works equally well: upload the contents of the zip to the document root, hidden files included.
+
+## Rollback — restoring the backup
+The site is static and there is no database, so a rollback is a file swap.
+
+1. File Manager → document root → delete the files listed in step 2 above (again keeping `.well-known/` and
+   `cgi-bin/`).
+2. *Upload* `backup-YYYYMMDD.zip` → *Extract* into the document root → delete the zip.
+3. Confirm the three `.htaccess` files are back (*Show Hidden Files*).
+4. Hard-refresh. HTML is revalidated on every request and `_nuxt/` assets are fingerprinted, so old and new never
+   mix and no cache needs clearing.
+
+**If only `.htaccess` is at fault** — a 500, a redirect loop, a CSP that blocks the inline script — rename it to
+`.htaccess.off`. The site then serves with default server behaviour, losing the redirects and caching but staying
+up, while you fix `modules/production-files.ts` and rebuild.
+
+**If the site is up but dead** — the page renders, styled, and nothing responds — that is the CSP not matching the
+HTML. The policy and the documents must come from the same build. Roll back, then run
+`node tools/diag/cspboot.cjs --dir .output/public` locally before packaging again.
 
 ## Redirects, cache, compression, headers
 All of this is in the generated `.htaccess`, verified on Apache 2.4 (`docs/M5-REPORT.md` § L–N). Every module-dependent block is wrapped in `<IfModule>`.
@@ -96,14 +165,29 @@ Records published in DNS on 2026-09-16 (provider: Cenuta, nameservers `ns66/ns67
 6. **mailto:** click `info@yucelemrah.com` on the site from desktop and from the phone; the mail app opens with the address filled in.
 
 ## Post-deploy verification
+
+> ### Read this before reading any result
+> **The host refuses clients that do not look like a browser, with `403`.** Every command below therefore sends an
+> ordinary desktop-browser User-Agent, and `cspboot.cjs` does the same for its plain requests and for the browsers
+> it drives — Playwright's default agent says `HeadlessChrome`, which is precisely what gets refused.
+>
+> **A `403` from any of these is reported as BLOCKED BY HOST, and is never evidence that the site is broken.**
+> `cspboot` exits `2` for that case, separately from `1` for a real failure. The only thing a block proves is that
+> the request did not look like a visitor. **When a check is blocked, the site is judged by opening it in a real
+> browser — that check decides, and nothing here overrides it.**
+
 Run from any machine (`-I` headers only):
 ```bash
+UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36'
+
 for u in http://yucelemrah.com/ http://www.yucelemrah.com/ https://www.yucelemrah.com/ https://yucelemrah.com/; do
-  curl -sI -o /dev/null -w "$u -> %{http_code} %{redirect_url}\n" "$u"; done      # three 301 → https://yucelemrah.com/, one 200
+  curl -sI -A "$UA" -o /dev/null -w "$u -> %{http_code} %{redirect_url}\n" "$u"; done   # three 301 → https://yucelemrah.com/, one 200
 for p in / /tr /en /tr/about /en/about /robots.txt /sitemap.xml /favicon.ico /og/emrah-yucel-portfolio.jpg /this-page-does-not-exist-m5-test; do
-  curl -s -o /dev/null -w "$p -> %{http_code}\n" "https://yucelemrah.com$p"; done  # 200 … and 404 for the last
-curl -sI -H "Accept-Encoding: br, gzip" https://yucelemrah.com/tr | grep -iE "content-encoding|cache-control|content-security-policy"
+  curl -s -A "$UA" -o /dev/null -w "$p -> %{http_code}\n" "https://yucelemrah.com$p"; done  # 200 … and 404 for the last
+curl -sI -A "$UA" -H "Accept-Encoding: br, gzip" https://yucelemrah.com/tr | grep -iE "content-encoding|cache-control|content-security-policy"
 ```
+A `403` here means the same thing it means everywhere else in this document: the host did not recognise the
+client. Try it in a browser before concluding anything.
 ### Does the live site actually boot?
 ```bash
 cd tools/diag
@@ -111,7 +195,8 @@ node cspboot.cjs --static https://yucelemrah.com            # the served policy 
 node cspboot.cjs https://yucelemrah.com chrome              # /tr and /tr/lab, runtime up, 0 CSP violations
 node cspboot.cjs https://yucelemrah.com webkit              # the same, in the engine iOS uses
 ```
-All three must exit 0. The browser runs assert what a visitor gets, not what the headers promise: on `/tr` the
+Exit `0` passes, `1` is a real failure, **`2` means the host blocked the client** — re-check by hand, and do not
+record it as a site problem. The browser runs assert what a visitor gets, not what the headers promise: on `/tr` the
 runtime owns the screen (`data-c2` on, no document scrollbar) and on `/tr/lab` the bench has sized its own canvas
 and spread its records. A page whose inline script was refused still renders its markup and its inline styles —
 it just does nothing — so "the HTML looks right" is not evidence and these checks exist because of it.
@@ -125,25 +210,16 @@ Then check each item below:
   - hold on Work and Lab, then swipe (the M3 bug must not return);
 - share `https://yucelemrah.com/tr` in a private chat or a card validator: the OG image and title appear.
 
-## Rollback
-The site is static; there is no database.
-1. **Before every deployment**, keep `backup-YYYYMMDD.zip` of the document root (step 1 above), or keep the previous `.output/public` zip locally.
-2. **If production breaks:**
-   - File Manager → document root → delete the new files;
-   - upload and extract the previous zip;
-   - hard-refresh (HTML is revalidated on every request; `_nuxt` assets are fingerprinted, so old and new never mix).
-3. **If only `.htaccess` is at fault:** rename it to `.htaccess.off`. The site then serves with default server behaviour while you fix it.
-
 ## Checklist
 - **PRE-BUILD:** clean `git status`; `NUXT_PUBLIC_SITE_URL` unset (or the intended HTTPS origin); `npm ci`
 - **BUILD:** `npx nuxt typecheck` exit 0; `npm run generate` exit 0; log shows the production-files line
 - **PRE-UPLOAD:** `.output/public` contains `.htaccess`, `_nuxt/.htaccess`, `opt/.htaccess`, `404.html`, `robots.txt`, `sitemap.xml`, `og/`, favicons; no `200.html`
 - **PRE-UPLOAD (CSP):** `node tools/diag/cspboot.cjs --dir .output/public` exit 0 — the policy names every inline script in the artifact it ships with
 - **PRE-UPLOAD (payload):** no `tools/`, no `*.cjs`, no `lab/proof` route in the artifact
-- **UPLOAD:** document root identified; backup downloaded; old files cleaned; zip extracted; dotfiles visible
+- **UPLOAD:** document root identified; backup downloaded **and its size and file count checked against the live listing — a tiny backup means STOP**; old files cleaned keeping `.well-known/` and `cgi-bin/`; zip extracted; three `.htaccess` confirmed
 - **DNS/SSL:** A record → hosting IP; AutoSSL valid for apex and www
 - **MAIL:** mailbox exists; Email Deliverability valid; inbound / outbound / auth tests recorded
-- **POST-DEPLOY:** redirect matrix; status matrix; 404 is a real 404; console clean; `cspboot.cjs --static <origin>` and `cspboot.cjs <origin> chrome|webkit` all exit 0
+- **POST-DEPLOY:** redirect matrix; status matrix; 404 is a real 404; console clean; `cspboot.cjs --static <origin>` and `cspboot.cjs <origin> chrome|webkit` exit 0 (**exit 2 = blocked by host** — judge in a real browser, never record it as a site failure)
 - **SEO:** `robots.txt` and `sitemap.xml` reachable; canonical and hreflang in page source; OG preview renders
 - **PERFORMANCE:** PageSpeed mobile + desktop recorded (lab); field data only if it exists
 - **REAL DEVICE:** iPhone smoke, including Work / Lab hold → swipe

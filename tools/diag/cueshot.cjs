@@ -1,0 +1,13 @@
+const pw = require('playwright')
+const fs = require('fs')
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+;(async () => {
+  const b = await pw.webkit.launch()
+  const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true })).newPage()
+  await p.goto('http://127.0.0.1:4500/tr/lab/proof', { waitUntil: 'networkidle', timeout: 60000 })
+  await sleep(2200)
+  const cue = await p.evaluate(() => { const e = document.querySelector('.proof-cue'); if (!e) return null; const r = e.getBoundingClientRect(); return { text: e.textContent.trim(), x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), onScreen: r.top >= 0 && r.bottom <= innerHeight } })
+  console.log('cue:', JSON.stringify(cue))
+  fs.writeFileSync('out/proof/cue.png', await p.screenshot({ clip: { x: 0, y: 640, width: 390, height: 204 } }))
+  await b.close()
+})()

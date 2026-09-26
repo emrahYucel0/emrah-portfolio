@@ -22,3 +22,10 @@ logs
 .env
 .env.*
 !.env.example
+
+# Diagnostic toolchain: the harnesses are committed, what they run on is not.
+# `npm install --prefix tools/diag playwright axe-core sharp` restores them; `npx playwright install webkit chromium`
+# fetches the browsers. Evidence and server logs are per-run and never committed.
+tools/diag/node_modules
+tools/diag/out
+tools/diag/*.log

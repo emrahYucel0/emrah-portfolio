@@ -1,0 +1,13 @@
+const pw = require('playwright')
+;(async () => {
+  const b = await pw.webkit.launch()
+  const p = await (await b.newContext({ viewport: { width: 1440, height: 900 } })).newPage()
+  p.on('console', (m) => console.log('CONSOLE', m.type(), m.text()))
+  p.on('pageerror', (e) => console.log('PAGEERROR', e.message))
+  p.on('requestfailed', (r) => console.log('FAILED', r.url(), r.failure()?.errorText))
+  await p.goto('http://127.0.0.1:4500/tr/', { waitUntil: 'networkidle', timeout: 60000 })
+  await new Promise(r => setTimeout(r, 3000))
+  console.log('data-c2:', await p.evaluate(() => document.documentElement.dataset.c2))
+  console.log('sheets:', await p.evaluate(() => document.styleSheets.length))
+  await b.close()
+})()

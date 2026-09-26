@@ -145,11 +145,15 @@ export function framesFor(V, w) {
     })
     F.push(close)
   } else {
-    // 1 · PRODUCT — a band at the top edge carries the name; the public site sits wide beneath it
-    const ct = core('bandTop')
+    // 1 · PRODUCT — the public site sits wide, and its name is set in a box the material clears for it
     const lead = P ? (V.T && m.tablet) || m.mobile || m.hero : m.hero
     const leadR = P ? (() => { const ww = W * 0.62, hh = ww / lead.aspect; return R((W - ww) / 2, H - hh - 12, ww, hh) })() : R(0, H - W / lead.aspect, W, W / lead.aspect)
-    F.push({ g: 'bandTop', media: [{ item: lead, rect: leadR }], blocks: [{ rect: R(pad, strip + 14, W - pad * 2, Math.max(ct.bot - strip - 30, V.S ? 30 : 0)), cls: 'wb-band wb-at-top', html: title }] })
+    // It was a band across the top edge. A band is an opening in the material, and on the way into this project
+    // its edge tore straight across the product's own screenshot — a cream seam through the middle of the work,
+    // for the second or so the release takes. Neither of the other two rhythms opens one on its first frame, and
+    // this one has no need of it: the name belongs in a cleared box, exactly as it does there.
+    const tTop = R(pad, strip + 14, P ? W - pad * 2 : Math.min(W * 0.46, 620), P ? 132 : 112)
+    F.push({ g: 'full', rooms: [leadR], voids: [tTop], media: [{ item: lead, rect: leadR }], blocks: [{ rect: tTop, cls: 'wb-band wb-at-top', html: title }] })
 
     // 2 · SYSTEM DENSITY — the densest material in the site, and what the system does
     const sysT = P ? R(pad, strip + H * 0.14, W - pad * 2, H * 0.6) : R(W * 0.3, strip + (H - strip * 2) * 0.18, W * 0.44, (H - strip * 2) * 0.64)

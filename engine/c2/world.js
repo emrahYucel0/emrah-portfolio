@@ -147,13 +147,24 @@ export function framesFor(V, w) {
   } else {
     // 1 · PRODUCT — the public site sits wide, and its name is set in a box the material clears for it
     const lead = P ? (V.T && m.tablet) || m.mobile || m.hero : m.hero
-    const leadR = P ? (() => { const ww = W * 0.62, hh = ww / lead.aspect; return R((W - ww) / 2, H - hh - 12, ww, hh) })() : R(0, H - W / lead.aspect, W, W / lead.aspect)
     // It was a band across the top edge. A band is an opening in the material, and on the way into this project
     // its edge tore straight across the product's own screenshot — a cream seam through the middle of the work,
     // for the second or so the release takes. Neither of the other two rhythms opens one on its first frame, and
     // this one has no need of it: the name belongs in a cleared box, exactly as it does there.
-    const tTop = R(pad, strip + 14, P ? W - pad * 2 : Math.min(W * 0.46, 620), P ? 132 : 112)
-    F.push({ g: 'full', rooms: [leadR], voids: [tTop], media: [{ item: lead, rect: leadR }], blocks: [{ rect: tTop, cls: 'wb-band wb-at-top', html: title }] })
+    //
+    // On a phone the box was still at the top while the capture was anchored to the bottom edge and sized from the
+    // width, so on a short screen the capture grew up into the box: the name and the line sat behind the device and
+    // read through it, doubled against the captured page's own heading, for as long as the release took. The two
+    // other rhythms both put the room at the top of the screen and the name in the material below it — `scale` with
+    // exactly this geometry — so this one does the same, and the name can no longer be behind anything.
+    // Desktop is untouched: there the capture is a full-width band along the bottom and the box never met it.
+    const leadR = P
+      ? (() => { const hh = H - strip * 2 - 230, ww = hh * lead.aspect; return R((W - ww) / 2, strip + 26, ww, hh) })()
+      : R(0, H - W / lead.aspect, W, W / lead.aspect)
+    const tTop = P
+      ? (() => { const ty = outer(leadR).b + 14; return R(pad, ty, W - pad * 2, H - strip - 12 - ty) })()
+      : R(pad, strip + 14, Math.min(W * 0.46, 620), 112)
+    F.push({ g: 'full', rooms: [leadR], voids: [tTop], media: [{ item: lead, rect: leadR }], blocks: [{ rect: tTop, cls: P ? 'wb-facts wb-bottom' : 'wb-band wb-at-top', html: title }] })
 
     // 2 · SYSTEM DENSITY — the densest material in the site, and what the system does
     const sysT = P ? R(pad, strip + H * 0.14, W - pad * 2, H * 0.6) : R(W * 0.3, strip + (H - strip * 2) * 0.18, W * 0.44, (H - strip * 2) * 0.64)

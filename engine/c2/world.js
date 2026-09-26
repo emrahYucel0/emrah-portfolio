@@ -47,6 +47,14 @@ export function framesFor(V, w) {
   // a room reaches past its media (see states.room): text is laid out against the room, not the image
   const outer = (r) => ({ l: r.x - r.w * 0.125 - 6, r: r.x + r.w * 1.125 + 6, b: r.y + r.h * 1.05 + 8 })
   const GAP = P ? 26 : 52
+  // THE IDENTITY PANEL — a project's name and its one line, on a desktop screen. One shape for every rhythm that
+  // needs one, because three passes of patching a second shape for one project produced three different overlaps.
+  // It stands in the material to the left of the room, above the bottom strip, bottom-aligned; 180px is the name
+  // plus four lines of either language at the largest type step, which is what the longest description wraps to in
+  // the narrowest panel this produces. The old 130px box was shorter than its own content at 1440x900, so the name
+  // overflowed the top of the panel and sat on the bare rows.
+  const PANEL_H = 180
+  const identityPanel = (roomR) => R(pad, H - strip - 20 - PANEL_H, Math.max(260, outer(roomR).l - GAP - pad), PANEL_H)
 
   if (w.rhythm === 'authored') {
     // 1 · the work itself, whole: the surface is not there at all
@@ -99,15 +107,14 @@ export function framesFor(V, w) {
     let pageR, t0
     if (!P) {
       pageR = fitRect(page.aspect, R(W * 0.34, strip + 40, W * 0.6, H - strip * 2 - 80), 'center')
-      const tx = pad
-      t0 = R(tx, H - strip - 150, Math.max(260, outer(pageR).l - GAP - tx), 130)
+      t0 = identityPanel(pageR)
     } else {
       const ph = H - strip * 2 - 230, pw = ph * page.aspect
       pageR = R((W - pw) / 2, strip + 26, pw, ph)
       const ty = outer(pageR).b + 14
       t0 = R(pad, ty, W - pad * 2, H - strip - 12 - ty)
     }
-    F.push({ g: 'full', rooms: [pageR], voids: [t0], media: [{ item: page, rect: pageR }], blocks: [{ rect: t0, cls: 'wb-facts wb-bottom', html: title }] })
+    F.push({ g: 'full', rooms: [pageR], voids: [t0], media: [{ item: page, rect: pageR }], blocks: [{ rect: t0, cls: P ? 'wb-facts wb-bottom' : 'wb-facts wb-bottom wb-id', html: title }] })
 
     // 2 · SCALE — the room becomes several published pages at once
     let pages, t1
@@ -158,22 +165,20 @@ export function framesFor(V, w) {
     // other rhythms both put the room at the top of the screen and the name in the material below it — `scale` with
     // exactly this geometry — so this one does the same, and the name can no longer be behind anything.
     //
-    // On a desktop screen the box was `wb-band`, which is the ONE block class set in `--ink`. Inside a project the
-    // ground is near-black and a void is where the rows stop, so a void is dark — and dark type on it cannot be
-    // read. The name survived only because the material happens to be dense where the band opens; the two lines
-    // beneath it fell past the rows onto the bare ground, and on a short screen onto the capture's own navigation.
-    // `authored` sets its name in the strip and `scale` sets its in `wb-facts`; both inherit `.wb`'s `--paper` and
-    // both stay legible on the dark. This one now does the same, in a box tall enough for three lines of either
-    // language, held clear of the capture.
-    const NAME_BOX = 150   // the name plus up to three lines of the line, at the largest type step
-    const capTop = P ? 0 : Math.max(H - W / lead.aspect, strip + 14 + NAME_BOX + 18)
+    // On a desktop screen this frame had a composition of its own: a band across the top edge that the name and
+    // the line had to fit into. Three passes went into making them fit, and each one moved the overlap somewhere
+    // else — the band tore across the capture, then the type was --ink on a void that is dark, then one line of
+    // the description fell out of the cleared area onto the cream rows with a rule through it. The band was the
+    // problem, not the text inside it. This frame now uses the identity panel every other desktop opening uses:
+    // the room to the right, the name and the line in the material to its left, bottom-aligned above the strip.
+    // The system frame that follows is untouched.
     const leadR = P
       ? (() => { const hh = H - strip * 2 - 230, ww = hh * lead.aspect; return R((W - ww) / 2, strip + 26, ww, hh) })()
-      : R(0, capTop, W, W / lead.aspect)
+      : fitRect(lead.aspect, R(W * 0.34, strip + 40, W * 0.6, H - strip * 2 - 80), 'center')
     const tTop = P
       ? (() => { const ty = outer(leadR).b + 14; return R(pad, ty, W - pad * 2, H - strip - 12 - ty) })()
-      : R(pad, strip + 14, Math.min(W * 0.52, 720), NAME_BOX)
-    F.push({ g: 'full', rooms: [leadR], voids: [tTop], media: [{ item: lead, rect: leadR }], blocks: [{ rect: tTop, cls: P ? 'wb-facts wb-bottom' : 'wb-facts', html: title }] })
+      : identityPanel(leadR)
+    F.push({ g: 'full', rooms: [leadR], voids: [tTop], media: [{ item: lead, rect: leadR }], blocks: [{ rect: tTop, cls: P ? 'wb-facts wb-bottom' : 'wb-facts wb-bottom wb-id', html: title }] })
 
     // 2 · SYSTEM DENSITY — the densest material in the site, and what the system does
     const sysT = P ? R(pad, strip + H * 0.14, W - pad * 2, H * 0.6) : R(W * 0.3, strip + (H - strip * 2) * 0.18, W * 0.44, (H - strip * 2) * 0.64)

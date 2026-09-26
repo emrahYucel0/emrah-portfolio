@@ -83,9 +83,15 @@ say "BOOT RESPONSIVE webkit";   MSYS_NO_PATHCONV=1 node bootresp.cjs $CUR webkit
 say "PROJECT TRANSITIONS";      MSYS_NO_PATHCONV=1 node proj.cjs $CUR 2>&1 | tail -7 >> $L
 # NOTE: shell.cjs and spine.cjs both end with the same two "one control back to the Lab" checks — the two were
 # restored from overlapping descriptions. Duplicated coverage, not a wrong result; worth deduplicating.
-say "PROJECT TITLES — CONTRAST AND CLEARANCE"
-MSYS_NO_PATHCONV=1 node titlefit.cjs $CUR tr 1440 900 gate 2>&1 | tail -4 >> $L
-MSYS_NO_PATHCONV=1 node titlefit.cjs $CUR en 1280 720 gate 2>&1 | tail -4 >> $L
+# Every line of a project's identity panel, sampled through the opening, at three desktop sizes in both
+# languages: inside its panel, and AA against the pixels actually behind it. This replaces titlefit.cjs, which
+# measured the MEDIAN luminance under the whole block and therefore passed while one line of a description sat
+# outside the panel on the cream ground with a rule through it.
+# Projects 1 and 2 are the two that use the shared identity panel. `authored` sets its name in the transparent
+# bottom strip over its own capture — a different mechanism, a different contract, and a real AA failure at
+# 1440x900 that is recorded in docs/KNOWN-ISSUES.md and needs an art-direction decision, not a check.
+say "PROJECT IDENTITY PANELS — INSIDE, AND AA AGAINST WHAT IS BEHIND"
+MSYS_NO_PATHCONV=1 node panelfit.cjs $CUR gate 1920x1080,1440x900,1280x720 tr,en 1,2 2>&1 | tail -12 >> $L
 say "LAB SHELL / RESPONSIVE";   node shell.cjs $CUR          2>&1 | tail -10 >> $L
 say "LAB A11Y";                 node labaxe.cjs $CUR         2>&1 | tail -3  >> $L
 say "JOURNEY TR NORMAL";        node journey.cjs $CUR tr     2>&1 | tail -5  >> $L

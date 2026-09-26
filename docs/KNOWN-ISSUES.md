@@ -70,3 +70,38 @@ until they matched would have manufactured a baseline rather than restored one.
 Nothing about WEIGHT needs fixing. If a check is ever wanted here, it has to start from a stated intent — which
 rows of type may leave which box, and where a reader would call that a defect — and not from a pixel scan.
 
+---
+
+## İstanbul Şehir İçi — the name in the bottom strip can land on a light part of its own capture
+
+**Found 2026-09-26 by `tools/diag/panelfit.cjs`, which was written for a different bug. Not caused by any change on
+this branch; the frame is untouched.**
+
+`authored`'s first frame shows the work whole — the capture fills the screen between the strips — and sets the
+project's name and strength in the **bottom strip** (`stripTitle`, class `wb-strip`). Inside a project
+`stripTones()` returns `['media', 'media']` (`main.js:1204`), so the strip is deliberately transparent: the chrome
+steps out of the way and lets the work through. The type stays `--paper`.
+
+So the name's legibility depends on what part of the capture happens to sit under the strip at that viewport:
+
+| viewport | worst contrast behind the name |
+|---|---|
+| 1920×1080 | 5.49:1 — passes |
+| **1440×900** | **1.00:1 — the background is the same luminance as the type; 97% of the pixels behind the line fail AA** |
+| 1280×720 | 5.44:1 — passes |
+
+Both languages, identically: the text is the same colour as what is behind it, so nothing is readable at that one
+size. It is not a layout overflow — the line is inside its box. It is light type on a light photograph.
+
+**Why it is not fixed here.** Every remedy is an art-direction decision on a frame this brief did not cover:
+a scrim behind the strip, a tone for the strip inside a world (which is the thing `stripTones` deliberately turns
+off), or moving the name off the capture. Choosing one silently is what produced three rounds of patching on
+Evden Eve's opening.
+
+**How the gate treats it.** `panelfit.cjs` checks all three projects and is the evidence; the gate section runs the
+two projects that use the shared **identity panel** (`scale` and `system`), because that is the contract it
+asserts — a name and a line inside a panel the material clears. The strip is a different mechanism with a
+different contract, and it needs its own decision before it can have a check.
+
+Reproduce: `node panelfit.cjs 4500 check 1440x900 tr 0`
+

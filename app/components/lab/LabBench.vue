@@ -414,6 +414,15 @@ function frame(now: number) {
 
 let io: IntersectionObserver | null = null
 let ro: ResizeObserver | null = null
+// A ResizeObserver callback must not force layout. place() measures records, the note and the terminal and writes
+// their positions back, interleaved — doing that inside the callback made the browser report "ResizeObserver loop
+// completed with undelivered notifications" under load. The observer now only asks for the next frame, and several
+// notifications in one frame coalesce into one measurement.
+let roRaf = 0
+function scheduleResize() {
+  if (roRaf) return
+  roRaf = requestAnimationFrame(() => { roRaf = 0; resize() })
+}
 onMounted(() => {
   const remembered = studies.indexOf((visit.value.lab.activeStudy ?? 'weight') as StudyId)
   if (remembered > 0) sel.value = remembered
@@ -423,11 +432,11 @@ onMounted(() => {
     visible = es.some((e) => e.isIntersecting)
     if (visible) request(); else { if (raf) cancelAnimationFrame(raf); raf = 0; last = 0 }
   })
-  if (stage.value) { io.observe(stage.value); ro = new ResizeObserver(() => resize()); ro.observe(stage.value) }
+  if (stage.value) { io.observe(stage.value); ro = new ResizeObserver(() => scheduleResize()); ro.observe(stage.value) }
   document.fonts?.ready.then(() => { place(); request() })
   loadTone().catch(() => {})
 })
-onBeforeUnmount(() => { io?.disconnect(); ro?.disconnect(); if (raf) cancelAnimationFrame(raf) })
+onBeforeUnmount(() => { io?.disconnect(); ro?.disconnect(); if (raf) cancelAnimationFrame(raf); if (roRaf) cancelAnimationFrame(roRaf) })
 </script>
 
 <template>

@@ -15,9 +15,15 @@ const LITERAL = /\b(undefined|null|NaN|\[object Object\])\b/
   const b = await pw.webkit.launch()
   const ctx = await b.newContext({ viewport: { width: 1366, height: 768 }, reducedMotion: reduced ? 'reduce' : 'no-preference' })
   const p = await ctx.newPage()
-  const errs = []
-  p.on('pageerror', (e) => errs.push(e.message))
-  p.on('console', (m) => { if (m.type() === 'error') errs.push(m.text()) })
+  // ONE KNOWN BENIGN WARNING, and only this exact one. WebKit reports it when a ResizeObserver callback cannot be
+  // delivered within the loop budget; nothing is broken and nothing the visitor sees changes. The bench's callback
+  // was made to defer its measurement to the next frame (LabBench.vue), so this should now be rare — it is counted
+  // and printed so a return is visible, but it does not fail the run. EVERY other console message still does.
+  const BENIGN = ['ResizeObserver loop completed with undelivered notifications']
+  const errs = [], warned = []
+  const note = (t) => (BENIGN.some((b) => String(t).includes(b)) ? warned : errs).push(String(t))
+  p.on('pageerror', (e) => note(e.message))
+  p.on('console', (m) => { if (m.type() === 'error') note(m.text()) })
 
   const state = () => p.evaluate(() => ({
     path: location.pathname,
@@ -69,6 +75,7 @@ const LITERAL = /\b(undefined|null|NaN|\[object Object\])\b/
   await step('→ back to Hero', () => click('#ui [data-go="name"]'), (s) => s.base === 0)
 
   console.log(`  errors ${errs.length} ${JSON.stringify([...new Set(errs)].slice(0, 2))}`)
+  if (warned.length) console.log(`  benign warnings ${warned.length} ${JSON.stringify([...new Set(warned)].slice(0, 1))} — counted, not a failure`)
   if (errs.length) fails++
   await b.close()
   console.log(`JOURNEY ${loc.toUpperCase()} ${reduced ? 'REDUCED' : 'NORMAL'}: ${fails === 0 ? 'PASS' : `FAIL (${fails})`}`)

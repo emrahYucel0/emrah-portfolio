@@ -111,8 +111,19 @@ function place() {
     // lifted towards the note, but never above the record it belongs to: the record's own lines come first.
     const under = Math.round(rb.bottom - base.top + 8)
     const noteTop = Math.round(noteEl.value!.getBoundingClientRect().top - base.top)
-    const floor = noteTop - o.offsetHeight - 10
-    o.style.top = `${noteTop > 0 && floor > under ? Math.min(under, floor) : under}px`
+    // The gap it has to live in is bounded by the next record down as well: the records are fixed to the rail, so
+    // on a small phone the two lines of notation ran straight through the one below and its title read doubled.
+    // Where the gap is too shallow the terminal sets itself on one line — the same two pieces of notation, in the
+    // order they are read, on the row the datum ends at.
+    const below = recEls.value
+      .filter((_, i) => i !== sel.value)
+      .map((el) => Math.round(el.getBoundingClientRect().top - base.top))
+      .filter((y) => y > under)
+      .sort((x, y) => x - y)[0]
+    const ceiling = Math.min(below ?? Infinity, noteTop > 0 ? noteTop : Infinity)
+    o.classList.toggle('tight', Number.isFinite(ceiling) && o.offsetHeight + 16 > ceiling - under)
+    const floor = (Number.isFinite(ceiling) ? ceiling : noteTop) - o.offsetHeight - 10
+    o.style.top = `${Number.isFinite(ceiling) && floor > under ? Math.min(under, floor) : under}px`
   } else {
     o.style.left = 'auto'; o.style.right = `${L.pad}px`
     const ra = o.getBoundingClientRect()
@@ -473,6 +484,15 @@ onBeforeUnmount(() => { io?.disconnect(); ro?.disconnect(); if (raf) cancelAnima
   content: attr(data-nm); position: absolute; left: 0; top: 0; transform: translate(2.4px, 1.6px);
   color: rgb(18 18 18 / 0.2); pointer-events: none; transition: opacity 0.18s ease;
 }
+/*
+  THE SECOND IMPRESSION IS A STATE, AND ON A PHONE IT NEVER LEAVES IT. Where a record is reached the misregistered
+  impression comes into register — that is the affordance. A touch screen has no reaching, so the offset copy is
+  not a moment but the resting appearance of every unregistered record, and at phone sizes 2.4px on a 17px face
+  reads as a blurred title rather than a second pull. It keeps its meaning at a distance the eye takes as ink.
+*/
+@media (hover: none) {
+  .lab-stage .rec .nm::after { transform: translate(1.2px, 0.8px); color: rgb(18 18 18 / 0.11); }
+}
 .lab-stage .rec .bl { display: inline-block; width: 0; height: 0; }
 .lab-stage .rec .pr { display: none; }
 .lab-stage .rec[aria-current] { color: var(--ink); }
@@ -487,6 +507,10 @@ onBeforeUnmount(() => { io?.disconnect(); ro?.disconnect(); if (raf) cancelAnima
 .lab-stage .open-link { display: block; padding: 11px 0 11px 16px; text-decoration: none; color: var(--ink); font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap; }
 .lab-stage .open .t1 { display: block; color: var(--ink-muted); }
 .lab-stage .open .t2 { display: block; margin-top: 11px; }
+/* one row of notation where two will not fit between the record and the next one down (see place()) */
+.lab-stage .open.tight .t1, .lab-stage .open.tight .t2 { display: inline; }
+.lab-stage .open.tight .t2 { margin: 0 0 0 14px; }
+.lab-stage .open.tight .open-link { padding-top: 7px; padding-bottom: 7px; }
 .lab-stage .open .a { margin-left: 6px; }
 .lab-stage .open:hover .t2, .lab-stage .open:focus-visible .t2 { text-decoration: underline; }
 .lab-stage .mark {

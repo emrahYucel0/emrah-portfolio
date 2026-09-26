@@ -34,8 +34,17 @@ check that can be lost is not a check. They drive a **built** artifact through a
 and never ships: only `.output/public` is uploaded.
 
 ```bash
-cd tools/diag && sh run6.sh 4500 4600   # the whole flag-off gate -> out/final6.log
+npm run generate                 # build
+sh tools/diag/serve.sh           # stop the old servers, serve the build from builds/<branch>/
+cd tools/diag && sh run6.sh      # the whole flag-off gate -> out/final6.log
 ```
+
+**Never leave a server running across a rebuild.** The `.htaccess` CSP names each inline script by sha256, and the
+server reads that file once at startup — so a server that predates the rebuild serves the new page with the old
+policy. The browser then refuses the inline script and no JavaScript runs, while inline styles still apply and
+nothing 404s: the site looks styled but dead, and it reads exactly like broken code. `serve.sh` stops the ports
+before it starts them, and `run6.sh` refuses to run any harness until each server's policy matches its own
+documents.
 
 Restart the **current** server after every rebuild; the CSP in `.htaccess` carries a hash of the HTML. The
 **baseline** server looks after itself: `run6.sh` rebuilds the artifact from the annotated tag

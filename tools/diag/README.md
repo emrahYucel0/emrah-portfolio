@@ -42,6 +42,12 @@ node sv.cjs /path/to/baseline/public 4700 --wk     # the build to compare agains
 sh run6.sh                                         # the whole gate → out/final6.log
 ```
 
+## After a rebuild, bring the servers up with `serve.sh`
+
+```bash
+npm run generate && sh tools/diag/serve.sh
+```
+
 **Restart the servers after every rebuild.** The CSP in `.htaccess` carries a hash of the generated HTML, so a
 server started before a rebuild serves the old hash, the inline script is refused, the runtime never boots, and
 every test fails in the same confusing way. More than one afternoon has gone into rediscovering this.
@@ -49,11 +55,30 @@ every test fails in the same confusing way. More than one afternoon has gone int
 `--wk` strips `upgrade-insecure-requests` from the CSP, which WebKit would otherwise use to rewrite
 `http://127.0.0.1` to https. `--lan` binds 0.0.0.0 for testing on a phone on the same network.
 
+### What a stale server looks like, so you recognise it next time
+
+`sv.cjs` reads `.htaccess` **once at startup**. The policy names each inline script by sha256 and every build makes
+a new hash, so a server left running across a rebuild serves the NEW document with the OLD policy. Then:
+
+- the browser refuses the inline script, so no JavaScript runs at all;
+- inline **styles** still apply, so the page looks styled and deliberate;
+- **nothing 404s**, so the network tab is clean;
+- `/tr` shows the first-paint plate, no hero, and a document scrollbar — the runtime never took the screen;
+- `/tr/lab` shows the strip and footer with the bench's text piled in the top-left, because its script never
+  placed anything and never sized its canvas (it keeps the 300x150 default).
+
+It reads exactly like broken product code, and it is not. `run6.sh` now refuses to launch a single browser until
+`cspboot.cjs --static` confirms that each server's policy names the scripts in its own documents, and the gate's
+first section boots the build in both engines under that policy. `serve.sh` avoids the whole class by stopping the
+ports before it starts them.
+
 ## What each one is for
 
 | | |
 |---|---|
 | `sv.cjs` | the static server: serves a built artifact with the `.htaccess` CSP the host would send |
+| `serve.sh` | stops every port this repo owns, snapshots the build into `builds/<branch>/`, and serves it |
+| `cspboot.cjs` | does the served build boot under the policy the host will send? `--static` compares hashes, without a browser |
 | `baseline.sh` | rebuilds the baseline artifact from the tag `baseline/pre-site-polish`, in a throwaway git worktree |
 | `spine.cjs` | the six-stop spine, the Lab as its fifth destination, and browser history |
 | `gesture2.cjs` | one input = one movement, on the index and inside a project |

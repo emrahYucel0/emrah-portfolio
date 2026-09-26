@@ -50,10 +50,26 @@ if [ "$c" != "200" ]; then
   done
   echo "  baseline is up on $BASE"
 fi
-echo "preflight ok: $CUR (current) and $BASE (baseline, $BASELINE_TAG) both serve /tr"
+# ── neither may be stale ───────────────────────────────────────────────────────────────────────────────────
+# sv.cjs reads .htaccess once at startup and sends that CSP forever. A server left running across a rebuild
+# therefore serves the new document with the old script hash: the inline script is refused, the runtime never
+# boots, nothing 404s, and every harness fails in a way that looks like broken product code. Check it here, before
+# a single browser is launched, rather than spending a gate run finding out.
+for prt in $CUR $BASE; do
+  if ! node cspboot.cjs --static $prt > out/preflight-$prt.log 2>&1; then
+    echo "PREFLIGHT FAILED: the server on $prt sends a policy that does not match the document it serves."
+    sed 's/^/  /' out/preflight-$prt.log
+    echo "  Restart it — or bring the whole set up cleanly with:  sh serve.sh"
+    exit 1
+  fi
+done
+echo "preflight ok: $CUR (current) and $BASE (baseline, $BASELINE_TAG) both serve /tr, and neither is stale"
 
 : > $L
 say(){ echo "" >> $L; echo "########## $1 ##########" >> $L; }
+say "CSP / BOOT UNDER THE PRODUCTION POLICY"
+node cspboot.cjs $CUR chrome  2>&1 | tail -4 >> $L
+node cspboot.cjs $CUR webkit  2>&1 | tail -4 >> $L
 say "RETIRED LAB — TR NORMAL";  MSYS_NO_PATHCONV=1 node labflash.cjs $CUR normal  tr 2>&1 | tail -7 >> $L
 say "RETIRED LAB — TR REDUCED"; MSYS_NO_PATHCONV=1 node labflash.cjs $CUR reduced tr 2>&1 | tail -7 >> $L
 say "RETIRED LAB — EN NORMAL";  MSYS_NO_PATHCONV=1 node labflash.cjs $CUR normal  en 2>&1 | tail -7 >> $L

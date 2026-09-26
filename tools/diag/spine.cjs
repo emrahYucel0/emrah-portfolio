@@ -42,14 +42,25 @@ const watchP = () => {
 }
 const seen = () => { clearInterval(window.__w); return window.__seen || [] }
 
-const wheelBurst = async (p, dy, n, gap = 16) => { for (let i = 0; i < n; i++) { await p.mouse.wheel(0, dy); await sleep(gap) } }
+// LEAVING THE LAB ARMS A HUSH (main.js:269). The handover happens on the threshold, so the tail of the gesture that
+// carried the visitor out arrives with no hand behind it; it is spent rather than obeyed, and it re-arms the hush for
+// as long as it keeps coming. A harness that dispatches its next gesture inside that window has it swallowed — which
+// is the product working as designed, not a defect. So every gesture waits for the hush to lapse first. This is why
+// the old fixed 1600ms sleep passed: it was long enough to outlast the hush by accident.
+const hushClear = async (pg) => {
+  await pg.waitForFunction(() => { const A = window.__lab?.A; return !A || !A.hush || performance.now() >= A.hush },
+    null, { timeout: 8000 }).catch(() => {})
+}
+const wheelBurst = async (p, dy, n, gap = 16) => { await hushClear(p); for (let i = 0; i < n; i++) { await p.mouse.wheel(0, dy); await sleep(gap) } }
 // a Mac trackpad: a short push, then a long decaying tail the hand is no longer making
 const momentum = async (p, dir) => {
+  await hushClear(p)
   const push = [6, 14, 26, 38, 44, 40]
   const tail = [34, 27, 21, 16, 12, 9, 7, 5, 4, 3, 2, 2, 1, 1]
   for (const d of [...push, ...tail]) { await p.mouse.wheel(0, d * dir); await sleep(16) }
 }
 const swipe = async (p, dy) => {
+  await hushClear(p)
   await p.evaluate(async (d) => {
     const x = Math.round(innerWidth / 2), y0 = Math.round(innerHeight * (d < 0 ? 0.72 : 0.3))
     const mk = (t, cy) => new PointerEvent(t, { pointerId: 9, pointerType: 'touch', isPrimary: true, clientX: x, clientY: cy, bubbles: true, cancelable: true })
@@ -74,7 +85,34 @@ const swipe = async (p, dy) => {
   const phonePage = watch(await phone.newPage())
   const deskPage = watch(await desk.newPage())
   let p = phonePage
-  const settle = reduced ? 1600 : 5200
+  // A DESTINATION IS WAITED FOR, NOT SLEPT THROUGH. This used to sleep 1600ms in reduced motion and assert; but
+  // handing the screen to the runtime takes 460ms from cold and as much as 1941ms under load, so the guess failed
+  // here and on main at the same rate, for no reason to do with the site. Each arrival now waits for the composed
+  // state with an explicit timeout, and its measured time is reported at the end.
+  const ARRIVE_MS = 25000
+  const arrivals = []
+  const settleIndex = async (pg, wantPath, wantBase, label) => {
+    const t0 = Date.now(); let reached = true
+    // `base` is the stop being aimed at and is set the moment the gesture lands, so it is not arrival: `p` is still
+    // travelling. Waiting on base alone returned about a second early, the next gesture fell inside the engine's
+    // own input cooldown and was swallowed, and Contact → bench failed. Arrival is `p` and `pT` at the stop.
+    await pg.waitForFunction(([pth, b]) => location.pathname === pth
+      && document.documentElement.dataset.c2 === 'on'
+      && !!window.__lab?.A && window.__lab.A.base === b && !window.__lab.A.busy
+      && Math.abs(window.__lab.A.p - b) < 0.02 && Math.abs(window.__lab.A.pT - b) < 0.02,
+    [wantPath, wantBase], { timeout: ARRIVE_MS }).catch(() => { reached = false })
+    const t = Date.now() - t0
+    arrivals.push(`${label.padEnd(34)} ${reached ? `${String(t).padStart(5)} ms` : `NEVER (gave up at ${ARRIVE_MS} ms)`}`)
+    return reached
+  }
+  const settleBench = async (pg, wantPath, label) => {
+    const t0 = Date.now(); let reached = true
+    await pg.waitForFunction((pth) => location.pathname === pth && !!document.querySelector('.lab-stage'),
+      wantPath, { timeout: ARRIVE_MS }).catch(() => { reached = false })
+    const t = Date.now() - t0
+    arrivals.push(`${label.padEnd(34)} ${reached ? `${String(t).padStart(5)} ms` : `NEVER (gave up at ${ARRIVE_MS} ms)`}`)
+    return reached
+  }
 
   const fresh = async (path) => {
     await p.goto(BASE + path, { waitUntil: 'networkidle', timeout: 60000 })
@@ -98,8 +136,7 @@ const swipe = async (p, dy) => {
   await fresh('/tr/lab')
   await p.evaluate(watchP)
   await wheelBurst(p, -110, 1)
-  await p.waitForFunction(() => location.pathname === '/tr', null, { timeout: 15000 }).catch(() => {})
-  await sleep(settle)
+  await settleIndex(p, '/tr', 3, 'wheel: Lab -> Work')
   s = await p.evaluate(state)
   let path1 = await p.evaluate(seen)
   ok(s.path === '/tr' && s.c2 === 'on' && s.base === 3, 'Lab → Work', `at ${s.path} c2 ${s.c2} mode ${s.mode} base ${s.base} p ${s.p}`)
@@ -108,8 +145,7 @@ const swipe = async (p, dy) => {
   await fresh('/tr/lab')
   await p.evaluate(watchP)
   await wheelBurst(p, 110, 1)
-  await p.waitForFunction(() => location.pathname === '/tr', null, { timeout: 15000 }).catch(() => {})
-  await sleep(settle)
+  await settleIndex(p, '/tr', 5, 'wheel: Lab -> Contact')
   s = await p.evaluate(state)
   path1 = await p.evaluate(seen)
   ok(s.path === '/tr' && s.base === 5, 'Lab → Contact', `at ${s.path} c2 ${s.c2} mode ${s.mode} base ${s.base} p ${s.p}`)
@@ -120,7 +156,7 @@ const swipe = async (p, dy) => {
   for (const [dir, want, label] of [[-1, 3, 'Lab → Work'], [1, 5, 'Lab → Contact']]) {
     await fresh('/tr/lab')
     await momentum(p, dir)
-    await sleep(settle)
+    await settleIndex(p, '/tr', want, `momentum: ${label}`)
     s = await p.evaluate(state)
     ok(s.path === '/tr' && s.base === want, `${label} (momentum) — one gesture, one stop`, `at ${s.path} c2 ${s.c2} base ${s.base} (wanted ${want})`)
   }
@@ -131,7 +167,7 @@ const swipe = async (p, dy) => {
   for (const [dy, want, label] of [[220, 3, 'Lab → Work'], [-220, 5, 'Lab → Contact']]) {
     await fresh('/tr/lab')
     await swipe(p, dy)
-    await sleep(settle)
+    await settleIndex(p, '/tr', want, `swipe: ${label}`)
     s = await p.evaluate(state)
     ok(s.path === '/tr' && s.base === want, `${label} (swipe) — one gesture, one stop`, `at ${s.path} c2 ${s.c2} base ${s.base} (wanted ${want})`)
   }
@@ -141,11 +177,10 @@ const swipe = async (p, dy) => {
   p = deskPage
   await fresh('/tr/lab')
   await wheelBurst(p, 110, 1)
-  await sleep(settle)
+  await settleIndex(p, '/tr', 5, 'wheel down to Contact')
   ok((await p.evaluate(state)).base === 5, 'standing at Contact')
   await wheelBurst(p, -110, 1)
-  await p.waitForFunction(() => location.pathname === '/tr/lab', null, { timeout: 20000 }).catch(() => {})
-  await sleep(1600)
+  await settleBench(p, '/tr/lab', 'Contact -> reverse -> bench')
   s = await p.evaluate(state)
   ok(s.path === '/tr/lab' && s.bench, 'Contact → reverse gesture → the bench, restored', `at ${s.path}`)
 
@@ -154,11 +189,10 @@ const swipe = async (p, dy) => {
   p = phonePage
   await fresh('/tr')
   await p.evaluate(() => document.querySelector('#ui [data-go="work"]')?.click())
-  await sleep(settle)
+  await settleIndex(p, '/tr', 3, 'nav control to Work')
   ok((await p.evaluate(state)).base === 3, 'standing at Work')
   await swipe(p, -220)
-  await p.waitForFunction(() => location.pathname === '/tr/lab', null, { timeout: 25000 }).catch(() => {})
-  await sleep(1600)
+  await settleBench(p, '/tr/lab', 'Work -> bridge -> bench')
   s = await p.evaluate(state)
   ok(s.path === '/tr/lab' && s.bench, 'Work → bridge → the bench', `at ${s.path}`)
 
@@ -166,11 +200,11 @@ const swipe = async (p, dy) => {
   console.log('\n-- browser history')
   p = deskPage
   await fresh('/tr/lab')
-  await wheelBurst(p, -110, 1); await sleep(settle)
-  await p.goBack(); await sleep(1600)
+  await wheelBurst(p, -110, 1); await settleIndex(p, '/tr', 3, 'wheel to Work (history setup)')
+  await p.goBack(); await settleBench(p, '/tr/lab', 'Back -> bench')
   s = await p.evaluate(state)
   ok(s.path === '/tr/lab' && s.bench, 'one Back returns to the bench', `at ${s.path}`)
-  await p.goForward(); await sleep(settle)
+  await p.goForward(); await settleIndex(p, '/tr', 3, 'Forward -> Work')
   s = await p.evaluate(state)
   ok(s.path === '/tr' && s.base === 3, 'Forward restores Work', `base ${s.base}`)
 
@@ -181,10 +215,10 @@ const swipe = async (p, dy) => {
   await sleep(1500)
   const study = await p.evaluate(state)
   ok(study.study && study.docScroll && study.c2 === 'off', 'the study is a document again', `${study.path} scrolls ${study.docScroll}`)
-  await p.goBack(); await sleep(1600)
+  await p.goBack(); await settleBench(p, '/tr/lab', 'study -> Back -> bench')
   s = await p.evaluate(state)
   ok(s.path === '/tr/lab' && s.bench && !s.docScroll, 'Back → the bench, and it does not scroll')
-  await wheelBurst(p, -110, 1); await sleep(settle)
+  await wheelBurst(p, -110, 1); await settleIndex(p, '/tr', 3, 'bench -> wheel -> Work')
   s = await p.evaluate(state)
   ok(s.path === '/tr' && s.base === 3, 'and the site grammar resumes: → Work', `base ${s.base}`)
 
@@ -219,6 +253,8 @@ const swipe = async (p, dy) => {
   ok(nav.toLab === 1, 'exactly one visible control returns to the Lab', `found ${nav.toLab}`)
   ok(!nav.hiddenBack, "the study's own return is the visible one control to the Lab")
 
+  console.log(`\n-- measured arrival times (${reduced ? 'REDUCED' : 'NORMAL'}) -- how long each destination took to compose`)
+  for (const a of arrivals) console.log(`  ${a}`)
   console.log(`\n  console errors ${errs.length} | CSP ${csp.length} ${JSON.stringify([...errs, ...csp].slice(0, 2))}`)
   if (errs.length || csp.length) fails++
   await b.close()

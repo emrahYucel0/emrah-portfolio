@@ -1,33 +1,56 @@
 #!/bin/sh
 # THE FLAG-OFF GATE. Everything the published site is checked against, in one pass.
 #
-#   sh run6.sh                 current build on 4500, baseline build on 4700
+#   sh run6.sh                 current build on 4500, baseline build on 4600
 #   sh run6.sh 4500 4600       ...or name both ports
 #
-# The servers must already be running and must have been restarted since the last build — the CSP in .htaccess
-# carries a hash of the HTML, so a server started before a rebuild will block the inline script, the runtime never
-# boots, and every test fails in the same confusing way. The preflight below catches the other half of that class
-# of mistake: a server whose artifact directory no longer exists still answers, but answers 404, and the tests then
-# fail with `window.__lab.A is undefined` instead of telling you the baseline is gone.
+# The CURRENT server must already be running and must have been restarted since the last build — the CSP in
+# .htaccess carries a hash of the HTML, so a server started before a rebuild will block the inline script, the
+# runtime never boots, and every test fails in the same confusing way.
+#
+# The BASELINE server is looked after for you: if nothing serves it, the artifact is rebuilt from the tag
+# baseline/pre-site-polish (see baseline.sh) into ../../../baselines/pre-site-polish and served. The baseline used
+# to be a hand-built folder, and when it vanished the server went on answering, with 404, which surfaced as
+# `window.__lab.A is undefined` rather than as "your baseline is gone".
 #
 # Needs axe.min.js at the served root for the a11y section:
 #   cp tools/diag/node_modules/axe-core/axe.min.js .output/public/
 CUR=${1:-4500}
-BASE=${2:-4700}
+BASE=${2:-4600}
+BASELINE_TAG=${BASELINE_TAG:-baseline/pre-site-polish}
+BASELINE_DIR=${BASELINE_DIR:-../../../baselines/pre-site-polish}
 L=out/final6.log
 mkdir -p out
 
-for prt in $CUR $BASE; do
-  code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$prt/tr")
-  if [ "$code" != "200" ]; then
-    echo "PREFLIGHT FAILED: http://127.0.0.1:$prt/tr answered $code, not 200."
-    [ "$code" = "404" ] && echo "  A 404 means the server is up but its artifact directory is gone. Re-serve the build:"
-    [ "$code" = "404" ] && echo "    node sv.cjs <path-to>/.output/public $prt --wk"
-    [ "$code" = "000" ] && echo "  Nothing is listening on $prt. Start it with sv.cjs, and remember to restart after every rebuild."
-    exit 1
+code_of(){ curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$1/tr"; }
+
+# ── the current build: yours to have running, because only you know when you last rebuilt ──────────────────
+c=$(code_of $CUR)
+if [ "$c" != "200" ]; then
+  echo "PREFLIGHT FAILED: the build under test, http://127.0.0.1:$CUR/tr, answered $c, not 200."
+  [ "$c" = "404" ] && echo "  Up but serving nothing — its directory is gone. Re-serve: node sv.cjs ../../.output/public $CUR --wk"
+  [ "$c" = "000" ] && echo "  Nothing is listening. Start it: node sv.cjs ../../.output/public $CUR --wk   (and restart it after every rebuild)"
+  exit 1
+fi
+
+# ── the baseline: rebuilt from its tag and served if it is not there ───────────────────────────────────────
+c=$(code_of $BASE)
+if [ "$c" != "200" ]; then
+  echo "baseline on $BASE answered $c — bringing it up from $BASELINE_TAG"
+  if [ ! -f "$BASELINE_DIR/tr/index.html" ]; then
+    sh baseline.sh "$BASELINE_TAG" "$BASELINE_DIR" || { echo "PREFLIGHT FAILED: could not rebuild the baseline."; exit 1; }
+  else
+    echo "  the artifact is already at $BASELINE_DIR; only the server was missing"
   fi
-done
-echo "preflight ok: $CUR (current) and $BASE (baseline) both serve /tr"
+  node sv.cjs "$BASELINE_DIR" $BASE --wk >> out/baseline-server.log 2>&1 &
+  i=0
+  while [ "$(code_of $BASE)" != "200" ]; do
+    i=$((i + 1)); [ $i -gt 40 ] && { echo "PREFLIGHT FAILED: served $BASELINE_DIR on $BASE but it never answered 200."; exit 1; }
+    sleep 1
+  done
+  echo "  baseline is up on $BASE"
+fi
+echo "preflight ok: $CUR (current) and $BASE (baseline, $BASELINE_TAG) both serve /tr"
 
 : > $L
 say(){ echo "" >> $L; echo "########## $1 ##########" >> $L; }
@@ -42,13 +65,12 @@ say "INITIAL LOAD webkit";      MSYS_NO_PATHCONV=1 node boot.cjs $CUR webkit /tr
 say "INITIAL LOAD chrome";      MSYS_NO_PATHCONV=1 node boot.cjs $CUR chrome /tr 2>&1 | tail -11 >> $L
 say "BOOT RESPONSIVE webkit";   MSYS_NO_PATHCONV=1 node bootresp.cjs $CUR webkit 2>&1 | tail -3 >> $L
 say "PROJECT TRANSITIONS";      MSYS_NO_PATHCONV=1 node proj.cjs $CUR 2>&1 | tail -7 >> $L
-say "WEIGHT CLIPPING";          node edge.cjs $CUR webkit    2>&1 | tail -5  >> $L
-# NOTE: shell.cjs and spine.cjs both end with the same two "one control back to the Lab" checks — the two
-# were restored from overlapping descriptions. Duplicated coverage, not a wrong result; worth deduplicating.
+# NOTE: shell.cjs and spine.cjs both end with the same two "one control back to the Lab" checks — the two were
+# restored from overlapping descriptions. Duplicated coverage, not a wrong result; worth deduplicating.
 say "LAB SHELL / RESPONSIVE";   node shell.cjs $CUR          2>&1 | tail -10 >> $L
 say "LAB A11Y";                 node labaxe.cjs $CUR         2>&1 | tail -3  >> $L
-say "JOURNEY TR NORMAL";        node journey.cjs $CUR tr     2>&1 | tail -4  >> $L
-say "JOURNEY EN REDUCED";       node journey.cjs $CUR en reduced 2>&1 | tail -4 >> $L
+say "JOURNEY TR NORMAL";        node journey.cjs $CUR tr     2>&1 | tail -5  >> $L
+say "JOURNEY EN REDUCED";       node journey.cjs $CUR en reduced 2>&1 | tail -5 >> $L
 say "NON-LAB NORMAL (baseline $BASE)";  node nonlab.cjs $BASE $CUR    2>&1 | tail -13 >> $L
 say "NON-LAB REDUCED (baseline $BASE)"; node nonlabred.cjs $BASE $CUR 2>&1 | tail -13 >> $L
 echo "" >> $L; echo "RUN6 DONE" >> $L

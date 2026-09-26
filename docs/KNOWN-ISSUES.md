@@ -47,3 +47,26 @@ portrait it already uses the phone capture — verified from the live element: `
 is several screens tall, so covering one screen shows its header and hero, and the slits cut that into bands.
 
 Changing it is an art-direction decision about that frame, not a bug fix.
+
+---
+
+## Removed check: `tools/diag/edge.cjs` (WEIGHT's rotated type at its cell edges)
+
+**Deleted 2026-09-26, deliberately. The WEIGHT study is correct as it stands; the check measured intended behaviour.**
+
+The harness was rebuilt from a written description after the original was lost, and the description contradicted the
+code. It said "each cell clips its own box"; `StudyWeight.vue` sets `.study-weight .cell { overflow: visible }`, so
+the cells never clipped. The words crossing their cell rules is the study — it is the thing WEIGHT is about — and
+both of the harness's measurements counted exactly that:
+
+- *pixels dark on a cell boundary* — ink on a boundary that is not a clip, and it could not tell whose ink it was,
+  so a neighbour's word counted as the cell's own.
+- *own word past its own cell box* — the intended overflow, measured correctly and uselessly (84 of 144 cells).
+
+Its recorded numbers could not be reproduced either: the study has exactly 6 cells at every viewport, so the
+recorded 288 checks implies twice the sample points, and the flagged ratio was 43% against 17%. Tuning the numbers
+until they matched would have manufactured a baseline rather than restored one.
+
+Nothing about WEIGHT needs fixing. If a check is ever wanted here, it has to start from a stated intent — which
+rows of type may leave which box, and where a reader would call that a defect — and not from a pixel scan.
+

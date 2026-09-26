@@ -37,8 +37,16 @@ and never ships: only `.output/public` is uploaded.
 cd tools/diag && sh run6.sh 4500 4600   # the whole flag-off gate -> out/final6.log
 ```
 
-Restart the servers after every rebuild; the CSP in `.htaccess` carries a hash of the HTML. `run6.sh` preflights
-both ports and tells you which one is wrong.
+Restart the **current** server after every rebuild; the CSP in `.htaccess` carries a hash of the HTML. The
+**baseline** server looks after itself: `run6.sh` rebuilds the artifact from the annotated tag
+`baseline/pre-site-polish` into `baselines/pre-site-polish` whenever it is missing, and serves it. A baseline that
+lives only as a folder can be swept away, and a server whose directory is gone keeps answering — with 404.
+
+**One console message is allowed, and only this one:** `ResizeObserver loop completed with undelivered
+notifications`. It is a WebKit notice that a ResizeObserver callback missed its loop budget; nothing breaks and
+nothing the visitor sees changes. `journey.cjs` counts and prints it separately and does not fail on it. Every other
+console message, and every page error, is still a hard failure. The bench's own observer was changed to defer its
+measurement to the next frame, so the notice should now be rare — it stays counted so a return is visible.
 
 Defects that are understood and deliberately unfixed are in [`docs/KNOWN-ISSUES.md`](docs/KNOWN-ISSUES.md), each
 with what was already tried.

@@ -26,9 +26,12 @@ somewhere durable and inside no temp directory — the original baseline was los
 directory has been deleted still answers, with 404, which surfaces as `window.__lab.A is undefined` rather than as
 "your baseline is gone". `run6.sh` now preflights both ports and says which one is wrong.
 
-The honest substitute, when the recorded baseline is gone, is the merge target: build `main` into its own directory
-and serve that. Say in the report which baseline was used — a comparison against a different baseline is a different
-measurement.
+The baseline is now a **tag**, not a folder: `baseline/pre-site-polish` (annotated, on `main`). `run6.sh` notices
+when nothing serves the baseline port, rebuilds the artifact from that tag via `baseline.sh`, and serves it — so the
+folder can be deleted without losing the baseline. `baseline.sh` builds in a detached git worktree, so your branch and
+your uncommitted changes are never touched.
+
+Say in the report which baseline was used. A comparison against a different commit is a different measurement.
 
 ```bash
 npm run generate                                   # build first
@@ -51,6 +54,7 @@ every test fails in the same confusing way. More than one afternoon has gone int
 | | |
 |---|---|
 | `sv.cjs` | the static server: serves a built artifact with the `.htaccess` CSP the host would send |
+| `baseline.sh` | rebuilds the baseline artifact from the tag `baseline/pre-site-polish`, in a throwaway git worktree |
 | `spine.cjs` | the six-stop spine, the Lab as its fifth destination, and browser history |
 | `gesture2.cjs` | one input = one movement, on the index and inside a project |
 | `journey.cjs` | the whole visit, end to end, scanned for `undefined` / `NaN` in what is on screen |
@@ -60,7 +64,6 @@ every test fails in the same confusing way. More than one afternoon has gone int
 | `boot.cjs` | the cold load: who owns the paint, and when |
 | `bootresp.cjs` | the same, across the screens the composition is set for |
 | `proj.cjs` | how long a project transition makes the visitor wait, and for what — measured from the one activation that opens the project, with the carousel positioning done before the clock starts |
-| `edge.cjs` | **UNVERIFIED** — rewritten from a description that does not match the code; asserts nothing. See its header |
 | `labaxe.cjs` | axe over the Lab routes, both languages, both motion settings |
 | `heroaxe.cjs` | axe over the hero, and the About control's place in the keyboard order |
 | `hero.cjs`, `herolayout.cjs`, `herotouch.cjs`, `herolocale.cjs` | the hero's About control |
@@ -77,6 +80,13 @@ measured 2026-09-26, one build against a byte-identical copy of itself gave **19
 drag, 6.8% on About** and 0 on Work and Contact. Treat anything in that band as nothing. `nonlab.cjs` prints the
 delta but asserts the **state**: mode, stop, which layers are up, which destinations exist. A state difference is a
 real change; a delta on its own is not.
+
+**One console message is allowed, and only this one.** `ResizeObserver loop completed with undelivered
+notifications` is a WebKit notice that a ResizeObserver callback missed its loop budget; nothing breaks, and nothing
+the visitor sees changes. `journey.cjs` keeps it in a separate list, prints the count, and does not fail. Every other
+console message and every page error is still a hard failure. `LabBench.vue`'s observer defers its measurement to the
+next frame so it never forces layout inside the callback, which is what produced the notice in the first place — if
+the count starts rising again, that is the thing to look at.
 
 **To compare pixels, compare in reduced motion.** `nonlabred.cjs` stops the wave, and two builds that really are
 the same then come out at **0 on every stop** — which is the only pixel comparison worth asserting on.

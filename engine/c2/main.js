@@ -540,6 +540,12 @@ function yieldPress(pr) {
 // ─── LAB: the entry ──────────────────────────────────────────────────────────
 /** the three studies, named for a reader who never sees the canvas */
 const STUDY_LIST = () => Object.values(TXT.lab.studies)
+/*
+ * WHAT OPENS A PROJECT, SAID TO THE DEVICE THAT IS READING IT. A pointer holds the image and the material gives
+ * way under it; a finger taps it, and has been able to since the tap was added — the instruction simply went on
+ * naming the hold. The material still answers a held finger; nothing about the press changes. Only the sentence.
+ */
+const OPEN_WORK = () => (TOUCH ? TXT.work.openTouch : TXT.work.open)
 // The Lab is its own place now: the bench at /lab, with the three studies on their own routes. What used to be
 // here — holding to make a room, rooms relaxing against a budget of free material, the five recorded studies
 // playing inside them — is retired. The material memory those rooms left behind (scars, the visit's order, the
@@ -1001,7 +1007,7 @@ function buildDOM() {
     <div class="col">
       <div class="head"><h2 class="lbl" tabindex="-1">${TXT.work.heading}</h2><p class="wline">${workIntro.line}</p><p class="sr">${TXT.a11y.workKeys}</p></div>
       <ol class="index">${works.map((w, i) => `<li><button data-work="${i}"><span class="swatch"></span><span class="wid">${w.name}</span><span class="wk">${w.strength}</span></button></li>`).join('')}</ol>
-      <div class="current"><p class="wtitle" aria-hidden="true"></p><p class="wmeta" aria-hidden="true"></p><button class="open" data-open aria-label="${TXT.work.open} — ${TXT.a11y.openProject}" aria-describedby="c2-open-hint">${TXT.work.open}</button><span id="c2-open-hint" class="sr">${TXT.a11y.openHint}</span></div>
+      <div class="current"><p class="wtitle" aria-hidden="true"></p><p class="wmeta" aria-hidden="true"></p><button class="open" data-open aria-label="${OPEN_WORK()} — ${TXT.a11y.openProject}" aria-describedby="c2-open-hint">${OPEN_WORK()}</button><span id="c2-open-hint" class="sr">${TXT.a11y.openHint}</span></div>
     </div>`)
 
   D.lab = h('section', 'layer lab', `<div class="cap"><h2 class="lbl" tabindex="-1">${lab.title}</h2><p class="ltext">${lab.line}</p>

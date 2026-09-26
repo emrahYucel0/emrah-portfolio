@@ -132,7 +132,10 @@ export interface LocaleCopy {
   work: {
     heading: string
     intro: string
+    /** the visible label of the control that opens the registered project (a pointer instruction) */
     open: string
+    /** the same thing said to a finger: the phone has no such control, and no holding either */
+    openTouch: string
     visit: string
     allWork: string
     next: string

@@ -82,6 +82,7 @@ export const tr = {
     heading: 'İşler',
     intro: 'Hizmet markaları için uçtan uca tasarlanıp geliştirilmiş üç production sitesi.',
     open: 'Açmak için görseli basılı tut',
+    openTouch: 'Açmak için görsele dokun',
     visit: 'Siteyi ziyaret et',
     allWork: 'Tüm işler',
     next: 'Sonraki',
@@ -168,7 +169,7 @@ export const tr = {
   hints: {
     quietSeparator: ' · ',
     face: 'basılı tut', faceTouch: 'iki parmakla sıkıştır',
-    work: 'kaydır · görseli basılı tut', workTouch: 'yana kaydır · görseli basılı tut',
+    work: 'kaydır · görseli basılı tut', workTouch: 'yana kaydır · görsele dokun',
     world: 'kaydır',
   },
   a11y: {

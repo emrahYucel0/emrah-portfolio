@@ -78,6 +78,7 @@ export const en = {
     heading: 'Work',
     intro: 'Three production sites for service businesses — each designed and built end to end.',
     open: 'Hold the image to open it',
+    openTouch: 'Tap the image to open it',
     visit: 'Visit',
     allWork: 'All work',
     next: 'Next',
@@ -163,7 +164,7 @@ export const en = {
   hints: {
     quietSeparator: ' · ',
     face: 'hold', faceTouch: 'squeeze with two fingers',
-    work: 'scroll · hold the image', workTouch: 'slide sideways · hold the image',
+    work: 'scroll · hold the image', workTouch: 'slide sideways · tap the image',
     world: 'scroll',
   },
   a11y: {

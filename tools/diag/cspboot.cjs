@@ -6,20 +6,81 @@
 // request fails, so the network tab looks perfect. This harness exists because that failure is silent and looks
 // exactly like broken product code.
 //
-//   node cspboot.cjs --static <port>     hashes only: no browser. Fast enough to preflight every port.
-//   node cspboot.cjs <port> [chrome|webkit]   loads /tr and /tr/lab and asserts the runtime came up.
+//   node cspboot.cjs --dir <path>              PRE-DEPLOY. No server, no browser: does the .htaccess in this built
+//                                              artifact name every inline script in that artifact's own HTML?
+//   node cspboot.cjs --static <port|origin>    the same question, of something already being served.
+//   node cspboot.cjs <port|origin> [chrome|webkit]   loads /tr and /tr/lab and asserts the runtime came up.
+//
+// <origin> may be a full URL (https://yucelemrah.com), which is how this runs against the live host after a
+// deploy. A bare number is taken as a port on 127.0.0.1.
 const crypto = require('crypto')
 const http = require('http')
+const https = require('https')
+const fs = require('fs')
+const path = require('path')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-const get = (port, path) => new Promise((resolve, reject) => {
-  http.get({ host: '127.0.0.1', port, path }, (res) => {
+const originOf = (t) => (/^https?:\/\//i.test(t) ? t.replace(/\/$/, '') : `http://127.0.0.1:${t}`)
+
+const get = (target, p) => new Promise((resolve, reject) => {
+  const url = new URL(originOf(target) + p)
+  const mod = url.protocol === 'https:' ? https : http
+  mod.get(url, { headers: { 'user-agent': 'cspboot' } }, (res) => {
     let body = ''
     res.setEncoding('utf8')
     res.on('data', (c) => { body += c })
     res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }))
   }).on('error', reject)
 })
+
+// only EXECUTABLE inline scripts are gated by script-src: a data payload is never run and CSP never asks for it
+const executable = (attrs) => {
+  const t = /\btype\s*=\s*["']?([^"'\s>]+)/i.exec(attrs)
+  return !t || /^(text\/javascript|module|application\/javascript)$/i.test(t[1])
+}
+const inlineHashes = (html) => [...html.matchAll(/<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/g)]
+  .filter((m) => executable(m[1]))
+  .map((m) => `sha256-${crypto.createHash('sha256').update(m[2], 'utf8').digest('base64')}`)
+
+// PRE-DEPLOY: the artifact on disk, checked against itself. This is the one that must run before anything is
+// uploaded — the policy and the documents travel together or the site does not boot.
+function dirCheck(root) {
+  const ht = path.join(root, '.htaccess')
+  if (!fs.existsSync(ht)) { console.log(`  FAIL no .htaccess in ${root}`); return 1 }
+  const m = fs.readFileSync(ht, 'utf8').match(/Header\s+(?:always\s+)?set\s+Content-Security-Policy\s+"([\s\S]*?)"\s*$/m)
+  if (!m) { console.log('  FAIL .htaccess carries no Content-Security-Policy'); return 1 }
+  const named = new Set(m[1].replace(/\\\n\s*/g, ' ').match(/sha256-[A-Za-z0-9+/=]+/g) || [])
+  const htmls = []
+  const walk = (d) => {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const full = path.join(d, e.name)
+      if (e.isDirectory()) walk(full)
+      else if (e.name.endsWith('.html')) htmls.push(full)
+    }
+  }
+  walk(root)
+  let bad = 0, checked = 0
+  const missing = new Map()
+  for (const f of htmls) {
+    for (const h of inlineHashes(fs.readFileSync(f, 'utf8'))) {
+      checked++
+      if (!named.has(h)) { bad++; if (!missing.has(h)) missing.set(h, path.relative(root, f)) }
+    }
+  }
+  console.log(`  .htaccess names ${named.size} hash(es); ${htmls.length} HTML files carry ${checked} executable inline script(s)`)
+  if (bad) {
+    console.log(`  FAIL ${bad} inline script(s) are NOT named by this artifact's own .htaccess:`)
+    for (const [h, f] of [...missing].slice(0, 5)) console.log(`       ${h}  first seen in ${f}`)
+    console.log('       This artifact would not boot: the browser refuses the inline script and no JavaScript runs.')
+    return 1
+  }
+  // and nothing named should be dead weight from an older build
+  const used = new Set(htmls.flatMap((f) => inlineHashes(fs.readFileSync(f, 'utf8'))))
+  const stale = [...named].filter((h) => !used.has(h))
+  if (stale.length) console.log(`  note: ${stale.length} hash(es) in the policy match no document in this artifact`)
+  console.log('  ok   every inline script in this artifact is named by the .htaccess shipping beside it')
+  return 0
+}
 
 // every inline <script> in the document must be named by the CSP the same document was served with
 async function staticCheck(port) {
@@ -67,7 +128,7 @@ async function browserCheck(port, engine) {
     p.on('pageerror', (e) => errs.push(String(e.message).slice(0, 120)))
     p.on('console', (m) => { if (m.type() === 'error') (/Content Security/i.test(m.text()) ? csp : errs).push(m.text().slice(0, 160)) })
     p.on('response', (r) => { if (r.status() >= 400) failed.push(`${r.status()} ${new URL(r.url()).pathname}`) })
-    await p.goto(`http://127.0.0.1:${port}${path}`, { waitUntil: 'networkidle', timeout: 60000 })
+    await p.goto(originOf(port) + path, { waitUntil: 'networkidle', timeout: 60000 })
     await sleep(4500)
     const s = await p.evaluate(() => {
       const cv = document.querySelector('.lab-stage canvas')
@@ -107,8 +168,9 @@ async function browserCheck(port, engine) {
 ;(async () => {
   const args = process.argv.slice(2)
   let bad
-  if (args[0] === '--static') { console.log(`== CSP vs the served document, port ${args[1]}`); bad = await staticCheck(args[1]) }
-  else { console.log(`== does it boot under the production CSP, port ${args[0]}`); bad = await browserCheck(args[0], args[1] || 'chrome') }
+  if (args[0] === '--dir') { console.log(`== PRE-DEPLOY: does this artifact's .htaccess match its own HTML? ${args[1]}`); bad = dirCheck(args[1]) }
+  else if (args[0] === '--static') { console.log(`== CSP vs the served document, ${originOf(args[1])}`); bad = await staticCheck(args[1]) }
+  else { console.log(`== does it boot under the production CSP, ${originOf(args[0])}`); bad = await browserCheck(args[0], args[1] || 'chrome') }
   console.log(`CSPBOOT: ${bad ? `FAIL (${bad})` : 'PASS'}`)
   process.exit(bad ? 1 : 0)
 })().catch((e) => { console.error(String(e).slice(0, 300)); process.exit(1) })

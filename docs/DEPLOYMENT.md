@@ -16,6 +16,20 @@ The build log ends with `production files for https://yucelemrah.com: robots.txt
 
 The CSP script hashes are computed from the generated HTML. A new build always ships its own matching `.htaccess`: **never deploy HTML from one build with the `.htaccess` of another.**
 
+### Pre-deploy: prove the policy matches the documents
+```bash
+node tools/diag/cspboot.cjs --dir .output/public     # exit 0 required
+```
+No server, no browser: it reads the `.htaccess` in the artifact, hashes every **executable** inline script in every
+HTML file beside it, and fails if the policy does not name them all. Run it on the exact artifact you are about to
+zip, and again on the unzipped contents if you repackage.
+
+This is not hypothetical. A preview server that had been left running across a rebuild served the new HTML with
+the previous build's policy: the browser refused the inline script, **no JavaScript ran at all**, inline styles
+still applied and nothing 404'd — so the site looked styled and deliberate and completely dead. On the live host
+the same mismatch is one forgotten file away, because the policy travels in `.htaccess` and the hashes travel in
+the HTML.
+
 Brand assets (`public/favicon.*`, `public/apple-touch-icon.png`, `public/og/emrah-yucel-portfolio.jpg`) are committed. Regenerate them only on purpose, with `tools/brand-assets.cjs` (see its header).
 
 ## What goes on the server
@@ -90,6 +104,18 @@ for p in / /tr /en /tr/about /en/about /robots.txt /sitemap.xml /favicon.ico /og
   curl -s -o /dev/null -w "$p -> %{http_code}\n" "https://yucelemrah.com$p"; done  # 200 … and 404 for the last
 curl -sI -H "Accept-Encoding: br, gzip" https://yucelemrah.com/tr | grep -iE "content-encoding|cache-control|content-security-policy"
 ```
+### Does the live site actually boot?
+```bash
+cd tools/diag
+node cspboot.cjs --static https://yucelemrah.com            # the served policy names the served scripts
+node cspboot.cjs https://yucelemrah.com chrome              # /tr and /tr/lab, runtime up, 0 CSP violations
+node cspboot.cjs https://yucelemrah.com webkit              # the same, in the engine iOS uses
+```
+All three must exit 0. The browser runs assert what a visitor gets, not what the headers promise: on `/tr` the
+runtime owns the screen (`data-c2` on, no document scrollbar) and on `/tr/lab` the bench has sized its own canvas
+and spread its records. A page whose inline script was refused still renders its markup and its inline styles —
+it just does nothing — so "the HTML looks right" is not evidence and these checks exist because of it.
+
 Then check each item below:
 - the view source of `/tr`: canonical `https://yucelemrah.com/tr`, hreflang `tr-TR` / `en` / `x-default`, `og:image` absolute;
 - the browser console on `/tr` and `/en`: 0 errors, 0 CSP messages;
@@ -112,10 +138,12 @@ The site is static; there is no database.
 - **PRE-BUILD:** clean `git status`; `NUXT_PUBLIC_SITE_URL` unset (or the intended HTTPS origin); `npm ci`
 - **BUILD:** `npx nuxt typecheck` exit 0; `npm run generate` exit 0; log shows the production-files line
 - **PRE-UPLOAD:** `.output/public` contains `.htaccess`, `_nuxt/.htaccess`, `opt/.htaccess`, `404.html`, `robots.txt`, `sitemap.xml`, `og/`, favicons; no `200.html`
+- **PRE-UPLOAD (CSP):** `node tools/diag/cspboot.cjs --dir .output/public` exit 0 — the policy names every inline script in the artifact it ships with
+- **PRE-UPLOAD (payload):** no `tools/`, no `*.cjs`, no `lab/proof` route in the artifact
 - **UPLOAD:** document root identified; backup downloaded; old files cleaned; zip extracted; dotfiles visible
 - **DNS/SSL:** A record → hosting IP; AutoSSL valid for apex and www
 - **MAIL:** mailbox exists; Email Deliverability valid; inbound / outbound / auth tests recorded
-- **POST-DEPLOY:** redirect matrix; status matrix; 404 is a real 404; console clean
+- **POST-DEPLOY:** redirect matrix; status matrix; 404 is a real 404; console clean; `cspboot.cjs --static <origin>` and `cspboot.cjs <origin> chrome|webkit` all exit 0
 - **SEO:** `robots.txt` and `sitemap.xml` reachable; canonical and hreflang in page source; OG preview renders
 - **PERFORMANCE:** PageSpeed mobile + desktop recorded (lab); field data only if it exists
 - **REAL DEVICE:** iPhone smoke, including Work / Lab hold → swipe

@@ -29,3 +29,6 @@ logs
 tools/diag/node_modules
 tools/diag/out
 tools/diag/*.log
+
+# production artifacts packaged for upload
+deploy/

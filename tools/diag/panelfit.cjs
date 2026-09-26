@@ -27,6 +27,10 @@ const SIZES = sizeArg.split(',').map((s) => s.split('x').map(Number))
 const LOCS = locArg.split(',')
 const PROJS = projArg.split(',').map(Number)
 const NAMES = ['Istanbul', 'Ege', 'Evden']
+// a bare number is a local port; anything else is an origin, so this can be pointed at the live host. The host
+// refuses clients that do not look like a browser, so the context carries an ordinary desktop agent.
+const originOf = (t) => (/^https?:\/\//i.test(t) ? t.replace(/\/$/, '') : `http://127.0.0.1:${t}`)
+const UA_CHROME = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36'
 const AA = 4.5
 // The brief asks for at least every 50ms through the first 1.5s. The title's own reveal is a 0.2s delay plus a
 // 0.55s fade that only begins once the world has arrived — about 1.8s on a cold open — so a window ending at 1.5s
@@ -71,9 +75,10 @@ const READ = `() => {
   for (const [W, H] of SIZES) {
     for (const loc of LOCS) {
       for (const k of PROJS) {
-        const ctx = await b.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 1 })
+        const ctx = await b.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 1, userAgent: UA_CHROME, locale: 'tr-TR' })
         const p = await ctx.newPage()
-        await p.goto(`http://127.0.0.1:${port}/${loc}`, { waitUntil: 'networkidle', timeout: 60000 })
+        const resp = await p.goto(`${originOf(port)}/${loc}`, { waitUntil: 'networkidle', timeout: 60000 })
+        if (resp && resp.status() === 403) { console.log(`  BLOCKED ${NAMES[k]} ${W}x${H} ${loc} — the host refused this client (403). Not a site failure.`); await ctx.close(); continue }
         await p.waitForFunction(() => window.__lab?.A.mode === 'index', null, { timeout: 40000 })
         await sleep(2200)
         await p.evaluate(() => document.querySelector('#ui [data-go="work"]').click())

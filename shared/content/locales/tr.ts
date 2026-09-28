@@ -20,6 +20,10 @@ export const tr = {
       description:
         'Aynı malzeme, benim adım dışında bir şey üzerinde: alan ve bölüşüm, uzunluk ve yapı, satır ağırlığıyla kurulan görüntü.',
     },
+    contact: {
+      title: 'İletişim — Emrah Yücel',
+      description: 'Emrah Yücel ile iletişim: e-posta, telefon, GitHub, LinkedIn. İstanbul, Türkiye.',
+    },
     imageAlt: 'Emrah Yücel — Creative Developer ve Full-Stack Developer. Kâğıt üzerinde yatay mürekkep satırlarıyla dizilmiş isim.',
   },
   nav: { skip: 'Düz gezinmeye geç', label: 'Portfolyo', work: 'İşler', about: 'Hakkımda', lab: 'Lab', contact: 'İletişim' },

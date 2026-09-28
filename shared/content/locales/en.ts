@@ -17,6 +17,10 @@ export const en = {
       description:
         'The same material on something other than my name: area and share, length and structure, an image built from row weight alone.',
     },
+    contact: {
+      title: 'Contact — Emrah Yücel',
+      description: 'Contact Emrah Yücel: email, phone, GitHub, LinkedIn. İstanbul, Türkiye.',
+    },
     imageAlt: 'Emrah Yücel — Creative Developer and Full-Stack Developer. The name set in horizontal rows of ink on paper.',
   },
   nav: { skip: 'Skip to plain navigation', label: 'Portfolio', work: 'Work', about: 'About', lab: 'Lab', contact: 'Contact' },

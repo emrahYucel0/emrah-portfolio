@@ -99,6 +99,8 @@ export interface LocaleCopy {
     home: { title: string; description: string }
     about: { title: string; description: string }
     lab: { title: string; description: string }
+    /** the Contact finale's own route (/[locale]/contact) — the site's one Contact */
+    contact: { title: string; description: string }
     /** M5: text alternative of the social share image */
     imageAlt: string
   }

@@ -26,7 +26,7 @@ export function siteUrl(raw?: string): string {
  * other — each prerendered, each with its own title, canonical and hreflang — so they belong here, which is what
  * puts them in the sitemap and in the prerender list rather than leaving them to be found by crawling.
  */
-export const PUBLIC_PAGES: readonly string[] = ['', '/about', '/lab', ...studies.map((s) => `/lab/${s}`)]
+export const PUBLIC_PAGES: readonly string[] = ['', '/about', '/lab', ...studies.map((s) => `/lab/${s}`), '/contact']
 
 /** every public, indexable route: the x-default entry and each page in each language */
 export const PUBLIC_ROUTES: string[] = ['/', ...LOCALES.flatMap((l) => PUBLIC_PAGES.map((p) => `/${l}${p}`))]

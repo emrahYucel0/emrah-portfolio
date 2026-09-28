@@ -6,17 +6,19 @@
  * difference in the very first thing a visitor sees.
  *
  * It starts only on the routes the runtime owns: the x-default entry at / is a language chooser, not the surface,
- * and the Lab routes are the document's own (layouts/default.vue does not mount the runtime there). A head start
+ * and the document routes — the Lab and the Contact finale — are the document's own (layouts/default.vue does not mount the runtime there). A head start
  * on a Lab route would fetch the engine, its fonts and its textures, and take a WebGL context, for a surface that
  * is never shown and never asked anything — and the visitor is reading a study while it happens.
  */
+import { isDocumentRoute } from '~~/shared/site'
+
 export default defineNuxtPlugin({
   name: 'c2-runtime',
   parallel: true,
   setup() {
     if (!import.meta.client) return
     const path = useRouter().currentRoute.value.path
-    if (!/^\/(tr|en)(\/|$)/.test(path) || /^\/(tr|en)\/lab(\/|$)/.test(path)) return
+    if (!/^\/(tr|en)(\/|$)/.test(path) || isDocumentRoute(path)) return
     const { start } = useC2Engine()
     void start()
   },

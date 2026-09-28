@@ -91,6 +91,7 @@ ports before it starts them.
 | `panelfit.cjs` | every line of a project's identity panel through the opening: inside the panel, and AA against the pixels actually behind it |
 | `proj.cjs` | how long a project transition makes the visitor wait, and for what — measured from the one activation that opens the project, with the carousel positioning done before the clock starts |
 | `labaxe.cjs` | axe over the Lab routes, both languages, both motion settings |
+| `contact.cjs` | the Contact finale's route: no runtime there, one h1, the five facts as DOM with and without JavaScript, axe — both engines, both languages |
 | `heroaxe.cjs` | axe over the hero, and the About control's place in the keyboard order |
 | `hero.cjs`, `herolayout.cjs`, `herotouch.cjs`, `herolocale.cjs` | the hero's About control |
 | `touch.cjs`, `touchjourney.cjs`, `moblayout.cjs` | the Lab under a real finger, and its mobile layout |

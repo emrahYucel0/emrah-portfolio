@@ -28,6 +28,13 @@ export function siteUrl(raw?: string): string {
  */
 export const PUBLIC_PAGES: readonly string[] = ['', '/about', '/lab', ...studies.map((s) => `/lab/${s}`), '/contact']
 
+/**
+ * The document routes: the pages that keep the document's own scroll, where the C2 runtime is NOT mounted and the
+ * runtime's strip is worn in DOM (LabChrome) — the Lab (bench and studies) and the Contact finale. One test, read by
+ * the layout (what it renders) and by the runtime's head-start plugin (whether it boots), so the two cannot disagree.
+ */
+export const isDocumentRoute = (path: string): boolean => /^\/(tr|en)\/(lab(\/|$)|contact\/?$)/.test(path)
+
 /** every public, indexable route: the x-default entry and each page in each language */
 export const PUBLIC_ROUTES: string[] = ['/', ...LOCALES.flatMap((l) => PUBLIC_PAGES.map((p) => `/${l}${p}`))]
 

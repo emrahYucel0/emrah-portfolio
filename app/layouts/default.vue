@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isDocumentRoute } from '~~/shared/site'
 const { copy } = useLocale()
 useReducedMotion()
 
@@ -16,7 +17,7 @@ useReducedMotion()
 const route = useRoute()
 // the Contact finale (/[locale]/contact) is the same kind of place: a document route that reads its own scroll,
 // without the runtime, in the runtime's strip. It carries the Contact itself, so no footer Contact under it.
-const inLab = computed(() => /^\/(tr|en)\/(lab(\/|$)|contact\/?$)/.test(route.path))
+const inLab = computed(() => isDocumentRoute(route.path))
 </script>
 
 <template>

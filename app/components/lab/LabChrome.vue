@@ -21,6 +21,10 @@ const route = useRoute()
 
 const home = computed(() => path('/'))
 const onBench = computed(() => /\/lab\/?$/.test(route.path))
+// inside a study the way back to the bench is the study's own control; everywhere else (the bench, the Contact
+// finale) the strip offers the Lab like the runtime's own strip does
+const inStudy = computed(() => /\/lab\/[^/]+/.test(route.path))
+const onContact = computed(() => /\/contact\/?$/.test(route.path))
 
 // a plain click is the site's navigation; a modified one is the browser's, and is left alone
 const go = (e: MouseEvent, to: LabExit) => {
@@ -40,10 +44,10 @@ const go = (e: MouseEvent, to: LabExit) => {
         <li><NuxtLink :to="path('/about')">{{ copy.nav.about }}</NuxtLink></li>
         <!-- On the bench this is where the visitor is. Inside a study the way back to the bench is the study's
              own control, in the study's own field, so the strip does not offer a second one competing with it. -->
-        <li v-if="onBench">
-          <NuxtLink :to="path('/lab')" aria-current="page">{{ copy.nav.lab }}</NuxtLink>
+        <li v-if="!inStudy">
+          <NuxtLink :to="path('/lab')" :aria-current="onBench ? 'page' : undefined">{{ copy.nav.lab }}</NuxtLink>
         </li>
-        <li><a :href="home" @click="go($event, 'rest')">{{ copy.nav.contact }}</a></li>
+        <li><a :href="home" :aria-current="onContact ? 'page' : undefined" @click="go($event, 'rest')">{{ copy.nav.contact }}</a></li>
         <li>
           <!-- two quiet letters, as on the runtime's own strip: a language control, not a word of English -->
           <!-- a language change is a step the visitor took, so Back undoes it — as it now does on the C2 routes -->

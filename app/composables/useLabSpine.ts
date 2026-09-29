@@ -32,12 +32,12 @@ export function useLabSpine() {
   const swallow = (e: MouseEvent) => { e.preventDefault(); e.stopPropagation() }
   const armSwallow = () => document.addEventListener('click', swallow, { capture: true, once: true })
 
-  const go = (to: LabExit) => {
+  const go = (to: LabExit | 'contact') => {
     if (spent) return
     spent = true
     armSwallow()
-    // down is the Contact finale (F2): the bench clears itself to the bare field the finale opens on, then hands over
-    if (to === 'rest' && seam.enabled) {
+    // down is the Contact finale: the bench clears itself to the bare field the finale opens on, then hands over
+    if (to === 'contact') {
       const exit = benchSeam.exit ? benchSeam.exit() : Promise.resolve()
       // the finale's first frame must be ready when its route is; a slow link does not hold the visitor for long
       const ready = Promise.race([loadFinale().catch(() => {}), new Promise((r) => setTimeout(r, 1500))])
@@ -58,7 +58,7 @@ export function useLabSpine() {
     if (now - accAt > BURST || (acc !== 0 && Math.sign(dy) !== Math.sign(acc))) acc = 0
     accAt = now
     acc += dy
-    if (Math.abs(acc) >= WHEEL) go(acc > 0 ? 'rest' : 'work')
+    if (Math.abs(acc) >= WHEEL) go(acc > 0 ? 'contact' : 'work')
   }
 
   // the finger: downward travel is the sheet coming back up the index (Work), upward travel carries it on (Contact)
@@ -71,16 +71,14 @@ export function useLabSpine() {
     if (spent || e.pointerId !== id) return
     const dx = e.clientX - sx, dy = e.clientY - sy
     if (Math.abs(dy) < SWIPE || Math.abs(dy) < Math.abs(dx) * 1.3) return
-    go(dy < 0 ? 'rest' : 'work')
+    go(dy < 0 ? 'contact' : 'work')
   }
   const end = () => { id = -1 }
 
   onMounted(() => {
     // the finale's engine is fetched while the bench is on screen, so the way down never waits for it
-    if (seam.enabled) {
-      const warm = () => { void loadFinale().catch(() => {}) }
-      if (typeof requestIdleCallback === 'function') requestIdleCallback(warm, { timeout: 2500 }); else setTimeout(warm, 1200)
-    }
+    const warm = () => { void loadFinale().catch(() => {}) }
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(warm, { timeout: 2500 }); else setTimeout(warm, 1200)
     addEventListener('wheel', onWheel, { passive: false })
     addEventListener('pointerdown', onDown, { passive: true })
     addEventListener('pointermove', onMove, { passive: true })

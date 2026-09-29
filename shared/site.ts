@@ -35,13 +35,6 @@ export const PUBLIC_PAGES: readonly string[] = ['', '/about', '/lab', ...studies
  */
 export const isDocumentRoute = (path: string): boolean => /^\/(tr|en)\/(lab(\/|$)|contact\/?$)/.test(path)
 
-/**
- * THE CONTACT FINALE IS THE SITE'S CONTACT (F2). Every way to Contact — the Lab's downward gesture, the runtime's
- * Contact stop, the menus, a #contact link — arrives at /[locale]/contact. `false` restores the runtime's old
- * Contact stop everywhere; it exists only for the integration and is deleted, with the old stop, in F4.
- */
-export const CONTACT_FINALE = true
-
 /** every public, indexable route: the x-default entry and each page in each language */
 export const PUBLIC_ROUTES: string[] = ['/', ...LOCALES.flatMap((l) => PUBLIC_PAGES.map((p) => `/${l}${p}`))]
 

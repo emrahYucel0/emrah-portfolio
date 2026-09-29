@@ -10,9 +10,9 @@ import { NuxtLink } from '#components'
  * right, in the same order. The visitor should not be able to tell that the chrome changed hands; only that the
  * Lab is the place they are in.
  *
- * Its four places are the site's, not the Lab's. Work and Contact are destinations on the runtime's index, so they
- * are a navigation back to the locale route carrying which place was asked for (useLabHandoff); About is already a
- * route of its own; Lab is the bench. That is the whole navigation system on these routes — the studies' own return
+ * Its four places are the site's, not the Lab's. Work is a destination on the runtime's index, so it is a
+ * navigation back to the locale route carrying which place was asked for (useLabHandoff); About and Contact (the
+ * finale — asked for by name, it opens settled: useContactSeam) are routes of their own; Lab is the bench. That is the whole navigation system on these routes — the studies' own return
  * control is stood down in lab.css so there is never a second control for the same place.
  */
 const { copy, path, other, switchPath } = useLocale()
@@ -39,13 +39,12 @@ const go = (e: MouseEvent, to: LabExit) => {
 // the language control on the finale keeps the reader's place on the drawing (F3); elsewhere it is a plain link
 const toLocale = (e: MouseEvent) => {
   setLanguage(other.value)
-  if (!onContact.value || !seam.enabled || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+  if (!onContact.value || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
   e.preventDefault()
   void seam.toLocale(switchPath.value)
 }
-const contactHref = computed(() => (seam.enabled ? path('/contact') : home.value))
+const contactHref = computed(() => path('/contact'))
 const toContact = (e: MouseEvent) => {
-  if (!seam.enabled) return go(e, 'rest')
   if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
   e.preventDefault()
   if (onContact.value) dispatchEvent(new Event('finale:arrive'))
@@ -73,8 +72,8 @@ const toContact = (e: MouseEvent) => {
           <!-- on the finale a plain link: the router is asked with the reader's place on the entry (RouterLink would
                navigate before it could be given) -->
           <component
-            :is="onContact && seam.enabled ? 'a' : NuxtLink"
-            class="lang" :href="onContact && seam.enabled ? switchPath : undefined" :to="onContact && seam.enabled ? undefined : switchPath"
+            :is="onContact ? 'a' : NuxtLink"
+            class="lang" :href="onContact ? switchPath : undefined" :to="onContact ? undefined : switchPath"
             :hreflang="HTML_LANG[other]" :lang="HTML_LANG[other]"
             :aria-label="`${copy.localeSwitch.label}: ${copy.localeSwitch.to}`"
             :title="`${copy.localeSwitch.label}: ${copy.localeSwitch.to}`"

@@ -14,8 +14,6 @@
  * How the visitor arrived rides on the history entry, not in the URL (as the runtime's C2_ARRIVE does), and is spent
  * on arrival: Back and Forward later find the page as it was left, not the arrival replayed.
  */
-import { CONTACT_FINALE } from '~~/shared/site'
-
 /** on the finale's entry: 'start' — carried here by a gesture, the drawing plays from p = 0;
  *  'end' — asked for by name (the menu, #contact), the finale opens settled at p = 1;
  *  'at:<0…1>' — the same finale in the other language, where the reader was on the track */
@@ -73,5 +71,5 @@ export function useContactSeam() {
   /** the same finale in the other language, at the same place on the track */
   const toLocale = (to: string) => router.push({ path: to, state: { [FINALE_ARRIVE]: `at:${(finaleSeam.progress?.() ?? 0).toFixed(4)}` } })
   const toLab = () => router.push({ path: path('/lab'), state: { [LAB_ARRIVE]: 'contact' } })
-  return { enabled: CONTACT_FINALE, toContact, toLab, toLocale }
+  return { toContact, toLab, toLocale }
 }

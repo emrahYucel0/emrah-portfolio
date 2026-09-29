@@ -104,8 +104,8 @@ say "CONTACT FINALE — iOS 15.4";   node compat-ios15.cjs $CUR   2>&1 | tail -1
 say "CONTACT SEAM — LAB ⇄ FINALE, ARRIVALS, HISTORY";   node seam.cjs $CUR   2>&1 | grep -E "FAIL|seam:|SEAM" >> $L
 say "CONTACT FINALE — A11Y, KEYBOARD, LANGUAGE, REDUCED, PHONES";   node finale-a11y.cjs $CUR   2>&1 | grep -E "FAIL|FINALE A11Y" >> $L
 say "CONTACT FINALE — THE WAY IN, THE GUIDE, THE FOOT BAND";   node beckon.cjs $CUR   2>&1 | grep -E "FAIL|BECKON" >> $L
-say "JOURNEY TR NORMAL";        node journey.cjs $CUR tr     2>&1 | tail -5  >> $L
-say "JOURNEY EN REDUCED";       node journey.cjs $CUR en reduced 2>&1 | tail -5 >> $L
+say "JOURNEY TR NORMAL";        node journey.cjs $CUR tr     2>&1 | grep -E "FAIL|errors|JOURNEY" >> $L
+say "JOURNEY EN REDUCED";       node journey.cjs $CUR en reduced 2>&1 | grep -E "FAIL|errors|JOURNEY" >> $L
 say "NON-LAB NORMAL (baseline $BASE)";  node nonlab.cjs $BASE $CUR    2>&1 | tail -13 >> $L
 say "NON-LAB REDUCED (baseline $BASE)"; node nonlabred.cjs $BASE $CUR 2>&1 | tail -13 >> $L
 echo "" >> $L; echo "RUN6 DONE" >> $L

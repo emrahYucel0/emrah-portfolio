@@ -254,14 +254,15 @@ export function labState(V) {
   })
 }
 
-// ─── rest: every row lies straight; the surface opens where it once gave way ───────
+// ─── rest: every row lies straight, and carries the visit ─────────────────────────
+/**
+ * THE CONTACT STOP IS A HANDOFF TOO. Contact is its own route now — the plotter finale, /[locale]/contact — and the
+ * stop hands over to it when travel settles on it, as the Lab stop does (main.js). The room it used to open in the
+ * sheet (a wedge where the About mark had given way, and the contact block set in it) is gone with the old Contact.
+ * What stays is the material: straight rows carrying one thread of each work the visitor opened.
+ */
 export function rest(V, visitOrder = [], mark = null) {
-  const { W, H, P, pad, strip } = V
-  const wedge = mark
-    ? { ...mark }
-    : { cx: P ? W / 2 : W * 0.3, cy: H * 0.46, h: H * (P ? (H < 640 ? 0.27 : 0.235) : V.S ? 0.3 : H < 820 ? 0.215 : 0.2), hw: P ? 1e5 : W * 0.9, falloff: P ? 70 : 110, lip: 5, lipW: 7 }
-  const bh = Math.min(wedge.h * 2 - 24, P ? 300 : 270)
-  const block = { x: pad, y: Math.round(wedge.cy - bh / 2), w: P ? W - pad * 2 : Math.min(520, W * 0.42), h: Math.round(bh) }
+  const { W, H, P, strip } = V
   // history is art-directed: at most three threads carry full weight, the oldest thin out
   const threads = visitOrder.slice(-3)
   const img = build(V, H, ({ voids }) => {
@@ -277,7 +278,7 @@ export function rest(V, visitOrder = [], mark = null) {
   })
   return mk(V, {
     id: 'rest', spacing: rowSpacing(V), freq: 0.12, thick: P ? 0.72 : 0.85, amp: 0, memThick: 1.2, memTone: 0.3, flash: 1,
-    ...img, layout: { block, wedge }, features: [feature({ kind: 0, ...wedge })],
+    ...img,
     beneath: null, capacity: Infinity, visitKey: `${visitOrder.join(',')}|${mark ? 'a' : 'd'}`,
   })
 }

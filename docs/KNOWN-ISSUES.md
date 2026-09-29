@@ -151,3 +151,27 @@ with mismatches on `/tr/lab`.
 were held to Safari 15.0 by the static half of the first `compat-ios15.cjs`; its runtime half imitated the
 validation device's profile (15.4–15.8). Options were: state the floor as iOS 15.4, or ship the two small polyfills
 — the first was chosen (above).
+
+---
+
+## Gate: JOURNEY TR NORMAL failed once in the F4 gate — a cold runtime boot, now waited for
+
+**Where** `tools/diag/journey.cjs`, the step Lab → Work, in the F4 full gate.
+
+**What happened.** The journey loads each Lab study directly (a full page load), so the runtime is not in memory
+when it returns to the bench. Before F2 it came back through the runtime's Contact stop, and the runtime booted
+there. Now Contact and the Lab are both routes without the runtime, so the runtime's first boot of that session
+lands on Lab → Work. That boot is a cold one: engine, fonts, textures and WebGL.
+
+**Measured** (headless WebKit, 2026-09-29): 3.3 s without load, 8–9 s under load. The step slept a fixed 4.2 s,
+so under the gate's load it saw `/tr` with the runtime not yet on screen. The same Lab → Work step with a warm
+runtime hands over in about 0.15 s, with or without load.
+
+**Fix, in the harness.** Each step now waits for its expected state (up to 25 s), as `spine.cjs` already does, and
+reports any arrival slower than its settle time. Under load it passed 3/3 (Lab → Work arrived after 8.4 s). The EN
+reduced run passes too.
+
+**For the product, not changed here.** The cold-boot time is not new: the old flow had the same boot at its Contact
+stop. What is new is where a visitor meets it: someone who landed on a study, the bench or the finale directly and
+then goes up to Work. The bench already fetches the finale's engine ahead of time. It could warm the runtime's module
+the same way, in idle time. That is a separate decision.

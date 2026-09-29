@@ -1,7 +1,7 @@
 # F2 — the crossings into the Contact finale
 
-Every way into Contact now lands on `/[locale]/contact`. The old Contact stop stays in the runtime behind
-`CONTACT_FINALE` (`shared/site.ts`) until F4.
+Every way into Contact now lands on `/[locale]/contact`. During F2 the old runtime Contact stayed behind a flag as a
+fallback; F4 deleted both (see `../README.md`).
 
 | From | Lands on | How |
 |---|---|---|

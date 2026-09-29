@@ -62,10 +62,10 @@ const HOST = {
   emit: () => {},
   // M2: the same page in the other language, supplied by the host (the runtime never builds locale URLs)
   localeHref: '',
-  // F2: Contact is the host's own route (the plotter finale). Given, the Contact stop hands over to it — 'start' when
-  // travel carried the visitor there (the drawing plays), 'end' when it was asked for by name (it opens settled).
-  // Not given, the stop is the runtime's own Contact, as before (the integration's fallback, deleted in F4).
-  contact: null,
+  // Contact is the host's own route (the plotter finale): the Contact stop hands over to it — 'start' when travel
+  // carried the visitor there (the drawing plays), 'end' when it was asked for by name (it opens settled). Standalone,
+  // without a host, the route is simply opened.
+  contact: () => { location.href = `${ROOT}contact${location.search}` },
 }
 export function configure(o = {}) {
   if (o.homeUrl) HOME_URL = o.homeUrl
@@ -182,7 +182,7 @@ const A = {
   world: gather(), worldOn: false, faceF: feature({ kind: 1 }),
   constrained: false, timeHeld: 0,   // POST-M5 PERF: render capacity (see noteFrame)
   staticHero: false,                 // POST-M5 PERF: software renderer, WebGL not yet drawn (see startStaticHero)
-  introReg: 1, nameAmp: 1, restReg: 0, restOpen: 0, nextReg: 1, nextArmed: false, regDrag: 0, regDragT: 0, quality: {}, shiver: 0,
+  introReg: 1, nameAmp: 1, nextReg: 1, nextArmed: false, regDrag: 0, regDragT: 0, quality: {}, shiver: 0,
   wt: 0, wT: 0, wLocked: -1, visited: new Set(), visitOrder: [], releaseK: null,
   yieldMarks: [], seeded: 0, aboutMark: null,
   learned: { open: false, face: false, work: false, pinch: false, lab: false, world: false, next: false }, arrivedAt: 0,
@@ -240,7 +240,6 @@ function rebuild() {
   if (A.mode === 'intro') { A.mode = 'index'; A.introReg = 0 }
   if (A.staticHero) { A.nameAmp = 0; paintStaticHero() }
   if (A.mode === 'exit') { A.mode = 'index'; A.p = A.pT = A.base = A.prevBase = 3; A.worldOn = false }
-  if (A.base === 5) A.restOpen = 1
   layoutDOM()
   if (A.mode === 'world') { mediaFor(A.k); fillWorldDOM(A.k); Object.assign(A.world, worldGeom(A.wp)) }
   queueWarm([IDX[1], IDX[2], IDX[4], IDX[5]])
@@ -563,7 +562,8 @@ function openLab() {
 
 /**
  * COMING BACK FROM THE LAB. The bench is the fifth destination and it lives on its own route, so the visitor who
- * gestures out of it is asking for a place on this index — Work above, Contact below. The runtime is mounted again
+ * gestures out of it upwards is asking for a place on this index — Work (Contact, below, is a route of its own and
+ * the host takes the visitor there directly). The runtime is mounted again
  * one route later and must already BE there: travelling to it would mean travelling from wherever the index last
  * stood, which on a cold arrival is the name. So the index is set where that travel would have left it, and the
  * arrival itself is announced by the same onArrive() every other arrival goes through (prevBase is the Lab, which
@@ -573,7 +573,7 @@ function openLab() {
  */
 function arriveAt(target) {
   // every place on the index except the Lab itself: the Lab is a route, not somewhere this index arrives
-  const stop = { name: 0, creative: 1, system: 2, work: 3, rest: 5 }[target]
+  const stop = { name: 0, creative: 1, system: 2, work: 3 }[target]
   if (stop == null) return false
   endGesture()
   gsap.killTweensOf(A)
@@ -586,7 +586,6 @@ function arriveAt(target) {
   A.shiver = 0; A.bridgePK = 1; A.introReg = 0; A.nameAmp = REDUCED ? 0 : 1
   A.p = A.pT = A.base = stop
   A.prevBase = 4        // the Lab: the frame loop announces the arrival and composes the field accordingly
-  A.restOpen = 0
   A.gesture = false; A.lastInput = -1e9
   A.labArmed = false
   A.hush = performance.now() + 420
@@ -596,8 +595,8 @@ function arriveAt(target) {
 }
 
 /**
- * THE SIXTH DESTINATION (F2). Contact is a route of its own now, as the Lab is, so the stop hands over to it the
- * way the Lab stop hands over to the bench: travel that settles on it opens the route. Only travel arms it, so a
+ * THE SIXTH DESTINATION. Contact is a route of its own, as the Lab is (the plotter finale, /[locale]/contact), so the
+ * stop hands over to it the way the Lab stop hands over to the bench: travel that settles on it opens the route. Only travel arms it, so a
  * state restored onto the stop — coming back to this entry — sits there quietly; one more gesture down opens it.
  */
 function openContact(how) {
@@ -854,9 +853,8 @@ function registration(now, dt) {
     if (onWork && A.wLocked !== i && ad < 0.003) lockWork(i)
     else if (A.wLocked === i && ad > 0.025) unlockWork(i)
   })
-  split(IDX[5], A.restReg, 8)
   if (WORLD[A.k]) { const full = WORLD[A.k][lastFrame()]; split(full, A.nextReg, V.W * 0.13, 7); full.vis = 1 }
-  for (const s of [IDX[0], IDX[5]]) {
+  for (const s of [IDX[0]]) {
     const q = 1 - smooth(0, 3, Math.abs(s.reg.a1 - s.reg.a0))
     const prev = A.quality[s.id] ?? 1
     if (prev < 0.9 && q >= 0.999) lockRipple(s)
@@ -866,8 +864,7 @@ function registration(now, dt) {
 // exact register: no burst — the rows go still, one small breath runs out through the material
 function lockRipple(st) {
   const L = st.layout
-  const y0 = st.id === 'name' ? L.top : L.block.y
-  const y1 = st.id === 'name' ? L.bottom : L.block.y + L.block.h
+  const y0 = L.top, y1 = L.bottom
   phys.kick(y0 - 8, -55); phys.kick(y1 + 8, 55)
   haptic(8)
 }
@@ -902,18 +899,6 @@ function onArrive(stop, prev) {
     if (prev > 3) { A.wT = N - 1; A.wt = N - 1 + 0.9 } else { A.wT = 0; A.wt = -0.9 }
     tonesReady.then(() => queueWarm(WORKS))
   }
-  if (stop === 5 && !HOST.contact) {
-    const key = `${A.visitOrder.join(',')}|${A.aboutMark ? 'a' : 'd'}`
-    if (IDX[5].visitKey !== key) { const old = IDX[5]; IDX[5] = ST.rest(V, A.visitOrder, A.aboutMark); if (A.from !== old && A.to !== old) { old.dead = true; surface.release(old) } placeRest() }
-    gsap.killTweensOf(A, 'restReg,restOpen')
-    A.restReg = 1; A.restOpen = 0
-    // Contact registers, then opens — the same two movements as when the name gave way to the person. The lead-in
-    // was 2.1 s of a screen holding almost nothing before the opening began, which measured as the longest dead
-    // stretch anywhere on the site (1.47 s of it with nothing changing at all). The movements keep their shape and
-    // their order; the waiting before them does not.
-    gsap.to(A, { restReg: 0, duration: 1.15, delay: 0.25, ease: 'expo.inOut' })
-    gsap.to(A, { restOpen: 1, duration: 1, delay: 0.85, ease: 'expo.out' })
-  }
 }
 
 // ─── DOM: semantic text, always stable, placed where the material has made room ─
@@ -933,7 +918,7 @@ ui.addEventListener('click', (e) => {
   if (!b) return
   if (b.dataset.go || b.hasAttribute('data-detail')) e.preventDefault()
   // Contact asked for by name opens its route settled, from wherever the visitor is
-  if (b.dataset.go === 'rest' && HOST.contact) { HOST.contact('end'); return }
+  if (b.dataset.go === 'rest') { HOST.contact('end'); return }
   if (b.dataset.go) {
     A.focusNext = performance.now()   // M4 A11Y
     const stop = { name: 0, creative: 1, system: 2, work: 3, lab: 4, rest: 5 }[b.dataset.go]
@@ -1032,12 +1017,6 @@ function buildDOM() {
     <p class="lab-now" aria-live="polite"></p>
     <ul class="sr">${STUDY_LIST().map((e) => `<li>${e.name}: ${e.note}</li>`).join('')}</ul>`)
 
-  D.rest = h('section', 'layer rest', `<div class="contact"><h2 class="sr" tabindex="-1">${TXT.contact.heading}</h2>
-    <p class="cname">${identity.name}</p>
-    <p class="croles" lang="en">${identity.primary} / ${identity.secondary}</p>
-    ${mail}${phone}
-    <p class="clinks">${exits()}</p>
-    <p class="cmeta">${identity.location} · ${identity.status}</p></div>`)
 
   D.world = h('section', 'layer world', `
     <nav class="wnav strip" aria-label="${TXT.work.projectNav}"><button data-world="all">← ${TXT.work.allWork}</button><a class="wlink" href="${works[0].url}" target="_blank" rel="noopener noreferrer"><span class="sr">${TXT.work.visit} </span><span class="wname"></span> <span class="whost" lang="en"></span> ↗<span class="sr"> ${TXT.a11y.newTab}</span></a><button data-world="next">${TXT.work.next}</button></nav>
@@ -1055,7 +1034,7 @@ function buildDOM() {
   D.a11y.setAttribute('aria-label', TXT.a11y.plainNav)
 
   D.main = h('main', 'layers')
-  D.main.append(D.h1, D.heroAct, D.about, D.detail, D.creative, D.system, D.work, D.lab, D.rest, D.world)
+  D.main.append(D.h1, D.heroAct, D.about, D.detail, D.creative, D.system, D.work, D.lab, D.world)
   lastSaid = ''
   D.top.prepend(D.skip)
   D.h1.after(D.lead, D.keys)
@@ -1124,7 +1103,7 @@ function fillWorldDOM(k) {
 // A place reached from the keyboard moves focus to its own heading — the reader lands where the content is, and the
 // arrow keys keep working from there (headings are not controls). A place reached any other way (pointer, touch, a
 // screen reader's own activation) is named once in a polite status line. Nothing is announced per frame.
-const PLACE_HEADING = [() => D.h1, () => D.creative.querySelector('h2'), () => D.system.querySelector('h2'), () => D.work.querySelector('h2'), () => D.lab.querySelector('h2'), () => D.rest.querySelector('h2')]
+const PLACE_HEADING = [() => D.h1, () => D.creative.querySelector('h2'), () => D.system.querySelector('h2'), () => D.work.querySelector('h2'), () => D.lab.querySelector('h2'), () => null]
 const PLACE_NAME = [() => identity.name, () => capabilities.surface.role, () => capabilities.system.role, () => TXT.work.heading, () => lab.title, () => TXT.contact.heading]
 let focusWant = null, lastSaid = ''
 // focus is taken as soon as the element exists and is no longer inert (layers turn on after their transition)
@@ -1160,7 +1139,6 @@ function focusKey(el) {
   return null
 }
 const place = (el, r) => Object.assign(el.style, { left: `${r.x}px`, top: `${r.y}px`, width: `${r.w}px`, height: r.h != null ? `${r.h}px` : '' })
-function placeRest() { place(D.rest.querySelector('.contact'), IDX[5].layout.block) }
 function layoutDOM() {
   const [nm, cre, sys] = IDX
   const ah = aboutHalf(), gy = nm.layout.gapY
@@ -1189,7 +1167,6 @@ function layoutDOM() {
   // and arriving at the stop opens it. Its retired layer is stood down once, here, rather than every frame: inert,
   // so it is neither drawn nor reachable, and the way to the Lab for a reader is the plain navigation, as before.
   setOn(D.lab, false)
-  placeRest()
 }
 const onState = new Map()
 const setOn = (el, on) => { if (onState.get(el) !== on) { onState.set(el, on); el.classList.toggle('on', on); el.inert = !on } }
@@ -1252,7 +1229,6 @@ function domUpdate(from, to, front) {
     setOn(D.creative, d === 'creative')
     setOn(D.system, d === 'system')
     setOn(D.work, d === 'work')
-    setOn(D.rest, d === 'rest' && !HOST.contact)
     setOn(D.world, d === 'world')
   } else {
     // it belongs to the hero, so it is there whenever the hero is: from the first frame of the opening, and gone
@@ -1263,7 +1239,6 @@ function domUpdate(from, to, front) {
     setOn(D.creative, idleIdx && at(1) && !loaded)
     setOn(D.system, idleIdx && at(2) && !loaded)
     setOn(D.work, idleIdx && at(3) && !loaded)
-    setOn(D.rest, idleIdx && at(5) && A.restOpen > 0.72 && !HOST.contact)
     setOn(D.world, A.mode === 'world' || A.mode === 'exit')
   }
   if (D.lead.hidden !== A.aboutOpen) D.lead.hidden = A.aboutOpen
@@ -1486,7 +1461,6 @@ function canonical() {
       A.about.falloff = g.falloff; A.about.power = 2; A.about.lip = 5; A.about.lipW = 7
     }
   }
-  A.restOpen = A.base === 5 && !A.aboutOpen && !HOST.contact ? 1 : 0
   A.introReg = 0; A.nameAmp = 0
 }
 let last = performance.now()
@@ -1539,7 +1513,7 @@ function frame(now) {
   // there quietly instead of pushing the route again.
   if (A.labArmed && A.mode === 'index' && A.base === 4 && Math.abs(A.p - 4) < 0.02 && Math.abs(A.pT - 4) < 0.02 && !A.busy && !A.aboutOpen && !ptr.down && owns()) openLab()
   // …and travel that settles on Contact hands over to the finale, which then plays from its first frame
-  if (HOST.contact && A.labArmed && A.mode === 'index' && A.base === 5 && Math.abs(A.p - 5) < 0.02 && Math.abs(A.pT - 5) < 0.02 && !A.busy && !A.aboutOpen && !ptr.down && owns()) openContact('start')
+  if (A.labArmed && A.mode === 'index' && A.base === 5 && Math.abs(A.p - 5) < 0.02 && Math.abs(A.pT - 5) < 0.02 && !A.busy && !A.aboutOpen && !ptr.down && owns()) openContact('start')
   if (A.mode === 'world' && !A.busy) Object.assign(A.world, worldGeom(A.wp))
   const lf = A.mode === 'world' ? lastFrame() : 0
   if (A.mode === 'world' && A.wp > lf - 0.1 && !A.nextArmed) {
@@ -1597,7 +1571,6 @@ function frame(now) {
   const faces = dom.id === 'creative' || dom.id === 'system'
   surface.beneathStart = staticStart; surface.beneathCount = faces ? staticCount : 0
   surface.devId = A.press && A.press.st.workIndex != null ? A.press.st.workIndex : (A.press && A.press.st.layout?.next != null ? A.press.st.layout.next : -1)
-  if (IDX[5].layout.wedge) IDX[5].features[0].h = IDX[5].layout.wedge.h * A.restOpen
 
   // how much of the visit's imprint each place lets show; at rest everything else is straight, so it shows most
   const stop = Math.round(A.p)

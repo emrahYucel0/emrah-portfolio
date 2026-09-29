@@ -40,10 +40,19 @@ const LITERAL = /\b(undefined|null|NaN|\[object Object\])\b/
   }))
   const click = (sel) => p.evaluate((s) => document.querySelector(s)?.click(), sel)
 
+  // A DESTINATION IS WAITED FOR, NOT SLEPT THROUGH (as in spine.cjs). The Lab and the Contact finale are routes
+  // without the runtime, so the journey's first return to it after a study was loaded directly — now Lab → Work,
+  // since F2 moved Contact off the runtime — is a COLD boot: 3.3 s unloaded in headless WebKit, 8–9 s under load
+  // (measured 2026-09-29). A fixed 4.2 s sleep failed there under the gate's load. Each step now waits for its
+  // expected state (up to 25 s), never less than the old settle time, and reports how long it took.
   const step = async (label, act, expect) => {
     if (act) await act()
+    const t0 = Date.now()
     await sleep(reduced ? 2600 : 4200)
-    const s = await state()
+    let s = await state()
+    while (expect && !expect(s) && Date.now() - t0 < 25000) { await sleep(300); s = await state() }
+    const took = Date.now() - t0
+    if (took > (reduced ? 2900 : 4500)) console.log(`  (${label}: arrived after ${took} ms)`)
     const hits = (s.text.match(LITERAL) || [])
     const where = s.c2 === 'on' ? `base ${s.base}` : s.bench ? 'bench' : s.study ? 'study' : s.finale ? `finale y ${s.y}` : '—'
     console.log(`  ${label.padEnd(22)} ${s.path.padEnd(18)} ${where}  ${hits.length ? 'LITERALS' : 'clean'}`)

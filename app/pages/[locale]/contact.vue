@@ -208,6 +208,8 @@ onBeforeUnmount(() => {
   text-shadow: 0 0 3px var(--ground), 0 0 3px var(--ground), 0 0 5px var(--ground), 0 0 6px var(--ground);
 }
 .copy[hidden] { display: none; }
+/* no clear corner beside the email's lettering: the control steps back until focus brings the email (and room) */
+.copy.is-tucked:not(:focus-visible) { opacity: 0; pointer-events: none; }
 .copy:hover, .copy:focus-visible { color: var(--ink); text-decoration: underline; }
 .copy:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 /* the bench's foot band (LabBench .foot, verbatim measures) */
@@ -229,7 +231,10 @@ onBeforeUnmount(() => {
 .foot .hint.on { opacity: 1; }
 /* a phone keeps what the home strip keeps there (the status, not the roles); while an instruction is shown it
    takes the band alone */
-@media (max-width: 700px) { .foot .roles { display: none; } }
+/* one line, always; on a phone the home strip's own measure (engine/c2/style.css: 10px, .04em), which fits the
+   status whole down to 360 px and lets it end in an ellipsis below that, as the home strip's does */
+.is-finale .foot { white-space: nowrap; }
+@media (max-width: 700px) { .foot .roles { display: none; } .is-finale .foot { font-size: 10px; letter-spacing: 0.04em; } }
 @media (max-width: 1100px) { .foot.is-hinting .state { opacity: 0; } }
 /* arriving from the bench, whose foot has just faded with its veil, the band's words come in rather than cut */
 .foot.is-arriving span:not(.hint) { animation: foot-in .45s ease both; }

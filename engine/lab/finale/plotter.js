@@ -45,6 +45,7 @@ export const FLOOR_CAP = 14
 
 // p-windows: tear and fuse first, then the phases the run is scheduled into
 export const P_TEAR = 0.03, P_FUSE = 0.08
+const EMAIL_CAP_H = 0.1 // the email's ceiling, as a share of the sheet's height (wide screens only bind it)
 // no structure phase (user decision): the cells are not drawn, the SHEET parts at their borders
 // (src/weight/parting.js, opening while the pen writes the labels) — the pen writes at once
 const PHASES = [
@@ -122,6 +123,10 @@ export function createPlotter(S, getItems, opts = {}) {
     const availW = r.x + r.w - lerp(16, sx < 1 ? 8 : 16, t) - vx
     const availH = lerp(r.h * 0.44, (r.h - (12 + LBL_CAP + 10) - 14) * 0.6, t)
     let cap = Math.max(2, Math.min((availW / (f.advU * sx)) * CAP_U, availH))
+    // the email is the one line that spans the sheet, so its size follows the WIDTH; on a sheet wider than about
+    // 2.2 : 1 (21:9) that made it 13 % of the height against 9.5 % on 16:9. It stops at a tenth of the height —
+    // which never binds at 16:9 or narrower (measured: responsive round, docs/contact-finale/responsive)
+    if (f.id === 'email' && !V.P) cap = Math.min(cap, V.H * EMAIL_CAP_H)
     const labelled = !hideLbl.has(f.id)
     const lblBottom = lbl.y + 3 // (the label's baseline + its stroke)
     // the narrow sheet's crescendo: a word whose one-line cap cannot carry rows WRAPS (the

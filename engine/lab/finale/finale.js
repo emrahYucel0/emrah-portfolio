@@ -28,12 +28,19 @@ const ATT_STAGES = 1.2
 const STATES = 4 // resting · parted+labels · email written · settled (reduced snaps here)
 const ORDER = ['email', 'phone', 'github', 'linkedin', 'location']
 
-// a touch device: on its narrow sheet the SCROLL carries attention and a tap only ever acts.
-// Asked FRESH on every resize (a browser's device emulation toggles it without a reload) and from
-// every signal a touch screen gives — not only `(hover: none)`
+// WHO CARRIES ATTENTION is decided by the POINTER, not by the sheet's shape (pre-F4 responsive round; the
+// prototype keyed it to the narrow portrait sheet, which left a touch tablet held landscape with no way to attend
+// at all: no hover, and a tap acts). A device whose pointers are all coarse — a phone, a tablet in the hand, in
+// either orientation — carries attention by SCROLL (the touch sheet: the track runs on into an attention
+// stretch) and a tap only ever acts. Any fine pointer — a mouse, a trackpad, an iPad with its trackpad (it reports
+// `any-pointer: fine` and `hover: hover` while the trackpad is connected) — carries it by the CURSOR. A mouse
+// that turns up mid-visit (a pointermove of type 'mouse') moves the page to the cursor for good.
+// Asked FRESH on every resize (a browser's device emulation toggles these without a reload).
 const mq = (q) => { try { return matchMedia(q).matches } catch { return false } }
 const touchCapable = () => mq('(pointer: coarse)') || mq('(any-pointer: coarse)') || navigator.maxTouchPoints > 0 || 'ontouchstart' in window
-const touchSheet = (S) => S.portrait && touchCapable()
+const fineCapable = () => mq('(any-pointer: fine)') || mq('(hover: hover)')
+let fineSeen = false
+const touchSheet = () => !fineSeen && !fineCapable() && touchCapable()
 
 /** the touch sheet's attention by scroll: q 0…1 walks the five fields; each holds a plateau and
  *  hands over along a smooth ramp (deterministic both ways). Reduced motion: one at a time. */
@@ -222,13 +229,13 @@ export function createFinale(o) {
     else if (ema < 7 && level > 0 && ++calm > 90) { level--; calm = 0 }
   }
 
-  let lastTouch = null
+  let lastTouch = null, lastSoakDrawn = {}
   function frameBody(stepP, dt) {
     const t0 = performance.now()
     // the plot's p; on the touch sheet the track runs on into the attention stretch (q)
     let rawP = stepP, q = 0
     const touch = touchSheet(frame.S)
-    if (touch !== lastTouch) { lastTouch = touch; note('info', `touch sheet (scroll carries attention): ${touch ? 'yes' : 'no'} · portrait ${frame.S.portrait}`) }
+    if (touch !== lastTouch) { lastTouch = touch; note('info', `attention by ${touch ? 'scroll (all pointers coarse)' : 'cursor (a fine pointer)'} · portrait ${frame.S.portrait}`) }
     if (touch) {
       const u = frame.rawProgress() * (STAGES + ATT_STAGES)
       rawP = Math.min(1, u / STAGES)
@@ -263,6 +270,7 @@ export function createFinale(o) {
         soak = null
       }
     }
+    lastSoakDrawn = soakRes.drawn
     const plotMoving = plotter.draw(p, dt, level, soakRes.drawn)
     if (p <= 0) plotter.breathe(breath)
     overlay.setVisible(p >= LIVE_P)
@@ -290,7 +298,10 @@ export function createFinale(o) {
   // the pointer: attention for Weight (the pen is a machine — no plucking here)
   const sig = { signal: off.signal, passive: true }
   addEventListener('pointermove', (e) => {
-    if (e.pointerType === 'touch') return // a finger never gives attention (the scroll does)
+    if (e.pointerType === 'touch' || e.pointerType === 'pen') return // a finger never gives attention (the scroll does)
+    // a real cursor on a device that looked touch-only: the cursor carries attention from now on (the track loses
+    // its attention stretch, so the frame is rebuilt)
+    if (e.pointerType === 'mouse' && !fineSeen && touchSheet()) { fineSeen = true; dispatchEvent(new Event('resize')) }
     partition.setPointer({ x: e.clientX, y: e.clientY })
     frame.request()
   }, sig)
@@ -334,7 +345,7 @@ export function createFinale(o) {
   }
 
   // the harnesses' handles (like the runtime's window.__lab)
-  window.__finale = { plotter, partition, frame, touchSheet: () => touchSheet(frame.S), STAGES, ATT_STAGES }
+  window.__finale = { plotter, partition, frame, touchSheet: () => touchSheet(frame.S), STAGES, ATT_STAGES, soakDrawn: () => lastSoakDrawn }
   window.__finaleStarted = true // the ?debug=1 panel reads it, whenever it arrives
   if (window.__dbg) { window.__dbg.started = true; window.__dbg.render() }
 

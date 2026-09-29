@@ -15,6 +15,7 @@
 export function createOverlay(container, statusEl) {
   let els = {}
   let visible = false
+  const cpSize = { w: 0, h: 0 } // the copy control's own size, measured once (its text changes, its box barely)
   const off = new AbortController() // every listener this layer adds goes with destroy()
 
   /** wire the prerendered cells ([data-cell]) and the copy button ([data-copy]) */
@@ -49,9 +50,9 @@ export function createOverlay(container, statusEl) {
           try {
             await navigator.clipboard.writeText(item.text)
             statusEl.textContent = strings.finale.copied
-            copy.textContent = strings.finale.copied
+            copy.textContent = strings.finale.copied; cpSize.w = cpSize.h = 0
             onAttention('copied', item.id)
-            setTimeout(() => { copy.textContent = strings.finale.copy }, 2000)
+            setTimeout(() => { copy.textContent = strings.finale.copy; cpSize.w = cpSize.h = 0 }, 2000)
           } catch {
             statusEl.textContent = item.text // the address itself is the fallback feedback
           }
@@ -90,9 +91,20 @@ export function createOverlay(container, statusEl) {
         else if (!fallback[id] && v.textContent) v.textContent = ''
       }
     }
-    const er = rects.email
-    if (els.__copy && er) {
-      els.__copy.style.transform = `translate3d(${er.x + er.w - 90}px, ${er.y + 4}px, 0)`
+    // THE COPY CONTROL never sits on the email's lettering (responsive round: a shrunken email cell, while another
+    // field is attended, ran its letters under the fixed top-right corner at 8 of 15 sizes). It takes the first
+    // corner of the email cell clear of the lettering — top right, then bottom right; with neither free it steps
+    // back (no pointer, not shown) but stays in the tab order: focusing it attends the email, which then has room.
+    const er = rects.email, cp = els.__copy
+    if (cp && er) {
+      const cw = cpSize.w || (cpSize.w = cp.offsetWidth || 90), ch = cpSize.h || (cpSize.h = cp.offsetHeight || 26)
+      const b = boxes.email
+      const hits = (x, y) => b && x < b.x1 && b.x0 < x + cw && y < b.y1 && b.y0 < y + ch
+      const x = er.x + er.w - cw - 6
+      const spots = [[x, er.y + 4], [x, er.y + er.h - ch - 4]]
+      const spot = spots.find(([sx, sy]) => sy >= er.y && sy + ch <= er.y + er.h && !hits(sx, sy))
+      if (spot) cp.style.transform = `translate3d(${spot[0]}px, ${spot[1]}px, 0)`
+      cp.classList.toggle('is-tucked', !spot)
     }
   }
 

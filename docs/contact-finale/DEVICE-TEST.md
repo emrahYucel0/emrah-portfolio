@@ -51,7 +51,7 @@ Panele dokununca katlanır. Ekran görüntüsünü göndermen yeter, Web Inspect
 2. Ekranın ortasında **bir kez yukarı kaydır** (parmak yukarı gider, yani "sonraki").
 3. **Geç:**
    - Bench kendini çıplak satır alanına temizler: kayıtlar, alan, cetvel ve not ~0,3 sn'de söner.
-   - Aynı satırlar üzerinde İletişim sayfası açılır. Şeritte İLETİŞİM koyulaşır, altta `LAB · KAYITLI` durur.
+   - Aynı satırlar üzerinde İletişim sayfası açılır. Şeritte İLETİŞİM koyulaşır, altta solda `LAB`, sağda `KAYITLI` yazar.
    - Arada beyaz an, boş kare ya da titreme yoktur; satırlar yerinden oynamaz.
    - Parmağını kaldırdığında sayfa **kaymamıştır**, çizim en baştan (p = 0) başlar.
 4. **Kal:**

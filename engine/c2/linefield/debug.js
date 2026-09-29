@@ -56,7 +56,8 @@ export async function mountLinefield() {
     { name: 'C', n: 8 },
   ]
   const qs = new URLSearchParams(location.search)
-  let vi = Math.max(0, VARIANTS.findIndex((v) => v.name === (qs.get('lfv') || 'B').toUpperCase()))
+  // C is the tentative default, pending the review on the device; ?lfv=A|B still picks the others
+  let vi = Math.max(0, VARIANTS.findIndex((v) => v.name === (qs.get('lfv') || 'C').toUpperCase()))
   const broke = qs.get('lfbreak')
   let patch = CORRIDOR_PATCH
   if (broke === 'dense') {

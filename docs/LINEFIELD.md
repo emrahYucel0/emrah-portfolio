@@ -83,3 +83,75 @@ perspective as a fault.
 **What is still needed** is a temporal measure — high-frequency energy at matched progress between consecutive
 played frames — rather than a spatial one. Until it exists, the claim that the corridor does not shimmer rests
 on the frames and on the Jacobian being analytic, and is stated as such.
+
+---
+
+# PHASE B, REVISION 1
+
+## What was wrong, and what it actually was
+
+**The passage filled the screen with rust.** The collapse was left to the rows: magnify the field far enough
+and every row lands in one band, and the shader's crowding rule turns that band solid. What it turned solid was
+the *whole screen* — every pixel found a row, coverage went to one everywhere, and the signature moment played
+as seconds of full-frame orange. Two separate faults: the rust was mixed into the state's ink (so it tinted
+every row on screen, not one line), and the line itself was a fused mass, which cannot be made thin.
+
+Now the rows carry the collapse while they can still be told apart and hand over to a line this feature
+**draws** — one or two pixels on the ground colour, and the only thing that takes the accent.
+
+**The corridor had no depth because the rows were faded, and then because they would not thin.** Three causes,
+found in this order:
+
+1. A contrast fade wherever screen-space row spacing fell below a couple of pixels. It removed the moiré and
+   the corridor with it. Gone: the shader's own coverage answer is the right one and the fade was the only
+   thing preventing it.
+2. **C2 gives every row the same width in screen pixels wherever it is.** Correct for a field that is mapped
+   vertically — the rows move, they do not recede. In a corridor the spacing shrinks with distance and the
+   width does not, so the proportion of ink climbs toward one and the far half fills in solid.
+   `VARIANT_HW` divides the width by the map's own gradient, which keeps the ink-to-ground ratio constant.
+3. **The crowd-fusing put the width straight back.** That rule exists so rows pressed closer than the eye can
+   part them are seen as what they add up to — right for a gather, wrong for a corridor. `VARIANT_FUSE` turns
+   it off for this variant only.
+
+Both are `#define`s with defaults in the base shader, so nothing changes for any other state.
+
+## Measured
+
+| | 1440×900 | 390×844 |
+|---|---|---|
+| frame time, mean over a full sweep | 0.55 ms | 0.19 ms |
+| worst single frame | 2.60 ms | 0.70 ms |
+| rows per capital | 24.2 | 17.8 |
+| wheel notches end to end | **20** | — |
+| one word's journey | **4 notches** | — |
+| touch distance end to end | — | **1266 px, 1.50 screen heights** |
+
+### The flag-off gate, against `pre-linefield`
+
+| | |
+|---|---|
+| reduced motion, every stop | **pixel-identical, 0** |
+| normal motion, worst | 15.24 — inside the documented same-build weather band; **0 state differences** |
+| retired Lab | **0 frames**, all four journeys |
+
+`variant()` and its uniform helpers are now behind `__LINEFIELD__` as well, so with the flag off `surface.js`
+installs none of them.
+
+### The shimmer measure is built and is NOT yet trustworthy
+
+`tools/diag/lfshimmer.cjs` asks the right question — it steps the scene by a sixth of a per cent and compares
+how much the converging third of the frame moves against how much the open third moves, which is a temporal
+question and not a spatial one. On the real build the worst ratio is **7.19**.
+
+**Its calibration failed.** The deliberately broken builds read 6.76 (`--break fade`) and 7.19
+(`--break jacobian`) — the second identical to the real build to three figures, which means that break is not
+being applied at all rather than that the measure cannot tell them apart. Until a broken build reads clearly
+higher, **no shimmer claim rests on this number** and none is made here.
+
+## Still open after this revision
+
+- **The vanishing point is not sharp.** The field is dark and the rays reach far in, but they resolve into a
+  soft wash rather than the reference's crisp wedge. The lever is the corridor's compression ratio — the far
+  edge and the near opening — not the shading.
+- **Moiré arcs around the opening onto cream are reduced, not gone**, and the faint colour fringes have not
+  been isolated to a cause.

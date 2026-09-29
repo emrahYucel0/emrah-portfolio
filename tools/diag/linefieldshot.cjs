@@ -63,6 +63,22 @@ async function open(b, w, h, extra = {}) {
   }
 
   /*
+   * EVERY TWO PER CENT THROUGH THE PASSAGE, which is the part the review is about: the collapse, the one line,
+   * and the opening onto cream.
+   */
+  for (const [w, h, tag] of [[1440, 900, 'desktop-1440x900'], [390, 844, 'portrait-390x844']]) {
+    const { ctx, p } = await open(b, w, h)
+    fs.mkdirSync(`${OUT}/sweep`, { recursive: true })
+    for (let v = 36; v <= 60; v += 2) {
+      await p.evaluate((x) => window.__lf.setProgress(x), v / 100)
+      await sleep(120)
+      fs.writeFileSync(`${OUT}/sweep/${tag}-${v}.png`, await p.screenshot())
+    }
+    console.log(`  ${tag}: 36%..60% every 2%`)
+    await ctx.close()
+  }
+
+  /*
    * IN MOTION. Frames captured while the scene is playing, a third of a second apart, through the part of the
    * sequence where the rows converge hardest — which is where shimmer would live if the Jacobian were wrong.
    */

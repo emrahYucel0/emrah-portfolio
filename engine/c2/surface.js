@@ -79,6 +79,26 @@ float hash(float n) { return fract(sin(n * 12.9898 + 4.1414) * 43758.5453); }
 // VARIANT_PARS — a variant program inserts its own uniforms and helpers here; the base program has none.
 //VARIANT_PARS
 
+/*
+ * HOW WIDE A ROW IS ON SCREEN. The base answer is: the width it was given, in screen pixels, wherever it is.
+ * That is right for a field that is mapped vertically, which is every state on this site — the rows move, they
+ * do not recede. A variant that maps a field in PERSPECTIVE needs the other answer, because a row seen further
+ * away is thinner, and one that is not gets wider relative to its neighbours until the field fills in solid.
+ */
+#ifndef VARIANT_HW
+#define VARIANT_HW(h, g) (h)
+#endif
+
+/*
+ * AND WHETHER CROWDED ROWS CLOSE UP INTO A MASS. On this site they must: rows pressed closer than the eye can
+ * part them are seen as what they add up to, never as interference, and that is what a gather is FOR. A
+ * perspective variant needs the opposite — rows that recede must stay apart and get thinner, or the far half
+ * of a corridor fills in solid and the vanishing point disappears inside it.
+ */
+#ifndef VARIANT_FUSE
+#define VARIANT_FUSE 1.0
+#endif
+
 float rows(float x, float m, vec2 gm, sampler2D C, sampler2D D, vec4 R, vec4 K, vec4 G, vec4 H, vec4 M, vec4 J,
            float dev, float mem, float disturb, out float order) {
   float s = R.x, f = R.y, wt = R.z, th = R.w;
@@ -124,6 +144,7 @@ float rows(float x, float m, vec2 gm, sampler2D C, sampler2D D, vec4 R, vec4 K, 
     float hw = th * (0.5 + tone * 1.15 * wgain);
     hw = mix(hw, s * 0.36, solid);
     hw = max(hw + mem * M.x, 0.0) * (1.0 - vd);
+    hw = VARIANT_HW(hw, glen);
     // static saturation tapers row by row along its ramp: a clean edge, not a saw
     float rfs = smoothstep(0.15, 0.95, TS.a + 0.04 * sin(r * 0.73));
     // dynamic saturation starts where information is densest: type first, then tone, then bare rows
@@ -133,7 +154,7 @@ float rows(float x, float m, vec2 gm, sampler2D C, sampler2D D, vec4 R, vec4 K, 
     hw = mix(hw, s * 0.8, rf * rf);
     // saturation by crowding: rows pressed closer than the eye can part fuse into one mass (never into interference)
     float spr = s / glen;
-    hw = mix(hw, max(hw, 0.62 * spr), smoothstep(2.1, 1.3, spr * uDpr) * step(0.001, hw));
+    hw = mix(hw, max(hw, 0.62 * spr), smoothstep(2.1, 1.3, spr * uDpr) * step(0.001, hw) * VARIANT_FUSE);
     float aa = 0.75 / uDpr;
     float a = smoothstep(hw + aa, hw - aa, dist) * clamp(hw * 4.0, 0.0, 1.0);
     if (a > ink) ink = a;
@@ -323,6 +344,12 @@ void main() {
   col = mix(col, uPenCol, uPen.z * 0.5 * (1.0 - smoothstep(0.5, 1.3, abs(pd - 11.0))));
 
   // where the ground has gone, only the rows that are still there remain, over whatever is underneath
+  /*
+   * VARIANT_COMPOSITE — the last word. A variant that has to draw something the row machinery cannot express
+   * gets it here, with the shaded field, its colour and its coverage all in scope.
+   */
+  //VARIANT_COMPOSITE
+
   float loose = inkAmt * inkVis * (1.0 - ground);
   float al = ground + loose;
   outColor = vec4(col * ground + inkCol * loose + bgc * (1.0 - al) * uFill, al + (1.0 - al) * uFill);
@@ -363,6 +390,14 @@ export function createSurface(canvas) {
    * program's is.
    */
   const variants = new Map()
+  /*
+   * AND THE MECHANISM ITSELF IS BEHIND THE FLAG.
+   *
+   * __LINEFIELD__ is replaced at transform time. With it false these methods are never installed, the Map is
+   * never touched, and what is left of this file behaves exactly as it did before the feature existed — which
+   * is the thing the flag-off comparison against `pre-linefield` actually asserts.
+   */
+  const VARIANTS_ON = typeof __LINEFIELD__ !== 'undefined' && __LINEFIELD__
   const ready = new Promise((resolve, reject) => {
     const check = () => {
       if (par && ![prog, cprog].every((p) => gl.getProgramParameter(p, par.COMPLETION_STATUS_KHR))) { requestAnimationFrame(check); return }
@@ -461,8 +496,11 @@ export function createSurface(canvas) {
      * the caller decides when to pay for it; `use(null)` returns to the base program.
      */
     variant(name, patch) {
-      if (variants.has(name)) return
-      const src = FRAG.replace('//VARIANT_PARS', patch.pars || '').replace('//VARIANT_WARP', patch.warp || '')
+      if (!VARIANTS_ON || variants.has(name)) return
+      const src = FRAG
+        .replace('//VARIANT_PARS', patch.pars || '')
+        .replace('//VARIANT_WARP', patch.warp || '')
+        .replace('//VARIANT_COMPOSITE', patch.composite || '')
       const p2 = link(VERT, src)
       locs.set(p2, {})
       variants.set(name, {
@@ -479,6 +517,7 @@ export function createSurface(canvas) {
       return variants.get(name).ready
     },
     use(name) {
+      if (!VARIANTS_ON) return
       const v = name ? variants.get(name) : null
       active = v ? v.prog : prog
     },
@@ -487,6 +526,7 @@ export function createSurface(canvas) {
     mat3(name, m) { const l = L(name); if (l) gl.uniformMatrix3fv(l, false, m) },
     float(name, v) { const l = L(name); if (l) gl.uniform1f(l, v) },
     vec4(name, a2, b2, c2, d2) { const l = L(name); if (l) gl.uniform4f(l, a2, b2, c2, d2) },
+    vec3(name, v) { const l = L(name); if (l) gl.uniform3fv(l, v) },
     time: 0, shiver: 0, strip: 0, devId: -1, overlay: 0, beneathStart: 0, beneathCount: 0, fill: 1,
     pen: [-99, -99, 0], penCol: [0, 0, 0], onBeforeDraw: null,
     inks: new Float32Array(36), visited: new Float32Array(12),
@@ -580,7 +620,7 @@ export function createSurface(canvas) {
       // a variant sets its own uniforms here: the program is bound and every base uniform is in place, and it
       // is still one draw. Setting them around render() instead meant rendering twice, which is both wasteful
       // and a lie to anything measuring how long a frame takes.
-      api.onBeforeDraw?.()
+      if (VARIANTS_ON) api.onBeforeDraw?.()
       gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
     },

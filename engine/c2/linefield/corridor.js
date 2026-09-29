@@ -86,9 +86,16 @@ export function corridorQuad(W, H, d, side) {
   const vy = H * 0.5
   // the far edge never collapses to a true point: a degenerate quad has no inverse, and a corridor whose far
   // end is a mathematical point has a pixel there that belongs to every row at once
-  const eps = H * 0.035
-  const openX = W * 0.3 * d
-  const openY = H * 0.42 * d
+  /*
+   * How tightly the far edge closes decides how much of the frame is packed past the pixel grid. At 0.035 the
+   * whole field height was crushed into sixty pixels, the rows there were closer together than the screen
+   * could hold over nearly half the frame, and what should have been a fan of rays converging on a point came
+   * out as a white mass with a point somewhere inside it. The reference keeps its rays apart until much closer
+   * in; this is the number that does that.
+   */
+  const eps = H * 0.22
+  const openX = W * 0.22 * d
+  const openY = H * 0.24 * d
   const L = (a, b) => lerp(a, b, d)
   /*
    * The corners stay in the unit square's order — (0,0) (1,0) (1,1) (0,1) — for BOTH sides. Side 1 is built
@@ -114,7 +121,7 @@ export function corridorQuad(W, H, d, side) {
  * The matrix the shader wants: SCREEN pixels -> FLAT FIELD pixels.
  *
  * Built as (unit -> flat) composed with the inverse of (unit -> screen quad), so the flat field's own pixel
- * coordinates come back out and `rows()` can go on working in the units it has always worked in.
+ * coordinates come back out and rows() can go on working in the units it has always worked in.
  */
 export function corridorMatrix(W, H, d, side) {
   const toScreen = unitToQuad(corridorQuad(W, H, d, side))
@@ -140,11 +147,30 @@ export function corridorMatrix(W, H, d, side) {
  */
 export const CORRIDOR_PATCH = {
   pars: `
+/*
+ * A ROW SEEN FURTHER DOWN THE CORRIDOR IS THINNER.
+ *
+ * The base shader gives every row the same width in screen pixels wherever it is. In a flat field that is
+ * correct. In a corridor it is not, and the consequence is not subtle: the spacing shrinks with distance while
+ * the width does not, so the proportion of the field covered by ink climbs toward one and the far half of the
+ * corridor fills in as a solid white mass with a vanishing point buried somewhere inside it.
+ *
+ * Dividing the width by the map's own gradient keeps the RATIO of ink to ground constant, which is what a real
+ * perspective does and what the reference shows: a dark field, thin rays, all the way in. The floor stops a row
+ * disappearing entirely before it reaches the point, and it is at the floor — only in the last pixels — that
+ * the rays finally meet and the point goes solid.
+ */
+#define VARIANT_HW(h, g) ((g) <= 1.0 ? (h) : max((h) / (g), 0.30))
+// and crowded rows are NOT closed up into a mass here; see the note at VARIANT_FUSE in surface.js
+#define VARIANT_FUSE 0.0
+
 uniform mat3 uLFinv;      // screen -> flat field, in pixels
 uniform vec4 uLFfade;     // spacing where the rows go out, spacing where they are full, depth fade, edge softness
 uniform vec4 uLFflow;     // how far each of the four words has flowed, in flat pixels
 uniform vec4 uLFband;     // the four words' centres up the flat field, in flat pixels
 uniform vec4 uLFmode;     // x: on, y: depth, z: how spread the field is (0 = every row on one line), w: horizon
+uniform vec4 uLFline;     // the drawn passage: screen y, half height, how much of it there is, unused
+uniform vec3 uLFlineCol;  // its colour — the ground's ink, taking the rust only at the crossing
 
 /*
  * WHICH WORD A ROW BELONGS TO — decided, not blended.
@@ -194,7 +220,9 @@ float lfFlowAt(float v) {
      * Nothing here draws that line. The floor under the scale is what stops it thinning to nothing: at a true
      * zero the whole field is one row and the band it makes has no height at all.
      */
-    float sp = max(uLFmode.z, 0.02);
+    // the rows carry the collapse while they can still be told apart, and no further: past this the band
+    // would only go solid, and the drawn line takes over instead
+    float sp = max(uLFmode.z, 0.16);
     float vflat = uLFmode.w + (fpt.y - uLFmode.w) / sp;
     dv_dx /= sp;
     dv_dy /= sp;
@@ -208,19 +236,56 @@ float lfFlowAt(float v) {
     // gradient left over from a map that no longer applies would mis-size every row in the corridor
     gm = vec2(dv_dx, dv_dy);
 
-    // AND THE ROWS GO OUT BEFORE THEY CAN BEAT.
-    // The screen-space distance between two rows is the field's spacing over the length of the gradient. Where
-    // that falls below a pixel or two, no amount of anti-aliasing can keep neighbouring rows apart and what is
-    // left is interference. C2 already FUSES crowded rows into one mass, which is right for a gather and wrong
-    // for a corridor — a corridor should thin out and vanish, not turn into a bar. So contrast is taken out on
-    // the same measure, just before fusing would take over.
+    /*
+     * THE ROWS THIN, THEY DO NOT FADE.
+     *
+     * The first version took contrast out wherever the screen-space row spacing fell below a couple of pixels.
+     * It removed the moire and it removed the corridor with it: the rays dissolved into a haze long before they
+     * met, so the vanishing point — the one thing that makes a corridor read as depth — never appeared.
+     *
+     * The shader already has the right answer and it is a COVERAGE answer, not a contrast one. Where rows are
+     * packed tighter than the grid can hold them apart, rows() stops trying to resolve individual rows and
+     * returns what they add up to over the pixel. Carried all the way in, that tends to 1 — which is a bright
+     * sharp point, exactly what the reference shows. Nothing needs to be faded for that to happen; the fade was
+     * the only thing preventing it.
+     *
+     * What is left here is the field's own edge, and a whisker at the point itself where even the coverage
+     * answer is asking about more rows than a float can separate.
+     */
+    fade *= smoothstep(0.0, uLFfade.w, fpt.x) * smoothstep(0.0, uLFfade.w, uRes.x - fpt.x);
     float spr = uR1.x / max(length(vec2(dv_dx, dv_dy)), 1e-4);
     fade *= smoothstep(uLFfade.x, uLFfade.y, spr * uDpr);
-    // and the field ends where it ends: past its own edges there is nothing to sample but a clamped edge texel
-    fade *= smoothstep(0.0, uLFfade.w, fpt.x) * smoothstep(0.0, uLFfade.w, uRes.x - fpt.x);
-    fade *= 1.0 - uLFfade.z * uLFmode.y;
-    // while the field is closing, the crowding is the POINT and must not be faded away as if it were moiré
-    fade = mix(1.0, fade, smoothstep(0.0, 0.35, uLFmode.z));
+    /*
+     * AND THE FIELD LEAVES AS THE LINE ARRIVES.
+     *
+     * Below the point where the rows can still be told apart there is nothing left for them to say: what is
+     * drawn there is the sampling grid arguing with a field magnified past it. The rows go out over the last
+     * of the collapse and the drawn line takes over, so the two are never both on screen at full strength.
+     */
+    fade *= smoothstep(0.0, 0.17, uLFmode.z);
+  }
+`,
+  /*
+   * THE PASSAGE IS DRAWN, NOT FUSED.
+   *
+   * The collapse used to be left to the rows: magnify the field far enough and every row lands in one band,
+   * and the shader's crowding rule turns that band solid. What it turned solid was the whole screen — every
+   * pixel found a row, coverage went to one everywhere, and the signature moment played as two seconds of
+   * full-frame rust.
+   *
+   * So the last of the collapse is a line this file draws. The rows carry the movement while they can still be
+   * told apart, and hand over to an explicit line, one or two pixels on the ground colour, which is the only
+   * thing that takes the rust. A fused mass cannot be made thin; a drawn line is thin by construction.
+   */
+  composite: `
+  if (uLFmode.x > 0.5 && uLFline.z > 0.001) {
+    float half_ = max(0.5, uLFline.y);
+    float d0 = abs(p.y - uLFline.x);
+    float ln = (1.0 - smoothstep(half_ - 0.5, half_ + 0.5, d0)) * uLFline.z;
+    col = mix(col, uLFlineCol, ln);
+    inkCol = mix(inkCol, uLFlineCol, ln);
+    inkAmt = max(inkAmt, ln);
+    ground = max(ground, ln);
   }
 `,
 }

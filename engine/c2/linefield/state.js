@@ -78,10 +78,32 @@ export function linefieldState(V, side, words, label) {
   const x = side === 0 ? W * 0.06 : W * 0.94
   const bands = words.map((_, i) => L.y0 + i * L.lh + L.size * 0.8 - L.cap * 0.5)
 
+  /*
+   * ROUND LETTERS OVERSHOOT, AND A ROW THAT ONLY GRAZES ONE LEAVES AN ARC.
+   *
+   * S, C, U, G and O are drawn slightly above the cap line and slightly below the baseline, the way every type
+   * designer draws them — otherwise they look smaller than the flat-topped letters beside them. A row passing
+   * through that overshoot catches a sliver of the curve and nothing else, and what it draws is a short arc
+   * floating above or below the word.
+   *
+   * The reference skips those rows outright. Here the same thing is done to the TYPE rather than to the rows:
+   * each line is clipped to its own cap-to-baseline box, pulled in by a third of a row at each end. The
+   * letters keep their shape where it matters and lose only the overshoot, which was never carried by a whole
+   * row anyway.
+   */
+  const inset = spacing * 0.34
   const img = build(V, H, ({ solid }) => {
     solid.font = `900 ${L.size}px ${FAMILY}`
     solid.textAlign = side === 0 ? 'left' : 'right'
-    words.forEach((w, i) => solid.fillText(w, x, L.y0 + i * L.lh + L.size * 0.8))
+    words.forEach((w, i) => {
+      const baseY = L.y0 + i * L.lh + L.size * 0.8
+      solid.save()
+      solid.beginPath()
+      solid.rect(0, baseY - L.cap + inset, W, L.cap - inset * 2)
+      solid.clip()
+      solid.fillText(w, x, baseY)
+      solid.restore()
+    })
     solid.textAlign = 'left'
   })
 

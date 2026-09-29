@@ -31,9 +31,41 @@ export async function mountLinefield() {
   document.body.appendChild(host)
   document.documentElement.dataset.c2 = 'off'
 
+  /*
+   * DELIBERATELY BROKEN BUILDS, for calibrating the shimmer measure.
+   *
+   * A measurement that has only ever been run against the build it is meant to approve has not been shown to
+   * measure anything. `?lfbreak=` swaps in a corridor that is wrong in a known way — the row width and fusing
+   * left as the flat field's (which fills the far half solid), or the exact Jacobian replaced by a coarse
+   * finite difference (which is what an estimated gradient does to converging rows). The measure must read
+   * clearly higher on these than on the real one.
+   */
+  const broke = new URLSearchParams(location.search).get('lfbreak')
+  let patch = CORRIDOR_PATCH
+  if (broke === 'fade') {
+    patch = {
+      ...CORRIDOR_PATCH,
+      pars: CORRIDOR_PATCH.pars
+        .replace('#define VARIANT_HW(h, g) ((g) <= 1.0 ? (h) : max((h) / (g), 0.30))', '#define VARIANT_HW(h, g) (h)')
+        .replace('#define VARIANT_FUSE 0.0', '#define VARIANT_FUSE 1.0'),
+    }
+  } else if (broke === 'jacobian') {
+    patch = {
+      ...CORRIDOR_PATCH,
+      warp: CORRIDOR_PATCH.warp
+        .replace(
+          'float dv_dx = (uLFinv[0][1] - uLFinv[0][2] * fpt.y) * iw;',
+          `vec3 qx = uLFinv * vec3(p.x + 1.0, m, 1.0);
+           vec3 qy = uLFinv * vec3(p.x, m + 1.0, 1.0);
+           float dv_dx = qx.y / qx.z - fpt.y;`,
+        )
+        .replace('float dv_dy = (uLFinv[1][1] - uLFinv[1][2] * fpt.y) * iw;', 'float dv_dy = qy.y / qy.z - fpt.y;'),
+    }
+  }
+
   const surface = createSurface(canvas)
   await surface.ready
-  await surface.variant('corridor', CORRIDOR_PATCH)
+  await surface.variant('corridor', patch)
   surface.use('corridor')
 
   const faceOk = await faceReady()
@@ -76,8 +108,15 @@ export async function mountLinefield() {
     const q = sequence(p, V.W)
     const st = q.back ? back : front
     const base = q.back ? inkBack : inkFront
-    // the rust lives only at the crossing: the one line takes the accent and gives it straight back
-    for (let i = 0; i < 3; i++) st.ink[i] = base[i] + (RUST[i] - base[i]) * q.flash
+    /*
+     * THE FIELD KEEPS ITS OWN COLOUR. The rust used to be mixed into the state's ink, which tinted every row on
+     * the screen — and at the crossing, where coverage is total, that was a full frame of orange. The accent
+     * belongs to the drawn line and to nothing else.
+     */
+    for (let i = 0; i < 3; i++) st.ink[i] = base[i]
+    // the passage: it arrives as the rows hand over, and it is one or two pixels on the ground
+    const lineAmt = 1 - Math.min(1, q.spread / 0.16)
+    const lineCol = base.map((c, i) => c + (RUST[i] - c) * q.flash)
 
     surface.pair(st, st, 1)
     surface.beneath(st)
@@ -88,10 +127,14 @@ export async function mountLinefield() {
     // set inside the draw, where the variant's program is bound and the base uniforms are already in place
     surface.onBeforeDraw = () => {
       surface.mat3('uLFinv', m)
-      surface.vec4('uLFfade', 1.15, 3.2, 0.3, Math.max(8, V.W * 0.012))
+      // x,y: the whisker at the point itself, in device pixels — NOT a haze across the corridor.
+      // z: a slight depth fade, as the reference has. w: the softness of the field's own edge.
+      surface.vec4('uLFfade', 0.06, 0.34, 0.12, Math.max(8, V.W * 0.012))
       surface.vec4('uLFflow', q.flow[0], q.flow[1], q.flow[2], q.flow[3])
       surface.vec4('uLFband', st.layout.bands[0], st.layout.bands[1], st.layout.bands[2], st.layout.bands[3])
       surface.vec4('uLFmode', 1, q.depth, q.spread, V.H * 0.5)
+      surface.vec4('uLFline', V.H * 0.5, 0.85, lineAmt, 0)
+      surface.vec3('uLFlineCol', lineCol)
     }
     surface.render()
 
@@ -116,21 +159,74 @@ export async function mountLinefield() {
   dock.append(note, scrub, pct)
   host.appendChild(dock)
 
-  const setProgress = (v) => {
-    p = clamp01(v)
+  const show = () => {
     scrub.value = String(Math.round(p * 1000))
     const ms = times.length ? times.reduce((a, b) => a + b, 0) / times.length : 0
     pct.textContent = `${Math.round(p * 100)}% · ${ms.toFixed(1)}ms`
-    draw()
   }
+  const setProgress = (v) => { p = clamp01(v); target = p; show(); draw() }
+
+  /*
+   * ── PACING ──────────────────────────────────────────────────────────────────────────────────────────────
+   *
+   * A wheel notch used to move the scene by a twentieth, so a gesture or two threw the words off the screen and
+   * the one thing worth watching — a word sliding along the corridor, toward the viewer and past — never
+   * happened. Input now moves a TARGET, and what is drawn eases toward it, so every notch is a glide.
+   *
+   * NOTCH is sized so the whole passage takes about eighteen of them: far enough that a single word's journey
+   * is several, short enough that the scene never feels held back. The touch distance is set to about one and a
+   * half screen heights end to end, which is a comfortable two or three swipes on a phone.
+   */
+  const NOTCH = 1 / 18
+  let target = 0
+  let raf = 0
+  const ease = () => {
+    raf = 0
+    const d = target - p
+    if (Math.abs(d) < 2e-4) { p = target; show(); draw(); return }
+    p = clamp01(p + d * 0.14)
+    show()
+    draw()
+    raf = requestAnimationFrame(ease)
+  }
+  const nudge = (dv) => {
+    target = clamp01(target + dv)
+    if (!raf) raf = requestAnimationFrame(ease)
+  }
+
   scrub.addEventListener('input', () => setProgress(Number(scrub.value) / 1000))
-  addEventListener('wheel', (e) => { e.preventDefault(); setProgress(p + Math.max(-160, Math.min(160, e.deltaY)) / 2600) }, { passive: false })
+  addEventListener('wheel', (e) => {
+    if (e.target === scrub) return
+    e.preventDefault()
+    // one notch is one notch, whatever the device reports: a trackpad's flood is not eighteen wheel clicks
+    nudge(Math.sign(e.deltaY) * Math.min(1, Math.abs(e.deltaY) / 100) * NOTCH)
+  }, { passive: false })
   addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); setProgress(p + 0.05) }
-    if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); setProgress(p - 0.05) }
+    if (['ArrowDown', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); nudge(NOTCH) }
+    if (['ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); nudge(-NOTCH) }
     if (e.key === 'Home') setProgress(0)
     if (e.key === 'End') setProgress(1)
   })
+
+  /*
+   * AND A FINGER MOVES IT. On the phone the scene could only be driven by the slider, which is not how anyone
+   * reads a page. A drag of about one and a half screen heights carries the whole passage.
+   */
+  let drag = null
+  const TOUCH_SPAN = () => Math.max(520, V.H * 1.5)
+  host.addEventListener('pointerdown', (e) => {
+    if (e.target === scrub || dock.contains(e.target)) return
+    drag = { y: e.clientY, at: target }
+    host.setPointerCapture?.(e.pointerId)
+  })
+  host.addEventListener('pointermove', (e) => {
+    if (!drag) return
+    target = clamp01(drag.at + (drag.y - e.clientY) / TOUCH_SPAN())
+    if (!raf) raf = requestAnimationFrame(ease)
+  })
+  const endDrag = () => { drag = null }
+  host.addEventListener('pointerup', endDrag)
+  host.addEventListener('pointercancel', endDrag)
   let rt
   addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { measure(); setProgress(p) }, 140) })
 
@@ -140,6 +236,9 @@ export async function mountLinefield() {
    */
   window.__lf = {
     setProgress,
+    notch: NOTCH,
+    touchSpan: () => TOUCH_SPAN(),
+    nudge,
     get progress() { return p },
     faceOk,
     frameMs: () => (times.length ? times.reduce((a, b) => a + b, 0) / times.length : 0),

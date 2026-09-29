@@ -2,6 +2,18 @@
 // Static only: every route is prerendered to real HTML at build time. No server routes, no runtime rendering.
 import { ICONS, PUBLIC_ROUTES, siteUrl } from './shared/site'
 
+/**
+ * LINEFIELD — the one switch (docs/LINEFIELD.md).
+ *
+ * Off, `__LINEFIELD__` is replaced with `false` at transform time. Every Linefield module is behind a dynamic
+ * import inside a branch that then cannot be taken, so the bundler never emits their chunk: the published build
+ * does not contain the corridor's GLSL, its states or its debug entry, and there is nothing to strip out.
+ *
+ *   NUXT_PUBLIC_LINEFIELD=1 npm run generate    the preview artifact
+ *   npm run generate                            the published build
+ */
+const LINEFIELD = process.env.NUXT_PUBLIC_LINEFIELD === '1' || process.env.NUXT_PUBLIC_LINEFIELD === 'true'
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-09-16',
   devtools: { enabled: false },
@@ -35,6 +47,7 @@ export default defineNuxtConfig({
   // lowers the syntax and makes Nuxt drop the import map on its own.
   vite: {
     build: { target: ['safari15', 'ios15'] },
+    define: { __LINEFIELD__: JSON.stringify(LINEFIELD) },
   },
 
   nitro: {

@@ -32,7 +32,9 @@ function channels(tw, th, sx, sy, n) {
   })
 }
 // exact per-axis scale, so the last texel column/row is fully covered (no half-void seam at the edge)
-function build(V, texH, drawC, drawD, mips = false) {
+// exported so a feature's own states are built the same way every state on this site is, rather than by a
+// second copy of this logic that could drift from it
+export function build(V, texH, drawC, drawD, mips = false) {
   const S = V.W < 700 ? 0.75 : 0.6
   const tw = Math.max(2, Math.round(V.W * S)), th = Math.max(2, Math.round(texH * S))
   const sx = tw / V.W, sy = th / texH
@@ -44,7 +46,7 @@ function build(V, texH, drawC, drawD, mips = false) {
   return out
 }
 
-function mk(V, o) {
+export function mk(V, o) {
   const texH = o.texH || V.H
   const st = {
     freq: 0.12, wave: 0, thick: 0.85, amp: 1, fuse: 0, offY: 0, flash: 0, vis: 1, ampK: 1, split: false, fill: 0, lod: 0,

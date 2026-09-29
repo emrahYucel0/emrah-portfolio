@@ -76,6 +76,9 @@ float hash(float n) { return fract(sin(n * 12.9898 + 4.1414) * 43758.5453); }
 // R: spacing, freq, wave, thick   K: fuse, total rows, content height, content offset
 // G: horizontal registration (set0, set1)   J: vertical registration (set0, set1), split, fill
 // H: hold, tone → row weight, set phase, tone amp   M: memory → weight, memory → agitation, flash strength, visibility
+// VARIANT_PARS — a variant program inserts its own uniforms and helpers here; the base program has none.
+//VARIANT_PARS
+
 float rows(float x, float m, vec2 gm, sampler2D C, sampler2D D, vec4 R, vec4 K, vec4 G, vec4 H, vec4 M, vec4 J,
            float dev, float mem, float disturb, out float order) {
   float s = R.x, f = R.y, wt = R.z, th = R.w;
@@ -244,13 +247,32 @@ void main() {
   }
   m += uShiver * rim * sin(p.x * 0.63 + uTime * 71.0) * 2.2;
 
+  /*
+   * VARIANT_WARP — where a variant program may replace (p.x, m) with a warped pair.
+   *
+   * Everything above maps the material coordinate VERTICALLY as a function of (x, m); gm carries that map's
+   * gradient, and every judgement further down — anti-aliasing, the fusing of crowded rows, the level of detail
+   * — is made from it. A variant that warps both axes must therefore hand back a gradient too, or those
+   * judgements are made about a field that is no longer there. fade is what a variant uses to take contrast
+   * out where its own map has pushed the rows closer than the screen can hold them apart.
+   */
+  float fade = 1.0;
+  // the coordinate the CONTENT is sampled at. Without a variant it is the screen's own x, which is what every
+  // state on the site has always been drawn against; a corridor moves it, because in a corridor the material
+  // under a pixel came from somewhere else across the field as well as from somewhere else up it.
+  float cx = p.x;
+  //VARIANT_WARP
+
   float oA, oB, oN;
   float clip = step(uStrip, p.y) * step(p.y, uRes.y - uStrip);
-  float iB = rows(p.x, m, gm, uC1, uD1, uR1, uK1, uG1, uH1, uM1, uJ1, dev, mem, disturb, oB) * clip;
+  float iB = rows(cx, m, gm, uC1, uD1, uR1, uK1, uG1, uH1, uM1, uJ1, dev, mem, disturb, oB) * clip;
   float band = 2.5 / uK1.y;
   float b = uOverlay > 0.5 ? 1.0 : clamp((uFront * (1.0 + band) - oB) / band, 0.0, 1.0);
   float iA = 0.0;
-  if (b < 1.0 || uOverlay > 0.5) iA = rows(p.x, m, gm, uC0, uD0, uR0, uK0, uG0, uH0, uM0, uJ0, dev, mem, disturb, oA) * clip;
+  if (b < 1.0 || uOverlay > 0.5) iA = rows(cx, m, gm, uC0, uD0, uR0, uK0, uG0, uH0, uM0, uJ0, dev, mem, disturb, oA) * clip;
+  // the variant's fade applies to the ROWS, before the paper is coloured by them: applied later it would have
+  // thinned only the rows standing over exposed ground and left the ink on the paper at full strength
+  iA *= fade; iB *= fade;
 
   vec3 inkB = uInk1;
   // ids are exact: fetched, never filtered (a filtered edge between two ids invents a third)
@@ -326,6 +348,21 @@ export function createSurface(canvas) {
   }
   const prog = link(VERT, FRAG)
   const cprog = link(VERT, COMPOSE)
+  /*
+   * VARIANTS — the same shader with one hook filled in.
+   *
+   * A feature that needs the field mapped differently (a corridor, say) supplies the two chunks that fill
+   * VARIANT_PARS and VARIANT_WARP, and gets its own linked program built from the same source as everything else. Two
+   * reasons it is done this way rather than by branching inside the one program:
+   *
+   *   the base program pays nothing — not a uniform, not a branch, not a line of the variant's GLSL;
+   *   and the variant's source arrives from a module that is only imported when its build flag is on, so a
+   *   build with the flag off has no text to strip out and nothing to find.
+   *
+   * Linking is deferred to the first use, off the main thread where the driver allows it, exactly as the base
+   * program's is.
+   */
+  const variants = new Map()
   const ready = new Promise((resolve, reject) => {
     const check = () => {
       if (par && ![prog, cprog].every((p) => gl.getProgramParameter(p, par.COMPLETION_STATUS_KHR))) { requestAnimationFrame(check); return }
@@ -343,8 +380,17 @@ export function createSurface(canvas) {
   gl.enableVertexAttribArray(0)   // aPos is bound to location 0 in both programs
   gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
 
-  const loc = {}
-  const L = (n) => (loc[n] ??= gl.getUniformLocation(prog, n))
+  /*
+   * Uniform locations are per PROGRAM, so the cache is too. Keyed on the base program this was a plain object;
+   * with a variant in play, a location looked up against one program and used against another is a silent
+   * wrong-uniform bug, which is the kind that renders something plausible.
+   */
+  let active = prog
+  const locs = new Map([[prog, {}]])
+  const L = (n) => {
+    const c = locs.get(active)
+    return (c[n] ??= gl.getUniformLocation(active, n))
+  }
 
   const makeTex = (img) => {
     const t = gl.createTexture()
@@ -395,7 +441,7 @@ export function createSurface(canvas) {
     gl.deleteFramebuffer(fbo)
     tmp.forEach((t) => gl.deleteTexture(t))
     if (img.mips) { gl.bindTexture(gl.TEXTURE_2D, dst); gl.generateMipmap(gl.TEXTURE_2D) }
-    gl.useProgram(prog)
+    gl.useProgram(active)
     gl.viewport(0, 0, canvas.width, canvas.height)
     return dst
   }
@@ -410,8 +456,39 @@ export function createSurface(canvas) {
 
   const api = {
     gl, MAXF, ready,
+    /**
+     * Register a variant. `patch` is { pars, warp } — GLSL that fills the two hooks. Linking happens here, so
+     * the caller decides when to pay for it; `use(null)` returns to the base program.
+     */
+    variant(name, patch) {
+      if (variants.has(name)) return
+      const src = FRAG.replace('//VARIANT_PARS', patch.pars || '').replace('//VARIANT_WARP', patch.warp || '')
+      const p2 = link(VERT, src)
+      locs.set(p2, {})
+      variants.set(name, {
+        prog: p2,
+        ready: new Promise((resolve, reject) => {
+          const check = () => {
+            if (par && !gl.getProgramParameter(p2, par.COMPLETION_STATUS_KHR)) { requestAnimationFrame(check); return }
+            if (!gl.getProgramParameter(p2, gl.LINK_STATUS)) { reject(new Error(gl.getProgramInfoLog(p2))); return }
+            resolve()
+          }
+          check()
+        }),
+      })
+      return variants.get(name).ready
+    },
+    use(name) {
+      const v = name ? variants.get(name) : null
+      active = v ? v.prog : prog
+    },
+    usingVariant: () => active !== prog,
+    /** set a mat3 on whichever program is active — variants carry uniforms the base program does not have */
+    mat3(name, m) { const l = L(name); if (l) gl.uniformMatrix3fv(l, false, m) },
+    float(name, v) { const l = L(name); if (l) gl.uniform1f(l, v) },
+    vec4(name, a2, b2, c2, d2) { const l = L(name); if (l) gl.uniform4f(l, a2, b2, c2, d2) },
     time: 0, shiver: 0, strip: 0, devId: -1, overlay: 0, beneathStart: 0, beneathCount: 0, fill: 1,
-    pen: [-99, -99, 0], penCol: [0, 0, 0],
+    pen: [-99, -99, 0], penCol: [0, 0, 0], onBeforeDraw: null,
     inks: new Float32Array(36), visited: new Float32Array(12),
     features: [],
     resize(w, h, dpr) {
@@ -452,6 +529,7 @@ export function createSurface(canvas) {
     render() {
       // build any missing texture first: composing changes texture units and the program, so it must never happen mid-binding
       for (let i = 0; i < 3; i++) { const st = slots[i] || slots[1]; texOf(st.c); texOf(st.d) }
+      gl.useProgram(active)
       gl.uniform2f(L('uRes'), W.w, W.h)
       gl.uniform1f(L('uDpr'), W.dpr)
       gl.uniform1f(L('uTime'), api.time)
@@ -499,6 +577,10 @@ export function createSurface(canvas) {
       gl.uniform3fv(L('uInks[0]'), api.inks)
       gl.uniform1fv(L('uVisited[0]'), api.visited)
       gl.uniform1f(L('uDevId'), api.devId)
+      // a variant sets its own uniforms here: the program is bound and every base uniform is in place, and it
+      // is still one draw. Setting them around render() instead meant rendering twice, which is both wasteful
+      // and a lie to anything measuring how long a frame takes.
+      api.onBeforeDraw?.()
       gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
     },

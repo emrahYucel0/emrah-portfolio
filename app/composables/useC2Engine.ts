@@ -32,6 +32,9 @@ let active = false
  * history entry, where Back and Forward carry it for free, and never in the URL: it is not an address, it is what
  * the visitor just did. It is spent on arrival, so coming back to the entry later shows the visit as it stands.
  */
+/** replaced at transform time by the bundler; see the note in nuxt.config.ts */
+declare const __LINEFIELD__: boolean
+
 export const C2_ARRIVE = 'c2Arrive'
 const takeArrival = (): string | null => {
   if (!import.meta.client) return null
@@ -110,6 +113,19 @@ export function useC2Engine() {
 
   const start = async () => {
     if (!import.meta.client) return
+    /*
+     * LINEFIELD, PHASE B. A debug entry and nothing more: it takes the screen instead of the runtime, so the
+     * index spine, the stops and the gestures are not involved and cannot be affected by it. The navigation is
+     * Phase C's work.
+     *
+     * `__LINEFIELD__` is a build-time constant. With it false this branch is unreachable, the dynamic import is
+     * never emitted, and the published build contains none of the corridor's code.
+     */
+    if (__LINEFIELD__ && new URLSearchParams(location.search).has('linefield')) {
+      const { mountLinefield } = await import('../../engine/c2/linefield/debug.js')
+      await mountLinefield()
+      return
+    }
     createHostDom()
     // the module boots itself when loaded standalone; hosted, the shell decides when
     ;(globalThis as Record<string, unknown>).__c2Hosted = true

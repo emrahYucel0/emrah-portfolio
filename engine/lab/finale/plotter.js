@@ -682,6 +682,21 @@ export function createPlotter(S, getItems, opts = {}) {
     build,
     layout(pt) { liveGeom = { rects: pt.rects, divs: pt.divs } },
     get tear() { return V ? { row: V.kTear, y: V.yTear, birth: clamp(lastP / P_TEAR, 0, 1) } : null },
+    /**
+     * THE WAY IN (arrival at p = 0): the row that is about to tear lifts a little off its place and sags, and
+     * settles again — a breath, not a step of the plot (p is untouched; the first scroll hands over to the tear).
+     * `k` 0…1 is the breath; the surface thins the row it left by the same amount (finale.js).
+     */
+    breathe(k) {
+      if (!V || k <= 0.001) return
+      const ctx = S.ctx
+      const lift = 1.6 * k, sag = 4.2 * k
+      ctx.strokeStyle = INK; ctx.lineWidth = V.rowTh * 1.4; ctx.globalAlpha = 0.6
+      ctx.beginPath()
+      for (let i = 0; i <= 64; i++) { const x = (i / 64) * V.W; const y = V.yTear - lift + Math.sin((Math.PI * i) / 64) * sag
+        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y) }
+      ctx.stroke(); ctx.globalAlpha = 1
+    },
     get view() { return V },
     get budget() { return L },
     get plotInk() { return plotInkTotal },

@@ -51,9 +51,15 @@ Panele dokununca katlanır. Ekran görüntüsünü göndermen yeter, Web Inspect
 2. Ekranın ortasında **bir kez yukarı kaydır** (parmak yukarı gider, yani "sonraki").
 3. **Geç:**
    - Bench kendini çıplak satır alanına temizler: kayıtlar, alan, cetvel ve not ~0,3 sn'de söner.
-   - Aynı satırlar üzerinde İletişim sayfası açılır. Şeritte İLETİŞİM koyulaşır, altta solda `LAB`, sağda `KAYITLI` yazar.
+   - Aynı satırlar üzerinde İletişim sayfası açılır ve şeritte İLETİŞİM koyulaşır.
+   - Alt şeridin iki ucu ana sayfanınkiyle aynıdır. Solda `CREATIVE DEVELOPER · FULL-STACK DEVELOPER` yazar
+     (telefonda gizli, ana sayfadaki gibi), sağda `İSTANBUL · SEÇİLİ FREELANCE PROJELERE AÇIĞIM`. Bu yazılar çizim
+     boyunca değişmez.
    - Arada beyaz an, boş kare ya da titreme yoktur; satırlar yerinden oynamaz.
    - Parmağını kaldırdığında sayfa **kaymamıştır**, çizim en baştan (p = 0) başlar.
+   - Yarım saniye kadar sonra alt şeridin ortasında `AŞAĞI KAYDIR` belirir. Kopacak satır (alta yakın olan) yerinden
+     hafifçe kalkıp sarkarak nefes alır; kaydırmadığın sürece bu döngü sürer.
+   - İlk kaydırmada yazı söner ve satır normal kopmaya geçer. Tepeye geri dönünce ikisi de geri gelmez.
 4. **Kal:**
    - beyaz ya da düz liste hâlinde bir kare görünmesi,
    - satırların zıplaması,
@@ -85,7 +91,7 @@ Panele dokununca katlanır. Ekran görüntüsünü göndermen yeter, Web Inspect
 
 ## 4. Menüden ve bağlantıdan gelince p = 1
 
-Her birinde **Geç:** final çizimi bitmiş, e-posta emmiş hâlde açılır. Altta `MÜREKKEP … MM` görünür.
+Her birinde **Geç:** final çizimi bitmiş, e-posta emmiş hâlde açılır.
 
 1. `…/tr`'de şeritteki **İLETİŞİM**.
 2. `…/tr/lab`'de şeritteki **İLETİŞİM**.
@@ -97,7 +103,7 @@ Her birinde **Geç:** final çizimi bitmiş, e-posta emmiş hâlde açılır. Al
 1. Finalde çizimin ortasına kaydır, şeritteki **LAB**'e dokun (bench açılır), sonra **Geri**'ye bas.
    **Geç:** final bıraktığın yerdedir, baştan oynamaz. **İleri** → bench.
 2. Finalde ortadayken şeritteki **EN**'e dokun.
-   - **Geç:** aynı yerde İngilizce açılır (Contact / ink … mm).
+   - **Geç:** aynı yerde İngilizce açılır; sağ uçta `ISTANBUL · AVAILABLE FOR SELECTED FREELANCE WORK` yazar.
    - **Geri** → Türkçe, yine aynı yerde.
 
 ## 6. Finalin kendisi
@@ -114,11 +120,26 @@ Her birinde **Geç:** final çizimi bitmiş, e-posta emmiş hâlde açılır. Al
    - Geri dönünce o değerde bulut ve `△1` görünür.
    - **KOPYALA** → panoya adres gelir ve kalem "KOPYALANDI" notunu yazar.
 
+## 6.5 Dikkat gösterimi (oturumda bir kez)
+
+1. Yeni bir gizli sekmede finale menüden gel (p = 1). Kaydırma ve dokunma olmadan bekle.
+2. Telefonda ~2 sn sonra:
+   - Alt şeritte `KAYDIRMAYA DEVAM ET` belirir.
+   - Dikkat kendiliğinden e-postadan telefona, oradan GitHub'a yürür; GitHub büyür.
+   - ~1 sn durur, sonra e-postaya döner ve yazı söner. Sayfa bu sırada kaymaz.
+3. Gösterim sürerken ekrana dokunmak ya da kaydırmak onu hemen bırakır.
+4. **Geç:** aynı sekmede finale yeniden gelince gösterim tekrar oynamaz.
+5. Masaüstünde (bilgisayardan kontrol için):
+   - İmleç ~2 sn durunca `İMLECİ GEZDİR` belirir ve GitHub büyüyüp e-postaya döner.
+   - İmleci oynatmak gösterimi anında bırakır.
+6. Hareketi Azalt açıkken yalnız yazı görünür, hiçbir şey kıpırdamaz.
+
 ## 7. Erişilebilirlik ve ayarlar
 
 1. **Hareketi Azalt** (Ayarlar → Erişilebilirlik → Hareket) AÇIK iken:
    - Lab ↔ final geçişi anında olur, temizlenme ve yeniden kurulma görünmez.
    - Final dört durakta atlar.
+   - Varışta satır nefes almaz; yalnız `AŞAĞI KAYDIR` yazısı görünür.
    - 1–4. adımlar yine aynı yere varır.
 2. **VoiceOver**, finalin en tepesindeyken (p = 0):
    - Sağa kaydırdıkça sırayla "İletişim" başlığı ve beş bilgi okunur.

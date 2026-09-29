@@ -166,10 +166,12 @@ export interface LocaleCopy {
     weight_holds: string
   }
   contact: { heading: string; emailLabel: string; phoneLabel: string }
-  /** the Contact finale's own words (engine/lab/finale): the copy control, the ink counter, the revision record */
+  /** the Contact finale's own words (engine/lab/finale): the copy control, the revision record, and the three
+   *  instructions its foot band shows once (the way in, the cursor's attention, the phone's attention by scroll) */
   finale: {
     copy: string; copied: string; copyEmail: string; locationRole: string
-    ink: string; inkOut: string; revision: string; githubAria: string; linkedinAria: string
+    revision: string; githubAria: string; linkedinAria: string
+    hintScroll: string; hintCursor: string; hintKeepScrolling: string
   }
   psi: { head: string; mobile: string; desktop: string; labels: [string, string, string, string]; short: [string, string, string, string] }
   /** the pointer instruction a place shows while it still asks something of the visitor — the hero and the Lab

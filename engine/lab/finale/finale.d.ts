@@ -24,9 +24,7 @@ export interface FinaleItem {
 
 export interface FinaleStrings {
   contact: { heading: string }
-  finale: { copy: string; copied: string; ink: string; inkOut: string; revision: string }
-  labTitle: string
-  registered: string
+  finale: { copy: string; copied: string; revision: string; hintScroll: string; hintCursor: string; hintKeepScrolling: string }
 }
 
 export interface Finale {
@@ -45,8 +43,8 @@ export declare function createFinale(o: {
   ink: HTMLCanvasElement
   contact: HTMLElement
   status: HTMLElement
-  footLeft: HTMLElement
-  footRight: HTMLElement
+  /** the foot band's middle: the one instruction the sheet may show */
+  footHint?: HTMLElement
   items: FinaleItem[]
   strings: FinaleStrings
   lang: 'tr' | 'en'

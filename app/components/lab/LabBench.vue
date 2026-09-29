@@ -51,10 +51,8 @@ const S = { reg: 0, fill: 1, datum: 0, datumT: 0, edges: null as number[] | null
  * bench, 1 for the bare field; reduced motion is simply at the end of either.
  */
 const VEIL_OUT = 0.28, VEIL_IN = 0.42 // seconds
-const leaving = ref(false)
 let veilDone: (() => void) | null = null
 function exitToBare() {
-  leaving.value = true
   S.veilT = 1
   if (REDUCED) { S.veil = 1; paintVeilDom(); request(); return Promise.resolve() }
   request()
@@ -507,8 +505,7 @@ onBeforeUnmount(() => { if (benchSeam.exit === exitToBare) benchSeam.exit = null
       </div>
       <p ref="noteEl" class="note">{{ copy.lab.studies[current].note }}</p>
       <div class="foot" aria-hidden="true">
-        <!-- leaving for Contact, the foot is already the finale's first foot (it names the place, not the record) -->
-        <span>{{ copy.lab.title }}<template v-if="!leaving"> — 0{{ sel + 1 }} / 03</template></span>
+        <span>{{ copy.lab.title }} — 0{{ sel + 1 }} / 03</span>
         <span>{{ registering ? copy.lab.registering : copy.lab.registered }}</span>
       </div>
       <p class="u-sr" role="status">{{ status }}</p>
@@ -523,7 +520,7 @@ onBeforeUnmount(() => { if (benchSeam.exit === exitToBare) benchSeam.exit = null
    not start scrolling the finale's document when the route changes under it mid-swipe (pinch zoom stays) */
 .lab-stage { touch-action: pinch-zoom; }
 /* the seam to Contact: what is not the bare field fades with the veil */
-.lab-stage .spine, .lab-stage .open, .lab-stage .note, .lab-stage .mark { opacity: calc(1 - var(--veil, 0)); }
+.lab-stage .spine, .lab-stage .open, .lab-stage .note, .lab-stage .mark, .lab-stage .foot span { opacity: calc(1 - var(--veil, 0)); }
 .lab-sheet { position: absolute; inset: 0; width: 100%; height: 100%; }
 .lab-stage .spine { position: absolute; inset: 0; pointer-events: none; }
 .lab-stage .rec-wrap { position: absolute; }

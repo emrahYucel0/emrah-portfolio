@@ -24,6 +24,8 @@ const { copy, locale } = useLocale()
 useLocaleSeo('contact')
 useHead({
   bodyAttrs: { class: 'lab-route lab-route--contact' },
+  // the document scrolls (the scroll IS the drawing) but shows no scrollbar, like every other place on the site
+  htmlAttrs: { class: 'finale-doc' },
   // ?debug=1 — a diagnostics panel for devices without a web inspector (public/finale-debug.js, loaded only with
   // the flag; a normal visit pays for this one line). Classic and first, so it can report even a bundle that
   // never boots. The build hashes it into the CSP like every inline script.
@@ -56,8 +58,7 @@ const paper = ref<HTMLCanvasElement | null>(null)
 const ink = ref<HTMLCanvasElement | null>(null)
 const contact = ref<HTMLElement | null>(null)
 const status = ref<HTMLElement | null>(null)
-const footLeft = ref<HTMLElement | null>(null)
-const footRight = ref<HTMLElement | null>(null)
+const footHint = ref<HTMLElement | null>(null)
 let finale: Finale | null = null
 let gone = false
 
@@ -87,14 +88,14 @@ onMounted(async () => {
   addEventListener('finale:arrive', onArriveEvent)
   // the engine is fetched on this route (or ahead of it, by the bench), after the page's meaning is on screen
   const { createFinale } = await loadFinale()
-  if (gone || !track.value || !paper.value || !ink.value || !contact.value || !status.value || !footLeft.value || !footRight.value) return
+  if (gone || !track.value || !paper.value || !ink.value || !contact.value || !status.value) return
   live.value = true
   await nextTick()
   finale = createFinale({
     track: track.value, paper: paper.value, ink: ink.value, contact: contact.value, status: status.value,
-    footLeft: footLeft.value, footRight: footRight.value,
+    footHint: footHint.value ?? undefined,
     items: items.value,
-    strings: { contact: copy.value.contact, finale: copy.value.finale, labTitle: copy.value.lab.title, registered: copy.value.lab.registered },
+    strings: { contact: copy.value.contact, finale: copy.value.finale },
     lang: locale.value,
     // at the top of the drawing, a gesture up is the way back to the Lab (one gesture, one destination)
     onTopUp: () => { void toLab() },
@@ -138,10 +139,13 @@ onBeforeUnmount(() => {
           </button>
         </address>
       </div>
-      <!-- the bench's foot band, continued (LabBench .foot): left names the place, right the register -->
-      <div class="foot" aria-hidden="true">
-        <span ref="footLeft">{{ copy.lab.title }}</span>
-        <span ref="footRight">{{ copy.lab.registered }}</span>
+      <!-- the foot band: its two ends are the home strip's own words, from the same source (the roles; the city
+           and the status — shared/content identity), fixed for the whole drawing; its middle carries the one
+           instruction the sheet may show (engine/lab/finale: the way in, the attention guide) -->
+      <div class="foot" :class="{ 'is-arriving': arrival === 'start' }" aria-hidden="true">
+        <span class="roles" lang="en">{{ copy.roles.creative }} · {{ copy.roles.fullStack }}</span>
+        <span ref="footHint" class="hint" />
+        <span class="state">{{ copy.identity.city }}{{ copy.hints.quietSeparator }}{{ copy.identity.status }}</span>
       </div>
     </div>
     <!-- only scroll distance: the finale reads its position (useStudy's model) -->
@@ -209,10 +213,35 @@ onBeforeUnmount(() => {
 /* the bench's foot band (LabBench .foot, verbatim measures) */
 .is-finale .foot {
   display: flex; position: absolute; left: 0; right: 0; bottom: 0; height: 44px; padding: 0 var(--pad);
-  align-items: center; justify-content: space-between; border-top: 1px solid var(--rule);
+  align-items: center; justify-content: space-between; gap: 18px; border-top: 1px solid var(--rule);
   background: var(--ground);
   font-family: var(--mono); font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-muted);
 }
 @media (max-width: 760px) { .is-finale .foot { height: 40px; } }
 @media (max-height: 470px) { .is-finale .foot { height: 32px; } }
+.foot .state { margin-left: auto; overflow: hidden; text-overflow: ellipsis; min-width: 0; transition: opacity .4s ease; }
+.foot .roles { flex: none; }
+/* the instruction: centred in the band, faded in and out by the engine (.on) */
+.foot .hint {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  color: var(--ink); opacity: 0; transition: opacity .5s ease; white-space: nowrap; pointer-events: none;
+}
+.foot .hint.on { opacity: 1; }
+/* a phone keeps what the home strip keeps there (the status, not the roles); while an instruction is shown it
+   takes the band alone */
+@media (max-width: 700px) { .foot .roles { display: none; } }
+@media (max-width: 1100px) { .foot.is-hinting .state { opacity: 0; } }
+/* arriving from the bench, whose foot has just faded with its veil, the band's words come in rather than cut */
+.foot.is-arriving span:not(.hint) { animation: foot-in .45s ease both; }
+@keyframes foot-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .foot .hint, .foot .state { transition: none; }
+  .foot.is-arriving span:not(.hint) { animation: none; }
+}
+</style>
+
+<style>
+/* unscoped: the root scroller is the document's. Scrolling (wheel, touch, keys) is untouched; only the bar goes. */
+html.finale-doc { scrollbar-width: none; }
+html.finale-doc::-webkit-scrollbar { display: none; }
 </style>

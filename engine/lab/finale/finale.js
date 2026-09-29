@@ -13,7 +13,7 @@
 
 import { createFrame } from './frame.js'
 import { createSurface } from './surface.js'
-import { createPlotter, LIVE_P, FLOOR_CAP, P_TEAR, mapReducedP, partingAt } from './plotter.js'
+import { createPlotter, LIVE_P, FLOOR_CAP, mapReducedP, partingAt } from './plotter.js'
 import { createPartition } from './partition.js'
 import { createParting } from './parting.js'
 import { createOverlay } from './overlay.js'
@@ -58,9 +58,9 @@ function scrollLevels(q, reduced) {
  * @param {HTMLCanvasElement} o.paper, o.ink
  * @param {HTMLElement} o.contact    the prerendered accessible layer ([data-cell] cells, [data-copy])
  * @param {HTMLElement} o.status     role=status
- * @param {HTMLElement} o.footLeft, o.footRight
+ * @param {HTMLElement} [o.footHint] the foot band's middle: the one instruction the sheet may show
  * @param {Array} o.items            the five cells (see app/pages/[locale]/contact.vue)
- * @param {object} o.strings         { contact, finale, labTitle, registered }
+ * @param {object} o.strings         { contact, finale }
  * @param {string} o.lang            'tr' | 'en'
  * @param {() => void} [o.onTopUp]   at p = 0, a gesture UP (the way back to the Lab — F2)
  */
@@ -89,8 +89,8 @@ export function createFinale(o) {
     // keyboard focus must wake the frame loop itself — a resting sheet has no rAF running
     // F3: the cells are in the accessibility tree and the tab order at every p. Keyboard focus reaching one before
     // the drawing has placed it settles the finale first (p = 1), so the focus ring lands on its own fact
-    if (kind === 'focus') { if (!liveNow) arrive(); partition.setFocus(id); frame.request() }
-    else if (kind === 'blur') { partition.setFocus(null); frame.request() }
+    if (kind === 'focus') { kbdFocus = true; if (!liveNow) arrive(); partition.setFocus(id); frame.request() }
+    else if (kind === 'blur') { kbdFocus = false; partition.setFocus(null); frame.request() }
     else if (kind === 'spend') {
       // the climax: the action (browser default / clipboard) fires with this very event and
       // waits for NOTHING — even the pen's compile is deferred to the next task
@@ -128,26 +128,91 @@ export function createFinale(o) {
   frame.resized(rebuild)
   rebuild()
 
-  // ── chrome that follows the story: the foot carries the place and the ink counter ──
-  let chromeKey = '', counterAt = 0
-  function chrome(p, now) {
-    const past = p >= 0.5
-    let right
-    if (p < P_TEAR) right = strings.registered
-    else {
-      if (now - counterAt < 120 && chromeKey) return // the counter breathes at its own pace
-      const ink = plotter.inkState(p)
-      right = ink.out
-        ? strings.finale.inkOut
-        : `${strings.finale.ink} ${ink.reserveMm.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US')} mm${ink.rev ? ` · △${ink.rev}` : ''}`
-      counterAt = now
-    }
-    const key = `${past ? 1 : 0}|${right}`
-    if (key === chromeKey) return
-    chromeKey = key
-    o.footLeft.textContent = past ? strings.contact.heading : strings.labTitle
-    o.footRight.textContent = right
+  // ── the foot band. Its two ends are the site's own, prerendered by the page and never rewritten here: the
+  //    roles on the left, the city and the status on the right — the home strip's words, from the same source.
+  //    Its middle carries an instruction, when the sheet asks for one, and lets it go ──
+  function hint(text) {
+    const el = o.footHint
+    if (!el) return
+    if (text) el.textContent = text // hiding keeps the words, so they fade rather than vanish
+    el.classList.toggle('on', !!text)
+    el.parentElement?.classList.toggle('is-hinting', !!text)
   }
+
+  // ── 1. THE WAY IN. At p = 0 nothing on the bare sheet says that it moves. Until the first scroll the row that is
+  //    about to tear breathes — lifts off its place a little, sags, settles (p untouched) — and the foot asks for
+  //    a scroll. The first scroll hands over to the plot; both go, for good. Reduced motion: the words only.
+  //    The breath starts from rest, so the arrival's first frame is still the bench's bare field. ──
+  const BREATH = 2.8 // seconds per breath
+  let beckon = 'armed', beckonAt = 0 // 'armed' → 'on' → 'off'
+  function beckonStep(now) {
+    if (beckon === 'off') return 0
+    if (frame.rawProgress() > 0.0005) { beckon = 'off'; hint(''); return 0 }
+    if (beckon === 'armed') {
+      beckon = 'on'; beckonAt = now + 600
+      setTimeout(() => { if (!dead && beckon === 'on') hint(strings.finale.hintScroll) }, 600)
+    }
+    if (frame.S.reduced) return 0
+    const t = Math.max(0, (now - beckonAt) / 1000)
+    return Math.min(1, t / 0.8) * (0.5 - 0.5 * Math.cos((2 * Math.PI * t) / BREATH))
+  }
+
+  // ── 2. WEIGHT, SHOWN ONCE. The drawing done and the visitor still — a desktop cursor that has not moved for 2 s —
+  //    attention glides to GitHub, which grows, holds for a second, and comes back to the email; the foot says to
+  //    move the cursor. On the phone's touch sheet attention is the scroll's, so the same walk is played there
+  //    (email → phone → GitHub, back to the email) and the foot says to keep scrolling. Any input cancels it at
+  //    once; once per session; reduced motion only shows the words. ──
+  const GUIDE_KEY = 'finale-guide'
+  let guided = false
+  try { guided = sessionStorage.getItem(GUIDE_KEY) === '1' } catch { /* no storage: once per page instead */ }
+  let idleTimer = 0, guideTimers = [], guiding = false, kbdFocus = false, lastQ = 0, wasLive = false
+  let walk = null // the phone's walk: { t0, end } (performance.now ms)
+  const armIdle = () => { clearTimeout(idleTimer); if (!guided && !dead) idleTimer = setTimeout(tryGuide, 2000) }
+  function tryGuide() {
+    if (dead || guided) return
+    const touch = touchSheet(frame.S)
+    if (!liveNow || kbdFocus || (touch && lastQ > 0.05)) { armIdle(); return }
+    guided = true
+    try { sessionStorage.setItem(GUIDE_KEY, '1') } catch { /* see above */ }
+    guiding = true
+    hint(touch ? strings.finale.hintKeepScrolling : strings.finale.hintCursor)
+    const at = (ms, fn) => guideTimers.push(setTimeout(() => { if (!dead) fn() }, ms))
+    if (frame.S.reduced) { at(3500, endGuide); return }
+    if (touch) { walk = { t0: performance.now(), end: 0 }; frame.request(); at(4200, endGuide); return }
+    partition.setFocus('github'); frame.request()
+    at(2000, () => { partition.setFocus('email'); frame.request() })
+    at(3200, () => { partition.setFocus(null); frame.request() })
+    at(3600, endGuide)
+  }
+  function endGuide() {
+    guideTimers.forEach(clearTimeout); guideTimers = []
+    if (!guiding) return
+    guiding = false
+    hint('')
+    if (walk && !walk.end) walk.end = performance.now()
+    if (!kbdFocus) partition.setFocus(null)
+    frame.request()
+  }
+  /** the phone's walk: the attention position it plays, and how much of it is shown (fades out at the end) */
+  function walkAt(now) {
+    if (!walk) return null
+    const t = (now - walk.t0) / 1000
+    const sm = (x) => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x) }
+    const q = t < 1.2 ? 0.5 * sm(t / 1.2) : t < 2.2 ? 0.5 : 0.5 - 0.4 * sm(t - 2.2)
+    const w = walk.end ? 1 - Math.min(1, (now - walk.end) / 600) : 1
+    if (w <= 0) { walk = null; return null }
+    return { q, w }
+  }
+  // what counts as the visitor doing something: it cancels the guide and restarts the stillness
+  let px = -1, py = -1
+  const input = () => { if (guiding) endGuide(); armIdle() }
+  const sigIn = { signal: off.signal, passive: true }
+  addEventListener('pointermove', (e) => {
+    // a cursor that has not moved is still, whatever the page does under it
+    if (e.clientX === px && e.clientY === py) return
+    px = e.clientX; py = e.clientY; input()
+  }, sigIn)
+  for (const t of ['wheel', 'keydown', 'touchstart', 'scroll', 'pointerdown']) addEventListener(t, input, sigIn)
 
   // graceful degradation ladder: EMA of the frame's own cost, with hysteresis
   let ema = 8, level = 0, calm = 0
@@ -168,11 +233,17 @@ export function createFinale(o) {
       const u = frame.rawProgress() * (STAGES + ATT_STAGES)
       rawP = Math.min(1, u / STAGES)
       q = Math.max(0, Math.min(1, (u - STAGES) / ATT_STAGES))
+      lastQ = q
+      const wk = walkAt(t0)
+      if (wk) q += (wk.q - q) * wk.w
     }
+    const breath = beckonStep(t0)
     // reduced motion's four stations, applied ONCE for every layer (plot, soak, pen, chrome)
     const p = frame.S.reduced ? mapReducedP(rawP) : rawP
     const live = p >= LIVE_P
     liveNow = live
+    if (live && !wasLive) armIdle()
+    wasLive = live
     partition.setScrollAttention(touch && live ? scrollLevels(q, frame.S.reduced) : null)
     const pt = partition.tick(frameRect(), dt, frame.S.reduced, live, frame.S.portrait)
     plotter.layout(pt)
@@ -182,7 +253,9 @@ export function createFinale(o) {
     for (const it of items) atts[it.id] = partition.attOf(it.id)?.att ?? 0
     const soakMoving = plotter.soakTick(live ? atts : null, dt)
     surface.clear()
-    surface.drawRestingRows(undefined, plotter.tear, parting)
+    // the breath thins the row it lifts off, by as much as it lifts
+    const tear = plotter.tear
+    surface.drawRestingRows(undefined, breath > 0 && p <= 0 && tear ? { ...tear, birth: 0.5 * breath } : tear, parting)
     let soakRes = { busy: false, drawn: {} }
     if (soak) {
       try { soakRes = soak.draw(p, pt, plotter, lang, parting) } catch (err) {
@@ -191,7 +264,7 @@ export function createFinale(o) {
       }
     }
     const plotMoving = plotter.draw(p, dt, level, soakRes.drawn)
-    chrome(p, t0)
+    if (p <= 0) plotter.breathe(breath)
     overlay.setVisible(p >= LIVE_P)
     if (p >= 0.9) {
       const boxes = {}, fallback = {}
@@ -204,7 +277,7 @@ export function createFinale(o) {
     const ms = performance.now() - t0
     pickLevel(ms)
     hud.sample(ms)
-    return plotMoving || pt.moving || soakRes.busy || soakMoving
+    return plotMoving || pt.moving || soakRes.busy || soakMoving || (beckon === 'on' && !frame.S.reduced) || !!walk
   }
   // the frame is guarded: an exception is reported (?debug=1) instead of freezing the sheet
   frame.run((stepP, dt) => {
@@ -279,6 +352,7 @@ export function createFinale(o) {
     goTo(f) { scrollTo({ top: o.track.offsetTop + Math.max(0, Math.min(1, f)) * (o.track.offsetHeight - innerHeight), behavior: 'instant' }) },
     destroy() {
       dead = true
+      clearTimeout(idleTimer); guideTimers.forEach(clearTimeout)
       off.abort()
       frame.destroy()
       overlay.destroy()

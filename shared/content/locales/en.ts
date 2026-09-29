@@ -162,7 +162,8 @@ export const en = {
   contact: { heading: 'Contact', emailLabel: 'Email', phoneLabel: 'Phone' },
   finale: {
     copy: 'copy', copied: 'copied', copyEmail: 'Copy the email address', locationRole: 'Location',
-    ink: 'ink', inkOut: 'out of ink', revision: 'Revision', githubAria: 'GitHub profile', linkedinAria: 'LinkedIn profile',
+    revision: 'Revision', githubAria: 'GitHub profile', linkedinAria: 'LinkedIn profile',
+    hintScroll: 'scroll', hintCursor: 'move your cursor', hintKeepScrolling: 'keep scrolling',
   },
   psi: {
     head: 'PageSpeed Insights', mobile: 'Mobile', desktop: 'Desktop',

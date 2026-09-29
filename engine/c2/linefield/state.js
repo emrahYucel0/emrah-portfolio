@@ -44,23 +44,41 @@ export async function faceReady() {
   } catch { return false }
 }
 
-/** as large as the height allows, capped by the width — the demo's rule, in this project's units */
+/*
+ * AS LARGE AS THE SPACE ALLOWS, AND THE SPACE IS NOT THE SCREEN.
+ *
+ * The site keeps a strip at the top of the screen and another at the bottom. The words have to clear both, in
+ * every viewport — measured, the last word was sitting eighteen pixels from the bottom edge in all four, well
+ * inside a fifty-pixel strip.
+ *
+ * The block is also sized and centred on its TRUE extent. Four lines of leading is not what four lines occupy:
+ * the block runs from the first cap line to the last baseline, which is (n-1) leadings plus one cap height,
+ * not n leadings. Centring on the wrong extent is what pushed it low.
+ */
 function fitStack(V, words) {
-  const { W, H, P } = V
-  const top = H * 0.16
-  const bottom = H * (P ? 0.8 : 0.86)
+  const { W, H, P, strip, pad } = V
+  const air = Math.max(pad * 0.7, strip * 0.5)
+  const top = strip + air
+  const bottom = H - strip - air
+  const avail = Math.max(60, bottom - top)
   const maxW = W * (P ? 0.92 : 0.62)
-  let size = Infinity
+  const n = words.length
+
+  // the widest word decides the size by width; the block's true extent decides it by height
   let capR = 0.72
+  let byWidth = Infinity
   for (const w of words) {
-    const f = fit(w, maxW, (bottom - top) / words.length / 0.93)
-    if (f.size < size) { size = f.size; capR = f.capR }
+    const f = fit(w, maxW, H)
+    if (f.size < byWidth) { byWidth = f.size; capR = f.capR }
   }
+  const byHeight = avail / ((n - 1) * 0.93 + capR)
+  const size = Math.min(byWidth, byHeight)
   const cap = size * capR
   const lh = size * 0.93
-  const blockH = lh * words.length
-  const y0 = (top + bottom) / 2 - blockH / 2
-  return { size, cap, lh, y0, top, bottom }
+  const blockTrue = (n - 1) * lh + cap
+  // the first BASELINE, so that the block's cap line and its last baseline sit inside the air
+  const y0 = top + (avail - blockTrue) / 2 + cap
+  return { size, cap, lh, y0, top, bottom, capR }
 }
 
 /**
@@ -99,7 +117,20 @@ export function linefieldState(V, side, words, label) {
   const size = L.size * (capSnap / L.cap)
   const lh = L.lh * (capSnap / L.cap)
   const snap = (y) => (Math.round(y / spacing - 0.5) + 0.5) * spacing
-  const baseOf = (i) => snap(L.y0 + i * lh + size * 0.8)
+  /*
+   * AND THE BLOCK IS PUT BACK INSIDE THE AIR AFTER IT HAS BEEN SNAPPED.
+   *
+   * Rounding the cap to whole rows and the baselines to the grid moves the block by up to half a row per line,
+   * and the accumulated shift is enough to push the last word into the footer strip — measured at 844x390, the
+   * last baseline sat 45 pixels from the bottom edge inside a 50 pixel strip. The correction is applied in
+   * WHOLE ROWS, so the grid alignment that keeps the letters clean survives it.
+   */
+  const firstBase = snap(L.y0 + (capSnap - L.cap) * 0.5)
+  const lastBase = firstBase + (words.length - 1) * lh
+  const room = H - V.strip - Math.max(V.pad * 0.7, V.strip * 0.5)
+  const over = lastBase + capSnap * 0.06 - room
+  const shift = over > 0 ? Math.ceil(over / spacing) * spacing : 0
+  const baseOf = (i) => firstBase - shift + i * lh
   const bands = words.map((_, i) => baseOf(i) - capSnap * 0.5)
 
   const img = build(V, H, ({ solid }) => {

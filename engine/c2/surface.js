@@ -86,7 +86,7 @@ float hash(float n) { return fract(sin(n * 12.9898 + 4.1414) * 43758.5453); }
  * away is thinner, and one that is not gets wider relative to its neighbours until the field fills in solid.
  */
 #ifndef VARIANT_HW
-#define VARIANT_HW(h, g) (h)
+#define VARIANT_HW(h, g, sol) (h)
 #endif
 
 /*
@@ -110,7 +110,7 @@ float hash(float n) { return fract(sin(n * 12.9898 + 4.1414) * 43758.5453); }
  * It is given the row's index, so the rows that stay are always the same rows and never slide.
  */
 #ifndef VARIANT_ROW
-#define VARIANT_ROW(a, r) (a)
+#define VARIANT_ROW(a, r, sol) (a)
 #endif
 
 float rows(float x, float m, vec2 gm, sampler2D C, sampler2D D, vec4 R, vec4 K, vec4 G, vec4 H, vec4 M, vec4 J,
@@ -158,7 +158,9 @@ float rows(float x, float m, vec2 gm, sampler2D C, sampler2D D, vec4 R, vec4 K, 
     float hw = th * (0.5 + tone * 1.15 * wgain);
     hw = mix(hw, s * 0.36, solid);
     hw = max(hw + mem * M.x, 0.0) * (1.0 - vd);
-    hw = VARIANT_HW(hw, glen);
+    // the variant is told whether this sample is inside a letter: type and ground are different materials, and
+    // a perspective that thins one must not thin the other
+    hw = VARIANT_HW(hw, glen, solid);
     // static saturation tapers row by row along its ramp: a clean edge, not a saw
     float rfs = smoothstep(0.15, 0.95, TS.a + 0.04 * sin(r * 0.73));
     // dynamic saturation starts where information is densest: type first, then tone, then bare rows
@@ -171,7 +173,7 @@ float rows(float x, float m, vec2 gm, sampler2D C, sampler2D D, vec4 R, vec4 K, 
     hw = mix(hw, max(hw, 0.62 * spr), smoothstep(2.1, 1.3, spr * uDpr) * step(0.001, hw) * VARIANT_FUSE);
     float aa = 0.75 / uDpr;
     float a = smoothstep(hw + aa, hw - aa, dist) * clamp(hw * 4.0, 0.0, 1.0);
-    float keep = VARIANT_ROW(1.0, r);
+    float keep = VARIANT_ROW(1.0, r, solid);
     a *= keep;
     if (a > ink) ink = a;
     hwSum += hw * clamp(hw * 4.0, 0.0, 1.0) * keep;

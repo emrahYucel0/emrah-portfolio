@@ -16,7 +16,7 @@ const OUT = 'out/linefield'
     await p.evaluate(() => window.__pair())
     await sleep(1500)
     fs.mkdirSync(`${OUT}/pair`, { recursive: true })
-    for (const v of [0.16, 0.28, 0.42, 0.5, 0.54, 0.7, 1]) {
+    for (const v of [0, 0.16, 0.28, 0.42, 0.5, 0.54, 0.7, 1]) {
       await p.evaluate((x) => window.__set(x), v)
       await sleep(260)
       fs.writeFileSync(`${OUT}/pair/${tag}-${Math.round(v * 100)}.png`, await p.screenshot())

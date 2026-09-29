@@ -303,3 +303,69 @@ dropped; motion quality is judged on the device.
 They differ in **N alone** now. With the demo's mapping the compression is the demo's — its vanishing points,
 its 3.4 far-point spread, its 1.7 curve exponent — and those are not ours to tune. A: every 4th row.
 B: every 6th. C: every 8th, the tentative default.
+
+---
+
+# PHASE B, FINAL REVISION
+
+## Words keep their weight in the corridor
+
+Two faults, both from treating type as ground.
+
+**The thinning was taking rows out of the letters.** It is for the GROUND — a field ruled for type cannot be
+sent whole down a corridor — but a word is not ground. At 28% with N = 8, seven rows in eight were being
+removed from a letter while it flowed past, which is why the reference had a thick bright bar and we had a
+thin grey ghost. `lfKeep` now returns 1 wherever the sample is inside a letter.
+
+**And the depth division was thinning them too.** Ground thins with distance so the ink-to-ground ratio stays
+constant; the reference does the opposite for type — a segment is
+`P · 0.62 · ((1-d) + d(0.1 + 1.9 s)) · (0.35 + 0.65 cc)`, so it WIDENS toward the viewer. Both macros now take
+`solid`, and `lfHw` applies the reference's widening law to type and the gradient division to ground.
+
+## Ink at rest
+
+At rest `ws = 1` and `cc = 1`, so the segment is `P · 0.62` — the reference's rule exactly, by construction.
+Confirmed at 1:1 in `INK-demo-top-ours-bottom-1to1.png`: solid ink bars with thin cream gaps.
+
+**Three attempts at a single comparable number all measured something else** and are recorded so the next
+person does not repeat them: block coverage is confounded by our larger type (ours read 1.42–1.52× the
+reference's on three of four frames, 0.81× on the fourth); the 90th-percentile column spans all four lines, so
+it reads 26% for the reference against its own 62% rule; a single-line band includes the spaces between
+letters. The mid-grey in the pair recording was the video downscale, not the render.
+
+## The field is full height at rest
+
+The reference's 0.07–0.93 H extent removed the halo at the vanishing point and left empty bands at rest, so the
+ground read as a panel behind the words. The extent now arrives with the depth and leaves with it.
+
+## The grain and the seam on the cream side
+
+**Catastrophic cancellation.** Everything was solved in `t`; on the cream side the vanishing point is at
+t → 1, and `1 - t` in float32 throws away most of its significant digits exactly where the map is most
+sensitive. The seam was the line where that began to bite.
+
+Everything is solved in **q** now — the reference's `tt`, the distance from the vanishing point, so q → 0 at
+the point on both sides and no two nearly equal numbers are ever subtracted. Verified clean at 60/70/80% on
+390×844 and 320×568.
+
+## Margins and strips
+
+The block is sized and centred on its TRUE extent — `(n-1)` leadings plus one cap height, not `n` leadings —
+inside `strip + air` at both ends, and the grid snap is corrected afterwards in whole rows so the alignment
+survives. Measured at 1440×900: left 93, right 885 (backend); right 211, top 89, bottom 93 (frontend), against
+a 50px strip. At 390×844, 320×568 and 844×390 the words clear both strips; confirmed from the stills.
+
+**The margin harness is not trustworthy on the phone viewports and its numbers there are not quoted.** Its
+detector has been wrong three ways: it measured the debug dock (a constant 18px bottom margin in every
+viewport), then the ruled field itself at 844×390, then nothing at all when the bar was raised. What the
+stills show is what is reported.
+
+## Measured
+
+| | real | thinning disabled |
+|---|---|---|
+| HF energy at the convergence, desktop | **6.99** | 16.76 |
+| portrait | **7.46** | 17.02 |
+
+Flag-off against `pre-linefield`: reduced motion **pixel-identical**, normal worst 20.45 with **0 state
+differences**, retired Lab **0 frames**, published build **0** Linefield markers.

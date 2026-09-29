@@ -98,7 +98,9 @@ export async function mountLinefield() {
 
   const faceOk = await faceReady()
 
-  const V = { W: 1, H: 1, u: 1, P: false, T: false, S: false, dpr: 1, pad: 36, strip: 0 }
+  // the strip the site keeps at the top and the bottom. The debug entry does not draw it, but the words have
+  // to clear it, because on the site it is there.
+  const V = { W: 1, H: 1, u: 1, P: false, T: false, S: false, dpr: 1, pad: 36, strip: 50 }
   let back = null
   let front = null
 
@@ -299,6 +301,10 @@ export async function mountLinefield() {
     resetTimes: () => { times.length = 0 },
     sequence: () => sequence(p, V.W),
     spacing: () => ({ back: back.spacing, front: front.spacing, cap: back.layout.cap }),
+    strip: () => V.strip,
+    // the dock is this entry's own furniture; a harness measuring where the WORDS are has to be able to
+    // take it out of the frame, or it measures the dock
+    dock: (on) => { dock.style.display = on ? 'flex' : 'none' },
     // a continuous run, so shimmer can be measured in motion rather than between two stills
     play: (from, to, ms) => new Promise((resolve) => {
       const t0 = performance.now()

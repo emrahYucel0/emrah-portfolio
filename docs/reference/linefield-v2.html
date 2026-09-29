@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e0f11">
+<title>LINEFIELD — backend → frontend</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@900&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{--mono:'DM Mono',ui-monospace,Consolas,monospace}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#0e0f11}
+body{font-family:var(--mono);user-select:none;overscroll-behavior:none;touch-action:none;-webkit-font-smoothing:antialiased}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+#dock{position:fixed;left:50%;bottom:18px;z-index:5;transform:translateX(-50%);display:flex;align-items:center;gap:12px;
+  padding:9px 12px;background:rgba(239,238,233,.94);color:#121212;border:1px solid rgba(18,18,18,.14);white-space:nowrap;
+  max-width:calc(100vw - 24px)}
+#dock button{border:0;background:transparent;color:inherit;font:400 10px/1 var(--mono);padding:6px 4px;cursor:pointer}
+#dock button:focus-visible{outline:2px solid #b8622f;outline-offset:2px}
+#scrub{accent-color:#af784e;width:clamp(90px,17vw,260px)}
+#pct{font-size:10px;min-width:40px;text-align:right;font-variant-numeric:tabular-nums}
+#dock.hidden{display:none}
+#warn{position:fixed;top:14px;right:16px;z-index:5;font:400 10px/1.4 var(--mono);color:#b8622f}
+.sr{position:absolute;left:-9999px}
+@media(max-width:700px){#dock{gap:6px;padding:8px}#scrub{width:clamp(64px,24vw,150px)}}
+</style>
+</head>
+<body>
+<p class="sr">A black field of pale lines carries four words about how I think about systems: state, scale, failure, truth. Scrolling bends the field into a corridor and each word flows past in turn. Every line then collapses into one; it opens onto a cream field where four words about how I think about interfaces arrive one by one: feel, timing, friction, first paint.</p>
+<canvas id="c" aria-hidden="true"></canvas>
+<div id="warn" hidden>Big Shoulders yüklenemedi — yedek font</div>
+<div id="dock" role="group" aria-label="Demo kontrolleri">
+  <button id="play" type="button">Oynat</button>
+  <button id="rev" type="button">Geri</button>
+  <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="İlerleme">
+  <span id="pct">0%</span>
+  <button id="reset" type="button">Başa</button>
+  <button id="hide" type="button">Gizle</button>
+</div>
+<script>
+(()=>{
+'use strict';
+// ---- Copy ----
+const BACKEND ={label:'BACKEND — HOW I THINK', words:['STATE.','SCALE.','FAILURE.','TRUTH.']};
+const FRONTEND={label:'FRONTEND — HOW I THINK', words:['FEEL.','TIMING.','FRICTION.','FIRST PAINT.']};
+
+const DARK='#0e0f11', CREAM='#efeee9', INK='#121212', PALE='#e7e6e0', RUST='#b8622f';
+const $=id=>document.getElementById(id);
+const c=$('c'), g=c.getContext('2d');
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+const sm=t=>{t=clamp(t);return t*t*(3-2*t)};
+const ease=(v,a,b)=>sm((v-a)/(b-a));
+let FACE='Impact, "Arial Narrow", sans-serif';
+let W,H,P,rows=[],RA,RB;
+
+// Font size for a stack of words: as large as the height allows, capped by the width.
+function fitSize(words){
+  const q=document.createElement('canvas').getContext('2d');
+  const portrait=H>W, n=words.length, top=H*0.16, bottom=H*(portrait?0.8:0.86);
+  let fs=(bottom-top)/n/0.93;q.font='900 '+fs+'px '+FACE;
+  let mw=0;for(const w of words)mw=Math.max(mw,q.measureText(w).width);
+  const maxW=W*(portrait?0.92:0.62);if(mw>maxW)fs*=maxW/mw;
+  return fs;
+}
+
+// Build, for every row of the field, the runs of pixels that fall inside each word.
+function wordRuns(words,align){
+  const o=document.createElement('canvas');o.width=Math.round(W);o.height=Math.round(H);
+  const q=o.getContext('2d');
+  const portrait=H>W, n=words.length;
+  const top=H*0.16, bottom=H*(portrait?0.8:0.86);
+  const fs=fitSize(words);
+  q.font='900 '+fs+'px '+FACE;
+  const lh=fs*0.93, blockH=lh*n, y0=(top+bottom)/2-blockH/2;
+  const x=align==='left'?W*0.06:W*0.94;
+  q.textAlign=align;q.textBaseline='alphabetic';
+  const capH=q.measureText('H').actualBoundingBoxAscent||fs*0.72;
+  const lines=[];
+  words.forEach((w,i)=>{q.fillStyle='rgb('+(i+1)*40+',0,0)';const base=y0+i*lh+fs*0.8;q.fillText(w,x,base);lines.push({base,cap:base-capH});});
+  const d=q.getImageData(0,0,o.width,o.height).data;
+  const inkAt=(y,x)=>d[(y*o.width+x)*4+3]>=128;
+  return rows.map(r=>{
+    const y=Math.min(o.height-1,Math.max(0,Math.round(r.y))),out=[];let xx=0;
+    const ink=x=>inkAt(y,x);
+    while(xx<o.width){
+      while(xx<o.width&&!ink(xx))xx++;
+      const a=xx;let idx=-1;
+      while(xx<o.width&&ink(xx)){if(idx<0)idx=Math.round(d[(y*o.width+xx)*4]/40)-1;xx++;}
+      const wi=Math.max(0,idx),L=lines[wi];
+      // skip rows that only graze the top or the baseline of a line: that is where round letters
+      // overshoot and would leave stray dots
+      if(xx>a+1&&L&&y>L.cap+P*0.3&&y<L.base-P*0.3)out.push([a,xx,wi]);
+    }
+    return out;
+  });
+}
+
+function build(){
+  W=window.innerWidth;H=window.innerHeight;
+  const r=Math.min(2,window.devicePixelRatio||1);c.width=W*r;c.height=H*r;g.setTransform(r,0,0,r,0,0);
+  // row pitch follows the type: at least ~9 rows through every letter, so the words stay legible on a phone
+  const fsMin=Math.min(fitSize(BACKEND.words),fitSize(FRONTEND.words));
+  P=Math.max(3,Math.min(Math.round(H/66),Math.round(fsMin*0.1)));rows=[];
+  let seed=17;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+  for(let y=H*0.07;y<H*0.93;y+=P)rows.push({y,a:0.2+rnd()*0.42,w:0.6+rnd()*0.8});
+  RA=wordRuns(BACKEND.words,'left');RB=wordRuns(FRONTEND.words,'right');
+  render(disp);
+}
+
+// Perspective map: flat row point (t across the width) → corridor point.
+function pt(t,y0,side,d,cc,vx,vy){
+  const fy=vy+(y0-vy)*cc, fx=t*W;
+  const Ex=side===0?W*1.1:-W*0.1, Ey=vy+(y0-vy)*3.4*cc;
+  const tt=side===0?t:1-t, s=Math.pow(Math.max(0,tt),1+1.7*d);
+  const px=vx+(Ex-vx)*s, py=vy+(Ey-vy)*s;
+  return [fx+(px-fx)*d, fy+(py-fy)*d, s];
+}
+const widthAt=(s,d)=>(1-d)+d*(0.1+1.9*s);
+
+function drawSide(side,d,cc,flowOf,R,fg,labelA,label){
+  const vx=side===0?W*0.1:W*0.9, vy=H*0.5, N=28;
+  for(let i=0;i<rows.length;i++){
+    const r=rows[i];
+    g.beginPath();
+    for(let k=0;k<=N;k++){const [x,y]=pt(k/N,r.y,side,d,cc,vx,vy);k?g.lineTo(x,y):g.moveTo(x,y);}
+    // lines thin out as they converge, so they never beat into moiré near the vanishing point
+    g.strokeStyle=fg;g.globalAlpha=r.a*(0.45+0.55*cc)*(1-0.35*d);g.lineWidth=r.w*(1-d*0.3);g.stroke();g.globalAlpha=1;
+    for(const [a0,a1,wi] of R[i]){
+      const flow=flowOf(wi);
+      let x0=a0+flow,x1=a1+flow;if(x1<0||x0>W)continue;x0=Math.max(0,x0);x1=Math.min(W,x1);
+      const n=Math.max(2,Math.ceil((x1-x0)/(W/40))),top=[],bot=[];
+      for(let k=0;k<=n;k++){
+        const t=(x0+(x1-x0)*k/n)/W;const [x,y,s]=pt(t,r.y,side,d,cc,vx,vy);
+        const w=P*0.62*widthAt(s,d)*(0.35+0.65*cc);top.push([x,y-w/2]);bot.push([x,y+w/2]);
+      }
+      g.beginPath();g.moveTo(top[0][0],top[0][1]);for(const q of top)g.lineTo(q[0],q[1]);
+      for(let k=bot.length-1;k>=0;k--)g.lineTo(bot[k][0],bot[k][1]);g.closePath();g.fillStyle=fg;g.fill();
+    }
+  }
+  if(labelA>0.01){
+    g.globalAlpha=labelA;g.fillStyle=fg;
+    g.font='400 '+Math.max(10,Math.min(W,H)*0.017)+'px '+'"DM Mono", ui-monospace, Consolas, monospace';
+    g.textAlign=side===0?'left':'right';g.fillText(label,side===0?W*0.06:W*0.94,H*0.1);g.textAlign='left';g.globalAlpha=1;
+  }
+}
+
+// Timeline (progress 0..1):
+// 0.00–0.08  backend words, flat, readable on black
+// 0.06–0.38  the field bends into a corridor; each backend word flows past in turn
+// 0.38–0.50  every row collapses into one line (rust at the end)
+// 0.50–0.56  the line opens onto cream
+// 0.53–0.90  the corridor flattens; each frontend word flies in and settles, one after another
+// 0.90–1.00  frontend words, flat, readable
+function render(p){
+  p=clamp(p);
+  $('scrub').value=Math.round(p*1000);$('pct').textContent=Math.round(p*100)+'%';
+  if(p<0.5){
+    g.fillStyle=DARK;g.fillRect(0,0,W,H);
+    const d=ease(p,0.06,0.32), cc=1-ease(p,0.38,0.5);
+    const u=clamp((p-0.08)/0.3); // 0..1 across the word flow
+    const flowOf=i=>W*1.25*Math.pow(ease(u,i*0.19,i*0.19+0.43),1.25);
+    drawSide(0,d,cc,flowOf,RA,PALE,1-ease(p,0.02,0.1),BACKEND.label);
+  }else{
+    g.fillStyle=CREAM;g.fillRect(0,0,W,H);
+    const cc=ease(p,0.5,0.56), d=1-ease(p,0.6,0.9);
+    const u=clamp((p-0.53)/0.36);
+    // each word comes in from the viewer's side and settles into place
+    const flowOf=i=>-W*0.95*Math.pow(1-ease(u,i*0.17,i*0.17+0.46),1.2);
+    drawSide(1,d,cc,flowOf,RB,INK,ease(p,0.9,0.97),FRONTEND.label);
+  }
+  const flash=1-Math.min(1,Math.abs(p-0.5)/0.03);
+  if(flash>0){g.globalAlpha=flash;g.strokeStyle=RUST;g.lineWidth=2;g.beginPath();g.moveTo(0,H*0.5);g.lineTo(W,H*0.5);g.stroke();g.globalAlpha=1;}
+}
+
+// ---- Input: free, smooth scroll (no stops in this scene) ----
+let raw=0,disp=0,playing=0,last=performance.now(),drag=null;
+const stopPlay=()=>{playing=0;$('play').textContent='Oynat';};
+function tick(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  if(playing){raw=clamp(raw+playing*dt/10);if((playing>0&&raw>=1)||(playing<0&&raw<=0))stopPlay();}
+  const before=disp;disp+=(raw-disp)*Math.min(1,dt*7);
+  if(Math.abs(disp-before)>1e-5)render(disp);
+  requestAnimationFrame(tick);
+}
+window.addEventListener('wheel',e=>{if(e.target===$('scrub'))return;e.preventDefault();stopPlay();raw=clamp(raw+clamp(e.deltaY,-160,160)/2600);},{passive:false});
+window.addEventListener('pointerdown',e=>{if(e.target.closest('#dock'))return;stopPlay();drag={y:e.clientY,r:raw};});
+window.addEventListener('pointermove',e=>{if(!drag)return;raw=clamp(drag.r+(drag.y-e.clientY)/Math.max(320,H*2.2));});
+window.addEventListener('pointerup',()=>drag=null);window.addEventListener('pointercancel',()=>drag=null);
+window.addEventListener('keydown',e=>{
+  if(['ArrowDown','ArrowUp','PageDown','PageUp',' ','Home','End'].includes(e.key))e.preventDefault();
+  if(e.key==='ArrowDown'||e.key==='PageDown'||e.key===' '){stopPlay();raw=clamp(raw+.05);}
+  if(e.key==='ArrowUp'||e.key==='PageUp'){stopPlay();raw=clamp(raw-.05);}
+  if(e.key==='Home'){stopPlay();raw=0;}if(e.key==='End'){stopPlay();raw=1;}
+  if(e.key==='h'||e.key==='H')$('dock').classList.toggle('hidden');
+});
+$('scrub').addEventListener('input',e=>{stopPlay();raw=disp=e.target.value/1000;render(disp);});
+$('play').onclick=()=>{if(playing){stopPlay();return;}if(raw>=1)raw=disp=0;playing=1;$('play').textContent='Durdur';};
+$('rev').onclick=()=>{if(raw<=0)raw=disp=1;playing=-1;$('play').textContent='Durdur';};
+$('reset').onclick=()=>{stopPlay();raw=disp=0;render(0);};
+$('hide').onclick=()=>$('dock').classList.add('hidden');
+let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(build,140);});
+window.__demo={setProgress:v=>{raw=disp=clamp(v);render(disp);},get progress(){return disp}};
+
+(async()=>{
+  let ok=false;
+  try{
+    await document.fonts.load('900 100px "Big Shoulders Display"');
+    ok=document.fonts.check('900 100px "Big Shoulders Display"');
+    if(ok){const t=document.createElement('canvas').getContext('2d');
+      t.font='900 100px "Big Shoulders Display"';const a=t.measureText('FAILURE.').width;
+      t.font='900 100px Impact';const b=t.measureText('FAILURE.').width;ok=Math.abs(a-b)>1;}
+  }catch(_){ok=false;}
+  if(ok)FACE='"Big Shoulders Display", Impact, sans-serif';else $('warn').hidden=false;
+  build();requestAnimationFrame(tick);
+})();
+})();
+</script>
+</body>
+</html>

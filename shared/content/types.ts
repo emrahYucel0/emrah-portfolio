@@ -129,6 +129,24 @@ export interface LocaleCopy {
     system: { word: string; role: string; items: CapabilityItem[] }
     stack: string
   }
+  /**
+   * LINEFIELD — the passage between how the backend is thought about and how the frontend is.
+   *
+   * The eight words are drawn as MATERIAL: the rows of the field thicken inside their letters. They are set in
+   * the hero's face at a size the viewport decides, so a long word costs height for all four in its column —
+   * which is why the Turkish set is checked at 320x568 like any other layout.
+   */
+  /** present only in a Linefield build; see the note in the locale files */
+  linefield?: {
+    heading: string
+    /** four words on black: how the work is thought about underneath */
+    backend: [string, string, string, string]
+    /** and four on cream: how it is thought about at the surface */
+    frontend: [string, string, string, string]
+    /** the small label above each half */
+    backendLabel: string
+    frontendLabel: string
+  }
   work: {
     heading: string
     intro: string

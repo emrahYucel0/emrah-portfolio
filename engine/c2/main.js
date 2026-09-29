@@ -151,7 +151,32 @@ function measure() {
   root.setProperty('--safe-b', `${safe.b}px`)
 }
 
-const LAST = 5
+/*
+ * ── THE STOPS ARE NAMED, NOT NUMBERED ────────────────────────────────────────────────────────────────────────
+ *
+ * The index is a spine of places, and for the life of this site their positions have been written as the numbers
+ * 0 to 5 wherever they were needed — in the travel, in the arrivals, in the hints, in the focus tables, in the
+ * physics. That was survivable while the list never changed. It stops being survivable the moment a place is
+ * INSERTED: every number after it means a different place, and nothing in the source says so.
+ *
+ * So the spine is a list of names and every position is derived from it. The rule this project works to now is
+ * that stops are named, not numbered — see CLAUDE.md. Adding, removing or reordering a place is an edit to this
+ * one list.
+ */
+const LINEFIELD = typeof __LINEFIELD__ !== 'undefined' && __LINEFIELD__
+const SPINE = LINEFIELD
+  ? ['name', 'creative', 'system', 'linefield', 'work', 'lab', 'rest']
+  : ['name', 'creative', 'system', 'work', 'lab', 'rest']
+const STOP = Object.fromEntries(SPINE.map((n, i) => [n, i]))
+// the corridor and everything it is made of, loaded once at boot and only where the flag is on
+let LF = null
+/*
+ * THE ONE PLACE THE NAME IS WRITTEN. Everything else says LFS, so with the flag off this whole expression folds
+ * to -1 at build time and the word does not appear in the published JavaScript at all — which is the gate this
+ * feature has been held to since Phase A, and a stop number compared against -1 is simply never any stop.
+ */
+const LFS = LINEFIELD ? STOP.linefield : -1
+const LAST = SPINE.length - 1
 const N = works.length
 let IDX = [], WORKS = [], WORLD = {}, FR = {}, BLANK = null, MEDIA = {}, BRIDGE = null
 const framesOf = (k) => (FR[k] ??= framesFor(V, works[k]))
@@ -185,6 +210,9 @@ const A = {
   // the Lab stop hands over to the bench when travel settles on it, never when a state is restored onto it
   labArmed: false, hush: 0,
   aboutDetailK: 0, bridgeF: null, bridgePK: 0,
+  // LINEFIELD: the passage's own progress, 0 at the backend field and 1 at the frontend one. It is to this
+  // place what A.wt is to the work field — the axis INSIDE the stop, which the spine does not travel.
+  lfp: 0, lfExit: 0,
 }
 const ptr = { x: -1e4, y: -1e4, vx: 0, vy: 0, t: 0, hover: false, touch: false, down: false, downT: 0, sx: 0, sy: 0, moved: 0, axis: null, rub: 0, ui: false }
 const touches = new Map()
@@ -215,7 +243,17 @@ function rebuild() {
   const old = new Set([...IDX, ...WORKS, ...Object.values(WORLD).flat(), BLANK])
   BLANK = ST.blank(V)
   WORKS = works.map((w, i) => ST.workState(V, w, i))
-  IDX = [ST.name(V), ST.face(V, 'surface'), ST.face(V, 'system'), WORKS[0], ST.labState(V), ST.rest(V, A.visitOrder, A.aboutMark)]
+  // the spine, built from its names: one entry per SPINE name, in SPINE order
+  const PLACE = {
+    name: () => ST.name(V),
+    creative: () => ST.face(V, 'surface'),
+    system: () => ST.face(V, 'system'),
+    work: () => WORKS[0],
+    lab: () => ST.labState(V),
+    rest: () => ST.rest(V, A.visitOrder, A.aboutMark),
+    ...(LINEFIELD ? { linefield: () => LF.build(V, TXT.linefield) } : {}),
+  }
+  IDX = SPINE.map((n) => PLACE[n]())
   if (REDUCED) for (const s of IDX) s.ampK = 0
   capReset()
   WORLD = {}; FR = {}
@@ -231,14 +269,14 @@ function rebuild() {
   A.press = null; A.squeeze = null; A.busy = false; A.shiver = 0; A.introF = null; A.nameAmp = REDUCED ? 0 : 1
   if (A.aboutOpen) { A.about = aboutFeature(1); A.features.add(A.about) }
   if (BRIDGE) { BRIDGE.dead = true; surface.release(BRIDGE); BRIDGE = null }
-  if (A.mode === 'bridge') { A.mode = 'index'; A.p = A.pT = A.base = A.prevBase = 4; A.bridgeF = null; A.bridgePK = 1 }
+  if (A.mode === 'bridge') { A.mode = 'index'; A.p = A.pT = A.base = A.prevBase = STOP.lab; A.bridgeF = null; A.bridgePK = 1 }
   if (A.mode === 'intro') { A.mode = 'index'; A.introReg = 0 }
   if (A.staticHero) { A.nameAmp = 0; paintStaticHero() }
-  if (A.mode === 'exit') { A.mode = 'index'; A.p = A.pT = A.base = A.prevBase = 3; A.worldOn = false }
-  if (A.base === 5) A.restOpen = 1
+  if (A.mode === 'exit') { A.mode = 'index'; A.p = A.pT = A.base = A.prevBase = STOP.work; A.worldOn = false }
+  if (A.base === STOP.rest) A.restOpen = 1
   layoutDOM()
   if (A.mode === 'world') { mediaFor(A.k); fillWorldDOM(A.k); Object.assign(A.world, worldGeom(A.wp)) }
-  queueWarm([IDX[1], IDX[2], IDX[4], IDX[5]])
+  queueWarm([IDX[STOP.creative], IDX[STOP.system], IDX[STOP.lab], IDX[STOP.rest]])
   const built = WORKS
   tonesReady.then(() => { if (WORKS === built) queueWarm(WORKS.slice(0, 3)) })
 }
@@ -260,6 +298,34 @@ function warmStep(deadline) {
 
 // ─── input ───────────────────────────────────────────────────────────────────
 const settledAt = (i) => A.mode === 'index' && A.base === i && Math.abs(A.p - i) < 0.04
+/*
+ * scrollBy() speaks in STOPS: one unit is one place, and a 100px wheel notch is about 0.11 of one. The passage
+ * speaks in its own units, where a 100px notch is 0.067 (see LF_WHEEL_SPAN). This is the ratio between them, so
+ * the tuning measured in Phase B is the tuning the site runs on and there is not a second set of numbers.
+ */
+const LF_PUSH = 0.067 / (100 * 0.0011)
+/** is a vertical finger right now the passage's own drag rather than travel between places */
+const lfDrag = () => LINEFIELD && settledAt(LFS) && !A.busy && !A.aboutOpen
+/*
+ * A FINGER HELD AT EITHER END CARRIES ON ALONG THE SPINE. The drive clamps at 0 and 1, so a drag that has
+ * arrived at an end would otherwise sit there pulling against nothing. What it pulls against is measured — the
+ * finger's distance past where the end was reached — and once it is a real gesture's worth, the spine takes it.
+ */
+function lfEdge(now) {
+  const t = LF.drive.target
+  if (t > 0.0005 && t < 0.9995) { A.lfExit = 0; A.lfEdgeY = null; return }
+  const dir = t > 0.5 ? 1 : -1
+  A.lfEdgeY ??= ptr.y
+  const past = (A.lfEdgeY - ptr.y) * dir
+  if (past < V.H * 0.14) return
+  A.lfEdgeY = null
+  A.lfExit = 0
+  LF.drive.stop()
+  A.gesture = false
+  A.leftWork = now
+  endGesture()
+  A.base = A.pT = clamp(LFS + dir, 0, LAST)
+}
 function scrollBy(d, touch = false) {
   const now = performance.now()
   // A gesture that already carried the visitor to this place does not also carry them past it. Leaving the Lab
@@ -273,16 +339,43 @@ function scrollBy(d, touch = false) {
   if (A.mode === 'index') {
     // the rest of a gesture that just carried the visitor off the work field does not also carry them past the next place
     if (now - (A.leftWork || 0) < 650) { A.lastInput = now; return }
+    /*
+     * THE PASSAGE IS THE STOP'S OWN AXIS, and scrolling drives it — the work field's rule, on the axis of travel
+     * rather than across it. At either end the gesture is allowed a little further, and then it becomes what it
+     * plainly is: the visitor continuing along the spine. One gesture stays one stop, because leaving sets
+     * A.gesture false and arms the same tail guard the work field uses.
+     */
+    if (LINEFIELD && settledAt(LFS)) {
+      const t = LF.drive.target
+      const atEnd = (d > 0 && t > 0.9995) || (d < 0 && t < 0.0005)
+      if (atEnd) {
+        A.lfExit += Math.abs(d)
+        if (A.lfExit > LF.exitMargin) {
+          A.lfExit = 0
+          A.gesture = false
+          A.leftWork = now
+          A.base = A.pT = clamp(LFS + Math.sign(d), 0, LAST)
+        }
+        A.lastInput = now
+        return
+      }
+      A.lfExit = 0
+      LF.drive.push(d * LF_PUSH)
+      A.lastInput = now
+      return
+    }
     // wheel tunes the work field; a finger tunes it sideways and swipes vertically between places
-    if (settledAt(3) && !touch) {
+    if (settledAt(STOP.work) && !touch) {
       A.wT += d * 2.6   // two notches of a wheel carry one work out of register and the next one in
       A.lastInput = now
-      if (A.wT < -0.45) { A.wT = 0; A.base = 2; A.pT = 2.35; A.gesture = false; A.leftWork = now }
+      // back off the near end of the work field is back to whatever place comes before it — which is Full-Stack
+      // on a published build and the passage on a Linefield one. Named, so inserting a place cannot skip it.
+      if (A.wT < -0.45) { A.wT = 0; A.base = STOP.work - 1; A.pT = A.base + 0.35; A.gesture = false; A.leftWork = now }
       else if (A.wT > N - 1 + 0.45) { A.wT = N - 1; A.gesture = false; startBridge() }
       return
     }
     // a finger swiping on past the work field carries the whole field into the Lab
-    if (settledAt(3) && touch && d > 0) { A.bridgeAcc = (A.bridgeAcc || 0) + d; if (A.bridgeAcc > 0.12) { A.bridgeAcc = 0; startBridge() } A.lastInput = now; return }
+    if (settledAt(STOP.work) && touch && d > 0) { A.bridgeAcc = (A.bridgeAcc || 0) + d; if (A.bridgeAcc > 0.12) { A.bridgeAcc = 0; startBridge() } A.lastInput = now; return }
     A.pT = clamp(A.pT + d, 0, LAST)
   } else if (A.mode === 'world') {
     const last = lastFrame()
@@ -294,7 +387,7 @@ function scrollBy(d, touch = false) {
   A.gesture = true; A.lastInput = now; A.labArmed = true
 }
 function go(i) {
-  if (A.mode === 'index') { if (i === 4 && settledAt(3)) { startBridge(); return } A.base = A.pT = clamp(i, 0, LAST) }
+  if (A.mode === 'index') { if (i === STOP.lab && settledAt(STOP.work)) { startBridge(); return } A.base = A.pT = clamp(i, 0, LAST) }
   else if (A.mode === 'world') { A.wbase = A.wpT = clamp(i, 0, lastFrame()) }
   A.gesture = false; A.lastInput = -1e9; A.labArmed = true
 }
@@ -371,12 +464,24 @@ addEventListener('pointermove', (e) => {
     if (!ptr.axis && leaves) {
       ptr.axis = Math.abs(oy) > Math.abs(ox) ? 'y' : 'x'
       if (A.press && !A.press.forced && !loaded) cancelPress(A.press)
-      if (ptr.axis === 'y') scrollBy(-(oy - dy) / (V.H * 0.5), true)
+      /*
+       * ON THE PASSAGE, A VERTICAL FINGER IS THE PASSAGE'S OWN DRAG.
+       *
+       * Everywhere else a vertical swipe is a stop's worth of travel and goes through scrollBy(), which measures
+       * in half screens. Here it drives the corridor at the distance tuned for it, one to one with the finger,
+       * and hands the drive its velocity when it lifts — which is where the momentum comes from. Routing it
+       * through scrollBy() instead would have run it at about twice the tuned speed and thrown the flick away.
+       */
+      if (ptr.axis === 'y' && lfDrag()) LF.drive.dragStart(cy - dy)
+      else if (ptr.axis === 'y') scrollBy(-(oy - dy) / (V.H * 0.5), true)
     }
-    if (ptr.axis === 'y') scrollBy(-dy / (V.H * 0.5), true)
+    if (ptr.axis === 'y') {
+      if (lfDrag()) { LF.drive.dragMove(cy); A.lastInput = now; lfEdge(now) }
+      else scrollBy(-dy / (V.H * 0.5), true)
+    }
     if (ptr.axis === 'x') {
       // the thumb moves the layers directly: one work per half screen of travel
-      if (settledAt(3)) { A.wT = clamp(A.wT - dx / (V.W * 0.5), -0.3, N - 1 + 0.3); A.lastInput = now }
+      if (settledAt(STOP.work)) { A.wT = clamp(A.wT - dx / (V.W * 0.5), -0.3, N - 1 + 0.3); A.lastInput = now }
       else A.regDragT += dx
     }
   }
@@ -389,6 +494,7 @@ const up = (e) => {
   }
   // a cancelled gesture was not a tap
   if (e?.type !== 'pointercancel' && ptr.down && !ptr.ui && now - ptr.downT < 200 && ptr.moved < 8) tap(ptr.x, ptr.y)
+  if (LINEFIELD && LF.drive.dragging) LF.drive.dragEnd()
   // a gesture that travelled was not a click on what it started on (see the swallow in the UI's click handler)
   ptr.swiped = ptr.down && (ptr.axis !== null || ptr.moved > 12)
   ptr.down = false; ptr.axis = null; ptr.ui = false; ptr.rub = 0
@@ -424,10 +530,20 @@ addEventListener('keydown', (e) => {
   // they keep moving through the portfolio from wherever focus is (only a scrolling text keeps them)
   if (e.target.closest?.('.scroll') && ['Enter', ' ', 'ArrowDown', 'ArrowUp', 'PageDown', 'PageUp'].includes(e.key)) return
   if (e.target.closest?.('button, a') && ['Enter', ' '].includes(e.key)) return
-  const onWork = settledAt(3)
+  const onWork = settledAt(STOP.work)
   if (onWork && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) { A.wT = clamp(Math.round(A.wT) + (e.key === 'ArrowRight' ? 1 : -1), 0, N - 1); A.lastInput = performance.now(); return }
-  if (['ArrowDown', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); if (A.aboutOpen) { if (!A.aboutDetail) closeAbout(); return } go((A.mode === 'world' ? A.wbase : A.base) + 1) }
-  if (['ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); if (A.aboutOpen) { if (!A.aboutDetail) closeAbout(); return } go((A.mode === 'world' ? A.wbase : A.base) - 1) }
+  const step = ['ArrowDown', 'PageDown', ' '].includes(e.key) ? 1 : ['ArrowUp', 'PageUp'].includes(e.key) ? -1 : 0
+  if (step) {
+    e.preventDefault()
+    if (A.aboutOpen) { if (!A.aboutDetail) closeAbout(); return }
+    // on the passage a key advances the passage, and only carries on along the spine from its far end
+    if (LINEFIELD && settledAt(LFS)) {
+      const t = LF.drive.target
+      if (!((step > 0 && t > 0.9995) || (step < 0 && t < 0.0005))) { LF.drive.nudge(step * LF.keyStep); A.lastInput = performance.now(); return }
+      LF.drive.stop()
+    }
+    go((A.mode === 'world' ? A.wbase : A.base) + step)
+  }
   if (e.key === 'Enter') {
     const st = current()
     if (A.mode === 'index' && st.beneath === 'about') forcedPress(aboutX(), st.layout.gapY)
@@ -449,7 +565,7 @@ const registeredWork = () => (A.wLocked >= 0 && WORKS[A.wLocked]?.fill > 0.5 ? A
 function current() {
   if (A.mode === 'world' || A.mode === 'exit') return worldFor(A.k)[clamp(Math.round(A.wp), 0, lastFrame())]
   const s = clamp(Math.round(A.p), 0, LAST)
-  return s === 3 ? WORKS[clamp(Math.round(A.wt), 0, N - 1)] : IDX[s]
+  return s === STOP.work ? WORKS[clamp(Math.round(A.wt), 0, N - 1)] : IDX[s]
 }
 function pressable(st, x, y) {
   if (A.busy || A.aboutOpen || A.squeeze) return false
@@ -527,7 +643,7 @@ function yieldPress(pr) {
   const st = pr.st, f = pr.f
   phys.mark(f.cx, f.cy, V.W * 0.28, 30 + f.h, 0.4, 0.9)
   // the place where the surface gave way is remembered by the sheet
-  if (A.mode === 'index') { A.yieldMarks.push({ x: f.cx, y: st.beneath === 'about' ? IDX[0].layout.gapY : f.cy, big: st.beneath !== 'state' }); HOST.emit('scarCommitted', { x: f.cx / V.W, y: f.cy / V.H, source: st.beneath === 'about' ? 'about' : 'work' }) }
+  if (A.mode === 'index') { A.yieldMarks.push({ x: f.cx, y: st.beneath === 'about' ? IDX[STOP.name].layout.gapY : f.cy, big: st.beneath !== 'state' }); HOST.emit('scarCommitted', { x: f.cx / V.W, y: f.cy / V.H, source: st.beneath === 'about' ? 'about' : 'work' }) }
   haptic([12, 50, 26])
   const tl = gsap.timeline()
   tl.to(A, { shiver: 1, duration: 0.06, ease: 'none' }).to(A, { shiver: 0, duration: 0.28, ease: 'power2.out' })
@@ -568,7 +684,7 @@ function openLab() {
  */
 function arriveAt(target) {
   // every place on the index except the Lab itself: the Lab is a route, not somewhere this index arrives
-  const stop = { name: 0, creative: 1, system: 2, work: 3, rest: 5 }[target]
+  const stop = { name: STOP.name, creative: STOP.creative, system: STOP.system, work: STOP.work, rest: STOP.rest, ...(LINEFIELD ? { linefield: STOP.linefield } : {}) }[target]
   if (stop == null) return false
   endGesture()
   gsap.killTweensOf(A)
@@ -580,7 +696,7 @@ function arriveAt(target) {
   A.mode = 'index'; A.worldOn = false; A.busy = false; A.pending = null
   A.shiver = 0; A.bridgePK = 1; A.introReg = 0; A.nameAmp = REDUCED ? 0 : 1
   A.p = A.pT = A.base = stop
-  A.prevBase = 4        // the Lab: the frame loop announces the arrival and composes the field accordingly
+  A.prevBase = STOP.lab   // the Lab: the frame loop announces the arrival and composes the field accordingly
   A.restOpen = 0
   A.gesture = false; A.lastInput = -1e9
   A.labArmed = false
@@ -595,7 +711,7 @@ function arriveAt(target) {
 const aboutHalf = () => (V.P ? (V.H < 640 ? 0.27 : 0.235) : V.S ? 0.3 : V.H < 820 ? 0.215 : 0.2) * V.H   // a 13-inch laptop: a little more room between the names
 const aboutX = () => (V.P ? V.W / 2 : V.W * 0.3)
 function aboutFeature(open) {
-  return feature({ cx: aboutX(), cy: IDX[0].layout.gapY, h: aboutHalf() * open, hw: V.P ? 1e5 : V.W * 0.9, falloff: V.P ? 70 : 110, lip: 5, lipW: 7 })
+  return feature({ cx: aboutX(), cy: IDX[STOP.name].layout.gapY, h: aboutHalf() * open, hw: V.P ? 1e5 : V.W * 0.9, falloff: V.P ? 70 : 110, lip: 5, lipW: 7 })
 }
 function openAbout(f, tl) {
   A.about = f; A.aboutOpen = true; A.learned.open = true
@@ -636,7 +752,7 @@ function expandAbout(push) {
   const ad = D.detail.querySelector('.ad')
   ad.scrollTop = 0
   gsap.to(A, { aboutDetailK: 1, duration: 1.5, ease: 'expo.inOut', onComplete: () => { if (A.aboutDetail) (ad.querySelector('h2') || ad).focus({ preventScroll: true }) } })
-  const gy = IDX[0].layout.gapY
+  const gy = IDX[STOP.name].layout.gapY
   phys.kick(gy - aboutHalf() - 24, -36); phys.kick(gy + aboutHalf() + 24, 36)
 }
 function collapseAbout(push) {
@@ -701,10 +817,10 @@ if (!globalThis.__c2Hosted) addEventListener('popstate', routeChanged)
 
 // SURFACE FACE ⇄ SYSTEM FACE
 function pushThrough(f, tl) {
-  const target = Math.round(A.p) === 1 ? 2 : 1
+  const target = Math.round(A.p) === STOP.creative ? STOP.system : STOP.creative
   tl.to(f, { h: V.H * 1.3, hw: 14000, falloff: 80, duration: 0.9, ease: 'power3.in' }, 0.05)
     .add(() => {
-      A.features.delete(f); A.p = A.pT = A.base = A.prevBase = target; A.quality[target === 1 ? 'creative' : 'system'] = 1
+      A.features.delete(f); A.p = A.pT = A.base = A.prevBase = target; A.quality[target === STOP.creative ? 'creative' : 'system'] = 1
       A.busy = false; A.learned.face = true
     })
 }
@@ -746,7 +862,7 @@ function exit() {
     .to(A.world, { cy: full.cy, sigma: full.sigma, Lm: full.Lm, s: full.s, duration: A.wp > last - 0.1 ? 0.01 : 0.9, ease: 'power3.inOut' })
     .add(() => { A.worldOn = false; A.from = worldFor(k)[fr]; A.to = WORKS[k]; A.front = 0; A.wT = A.wt = k; A.wLocked = k; WORKS[k].fill = 1; WORKS[k].lod = 0 })
     .to(A, { front: 1, duration: 1.3, ease: 'power2.inOut' })
-    .add(() => { A.mode = 'index'; A.p = A.pT = A.base = A.prevBase = 3; A.busy = false; if (A.pending) return   /* leaving for another place: that arrival takes focus */
+    .add(() => { A.mode = 'index'; A.p = A.pT = A.base = A.prevBase = STOP.work; A.busy = false; if (A.pending) return   /* leaving for another place: that arrival takes focus */
       if (back || A.focusNext) { A.focusNext = 0; wantFocus(() => D.work.querySelector(`[data-work="${k}"]`)) } else announce(TXT.work.heading) })
 }
 
@@ -821,12 +937,12 @@ function registration(now, dt) {
     s.reg.a0 = -px * amt; s.reg.a1 = px * amt; s.reg.va0 = -pv * amt; s.reg.va1 = pv * amt
     s.reg.holdA = 1 - 0.74 * smooth(0, 0.55, amt); s.reg.phase = amt * 2.6
   }
-  split(IDX[0], A.introReg, spread * 1.4)
-  IDX[0].amp = A.nameAmp
-  if (A.mode === 'index' && A.p > 1 && A.p < 2) split(IDX[1], smooth(0.02, 0.4, A.p - 1) * 0.6, spread)
+  split(IDX[STOP.name], A.introReg, spread * 1.4)
+  IDX[STOP.name].amp = A.nameAmp
+  if (A.mode === 'index' && A.p > 1 && A.p < 2) split(IDX[STOP.creative], smooth(0.02, 0.4, A.p - 1) * 0.6, spread)
   if (!ptr.down) A.regDragT = damp(A.regDragT, 0, 9, dt)
   A.regDrag = damp(A.regDrag, A.regDragT, ptr.down ? 16 : 11, dt)
-  if ((settledAt(1) || settledAt(2)) && Math.abs(A.regDrag) > 0.5) split(IDX[A.base], clamp(Math.abs(A.regDrag) / spread, 0, 1), Math.sign(A.regDrag) * spread * 0.5)
+  if ((settledAt(STOP.creative) || settledAt(STOP.system)) && Math.abs(A.regDrag) > 0.5) split(IDX[A.base], clamp(Math.abs(A.regDrag) / spread, 0, 1), Math.sign(A.regDrag) * spread * 0.5)
 
   // the work field: every work is written as fragments on its own key; only one agrees at a time
   const sx = V.P ? V.W * 0.24 : V.W * 0.13, sy = V.P ? 5.2 : 7
@@ -839,9 +955,9 @@ function registration(now, dt) {
     if (onWork && A.wLocked !== i && ad < 0.003) lockWork(i)
     else if (A.wLocked === i && ad > 0.025) unlockWork(i)
   })
-  split(IDX[5], A.restReg, 8)
+  split(IDX[STOP.rest], A.restReg, 8)
   if (WORLD[A.k]) { const full = WORLD[A.k][lastFrame()]; split(full, A.nextReg, V.W * 0.13, 7); full.vis = 1 }
-  for (const s of [IDX[0], IDX[5]]) {
+  for (const s of [IDX[STOP.name], IDX[STOP.rest]]) {
     const q = 1 - smooth(0, 3, Math.abs(s.reg.a1 - s.reg.a0))
     const prev = A.quality[s.id] ?? 1
     if (prev < 0.9 && q >= 0.999) lockRipple(s)
@@ -881,15 +997,26 @@ function unlockWork(i) {
 function onArrive(stop, prev) {
   A.arrivedAt = performance.now()
   // on the way to the About room the room itself is the destination; the name is only passed through
-  if (!(stop === 0 && A.pending === 'about')) arrived(() => PLACE_HEADING[stop]?.(), PLACE_NAME[stop]?.())
-  if (stop === 3 && prev !== 3) {
+  if (!(stop === STOP.name && A.pending === 'about')) arrived(() => PLACE_HEADING[stop]?.(), PLACE_NAME[stop]?.())
+  /*
+   * THE PASSAGE IS ENTERED AT THE END IT IS ENTERED FROM. One gesture out of Full-Stack starts it at the
+   * backend field; one gesture back out of Work starts it at the frontend field, and it then runs in reverse.
+   * Whatever a flick had left running is stopped on the way out, so a momentum from one place never carries
+   * into the next.
+   */
+  if (LINEFIELD && (stop === LFS || prev === LFS)) {
+    LF.drive.stop()
+    A.lfExit = 0; A.lfEdgeY = null
+    if (stop === LFS) { const at = prev > LFS ? 1 : 0; LF.drive.set(at); A.lfp = at }
+  }
+  if (stop === STOP.work && prev !== STOP.work) {
     // arriving on the work field, the first (or last) work is still in pieces
-    if (prev > 3) { A.wT = N - 1; A.wt = N - 1 + 0.9 } else { A.wT = 0; A.wt = -0.9 }
+    if (prev > STOP.work) { A.wT = N - 1; A.wt = N - 1 + 0.9 } else { A.wT = 0; A.wt = -0.9 }
     tonesReady.then(() => queueWarm(WORKS))
   }
-  if (stop === 5) {
+  if (stop === STOP.rest) {
     const key = `${A.visitOrder.join(',')}|${A.aboutMark ? 'a' : 'd'}`
-    if (IDX[5].visitKey !== key) { const old = IDX[5]; IDX[5] = ST.rest(V, A.visitOrder, A.aboutMark); if (A.from !== old && A.to !== old) { old.dead = true; surface.release(old) } placeRest() }
+    if (IDX[STOP.rest].visitKey !== key) { const old = IDX[STOP.rest]; IDX[STOP.rest] = ST.rest(V, A.visitOrder, A.aboutMark); if (A.from !== old && A.to !== old) { old.dead = true; surface.release(old) } placeRest() }
     gsap.killTweensOf(A, 'restReg,restOpen')
     A.restReg = 1; A.restOpen = 0
     // Contact registers, then opens — the same two movements as when the name gave way to the person. The lead-in
@@ -1010,6 +1137,16 @@ function buildDOM() {
       <div class="current"><p class="wtitle" aria-hidden="true"></p><p class="wmeta" aria-hidden="true"></p><button class="open" data-open aria-label="${OPEN_WORK()} — ${TXT.a11y.openProject}" aria-describedby="c2-open-hint">${OPEN_WORK()}</button><span id="c2-open-hint" class="sr">${TXT.a11y.openHint}</span></div>
     </div>`)
 
+  /*
+   * The passage in the DOM: a heading to land focus on and to name the place, and the eight words themselves for
+   * a reader who cannot see them in the material. The field IS the content here, so there is nothing else to say.
+   */
+  if (LINEFIELD) {
+    D.lf = h('section', 'layer lf-place', `<h2 class="lbl sr" tabindex="-1">${TXT.linefield.heading}</h2>
+      <p class="lf-lab lf-back">${TXT.linefield.backendLabel}</p><p class="lf-lab lf-front">${TXT.linefield.frontendLabel}</p>
+      <p class="sr">${TXT.linefield.backendLabel}: ${TXT.linefield.backend.join(' ')}. ${TXT.linefield.frontendLabel}: ${TXT.linefield.frontend.join(' ')}</p>`)
+  }
+
   D.lab = h('section', 'layer lab', `<div class="cap"><h2 class="lbl" tabindex="-1">${lab.title}</h2><p class="ltext">${lab.line}</p>
     <p class="lopen"><a href="${LAB_URL}" data-lab>${lab.open} — ${lab.count}</a></p></div>
     <p class="lab-now" aria-live="polite"></p>
@@ -1039,6 +1176,7 @@ function buildDOM() {
 
   D.main = h('main', 'layers')
   D.main.append(D.h1, D.heroAct, D.about, D.detail, D.creative, D.system, D.work, D.lab, D.rest, D.world)
+  if (LINEFIELD) D.main.insertBefore(D.lf, D.work)
   lastSaid = ''
   D.top.prepend(D.skip)
   D.h1.after(D.lead, D.keys)
@@ -1056,7 +1194,7 @@ function buildDOM() {
 
 }
 function navigate(target) {
-  const stop = { name: 0, about: 0, creative: 1, system: 2, work: 3, lab: 4, rest: 5 }[target]
+  const stop = { name: STOP.name, about: STOP.name, creative: STOP.creative, system: STOP.system, work: STOP.work, lab: STOP.lab, rest: STOP.rest, ...(LINEFIELD ? { linefield: STOP.linefield } : {}) }[target]
   if (A.mode === 'world') { exit(); A.pending = target; return }
   if (A.aboutOpen && target !== 'about') closeAbout()
   if (A.mode !== 'index') return
@@ -1065,13 +1203,13 @@ function navigate(target) {
 }
 function runPending() {
   if (!A.pending || A.busy) return
-  const atName = A.mode === 'index' && A.base === 0 && Math.abs(A.p) < 0.02
-  if (A.pending === 'about') { if (atName) { A.pending = null; if (!A.aboutOpen) forcedPress(aboutX(), IDX[0].layout.gapY) } }
+  const atName = A.mode === 'index' && A.base === STOP.name && Math.abs(A.p) < 0.02
+  if (A.pending === 'about') { if (atName) { A.pending = null; if (!A.aboutOpen) forcedPress(aboutX(), IDX[STOP.name].layout.gapY) } }
   else if (A.pending === 'detail') {
     if (A.mode !== 'index' || A.press) return
     if (A.aboutOpen) { A.pending = null; expandAbout(false); if (A.detailPushedLater) { A.detailPushed = true; A.detailPushedLater = false } }
-    else if (A.base !== 0) go(0)
-    else if (atName) forcedPress(aboutX(), IDX[0].layout.gapY)
+    else if (A.base !== STOP.name) go(STOP.name)
+    else if (atName) forcedPress(aboutX(), IDX[STOP.name].layout.gapY)
   } else if (A.pending === 'next' && A.mode === 'world' && Math.abs(A.wp - lastFrame()) < 0.02) {
     const full = worldFor(A.k)[lastFrame()]
     // the press begins as the frame comes solid, not after it has finished doing so; and once the visitor has
@@ -1107,8 +1245,28 @@ function fillWorldDOM(k) {
 // A place reached from the keyboard moves focus to its own heading — the reader lands where the content is, and the
 // arrow keys keep working from there (headings are not controls). A place reached any other way (pointer, touch, a
 // screen reader's own activation) is named once in a polite status line. Nothing is announced per frame.
-const PLACE_HEADING = [() => D.h1, () => D.creative.querySelector('h2'), () => D.system.querySelector('h2'), () => D.work.querySelector('h2'), () => D.lab.querySelector('h2'), () => D.rest.querySelector('h2')]
-const PLACE_NAME = [() => identity.name, () => capabilities.surface.role, () => capabilities.system.role, () => TXT.work.heading, () => lab.title, () => TXT.contact.heading]
+// keyed by the place's NAME, then read through SPINE: inserting a place cannot silently retarget the focus of
+// every place after it, which is exactly what an array indexed by stop number would have done
+const HEADING_OF = {
+  ...(LINEFIELD ? { linefield: () => D.lf?.querySelector('h2') } : {}),
+  name: () => D.h1,
+  creative: () => D.creative.querySelector('h2'),
+  system: () => D.system.querySelector('h2'),
+  work: () => D.work.querySelector('h2'),
+  lab: () => D.lab.querySelector('h2'),
+  rest: () => D.rest.querySelector('h2'),
+}
+const NAME_OF = {
+  ...(LINEFIELD ? { linefield: () => TXT.linefield?.heading } : {}),
+  name: () => identity.name,
+  creative: () => capabilities.surface.role,
+  system: () => capabilities.system.role,
+  work: () => TXT.work.heading,
+  lab: () => lab.title,
+  rest: () => TXT.contact.heading,
+}
+const PLACE_HEADING = SPINE.map((n) => () => HEADING_OF[n]())
+const PLACE_NAME = SPINE.map((n) => () => NAME_OF[n]())
 let focusWant = null, lastSaid = ''
 // focus is taken as soon as the element exists and is no longer inert (layers turn on after their transition)
 function wantFocus(get) { focusWant = { get, until: performance.now() + 6000 } }
@@ -1143,9 +1301,17 @@ function focusKey(el) {
   return null
 }
 const place = (el, r) => Object.assign(el.style, { left: `${r.x}px`, top: `${r.y}px`, width: `${r.w}px`, height: r.h != null ? `${r.h}px` : '' })
-function placeRest() { place(D.rest.querySelector('.contact'), IDX[5].layout.block) }
+function placeRest() { place(D.rest.querySelector('.contact'), IDX[STOP.rest].layout.block) }
 function layoutDOM() {
   const [nm, cre, sys] = IDX
+  if (LINEFIELD && D.lf) {
+    // one box for both labels, set from the same margin the words are: the back reads from the left, the
+    // front from the right, exactly as their words do
+    const L = LF.back.layout
+    const box = { x: V.W * 0.06, y: L.labelY, w: V.W * 0.88, h: L.labelH }
+    place(D.lf.querySelector('.lf-back'), box)
+    place(D.lf.querySelector('.lf-front'), box)
+  }
   const ah = aboutHalf(), gy = nm.layout.gapY
   place(D.about.querySelector('.block'), { x: V.pad, y: gy - ah + 14, w: Math.min(V.W - V.pad * 2, 760), h: ah * 2 - 28 })
   /*
@@ -1179,7 +1345,7 @@ const setOn = (el, on) => { if (onState.get(el) !== on) { onState.set(el, on); e
 // the destination the UI belongs to, read from the fields that already own it: the mode, the stop the engine has
 // been sent to, and whether the About room is open. No second state machine — these are the same fields routing,
 // history and the surface are driven by.
-const DEST_AT = ['name', 'creative', 'system', 'work', 'lab', 'rest']
+const DEST_AT = SPINE
 function uiDestination() {
   if (A.mode === 'world' || A.mode === 'exit') return 'world'
   if (A.aboutOpen) return A.aboutDetail ? 'about-detail' : 'about'
@@ -1196,8 +1362,8 @@ function hintFor(stop) {
   // The hero taught the hold that opened About, and the Lab stop taught the hold that made a room. Neither is true
   // any more: About is a control on the hero, and the Lab is a route that opens on arrival. A place teaches only
   // what it still asks for — the two faces and the work field do; the hero and the Lab stop stay quiet.
-  if (stop === 1 || stop === 2) return !A.learned.face && since > 2500 ? (TOUCH ? H.faceTouch : H.face) : quiet
-  if (stop === 3) return !A.learned.work && since > 2500 ? (TOUCH ? H.workTouch : H.work) : quiet
+  if (stop === STOP.creative || stop === STOP.system) return !A.learned.face && since > 2500 ? (TOUCH ? H.faceTouch : H.face) : quiet
+  if (stop === STOP.work) return !A.learned.work && since > 2500 ? (TOUCH ? H.workTouch : H.work) : quiet
   return quiet
 }
 function stripTones(dom) {
@@ -1218,8 +1384,8 @@ function stripTones(dom) {
 const FACE_WHOLE = [0.1, 0.7]
 function domUpdate(from, to, front) {
   focusStep()
-  const faceT = A.mode === 'index' && from === IDX[1] && to === IDX[2] ? A.p - 1 : null
-  const face = faceT == null ? null : A.base === 2 && faceT >= FACE_WHOLE[1] ? IDX[2] : A.base === 1 && faceT <= FACE_WHOLE[0] ? IDX[1] : null
+  const faceT = A.mode === 'index' && from === IDX[STOP.creative] && to === IDX[STOP.system] ? A.p - 1 : null
+  const face = faceT == null ? null : A.base === STOP.system && faceT >= FACE_WHOLE[1] ? IDX[STOP.system] : A.base === STOP.creative && faceT <= FACE_WHOLE[0] ? IDX[STOP.creative] : null
   const dom = face || (front < 0.5 ? from : to)
   const idleIdx = A.mode === 'index' && !A.busy
   const loaded = (A.press && A.press.L > 0.1 && A.press.st.beneath !== 'pin') || !!A.squeeze
@@ -1235,18 +1401,26 @@ function domUpdate(from, to, front) {
     setOn(D.creative, d === 'creative')
     setOn(D.system, d === 'system')
     setOn(D.work, d === 'work')
+    if (LINEFIELD) setOn(D.lf, d === 'linefield')
     setOn(D.rest, d === 'rest')
     setOn(D.world, d === 'world')
   } else {
     // it belongs to the hero, so it is there whenever the hero is: from the first frame of the opening, and gone
     // while the room it opens is opening — the room's own text arrives in its place
-    setOn(D.heroAct, idleIdx && at(0) && !loaded && !A.aboutOpen)
+    setOn(D.heroAct, idleIdx && at(STOP.name) && !loaded && !A.aboutOpen)
     setOn(D.about, A.aboutOpen && !A.aboutDetail && A.aboutDetailK < 0.02 && !!A.about && A.about.h > aboutHalf() * 0.82 && A.about.h < aboutHalf() * 1.15)
     setOn(D.detail, A.aboutOpen && A.aboutDetail && A.aboutDetailK > 0.72)
-    setOn(D.creative, idleIdx && at(1) && !loaded)
-    setOn(D.system, idleIdx && at(2) && !loaded)
-    setOn(D.work, idleIdx && at(3) && !loaded)
-    setOn(D.rest, idleIdx && at(5) && A.restOpen > 0.72)
+    setOn(D.creative, idleIdx && at(STOP.creative) && !loaded)
+    setOn(D.system, idleIdx && at(STOP.system) && !loaded)
+    setOn(D.work, idleIdx && at(STOP.work) && !loaded)
+    // the heading belongs to the ends of the passage, not to the middle of it: nothing is read while it moves
+    if (LINEFIELD) {
+      setOn(D.lf, idleIdx && at(LFS) && !loaded && (A.lfp < 0.02 || A.lfp > 0.98) && !LF.drive.moving(A.lfp))
+      // and only the half that is actually on screen is named
+      D.lf.querySelector('.lf-back').classList.toggle('on', A.lfp < 0.5)
+      D.lf.querySelector('.lf-front').classList.toggle('on', A.lfp >= 0.5)
+    }
+    setOn(D.rest, idleIdx && at(STOP.rest) && A.restOpen > 0.72)
     setOn(D.world, A.mode === 'world' || A.mode === 'exit')
   }
   if (D.lead.hidden !== A.aboutOpen) D.lead.hidden = A.aboutOpen
@@ -1270,7 +1444,7 @@ function domUpdate(from, to, front) {
   const [tt, tb] = stripTones(dom)
   if (tt !== lastTT) { D.top.dataset.tone = tt; D.world.querySelector('.wnav').dataset.tone = tt; lastTT = tt }
   if (tb !== lastTB) { D.bottom.dataset.tone = tb; lastTB = tb }
-  const parting = A.mode === 'index' && ((from === IDX[1] && to === IDX[2] && A.p > 1.001) || A.press?.st.beneath === 'state' || A.squeeze?.st.beneath === 'state')
+  const parting = A.mode === 'index' && ((from === IDX[STOP.creative] && to === IDX[STOP.system] && A.p > 1.001) || A.press?.st.beneath === 'state' || A.squeeze?.st.beneath === 'state')
   const bg = inWorld || A.mode === 'exit' ? '#0b0c0e' : (parting && A.beneathSt ? A.beneathSt.bg : dom.bg)
   if (bg !== lastBg) { document.body.style.backgroundColor = bg; lastBg = bg }
 
@@ -1334,7 +1508,7 @@ function startBridge() {
   A.from = work; A.to = BRIDGE; A.front = 0
   const f = A.bridgeF = gather({ cx: V.W / 2, cy: V.H / 2, sigma: V.H * 2.6, Lm: V.H * 0.64, s: 0 })
   if (REDUCED) {
-    A.bridgeF = null; A.to = IDX[4]
+    A.bridgeF = null; A.to = IDX[STOP.lab]
     gsap.to(A, { front: 1, bridgePK: 1, duration: 0.4, ease: 'none', onComplete: finishBridge })
     return
   }
@@ -1350,7 +1524,7 @@ function startBridge() {
     .to(u, { t: 1, duration: 0.95, ease: 'power3.in', onUpdate: set }, 0)
     .add(() => { A.shiver = 0.32; haptic([10, 40, 10]) }, 0.95)
     .to(A, { shiver: 0, duration: 0.45, ease: 'power2.in' }, 1.02)
-    .add(() => { A.from = BRIDGE; A.to = IDX[4]; A.front = 0 }, 1.25)
+    .add(() => { A.from = BRIDGE; A.to = IDX[STOP.lab]; A.front = 0 }, 1.25)
     .to(A, { front: 1, duration: 1.15, ease: 'power2.inOut' }, 1.25)
     .to(u, { t: 0, duration: 1.35, ease: 'expo.inOut', onUpdate: set }, 1.25)
     .to(A, { bridgePK: 1, duration: 0.9, ease: 'expo.out' }, 1.95)
@@ -1358,7 +1532,7 @@ function startBridge() {
 }
 function finishBridge() {
   A.bridgeF = null; A.shiver = 0; A.bridgePK = 1
-  A.mode = 'index'; A.p = A.pT = A.base = 4; A.prevBase = 3; A.busy = false
+  A.mode = 'index'; A.p = A.pT = A.base = STOP.lab; A.prevBase = STOP.work; A.busy = false
   // the field folded into the Lab, and the Lab is its own place: the bench opens as the fold finishes
   openLab()
 }
@@ -1400,7 +1574,7 @@ function penAt(st, front) {
 let lastSig = '', stillMem = 0, lastMem = 0, lastMemT = 0
 const q2 = (v) => Math.round((v || 0) * 100)
 function stillSig(from, to, fs, overlay, front) {
-  let s = `${from.id}|${to.id}|${from.visitKey || ''}|${to.visitKey || ''}|${q2(front * 100)}|${overlay}|${surface.fill}|${A.beneathSt?.id}|${surface.beneathStart},${surface.beneathCount}|${surface.devId}|${surface.visited.join('')}|`
+  let s = `${from.id}|${to.id}|${from.visitKey || ''}|${to.visitKey || ''}|${q2(front * 100)}|${q2(A.lfp * 1000)}|${overlay}|${surface.fill}|${A.beneathSt?.id}|${surface.beneathStart},${surface.beneathCount}|${surface.devId}|${surface.visited.join('')}|`
   for (const st of [from, to]) { const g = st.reg; s += `${q2(g.a0)},${q2(g.a1)},${q2(g.va0)},${q2(g.va1)},${q2(g.holdA)},${q2(st.fill)},${q2(st.flash)},${q2(st.vis)},${q2(st.lod)}|` }
   for (const f of fs) s += `${f.kind},${q2(f.cx)},${q2(f.cy)},${q2(f.h)},${q2(f.hw)},${q2(f.sigma)},${q2(f.s)},${q2(f.y1)},${q2(f.y2)},${q2(f.falloff)},${q2(f.lip)};`
   // The flat renderer draws none of the physics — no displacement, no development, no memory — so none of it may
@@ -1469,7 +1643,13 @@ function canonical() {
       A.about.falloff = g.falloff; A.about.power = 2; A.about.lip = 5; A.about.lipW = 7
     }
   }
-  A.restOpen = A.base === 5 && !A.aboutOpen ? 1 : 0
+  A.restOpen = A.base === STOP.rest && !A.aboutOpen ? 1 : 0
+  /*
+   * The passage has two canonical pictures, the backend field and the frontend one, and reduced motion crossfades
+   * between them. So what is SHOWN rounds to an end while the drive keeps its continuous target: a gesture still
+   * carries the visitor across, and past the far end it still continues along the spine.
+   */
+  if (LINEFIELD) A.lfp = LF.drive.target < 0.5 ? 0 : 1
   A.introReg = 0; A.nameAmp = 0
 }
 let last = performance.now()
@@ -1495,14 +1675,21 @@ function frame(now) {
   }
   if (A.mode === 'index' && A.base !== A.prevBase) { onArrive(A.base, A.prevBase); A.prevBase = A.base }
   tuneWork(now, et)
+  /*
+   * The passage advances on the runtime's own clock rather than on a second requestAnimationFrame of its own:
+   * one loop owns the time step, the stall cap and the decision to draw. Reduced motion keeps the drive — it
+   * is what a gesture acts on — and quantises what is SHOWN in canonical().
+   */
+  if (LINEFIELD) A.lfp = LF.drive.step(A.lfp, et)
   if (REDUCED) canonical()
-  IDX[3] = WORKS[clamp(Math.round(A.wt), 0, N - 1)]
+  IDX[STOP.work] = WORKS[clamp(Math.round(A.wt), 0, N - 1)]
+  if (LINEFIELD) IDX[LFS] = LF.at(A.lfp)
 
   let from, to, front, overlay = 0
   if (A.mode === 'index') {
     [from, to, front] = scrub(IDX, A.p)
-    if (from === IDX[1] && to === IDX[2]) front = 0
-    if (from === IDX[3] && to === IDX[3]) {
+    if (from === IDX[STOP.creative] && to === IDX[STOP.system]) front = 0
+    if (from === IDX[STOP.work] && to === IDX[STOP.work]) {
       // two works share the field only while both can be seen; a settled field draws one
       const k0 = clamp(Math.floor(A.wt), 0, N - 1), k1 = clamp(k0 + 1, 0, N - 1), t = A.wt - k0
       if (k1 === k0 || t < 0.02) { from = to = WORKS[k0]; front = 1 }
@@ -1512,6 +1699,28 @@ function frame(now) {
   } else if (A.mode === 'world') [from, to, front] = scrub(worldFor(A.k), A.wp)
   else { from = A.from; to = A.to; front = A.front }
 
+  /*
+   * LINEFIELD. Two decisions, and only ever one of them:
+   *
+   *   normal motion   the corridor's own program draws the field, and it is bound whenever one of the two
+   *                   Linefield states is on screen — including while the spine is travelling into or out of
+   *                   the place, where the map is the identity and the program draws exactly what the base one
+   *                   would. Binding it there rather than at the last moment is what keeps the seam from
+   *                   Full-Stack invisible: no program swap happens while anything is moving.
+   *   reduced motion  the corridor is not bound at all. The passage is a movement whose whole content is
+   *                   movement, and there is no honest still of the middle of it, so what is given is the two
+   *                   ends and a crossfade between them — the same thing every other pair of places does.
+   */
+  let lfOn = false
+  if (LINEFIELD && A.mode === 'index') {
+    const here = from === LF.back || from === LF.front || to === LF.back || to === LF.front
+    if (here && REDUCED) {
+      if (A.base === LFS) { const r = LF.reducedPair(A.lfp); from = r.from; to = r.to; front = r.front }
+    } else lfOn = here
+  }
+  surface.use(lfOn ? 'corridor' : null)
+  surface.onBeforeDraw = lfOn ? () => LF.apply(surface, A.lfp) : null
+
   registration(now, et)
   updatePress(now, dt)
   updateSqueeze(dt)
@@ -1520,7 +1729,7 @@ function frame(now) {
   // bridge already ends: reached from Work it is the bridge, reached from Contact it is this. Only travel arms it,
   // so a state restored onto the Lab stop — coming back to this entry, or returning from the bench itself — sits
   // there quietly instead of pushing the route again.
-  if (A.labArmed && A.mode === 'index' && A.base === 4 && Math.abs(A.p - 4) < 0.02 && Math.abs(A.pT - 4) < 0.02 && !A.busy && !A.aboutOpen && !ptr.down && owns()) openLab()
+  if (A.labArmed && A.mode === 'index' && A.base === STOP.lab && Math.abs(A.p - STOP.lab) < 0.02 && Math.abs(A.pT - STOP.lab) < 0.02 && !A.busy && !A.aboutOpen && !ptr.down && owns()) openLab()
   if (A.mode === 'world' && !A.busy) Object.assign(A.world, worldGeom(A.wp))
   const lf = A.mode === 'world' ? lastFrame() : 0
   if (A.mode === 'world' && A.wp > lf - 0.1 && !A.nextArmed) {
@@ -1559,9 +1768,9 @@ function frame(now) {
   const fs = [...A.features]
   if (A.about && A.aboutDetailK > 0.0005) fs.push(...aboutRoomFeatures())
   const ft = A.p - 1
-  if (A.mode === 'index' && from === IDX[1] && to === IDX[2] && ft > 0 && ft < 1) {
+  if (A.mode === 'index' && from === IDX[STOP.creative] && to === IDX[STOP.system] && ft > 0 && ft < 1) {
     const e = smooth(0.04, 0.96, ft)
-    Object.assign(A.faceF, { cx: V.W * 0.5, cy: IDX[1].weak(), h: V.H * 1.12 * Math.pow(e, 1.9), hw: lerp(V.W * 0.32, 16000, smooth(0.08, 0.7, ft)), falloff: lerp(22, 90, e), kind: 1, reach: 0, lip: 0 })
+    Object.assign(A.faceF, { cx: V.W * 0.5, cy: IDX[STOP.creative].weak(), h: V.H * 1.12 * Math.pow(e, 1.9), hw: lerp(V.W * 0.32, 16000, smooth(0.08, 0.7, ft)), falloff: lerp(22, 90, e), kind: 1, reach: 0, lip: 0 })
     fs.push(A.faceF)
     if (ft > 0.9) A.learned.face = true
   }
@@ -1573,17 +1782,17 @@ function frame(now) {
   if (A.bridgeF) fs.push(A.bridgeF)
   surface.features = fs
   const dom = front < 0.5 ? from : to
-  A.beneathSt = dom.id === 'creative' ? IDX[2] : dom.id === 'system' ? IDX[1] : to
+  A.beneathSt = dom.id === 'creative' ? IDX[STOP.system] : dom.id === 'system' ? IDX[STOP.creative] : to
   surface.beneath(A.beneathSt)
   const faces = dom.id === 'creative' || dom.id === 'system'
   surface.beneathStart = staticStart; surface.beneathCount = faces ? staticCount : 0
   surface.devId = A.press && A.press.st.workIndex != null ? A.press.st.workIndex : (A.press && A.press.st.layout?.next != null ? A.press.st.layout.next : -1)
-  if (IDX[5].layout.wedge) IDX[5].features[0].h = IDX[5].layout.wedge.h * A.restOpen
+  if (IDX[STOP.rest].layout.wedge) IDX[STOP.rest].features[0].h = IDX[STOP.rest].layout.wedge.h * A.restOpen
 
   // how much of the visit's imprint each place lets show; at rest everything else is straight, so it shows most
   const stop = Math.round(A.p)
-  const impT = A.mode !== 'index' ? 0 : stop === 4 ? 1 : stop === 5 ? 1.35 : 0.75
-  phys.impVis = damp(phys.impVis, impT, stop === 5 ? 1.1 : 3, et)
+  const impT = A.mode !== 'index' ? 0 : stop === STOP.lab ? 1 : stop === STOP.rest ? 1.35 : 0.75
+  phys.impVis = damp(phys.impVis, impT, stop === STOP.rest ? 1.1 : 3, et)
 
   const src = { x: ptr.x, y: ptr.y, vx: ptr.vx, vy: ptr.vy, hover: ptr.hover }
   const pr = A.press
@@ -1594,7 +1803,7 @@ function frame(now) {
   surface.phys(phys)
 
   const [px0, py0, idx] = penAt(to, front)
-  const followable = !overlay && A.mode !== 'intro' && to === A.lastTo && Math.abs(idx - A.lastIdx) <= 3 && front > 0.002 && front < 0.998 && !(from === IDX[1] && to === IDX[2])
+  const followable = !overlay && A.mode !== 'intro' && to === A.lastTo && Math.abs(idx - A.lastIdx) <= 3 && front > 0.002 && front < 0.998 && !(from === IDX[STOP.creative] && to === IDX[STOP.system])
   A.lastIdx = idx; A.lastTo = to
   surface.pen = [px0, py0, followable ? 1 : 0]
   surface.penCol = to.ink
@@ -1658,7 +1867,7 @@ function paintStaticHero() {
   staticEl.width = Math.round(V.W * dpr); staticEl.height = Math.round(V.H * dpr)
   // the plate is drawn by the same 2D primitive reduced motion draws its whole surface with (flat.js): one row
   // loop, one set of masks, one visual language. The tone gain follows the ambient amplitude, which is 0 at rest.
-  paintFlat(staticEl.getContext('2d'), IDX[0], { W: V.W, H: V.H, dpr, features: [], fill: 1, amp: A.nameAmp * (IDX[0].ampK ?? 1) })
+  paintFlat(staticEl.getContext('2d'), IDX[STOP.name], { W: V.W, H: V.H, dpr, features: [], fill: 1, amp: A.nameAmp * (IDX[STOP.name].ampK ?? 1) })
 }
 function retireStaticHero() {
   const el = staticEl
@@ -1672,8 +1881,8 @@ function retireStaticHero() {
 // of register — until the two row sets find each other and lock. Nothing moves for a moment after that.
 function breathe(delay) {
   gsap.delayedCall(delay, () => {
-    if (A.learned.open || A.mode !== 'index' || A.base !== 0 || A.press || A.busy) return
-    const f = feature({ cx: V.P ? V.W / 2 : V.W * 0.32, cy: IDX[0].layout.gapY, h: 0, hw: V.P ? 1e5 : V.W * 0.7, falloff: 26 })
+    if (A.learned.open || A.mode !== 'index' || A.base !== STOP.name || A.press || A.busy) return
+    const f = feature({ cx: V.P ? V.W / 2 : V.W * 0.32, cy: IDX[STOP.name].layout.gapY, h: 0, hw: V.P ? 1e5 : V.W * 0.7, falloff: 26 })
     A.features.add(f)
     gsap.timeline({ onComplete: () => A.features.delete(f) })
       .to(f, { h: V.P ? 5 : 7, duration: 0.9, ease: 'sine.inOut' })
@@ -1683,7 +1892,7 @@ function breathe(delay) {
 function playIntro() {
   gsap.killTweensOf(A)
   if (A.introF) A.features.delete(A.introF)
-  const gapY = IDX[0].layout.gapY
+  const gapY = IDX[STOP.name].layout.gapY
   /*
    * THE OPENING PLAYS OVER A HERO THAT IS ALREADY THERE. It used to build one: the field began collapsed to a line
    * and opened over 2.2 s, and the name rose from nothing over 4 s more, so the composition was not complete until
@@ -1694,7 +1903,7 @@ function playIntro() {
    * sheet drawing itself into register, the same movement it makes at every other arrival — over the finished
    * picture rather than in place of it. The visitor can travel from the first frame; nothing has to finish first.
    */
-  Object.assign(A, { mode: 'index', from: IDX[0], to: IDX[0], front: 1, introReg: 0.03, nameAmp: 1, p: 0, pT: 0, base: 0, prevBase: 0 })
+  Object.assign(A, { mode: 'index', from: IDX[STOP.name], to: IDX[STOP.name], front: 1, introReg: 0.03, nameAmp: 1, p: 0, pT: 0, base: 0, prevBase: 0 })
   const s1 = V.H * 2.6, L1 = V.H * 0.64
   const f = A.introF = gather({ cx: V.W / 2, cy: gapY, sigma: s1 * 0.68, Lm: L1 * 0.7, s: 0.2 })
   A.features.add(f)
@@ -1763,7 +1972,14 @@ export function setLocale(next) {
   return true
 }
 
-window.__lab = { A, V, ptr, phys, surface, works, configure, routeChanged, setLocale, locale: () => TXT,  previewOf, go, forcedPress, navigate, exit, expandAbout, collapseAbout, startBridge, openLab, arriveAt, replayIntro: playIntro, IDX: () => IDX, WORKS: () => WORKS, WORLD: () => WORLD, frames: framesOf, touches, sig: () => lastSig, redraw: () => { lastSig = '' } }
+window.__lab = { A, V, ptr, phys, surface, works, STOP, SPINE,
+  // the passage's own hooks leave with the flag: hold it at an exact progress, and read what it is doing
+  ...(LINEFIELD ? {
+    lf: () => LF,
+    lfSet: (v) => { LF.drive.set(v); A.lfp = clamp(v, 0, 1); lastSig = '' },
+    lfState: () => ({ p: A.lfp, target: LF.drive.target, seq: LF.sequence(A.lfp), rowKeep: LF.rowKeep, stop: LFS }),
+  } : {}),
+  configure, routeChanged, setLocale, locale: () => TXT,  previewOf, go, forcedPress, navigate, exit, expandAbout, collapseAbout, startBridge, openLab, arriveAt, replayIntro: playIntro, IDX: () => IDX, WORKS: () => WORKS, WORLD: () => WORLD, frames: framesOf, touches, sig: () => lastSig, redraw: () => { lastSig = '' } }
 let rt = 0, booted = false
 // a resize before the surface exists (a phone's URL bar settling during load) is picked up once start() finishes
 addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(async () => { if (!booted) return; measure(); await ensurePreviews(); rebuild() }, 140) })
@@ -1774,13 +1990,23 @@ async function start() {
   await document.fonts.ready
   measure()
   await Promise.all([surface.ready, ensurePreviews()])
+  /*
+   * LINEFIELD is loaded here and nowhere else: one dynamic import inside a branch the bundler can prove is dead
+   * when the flag is off, so a published build has no chunk to load and no text to strip. It is awaited before
+   * the first rebuild() because the spine is built synchronously and this place is one of its entries.
+   */
+  if (LINEFIELD) {
+    const m = await import('./linefield/runtime.js')
+    LF = m.createLinefield()
+    LF.prepare(surface)
+  }
   buildDOM()
   restoreMemory('history'); restoreMemory('order')
   rebuild()
   restoreMemory('sheet')
   booted = true
   if (Math.abs(innerWidth - V.W * V.u) > 1 || Math.abs(innerHeight - V.H * V.u) > 1) { measure(); await ensurePreviews(); rebuild() }
-  A.from = A.to = IDX[0]; A.front = 1
+  A.from = A.to = IDX[STOP.name]; A.front = 1
   if (isAboutPath()) { A.pending = 'detail'; document.title = TITLE_ABOUT() } else document.title = TITLE()
   requestAnimationFrame((t) => { last = t; frame(t) })
   // arriving from the Lab on a cold start: the visitor asked for a place, not for the opening — and not for the

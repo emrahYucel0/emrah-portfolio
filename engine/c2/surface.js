@@ -93,7 +93,7 @@ float hash(float n) { return fract(sin(n * 12.9898 + 4.1414) * 43758.5453); }
  * AND WHETHER CROWDED ROWS CLOSE UP INTO A MASS. On this site they must: rows pressed closer than the eye can
  * part them are seen as what they add up to, never as interference, and that is what a gather is FOR. A
  * perspective variant needs the opposite — rows that recede must stay apart and get thinner, or the far half
- * of a corridor fills in solid and the vanishing point disappears inside it.
+ * of the field fills in solid and its vanishing point disappears inside it.
  */
 #ifndef VARIANT_FUSE
 #define VARIANT_FUSE 1.0
@@ -103,9 +103,9 @@ float hash(float n) { return fract(sin(n * 12.9898 + 4.1414) * 43758.5453); }
  * AND WHETHER EVERY ROW IS DRAWN AT ALL.
  *
  * A field's pitch is chosen for what it has to carry — type needs rows close enough that a letter is made of
- * twenty of them. Projected down a corridor that same density has nowhere to go: hundreds of rows land inside
+ * twenty of them. Projected into perspective that same density has nowhere to go: hundreds of rows land inside
  * a few pixels and what they add up to is a wash, with the vanishing point somewhere inside it. A perspective
- * variant may take rows OUT as the corridor forms, so that what recedes is a countable set of rays.
+ * variant may take rows OUT as the map forms, so that what recedes is a countable set of rays.
  *
  * It is given the row's index, so the rows that stay are always the same rows and never slide.
  */
@@ -297,8 +297,8 @@ void main() {
    */
   float fade = 1.0;
   // the coordinate the CONTENT is sampled at. Without a variant it is the screen's own x, which is what every
-  // state on the site has always been drawn against; a corridor moves it, because in a corridor the material
-  // under a pixel came from somewhere else across the field as well as from somewhere else up it.
+  // state on the site has always been drawn against; a variant that maps both axes moves it, because the
+  // material under a pixel then came from somewhere else across the field as well as up it.
   float cx = p.x;
   //VARIANT_WARP
 
@@ -396,7 +396,7 @@ export function createSurface(canvas) {
   /*
    * VARIANTS — the same shader with one hook filled in.
    *
-   * A feature that needs the field mapped differently (a corridor, say) supplies the two chunks that fill
+   * A feature that needs the field mapped differently supplies the two chunks that fill
    * VARIANT_PARS and VARIANT_WARP, and gets its own linked program built from the same source as everything else. Two
    * reasons it is done this way rather than by branching inside the one program:
    *

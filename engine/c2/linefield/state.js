@@ -20,7 +20,7 @@ export const BACKEND_WORDS = ['STATE.', 'SCALE.', 'FAILURE.', 'TRUTH.']
 export const FRONTEND_WORDS = ['FEEL.', 'TIMING.', 'FRICTION.', 'FIRST PAINT.']
 
 /** how many rows must pass through a capital for the word to hold together */
-const ROWS_PER_CAP = 9
+const ROWS_PER_CAP = 12
 
 /**
  * THE FACE HAS TO BE THE FACE.
@@ -55,30 +55,78 @@ export async function faceReady() {
  * the block runs from the first cap line to the last baseline, which is (n-1) leadings plus one cap height,
  * not n leadings. Centring on the wrong extent is what pushed it low.
  */
+const MC = /* @__PURE__ */ (() => (typeof document === 'undefined' ? null : document.createElement('canvas').getContext('2d')))()
+
+/**
+ * THE INK THESE PARTICULAR WORDS MAKE, not the ink a capital H makes.
+ *
+ * Everywhere else on this site a block of type is measured by the cap height, because everywhere else the type
+ * is Latin capitals with nothing above them and nothing below. Here it is not: the Turkish set is Ö, Ç, Ğ, Ş, İ,
+ * and every one of them puts ink outside that box — a diaeresis and a breve above the cap line, a cedilla below
+ * the baseline. Measured by the cap, DURUM. sat with its Ö dots inside the header strip and ÖLÇEK.'s cedilla in
+ * the top of HATA.
+ *
+ * So the block is measured by what it actually draws. The ascent is the highest ink in any of the four words and
+ * the descent the lowest, and both the size, the leading and the placement come from those.
+ */
+function inkOf(words) {
+  if (!MC) return words.map(() => ({ w: 1, asc: 0.72, desc: 0 }))
+  MC.font = `900 100px ${FAMILY}`
+  return words.map((t) => {
+    const m = MC.measureText(t)
+    return {
+      w: Math.max(m.width / 100, 0.01),
+      asc: Math.max((m.actualBoundingBoxAscent || 72) / 100, 0.6),
+      desc: Math.max((m.actualBoundingBoxDescent || 0) / 100, 0),
+    }
+  })
+}
+
+/*
+ * AS LARGE AS THE SPACE ALLOWS, AND THE SPACE IS NOT THE SCREEN.
+ *
+ * The site keeps a strip at the top of the screen and another at the bottom. The words have to clear both, in
+ * every viewport and in both languages.
+ *
+ * THE LEADING IS PER PAIR, not per block. A single leading big enough for the worst pair of lines — a cedilla
+ * under one and a diaeresis over the next — is applied to the three pairs that do not need it as well, and the
+ * whole block shrinks to pay for it. Turkish came out visibly smaller than English for no reason anyone could
+ * see. Each gap is now only as large as the two lines it separates require, so the four Turkish words are set at
+ * very nearly the size the four English ones are.
+ *
+ * Everything is returned in EMS, because the row grid rescales the block afterwards and a measurement in pixels
+ * would have to be rescaled with it.
+ */
 function fitStack(V, words) {
   const { W, H, P, strip, pad } = V
   const air = Math.max(pad * 0.7, strip * 0.5)
-  const top = strip + air
+  /*
+   * A LINE IS KEPT FOR THE LABEL. The reference names each half above it — BACKEND, FRONTEND — and that naming
+   * is what tells a visitor what the eight words are answers to. It is drawn in the DOM rather than into the
+   * material, so it localises with everything else; the block below it is therefore sized in a band that is a
+   * label shorter, which costs about four per cent of the type.
+   */
+  const labelH = Math.round(Math.max(20, H * 0.03))
+  const top = strip + air + labelH
   const bottom = H - strip - air
   const avail = Math.max(60, bottom - top)
   const maxW = W * (P ? 0.92 : 0.62)
+  const ink = inkOf(words)
   const n = words.length
 
-  // the widest word decides the size by width; the block's true extent decides it by height
-  let capR = 0.72
-  let byWidth = Infinity
-  for (const w of words) {
-    const f = fit(w, maxW, H)
-    if (f.size < byWidth) { byWidth = f.size; capR = f.capR }
-  }
-  const byHeight = avail / ((n - 1) * 0.93 + capR)
+  // where each baseline sits relative to the first, in ems; never closer than the site's own 0.93 line
+  const rel = [0]
+  for (let i = 1; i < n; i++) rel.push(rel[i - 1] + Math.max(0.93, ink[i - 1].desc + ink[i].asc + 0.04))
+  const ascEm = ink[0].asc
+  const descEm = ink[n - 1].desc
+  const blockEm = rel[n - 1] + ascEm + descEm
+
+  const byWidth = maxW / Math.max(...ink.map((k) => k.w))
+  const byHeight = avail / blockEm
   const size = Math.min(byWidth, byHeight)
-  const cap = size * capR
-  const lh = size * 0.93
-  const blockTrue = (n - 1) * lh + cap
-  // the first BASELINE, so that the block's cap line and its last baseline sit inside the air
-  const y0 = top + (avail - blockTrue) / 2 + cap
-  return { size, cap, lh, y0, top, bottom, capR }
+  // the cap height is still what the ROW GRID is aligned to: it is what the letter bodies are made of
+  const capR = fit(words[0], maxW, H).capR
+  return { size, capR, cap: size * capR, rel, ascEm, descEm, blockEm, top, avail, air, labelY: strip + air, labelH }
 }
 
 /**
@@ -114,23 +162,26 @@ export function linefieldState(V, side, words, label) {
    */
   const rowsPerCap = Math.max(ROWS_PER_CAP, Math.round(L.cap / spacing))
   const capSnap = rowsPerCap * spacing
+  // the whole block is rescaled by whatever rounding the cap to whole rows cost, so its proportions survive it
   const size = L.size * (capSnap / L.cap)
-  const lh = L.lh * (capSnap / L.cap)
   const snap = (y) => (Math.round(y / spacing - 0.5) + 0.5) * spacing
+  const asc = L.ascEm * size
+  const desc = L.descEm * size
   /*
    * AND THE BLOCK IS PUT BACK INSIDE THE AIR AFTER IT HAS BEEN SNAPPED.
    *
-   * Rounding the cap to whole rows and the baselines to the grid moves the block by up to half a row per line,
-   * and the accumulated shift is enough to push the last word into the footer strip — measured at 844x390, the
-   * last baseline sat 45 pixels from the bottom edge inside a 50 pixel strip. The correction is applied in
-   * WHOLE ROWS, so the grid alignment that keeps the letters clean survives it.
+   * Snapping every baseline to the grid moves each of them by up to half a row, and that is enough to push the
+   * last word into the footer strip — measured at 844x390, the last baseline sat 45 pixels from the bottom edge
+   * inside a 50 pixel strip. The correction is applied in WHOLE ROWS, so the grid alignment that keeps the
+   * letters clean survives it, and it is measured against the real ink, diacritics included.
    */
-  const firstBase = snap(L.y0 + (capSnap - L.cap) * 0.5)
-  const lastBase = firstBase + (words.length - 1) * lh
-  const room = H - V.strip - Math.max(V.pad * 0.7, V.strip * 0.5)
-  const over = lastBase + capSnap * 0.06 - room
-  const shift = over > 0 ? Math.ceil(over / spacing) * spacing : 0
-  const baseOf = (i) => firstBase - shift + i * lh
+  let first = snap(L.top + (L.avail - L.blockEm * size) / 2 + asc)
+  const under = V.strip + L.air + asc - first
+  if (under > 0) first += Math.ceil(under / spacing) * spacing
+  const over = first + L.rel[words.length - 1] * size + desc - (H - V.strip - L.air)
+  if (over > 0) first -= Math.ceil(over / spacing) * spacing
+  const baseline = L.rel.map((r) => (r === 0 ? first : snap(first + r * size)))
+  const baseOf = (i) => baseline[i]
   const bands = words.map((_, i) => baseOf(i) - capSnap * 0.5)
 
   const img = build(V, H, ({ solid }) => {
@@ -163,7 +214,7 @@ export function linefieldState(V, side, words, label) {
     bg: side === 0 ? '#0b0c0e' : '#efeee9',
     negative: side === 0,
     ...img,
-    layout: { ...L, size, lh, cap: capSnap, rowsPerCap, bands, x, label, words, strip },
+    layout: { ...L, size, cap: capSnap, rowsPerCap, bands, baseline, asc, desc, x, label, words, strip },
     capacity: 1.4,
     weak: () => H * 0.5,
   })

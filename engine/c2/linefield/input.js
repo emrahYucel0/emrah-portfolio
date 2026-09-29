@@ -76,53 +76,49 @@ export function wheelPixels(e) {
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v)
 
 /**
- * The integrator. `draw(p)` is called on every frame where anything moved, and only then.
+ * THE INTEGRATOR, without a clock of its own.
+ *
+ * The site's runtime already has a frame loop that owns the time step, the stall cap and the decision about
+ * whether to draw at all; a second requestAnimationFrame beside it would be a second clock for the same scene.
+ * So the drive holds the target, the velocity and the drag, and is STEPPED — by the runtime's loop on the site,
+ * and by createPacer's own loop in the debug entry, which is the only place that has no loop to borrow.
  *
  * `spanOf()` returns the current touch distance in pixels; it is a function because the viewport can change
  * under a drag.
  */
-export function createPacer(draw, spanOf) {
-  let p = 0
+export function createDrive(spanOf) {
   let target = 0
   let vel = 0
-  let raf = 0
-  let last = 0
   let drag = null
 
-  const tick = (now) => {
-    raf = 0
-    const dt = Math.min(0.05, Math.max(1 / 240, (now - last) / 1000))
-    last = now
-
-    if (vel !== 0) {
-      const next = clamp01(target + vel * dt)
-      // the ends absorb the flick rather than bouncing off it
-      if (next === target) vel = 0
-      target = next
-      vel *= Math.exp(-dt / LF_MOMENTUM_TAU)
-      if (Math.abs(vel) < 0.004) vel = 0
-    }
-
-    const d = target - p
-    if (Math.abs(d) < 2e-4 && vel === 0) { p = target; draw(p); return }
-    const step = d * (1 - Math.exp(-dt * LF_FOLLOW))
-    p = clamp01(p + Math.max(-LF_MAX_FRAME, Math.min(LF_MAX_FRAME, step)))
-    draw(p)
-    raf = requestAnimationFrame(tick)
-  }
-
-  const wake = () => { if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick) } }
-
   return {
-    get progress() { return p },
     get target() { return target },
     get velocity() { return vel },
     get dragging() { return !!drag },
-    /** jump there, cancelling anything in flight — for the scrub, Home/End, and a harness */
-    set(v) { vel = 0; drag = null; p = target = clamp01(v); draw(p) },
+    /** is there anything left to do — a gap to close, or a flick still running */
+    moving(p) { return vel !== 0 || Math.abs(target - p) > 2e-4 },
+    /** advance the drawn progress by one frame of dt seconds, and return it */
+    step(p, dt) {
+      if (vel !== 0) {
+        const next = clamp01(target + vel * dt)
+        // the ends absorb the flick rather than bouncing off it
+        if (next === target) vel = 0
+        target = next
+        vel *= Math.exp(-dt / LF_MOMENTUM_TAU)
+        if (Math.abs(vel) < 0.004) vel = 0
+      }
+      const d = target - p
+      if (Math.abs(d) < 2e-4 && vel === 0) return target
+      const step = d * (1 - Math.exp(-dt * LF_FOLLOW))
+      return clamp01(p + Math.max(-LF_MAX_FRAME, Math.min(LF_MAX_FRAME, step)))
+    },
+    /** jump there, cancelling anything in flight — for a scrub, Home/End, an arrival, and a harness */
+    set(v) { vel = 0; drag = null; target = clamp01(v) },
     /** a wheel notch, a key, or any other discrete push */
-    nudge(dv) { vel = 0; target = clamp01(target + dv); wake() },
+    nudge(dv) { vel = 0; target = clamp01(target + dv) },
     wheel(e) { this.nudge(wheelPixels(e) / LF_WHEEL_SPAN) },
+    /** the same push, in progress rather than pixels, for a runtime that has already normalised its input */
+    push(dv) { this.nudge(dv) },
     dragStart(y) {
       vel = 0
       drag = { y, at: target, s: [[performance.now(), y]] }
@@ -133,7 +129,6 @@ export function createPacer(draw, spanOf) {
       drag.s.push([performance.now(), y])
       // only the tail matters: a velocity taken over the whole drag is the average speed, not the flick
       if (drag.s.length > 8) drag.s.shift()
-      wake()
     },
     dragEnd() {
       if (!drag) return
@@ -143,14 +138,49 @@ export function createPacer(draw, spanOf) {
       const first = win.length > 1 ? win[0] : null
       const lastS = drag.s[drag.s.length - 1]
       drag = null
-      if (!first) { wake(); return }
+      if (!first) return
       const dt = (lastS[0] - first[0]) / 1000
       if (dt > 0.004) {
         const v = (first[1] - lastS[1]) / spanOf() / dt
         vel = Math.abs(v) < LF_MIN_FLICK ? 0 : Math.max(-LF_MAX_VEL, Math.min(LF_MAX_VEL, v))
       }
-      wake()
     },
-    stop() { vel = 0; if (raf) { cancelAnimationFrame(raf); raf = 0 } },
+    stop() { vel = 0; drag = null },
+  }
+}
+
+/**
+ * The same drive with a clock around it, for the debug entry, which has no frame loop to borrow. `draw(p)` is
+ * called on every frame where anything moved, and only then.
+ */
+export function createPacer(draw, spanOf) {
+  const d = createDrive(spanOf)
+  let p = 0
+  let raf = 0
+  let last = 0
+
+  const tick = (now) => {
+    raf = 0
+    const dt = Math.min(0.05, Math.max(1 / 240, (now - last) / 1000))
+    last = now
+    const moving = d.moving(p)
+    p = d.step(p, dt)
+    draw(p)
+    if (moving && d.moving(p)) raf = requestAnimationFrame(tick)
+  }
+  const wake = () => { if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick) } }
+
+  return {
+    get progress() { return p },
+    get target() { return d.target },
+    get velocity() { return d.velocity },
+    get dragging() { return d.dragging },
+    set(v) { d.set(v); p = d.target; draw(p) },
+    nudge(dv) { d.nudge(dv); wake() },
+    wheel(e) { d.wheel(e); wake() },
+    dragStart(y) { d.dragStart(y) },
+    dragMove(y) { d.dragMove(y); wake() },
+    dragEnd() { d.dragEnd(); wake() },
+    stop() { d.stop(); if (raf) { cancelAnimationFrame(raf); raf = 0 } },
   }
 }

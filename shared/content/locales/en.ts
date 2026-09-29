@@ -1,5 +1,8 @@
 import type { LocaleCopy } from '../types'
 
+/** replaced at transform time by the bundler; see the note in nuxt.config.ts */
+declare const __LINEFIELD__: boolean
+
 export const en = {
   meta: {
     home: {
@@ -74,6 +77,18 @@ export const en = {
     },
     stack: 'Nuxt · Vue · TypeScript · Tailwind CSS · GSAP · Prisma',
   },
+  /*
+   * LINEFIELD is unreleased, so its copy leaves the published bundle with its code. The flag is a
+   * build-time constant, so with it false this is `... {}` and the words are not in the file at all —
+   * which is what the flag-off gate greps the built JavaScript for.
+   */
+  ...(typeof __LINEFIELD__ !== 'undefined' && __LINEFIELD__ ? { linefield: {
+    heading: 'How I think',
+    backend: ['STATE.', 'SCALE.', 'FAILURE.', 'TRUTH.'],
+    frontend: ['FEEL.', 'TIMING.', 'FRICTION.', 'FIRST PAINT.'],
+    backendLabel: 'BACKEND — HOW I THINK',
+    frontendLabel: 'FRONTEND — HOW I THINK',
+  } } : {}),
   work: {
     heading: 'Work',
     intro: 'Three production sites for service businesses — each designed and built end to end.',

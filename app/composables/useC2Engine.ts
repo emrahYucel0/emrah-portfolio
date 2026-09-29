@@ -114,14 +114,17 @@ export function useC2Engine() {
   const start = async () => {
     if (!import.meta.client) return
     /*
-     * LINEFIELD, PHASE B. A debug entry and nothing more: it takes the screen instead of the runtime, so the
-     * index spine, the stops and the gestures are not involved and cannot be affected by it. The navigation is
-     * Phase C's work.
+     * LINEFIELD'S DEBUG ENTRY, IN DEVELOPMENT ONLY.
      *
-     * `__LINEFIELD__` is a build-time constant. With it false this branch is unreachable, the dynamic import is
-     * never emitted, and the published build contains none of the corridor's code.
+     * Through Phase B this was how the corridor was reached at all: its own canvas, its own surface, a slider on
+     * a dock. Since Phase C the passage is a place on the index and is reached by scrolling to it, so on any
+     * built site — flag on or off — this branch is gone. `import.meta.dev` is a build-time constant too, so the
+     * chunk is not emitted and neither is the dock.
+     *
+     * It is kept for development because it is still the only way to hold the passage at an exact progress and
+     * photograph it, which is what every corridor harness does.
      */
-    if (__LINEFIELD__ && new URLSearchParams(location.search).has('linefield')) {
+    if (__LINEFIELD__ && import.meta.dev && new URLSearchParams(location.search).has('linefield')) {
       const { mountLinefield } = await import('../../engine/c2/linefield/debug.js')
       await mountLinefield()
       return

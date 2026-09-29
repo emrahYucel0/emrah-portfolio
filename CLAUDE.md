@@ -47,6 +47,27 @@ Two things the harnesses have learned the hard way, worth knowing before reading
   material-coordinate map; changes there are felt everywhere on the site.
 - Shaders and engine modules are plain ES modules with no framework imports.
 
+## Stops are named, not numbered
+
+The index is a spine of places. Their positions are derived from one list of names in `engine/c2/main.js`:
+
+```js
+const SPINE = ['name', 'creative', 'system', 'work', 'lab', 'rest']
+const STOP = Object.fromEntries(SPINE.map((n, i) => [n, i]))
+const LAST = SPINE.length - 1
+```
+
+Everything that means a place — travel, arrivals, hints, focus and announcement tables, the physics' imprint
+visibility, the DOM layers — says `STOP.work`, never `3`. Tables that are per place are keyed by the NAME and
+read through `SPINE`, never indexed by the number.
+
+**Why.** For the life of this site those positions were literals, which was survivable while the list never
+changed. Inserting a place breaks every number after it and nothing in the source says so: the work field's
+"back off the near end goes to stop 2" silently skipped the new place, and an array of headings indexed by stop
+silently moved every announcement one place along. Both were real, and both were invisible in review.
+
+Adding, removing or reordering a place is an edit to that one list.
+
 ## Standing rules
 
 - Do not commit, push or deploy without being asked.

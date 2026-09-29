@@ -1,5 +1,8 @@
 import type { LocaleCopy } from '../types'
 
+/** replaced at transform time by the bundler; see the note in nuxt.config.ts */
+declare const __LINEFIELD__: boolean
+
 // Turkish is a first-class experience, not a translation layer. The About prose is Emrah's own approved copy.
 // Professional role names (Creative Developer, Full-Stack Developer), brand names and the two face words stay
 // as they are: they are positioning, not language.
@@ -78,6 +81,18 @@ export const tr = {
     },
     stack: 'Nuxt · Vue · TypeScript · Tailwind CSS · GSAP · Prisma',
   },
+  /*
+   * LINEFIELD is unreleased, so its copy leaves the published bundle with its code. The flag is a
+   * build-time constant, so with it false this is `... {}` and the words are not in the file at all —
+   * which is what the flag-off gate greps the built JavaScript for.
+   */
+  ...(typeof __LINEFIELD__ !== 'undefined' && __LINEFIELD__ ? { linefield: {
+    heading: 'Nasıl düşünürüm',
+    backend: ['DURUM.', 'ÖLÇEK.', 'HATA.', 'DOĞRULUK.'],
+    frontend: ['HİS.', 'ZAMANLAMA.', 'SÜRTÜNME.', 'İLK KARE.'],
+    backendLabel: 'BACKEND — NASIL DÜŞÜNÜRÜM',
+    frontendLabel: 'FRONTEND — NASIL DÜŞÜNÜRÜM',
+  } } : {}),
   work: {
     heading: 'İşler',
     intro: 'Hizmet markaları için uçtan uca tasarlanıp geliştirilmiş üç production sitesi.',

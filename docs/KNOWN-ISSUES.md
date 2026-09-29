@@ -123,6 +123,13 @@ have the index ready to promote a stop by then.
 at the end of F2 this check runs **at least 5 times under the full gate**; a single further failure means
 investigating the timing, not re-running it away.
 
+**F2 result (2026-09-29): 5 / 5 PASS.** The check was repeated 5 times inside one full gate
+(`GESTURE_RUNS=5 sh run6.sh 4500 4650`), in its normal place and under the gate's own load, on the F2 build. Every
+other section passed as well, except three that still expected the runtime's old Contact stop: the two JOURNEY
+runs and the NON-LAB comparison. Those harnesses were updated for the move and then passed when run alone. The
+gesture check itself did not fail again, so no timing investigation was opened. The entry stays
+here as a record, and the check keeps its place in the gate.
+
 ---
 
 ## The app needs Safari 15.4, not 15.0 (Nuxt runtime: `Array.prototype.at`, `Object.hasOwn`) — RESOLVED: floor is iOS 15.4

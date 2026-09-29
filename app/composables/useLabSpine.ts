@@ -17,6 +17,7 @@ const SWIPE = 56        // px of vertical travel: the index's own swipe distance
 export function useLabSpine() {
   if (!import.meta.client) return
   const { leave } = useLabHandoff()
+  const seam = useContactSeam()
 
   // one gesture is one destination: once a direction has been read the Lab answers nothing more. The runtime is
   // hushed for the same reason on the other side of the handover, where the tail of this gesture arrives next.
@@ -35,6 +36,14 @@ export function useLabSpine() {
     if (spent) return
     spent = true
     armSwallow()
+    // down is the Contact finale (F2): the bench clears itself to the bare field the finale opens on, then hands over
+    if (to === 'rest' && seam.enabled) {
+      const exit = benchSeam.exit ? benchSeam.exit() : Promise.resolve()
+      // the finale's first frame must be ready when its route is; a slow link does not hold the visitor for long
+      const ready = Promise.race([loadFinale().catch(() => {}), new Promise((r) => setTimeout(r, 1500))])
+      void Promise.all([exit, ready]).then(() => seam.toContact('start'))
+      return
+    }
     void leave(to)
   }
 
@@ -67,6 +76,11 @@ export function useLabSpine() {
   const end = () => { id = -1 }
 
   onMounted(() => {
+    // the finale's engine is fetched while the bench is on screen, so the way down never waits for it
+    if (seam.enabled) {
+      const warm = () => { void loadFinale().catch(() => {}) }
+      if (typeof requestIdleCallback === 'function') requestIdleCallback(warm, { timeout: 2500 }); else setTimeout(warm, 1200)
+    }
     addEventListener('wheel', onWheel, { passive: false })
     addEventListener('pointerdown', onDown, { passive: true })
     addEventListener('pointermove', onMove, { passive: true })

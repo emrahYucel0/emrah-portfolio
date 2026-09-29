@@ -10,7 +10,7 @@
  * on a Lab route would fetch the engine, its fonts and its textures, and take a WebGL context, for a surface that
  * is never shown and never asked anything — and the visitor is reading a study while it happens.
  */
-import { isDocumentRoute } from '~~/shared/site'
+import { CONTACT_FINALE, isDocumentRoute } from '~~/shared/site'
 
 export default defineNuxtPlugin({
   name: 'c2-runtime',
@@ -19,6 +19,18 @@ export default defineNuxtPlugin({
     if (!import.meta.client) return
     const path = useRouter().currentRoute.value.path
     if (!/^\/(tr|en)(\/|$)/.test(path) || isDocumentRoute(path)) return
+    /*
+     * #contact is the site's old address for Contact (the semantic footer, still the no-script Contact under the
+     * runtime). With script, Contact is the finale's route: the visitor asked for it by name, so it opens settled —
+     * and the runtime, which would only be taken off the screen again, is given no head start.
+     */
+    const m = /^\/(tr|en)\/?$/.exec(path)
+    if (CONTACT_FINALE && m && location.hash === '#contact') {
+      const router = useRouter()
+      // once the app has hydrated: a navigation asked for during hydration is dropped by the initial one
+      onNuxtReady(() => { void router.replace({ path: `/${m[1]}/contact`, state: { [FINALE_ARRIVE]: 'end' } }) })
+      return
+    }
     const { start } = useC2Engine()
     void start()
   },

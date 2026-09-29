@@ -1,5 +1,6 @@
 import type { C2Event, C2MountOptions } from '../../engine/c2/types'
 import { PROJECT_IDS, projects, type Locale } from '~~/shared/content'
+import { CONTACT_FINALE } from '~~/shared/site'
 
 /**
  * Nuxt to C2 adapter — the smallest boundary that lets the shell host the frozen runtime.
@@ -82,6 +83,8 @@ export function useC2Engine() {
     push: (url) => { void router.push(url) },
     replace: (url) => { void router.replace(url) },
     back: () => router.back(),
+    // the site's one Contact is the finale's route (F2); the arrival rides on the history entry, as C2_ARRIVE does
+    openContact: CONTACT_FINALE ? (how) => { void router.push({ path: path('/contact'), state: { [FINALE_ARRIVE]: how } }) } : undefined,
     emit: (type, payload) => onEvent(type, payload),
   })
 

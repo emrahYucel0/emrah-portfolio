@@ -62,6 +62,10 @@ const HOST = {
   emit: () => {},
   // M2: the same page in the other language, supplied by the host (the runtime never builds locale URLs)
   localeHref: '',
+  // F2: Contact is the host's own route (the plotter finale). Given, the Contact stop hands over to it — 'start' when
+  // travel carried the visitor there (the drawing plays), 'end' when it was asked for by name (it opens settled).
+  // Not given, the stop is the runtime's own Contact, as before (the integration's fallback, deleted in F4).
+  contact: null,
 }
 export function configure(o = {}) {
   if (o.homeUrl) HOME_URL = o.homeUrl
@@ -73,6 +77,7 @@ export function configure(o = {}) {
   if (o.replace) HOST.replace = o.replace
   if (o.back) HOST.back = o.back
   if (o.emit) HOST.emit = o.emit
+  if (o.openContact) HOST.contact = o.openContact
   if (o.localeHref) { HOST.localeHref = o.localeHref; if (D.lang) D.lang.href = o.localeHref }
 }
 // document titles follow the active language; the host sets them on its own route changes too
@@ -590,6 +595,16 @@ function arriveAt(target) {
   return true
 }
 
+/**
+ * THE SIXTH DESTINATION (F2). Contact is a route of its own now, as the Lab is, so the stop hands over to it the
+ * way the Lab stop hands over to the bench: travel that settles on it opens the route. Only travel arms it, so a
+ * state restored onto the stop — coming back to this entry — sits there quietly; one more gesture down opens it.
+ */
+function openContact(how) {
+  A.labArmed = false
+  HOST.contact(how)
+}
+
 // ─── NAME → beneath the name is the person ────────────────────────────────────
 // M3 RESPONSIVE GEOMETRY — on a short phone the introduction needs a taller room than a fixed share of the height gives
 const aboutHalf = () => (V.P ? (V.H < 640 ? 0.27 : 0.235) : V.S ? 0.3 : V.H < 820 ? 0.215 : 0.2) * V.H   // a 13-inch laptop: a little more room between the names
@@ -887,7 +902,7 @@ function onArrive(stop, prev) {
     if (prev > 3) { A.wT = N - 1; A.wt = N - 1 + 0.9 } else { A.wT = 0; A.wt = -0.9 }
     tonesReady.then(() => queueWarm(WORKS))
   }
-  if (stop === 5) {
+  if (stop === 5 && !HOST.contact) {
     const key = `${A.visitOrder.join(',')}|${A.aboutMark ? 'a' : 'd'}`
     if (IDX[5].visitKey !== key) { const old = IDX[5]; IDX[5] = ST.rest(V, A.visitOrder, A.aboutMark); if (A.from !== old && A.to !== old) { old.dead = true; surface.release(old) } placeRest() }
     gsap.killTweensOf(A, 'restReg,restOpen')
@@ -917,6 +932,8 @@ ui.addEventListener('click', (e) => {
   const b = e.target.closest('[data-go], [data-work], [data-open], [data-world], [data-detail], [data-back]')
   if (!b) return
   if (b.dataset.go || b.hasAttribute('data-detail')) e.preventDefault()
+  // Contact asked for by name opens its route settled, from wherever the visitor is
+  if (b.dataset.go === 'rest' && HOST.contact) { HOST.contact('end'); return }
   if (b.dataset.go) {
     A.focusNext = performance.now()   // M4 A11Y
     const stop = { name: 0, creative: 1, system: 2, work: 3, lab: 4, rest: 5 }[b.dataset.go]
@@ -1235,7 +1252,7 @@ function domUpdate(from, to, front) {
     setOn(D.creative, d === 'creative')
     setOn(D.system, d === 'system')
     setOn(D.work, d === 'work')
-    setOn(D.rest, d === 'rest')
+    setOn(D.rest, d === 'rest' && !HOST.contact)
     setOn(D.world, d === 'world')
   } else {
     // it belongs to the hero, so it is there whenever the hero is: from the first frame of the opening, and gone
@@ -1246,7 +1263,7 @@ function domUpdate(from, to, front) {
     setOn(D.creative, idleIdx && at(1) && !loaded)
     setOn(D.system, idleIdx && at(2) && !loaded)
     setOn(D.work, idleIdx && at(3) && !loaded)
-    setOn(D.rest, idleIdx && at(5) && A.restOpen > 0.72)
+    setOn(D.rest, idleIdx && at(5) && A.restOpen > 0.72 && !HOST.contact)
     setOn(D.world, A.mode === 'world' || A.mode === 'exit')
   }
   if (D.lead.hidden !== A.aboutOpen) D.lead.hidden = A.aboutOpen
@@ -1469,7 +1486,7 @@ function canonical() {
       A.about.falloff = g.falloff; A.about.power = 2; A.about.lip = 5; A.about.lipW = 7
     }
   }
-  A.restOpen = A.base === 5 && !A.aboutOpen ? 1 : 0
+  A.restOpen = A.base === 5 && !A.aboutOpen && !HOST.contact ? 1 : 0
   A.introReg = 0; A.nameAmp = 0
 }
 let last = performance.now()
@@ -1521,6 +1538,8 @@ function frame(now) {
   // so a state restored onto the Lab stop — coming back to this entry, or returning from the bench itself — sits
   // there quietly instead of pushing the route again.
   if (A.labArmed && A.mode === 'index' && A.base === 4 && Math.abs(A.p - 4) < 0.02 && Math.abs(A.pT - 4) < 0.02 && !A.busy && !A.aboutOpen && !ptr.down && owns()) openLab()
+  // …and travel that settles on Contact hands over to the finale, which then plays from its first frame
+  if (HOST.contact && A.labArmed && A.mode === 'index' && A.base === 5 && Math.abs(A.p - 5) < 0.02 && Math.abs(A.pT - 5) < 0.02 && !A.busy && !A.aboutOpen && !ptr.down && owns()) openContact('start')
   if (A.mode === 'world' && !A.busy) Object.assign(A.world, worldGeom(A.wp))
   const lf = A.mode === 'world' ? lastFrame() : 0
   if (A.mode === 'world' && A.wp > lf - 0.1 && !A.nextArmed) {

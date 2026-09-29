@@ -34,6 +34,8 @@ const LITERAL = /\b(undefined|null|NaN|\[object Object\])\b/
     study: !!document.querySelector('.study'),
     back: !!document.querySelector('.study .back'),
     labControls: [...document.querySelectorAll('a[href$="/lab"]')].filter((e) => e.offsetParent !== null || e.getClientRects().length).length,
+    finale: !!window.__finale,
+    y: Math.round(scrollY),
     text: document.body.innerText,
   }))
   const click = (sel) => p.evaluate((s) => document.querySelector(s)?.click(), sel)
@@ -43,7 +45,7 @@ const LITERAL = /\b(undefined|null|NaN|\[object Object\])\b/
     await sleep(reduced ? 2600 : 4200)
     const s = await state()
     const hits = (s.text.match(LITERAL) || [])
-    const where = s.c2 === 'on' ? `base ${s.base}` : s.bench ? 'bench' : s.study ? 'study' : '—'
+    const where = s.c2 === 'on' ? `base ${s.base}` : s.bench ? 'bench' : s.study ? 'study' : s.finale ? `finale y ${s.y}` : '—'
     console.log(`  ${label.padEnd(22)} ${s.path.padEnd(18)} ${where}  ${hits.length ? 'LITERALS' : 'clean'}`)
     if (hits.length) bad(`${label}: ${hits.slice(0, 3).join(', ')}`)
     if (expect && !expect(s)) bad(`${label}: unexpected state ${JSON.stringify({ path: s.path, base: s.base, bench: s.bench, study: s.study })}`)
@@ -65,7 +67,8 @@ const LITERAL = /\b(undefined|null|NaN|\[object Object\])\b/
     await step(`→ ${id.toUpperCase()}`, async () => { await p.goto(`${BASE}/${loc}/lab/${id}`, { waitUntil: 'networkidle' }) }, (s) => s.study && s.back && s.labControls === 1)
     await step(`${id} → Lab`, () => click('.study .back'), (s) => s.bench)
   }
-  await step('→ Contact', () => p.mouse.wheel(0, 130), (s) => s.c2 === 'on' && s.base === 5)
+  // F2: down from the bench is the Contact finale's own route, from its first frame
+  await step('→ Contact', () => p.mouse.wheel(0, 130), (s) => s.c2 === 'off' && s.finale && s.path === `/${loc}/contact` && s.y === 0)
   await step('→ Lab', async () => {
     await p.mouse.wheel(0, -130)
     await p.waitForFunction(() => /\/lab$/.test(location.pathname), null, { timeout: 25000 }).catch(() => {})

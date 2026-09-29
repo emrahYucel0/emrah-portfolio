@@ -62,6 +62,7 @@ function scrollLevels(q, reduced) {
  * @param {Array} o.items            the five cells (see app/pages/[locale]/contact.vue)
  * @param {object} o.strings         { contact, finale, labTitle, registered }
  * @param {string} o.lang            'tr' | 'en'
+ * @param {() => void} [o.onTopUp]   at p = 0, a gesture UP (the way back to the Lab — F2)
  */
 export function createFinale(o) {
   const { items, strings, lang } = o
@@ -218,6 +219,42 @@ export function createFinale(o) {
   }, sig)
   addEventListener('pointerleave', () => { partition.setPointer(null); frame.request() }, sig)
   document.addEventListener('pointerout', (e) => { if (!e.relatedTarget) { partition.setPointer(null); frame.request() } }, sig)
+
+  // ── the way back (F2): at the top of the drawing a gesture UP belongs to the site, not to the document — it is
+  // the Lab's, as a gesture down on the bench is this page's. One gesture, one destination: only a gesture that
+  // BEGAN at the top counts, so the tail of a scroll that has just run the drawing back to p = 0 does not also
+  // carry the visitor out of it. The measures are the bench's own (useLabSpine: 96 px of wheel, 240 ms bursts,
+  // 56 px of finger).
+  if (o.onTopUp) {
+    const WHEEL = 96, BURST = 240, SWIPE = 56
+    const atTop = () => frame.rawProgress() <= 0.001
+    let acc = 0, accAt = 0, fromTop = false, spent = false
+    const up = () => { if (spent || dead) return; spent = true; o.onTopUp() }
+    addEventListener('wheel', (e) => {
+      if (spent) return
+      const now = performance.now()
+      const dy = e.deltaMode === 1 ? e.deltaY * 32 : e.deltaY
+      if (!dy) return
+      if (now - accAt > BURST || (acc !== 0 && Math.sign(dy) !== Math.sign(acc))) { acc = 0; fromTop = atTop() }
+      accAt = now
+      if (dy > 0 || !fromTop) { acc = 0; return }
+      acc += dy
+      if (acc <= -WHEEL) up()
+    }, sig)
+    // touch events, not pointer events: pulling down at the top starts the browser's own overscroll, which cancels
+    // the pointer but keeps delivering touchmove
+    let sx = 0, sy = 0, tracking = false
+    addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) { tracking = false; return }
+      tracking = atTop(); sx = e.touches[0].clientX; sy = e.touches[0].clientY
+    }, sig)
+    addEventListener('touchmove', (e) => {
+      if (!tracking || spent) return
+      const t = e.touches[0], dx = t.clientX - sx, dy = t.clientY - sy
+      if (dy >= SWIPE && Math.abs(dy) >= Math.abs(dx) * 1.3) { tracking = false; up() }
+    }, sig)
+    addEventListener('touchend', () => { tracking = false }, sig)
+  }
 
   // the harnesses' handles (like the runtime's window.__lab)
   window.__finale = { plotter, partition, frame, touchSheet: () => touchSheet(frame.S), STAGES, ATT_STAGES }

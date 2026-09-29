@@ -46,4 +46,6 @@ export declare function createFinale(o: {
   items: FinaleItem[]
   strings: FinaleStrings
   lang: 'tr' | 'en'
+  /** at p = 0, a gesture UP — the way back to the Lab */
+  onTopUp?: () => void
 }): Finale

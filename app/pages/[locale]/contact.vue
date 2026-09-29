@@ -15,6 +15,9 @@ import type { Finale, FinaleItem } from '../../../engine/lab/finale/finale'
  */
 definePageMeta({
   validate: (route) => ['tr', 'en'].includes(String(route.params.locale)),
+  // the page owns its scroll: the scroll IS the finale's position, set on arrival below (the router's own top /
+  // saved position would land before the track has its height, and after the finale had placed itself)
+  scrollToTop: false,
 })
 
 const { copy, locale } = useLocale()
@@ -58,9 +61,31 @@ const footRight = ref<HTMLElement | null>(null)
 let finale: Finale | null = null
 let gone = false
 
+/*
+ * ARRIVING (F2, useContactSeam). Carried here by a gesture — down out of the Lab, or through the runtime's Contact
+ * stop — the drawing plays from p = 0, and the tail of that gesture is spent before the document can scroll with it.
+ * Asked for by name — the menu, a #contact link — the finale opens settled, at p = 1. Coming back to this entry
+ * (Back / Forward), it is where the visitor left it.
+ */
+const arrival = import.meta.client ? takeHistoryFlag(FINALE_ARRIVE) : null
+if (arrival === 'start') hushTail()
+const entry = import.meta.client ? Number((history.state as { position?: number } | null)?.position ?? -1) : -1
+const { toLab } = useContactSeam()
+const place = () => {
+  if (!finale) return
+  if (arrival === 'end') finale.arrive()
+  else if (arrival !== 'start' && finaleScroll.has(entry)) scrollTo({ top: finaleScroll.get(entry)!, behavior: 'instant' })
+  else scrollTo({ top: 0, behavior: 'instant' })
+}
+const remember = () => { if (entry >= 0) finaleScroll.set(entry, scrollY) }
+// the strip's own Contact, pressed while already here: the finale settles
+const onArriveEvent = () => finale?.arrive()
+
 onMounted(async () => {
-  // the engine is fetched on this route only, after the page's meaning is already on screen
-  const { createFinale } = await import('../../../engine/lab/finale/finale.js')
+  addEventListener('scroll', remember, { passive: true })
+  addEventListener('finale:arrive', onArriveEvent)
+  // the engine is fetched on this route (or ahead of it, by the bench), after the page's meaning is on screen
+  const { createFinale } = await loadFinale()
   if (gone || !track.value || !paper.value || !ink.value || !contact.value || !status.value || !footLeft.value || !footRight.value) return
   live.value = true
   await nextTick()
@@ -70,9 +95,17 @@ onMounted(async () => {
     items: items.value,
     strings: { contact: copy.value.contact, finale: copy.value.finale, labTitle: copy.value.lab.title, registered: copy.value.lab.registered },
     lang: locale.value,
+    // at the top of the drawing, a gesture up is the way back to the Lab (one gesture, one destination)
+    onTopUp: () => { void toLab() },
   })
+  place()
 })
-onBeforeUnmount(() => { gone = true; finale?.destroy(); finale = null })
+onBeforeUnmount(() => {
+  gone = true
+  removeEventListener('scroll', remember)
+  removeEventListener('finale:arrive', onArriveEvent)
+  finale?.destroy(); finale = null
+})
 </script>
 
 <template>

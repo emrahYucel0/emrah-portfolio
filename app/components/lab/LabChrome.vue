@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { HTML_LANG, profile } from '~~/shared/content'
 import type { LabExit } from '~/composables/useLabHandoff'
+import { NuxtLink } from '#components'
 
 /**
  * THE LAB'S CHROME. On the Lab routes the C2 runtime is not mounted — that is what gives the studies the document's
@@ -35,6 +36,13 @@ const go = (e: MouseEvent, to: LabExit) => {
 }
 // Contact is its own route now (F2): asked for by name, the finale opens settled — and pressed while already there,
 // it settles the finale in place. Its href is the page itself, so a modified click or no script still reaches it.
+// the language control on the finale keeps the reader's place on the drawing (F3); elsewhere it is a plain link
+const toLocale = (e: MouseEvent) => {
+  setLanguage(other.value)
+  if (!onContact.value || !seam.enabled || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+  e.preventDefault()
+  void seam.toLocale(switchPath.value)
+}
 const contactHref = computed(() => (seam.enabled ? path('/contact') : home.value))
 const toContact = (e: MouseEvent) => {
   if (!seam.enabled) return go(e, 'rest')
@@ -62,13 +70,16 @@ const toContact = (e: MouseEvent) => {
         <li>
           <!-- two quiet letters, as on the runtime's own strip: a language control, not a word of English -->
           <!-- a language change is a step the visitor took, so Back undoes it — as it now does on the C2 routes -->
-          <NuxtLink
-            class="lang" :to="switchPath"
+          <!-- on the finale a plain link: the router is asked with the reader's place on the entry (RouterLink would
+               navigate before it could be given) -->
+          <component
+            :is="onContact && seam.enabled ? 'a' : NuxtLink"
+            class="lang" :href="onContact && seam.enabled ? switchPath : undefined" :to="onContact && seam.enabled ? undefined : switchPath"
             :hreflang="HTML_LANG[other]" :lang="HTML_LANG[other]"
             :aria-label="`${copy.localeSwitch.label}: ${copy.localeSwitch.to}`"
             :title="`${copy.localeSwitch.label}: ${copy.localeSwitch.to}`"
-            @click="setLanguage(other)"
-          >{{ copy.localeSwitch.short }}</NuxtLink>
+            @click="toLocale"
+          >{{ copy.localeSwitch.short }}</component>
         </li>
       </ul>
     </nav>

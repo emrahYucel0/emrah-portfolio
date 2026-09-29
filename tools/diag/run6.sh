@@ -102,6 +102,7 @@ say "LAB A11Y";                 node labaxe.cjs $CUR         2>&1 | tail -3  >> 
 say "CONTACT ROUTE";            node contact.cjs $CUR        2>&1 | tail -12 >> $L
 say "CONTACT FINALE — iOS 15.4";   node compat-ios15.cjs $CUR   2>&1 | tail -1  >> $L
 say "CONTACT SEAM — LAB ⇄ FINALE, ARRIVALS, HISTORY";   node seam.cjs $CUR   2>&1 | grep -E "FAIL|seam:|SEAM" >> $L
+say "CONTACT FINALE — A11Y, KEYBOARD, LANGUAGE, REDUCED, PHONES";   node finale-a11y.cjs $CUR   2>&1 | grep -E "FAIL|FINALE A11Y" >> $L
 say "JOURNEY TR NORMAL";        node journey.cjs $CUR tr     2>&1 | tail -5  >> $L
 say "JOURNEY EN REDUCED";       node journey.cjs $CUR en reduced 2>&1 | tail -5 >> $L
 say "NON-LAB NORMAL (baseline $BASE)";  node nonlab.cjs $BASE $CUR    2>&1 | tail -13 >> $L

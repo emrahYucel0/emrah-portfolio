@@ -17,9 +17,10 @@
 import { CONTACT_FINALE } from '~~/shared/site'
 
 /** on the finale's entry: 'start' — carried here by a gesture, the drawing plays from p = 0;
- *  'end' — asked for by name (the menu, #contact), the finale opens settled at p = 1 */
+ *  'end' — asked for by name (the menu, #contact), the finale opens settled at p = 1;
+ *  'at:<0…1>' — the same finale in the other language, where the reader was on the track */
 export const FINALE_ARRIVE = 'finaleArrive'
-export type FinaleArrival = 'start' | 'end'
+export type FinaleArrival = 'start' | 'end' | `at:${number}`
 /** on the bench's entry: the visitor gestured up out of the finale */
 export const LAB_ARRIVE = 'labArrive'
 
@@ -38,6 +39,9 @@ export const loadFinale = () => (finaleMod ??= import('../../engine/lab/finale/f
 
 /** where the finale was left, per history entry (vue-router's state.position) — Back and Forward find it there */
 export const finaleScroll = new Map<number, number>()
+
+/** the finale's side: the Contact page registers where the reader is on the track (a language change keeps it) */
+export const finaleSeam: { progress: null | (() => number) } = { progress: null }
 
 /** the bench's side of the seam: LabBench registers how it clears itself to the bare field */
 export const benchSeam: { exit: null | (() => Promise<void>) } = { exit: null }
@@ -66,6 +70,8 @@ export function useContactSeam() {
   const router = useRouter()
   const { path } = useLocale()
   const toContact = (how: FinaleArrival) => router.push({ path: path('/contact'), state: { [FINALE_ARRIVE]: how } })
+  /** the same finale in the other language, at the same place on the track */
+  const toLocale = (to: string) => router.push({ path: to, state: { [FINALE_ARRIVE]: `at:${(finaleSeam.progress?.() ?? 0).toFixed(4)}` } })
   const toLab = () => router.push({ path: path('/lab'), state: { [LAB_ARRIVE]: 'contact' } })
-  return { enabled: CONTACT_FINALE, toContact, toLab }
+  return { enabled: CONTACT_FINALE, toContact, toLab, toLocale }
 }

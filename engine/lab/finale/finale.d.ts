@@ -32,6 +32,10 @@ export interface FinaleStrings {
 export interface Finale {
   /** jump to the settled state (the menu / #contact arrival) */
   arrive(): void
+  /** where the reader is on the track, 0…1 */
+  progress(): number
+  /** back to a track position, 0…1 */
+  goTo(f: number): void
   destroy(): void
 }
 

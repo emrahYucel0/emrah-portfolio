@@ -83,10 +83,13 @@ export function createFinale(o) {
   const hud = createHud()
   const off = new AbortController()
   let dead = false
+  let liveNow = false // the drawing has settled far enough for the cells to be placed over it (p ≥ LIVE_P)
 
   function onAttention(kind, id, ts) {
     // keyboard focus must wake the frame loop itself — a resting sheet has no rAF running
-    if (kind === 'focus') { partition.setFocus(id); frame.request() }
+    // F3: the cells are in the accessibility tree and the tab order at every p. Keyboard focus reaching one before
+    // the drawing has placed it settles the finale first (p = 1), so the focus ring lands on its own fact
+    if (kind === 'focus') { if (!liveNow) arrive(); partition.setFocus(id); frame.request() }
     else if (kind === 'blur') { partition.setFocus(null); frame.request() }
     else if (kind === 'spend') {
       // the climax: the action (browser default / clipboard) fires with this very event and
@@ -169,6 +172,7 @@ export function createFinale(o) {
     // reduced motion's four stations, applied ONCE for every layer (plot, soak, pen, chrome)
     const p = frame.S.reduced ? mapReducedP(rawP) : rawP
     const live = p >= LIVE_P
+    liveNow = live
     partition.setScrollAttention(touch && live ? scrollLevels(q, frame.S.reduced) : null)
     const pt = partition.tick(frameRect(), dt, frame.S.reduced, live, frame.S.portrait)
     plotter.layout(pt)
@@ -261,12 +265,18 @@ export function createFinale(o) {
   window.__finaleStarted = true // the ?debug=1 panel reads it, whenever it arrives
   if (window.__dbg) { window.__dbg.started = true; window.__dbg.render() }
 
+  /** the settled state: the plot at p = 1 (on the touch sheet, before its attention stretch) */
+  function arrive() {
+    const f = touchSheet(frame.S) ? STAGES / (STAGES + ATT_STAGES) : 1
+    scrollTo({ top: o.track.offsetTop + f * (o.track.offsetHeight - innerHeight), behavior: 'instant' })
+  }
+
   return {
-    /** the settled state (menu / #contact arrival lands here; wired in F2) */
-    arrive() {
-      const f = touchSheet(frame.S) ? STAGES / (STAGES + ATT_STAGES) : 1
-      scrollTo({ top: o.track.offsetTop + f * (o.track.offsetHeight - innerHeight), behavior: 'instant' })
-    },
+    arrive,
+    /** where the reader is on the track (0…1) — a language change keeps it */
+    progress: () => frame.rawProgress(),
+    /** put the reader back at a track position (0…1) */
+    goTo(f) { scrollTo({ top: o.track.offsetTop + Math.max(0, Math.min(1, f)) * (o.track.offsetHeight - innerHeight), behavior: 'instant' }) },
     destroy() {
       dead = true
       off.abort()

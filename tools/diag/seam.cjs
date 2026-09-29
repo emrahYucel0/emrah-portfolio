@@ -10,12 +10,13 @@
 //  6. the runtime's Contact stop, reached by travel → the finale at p = 0.
 //  7. Back / Forward: the finale is found where it was left.
 // With `record`, desktop and phone videos of the Lab ⇄ finale crossing go to docs/contact-finale/f2/.
-// node seam.cjs <port> [record]
+// node seam.cjs <port> [record|reduced]
 const fs = require('fs')
 const path = require('path')
 const pw = require('playwright')
 const [port, mode] = process.argv.slice(2)
 const RECORD = mode === 'record'
+const REDUCED = mode === 'reduced' // the same crossings with prefers-reduced-motion
 const BASE = `http://127.0.0.1:${port}`
 const OUT = path.resolve(__dirname, '../../docs/contact-finale/f2')
 fs.mkdirSync(OUT, { recursive: true })
@@ -78,7 +79,7 @@ async function diff(pg, a, b) {
     return pg
   }
   const vid = (dir, size) => (RECORD ? { recordVideo: { dir, size } } : {})
-  const deskOpts = { viewport: { width: 1440, height: 900 } }
+  const deskOpts = { viewport: { width: 1440, height: 900 }, reducedMotion: REDUCED ? 'reduce' : 'no-preference' }
   const desk = await b.newContext({ ...deskOpts, ...vid(path.join(__dirname, 'out/seam-video-desktop'), deskOpts.viewport) })
   let p = watch(await desk.newPage())
 
@@ -99,9 +100,9 @@ async function diff(pg, a, b) {
   if (bare) {
     const d = await diff(p, bare, firstFinale)
     ok(d.over < 0.5, "the seam: the bench's last frame IS the finale's first frame (sheet, strip and foot excluded)", `mean |Δlum| ${d.mean}, pixels over 8: ${d.over}%`)
-    fs.writeFileSync(path.join(OUT, 'seam-1-bench.png'), benchShot)
-    fs.writeFileSync(path.join(OUT, 'seam-2-bench-bare.png'), bare)
-    fs.writeFileSync(path.join(OUT, 'seam-3-finale-first.png'), firstFinale)
+    if (!REDUCED) fs.writeFileSync(path.join(OUT, 'seam-1-bench.png'), benchShot)
+    if (!REDUCED) fs.writeFileSync(path.join(OUT, 'seam-2-bench-bare.png'), bare)
+    if (!REDUCED) fs.writeFileSync(path.join(OUT, 'seam-3-finale-first.png'), firstFinale)
     await scratch.close(); scratch = null
     await p.bringToFront()
   } else ok(false, 'the bench cleared itself to the bare field before handing over')
@@ -115,7 +116,7 @@ async function diff(pg, a, b) {
   ok(back && s.bench, 'at p = 0 a gesture up returns to the bench', s.path)
   ok(s.path === '/tr/lab', "and its tail does not carry on to Work (hush on the bench)", s.path)
   const benchBack = await p.screenshot()
-  fs.writeFileSync(path.join(OUT, 'seam-4-bench-again.png'), benchBack)
+  if (!REDUCED) fs.writeFileSync(path.join(OUT, 'seam-4-bench-again.png'), benchBack)
 
   console.log('\n== 3. a scroll back up to the top stays in the finale')
   await p.goto(`${BASE}/tr/contact`, { waitUntil: 'networkidle' }); await atFinale(p); await sleep(1200)
@@ -196,7 +197,7 @@ async function diff(pg, a, b) {
   if (deskVideo) fs.copyFileSync(await deskVideo.path(), path.join(OUT, 'lab-finale-desktop.webm'))
 
   console.log('\n== 4. the finger (phone, Chromium touch)')
-  const phone = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, ...vid(path.join(__dirname, 'out/seam-video-phone'), { width: 390, height: 844 }) })
+  const phone = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, reducedMotion: REDUCED ? 'reduce' : 'no-preference', ...vid(path.join(__dirname, 'out/seam-video-phone'), { width: 390, height: 844 }) })
   p = watch(await phone.newPage())
   const cdp = await phone.newCDPSession(p)
   const swipe = async (dy) => {

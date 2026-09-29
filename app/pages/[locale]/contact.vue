@@ -74,6 +74,7 @@ const { toLab } = useContactSeam()
 const place = () => {
   if (!finale) return
   if (arrival === 'end') finale.arrive()
+  else if (arrival?.startsWith('at:')) finale.goTo(Number(arrival.slice(3)) || 0)
   else if (arrival !== 'start' && finaleScroll.has(entry)) scrollTo({ top: finaleScroll.get(entry)!, behavior: 'instant' })
   else scrollTo({ top: 0, behavior: 'instant' })
 }
@@ -98,12 +99,14 @@ onMounted(async () => {
     // at the top of the drawing, a gesture up is the way back to the Lab (one gesture, one destination)
     onTopUp: () => { void toLab() },
   })
+  finaleSeam.progress = finale.progress
   place()
 })
 onBeforeUnmount(() => {
   gone = true
   removeEventListener('scroll', remember)
   removeEventListener('finale:arrive', onArriveEvent)
+  if (finale && finaleSeam.progress === finale.progress) finaleSeam.progress = null
   finale?.destroy(); finale = null
 })
 </script>
@@ -165,9 +168,12 @@ onBeforeUnmount(() => {
 .is-finale .stage canvas { display: block; position: absolute; inset: 0; width: 100%; height: 100%; }
 /* the track is only scroll distance: it must never swallow a click meant for the cells */
 .is-finale .track { display: block; position: relative; width: 100%; pointer-events: none; }
-/* hidden (and out of the tab order) until the frame stands; the rows are the visual layer */
-.is-finale .contact { position: absolute; inset: 0; visibility: hidden; }
-.is-finale .contact.is-live { visibility: visible; }
+/* The page's meaning stays in the accessibility tree and the tab order at EVERY p (F3): a reader arriving at the top
+   of the drawing finds the heading and the five facts. Until the drawing has placed the cells they take no pointer
+   (the rows are the visual layer), and keyboard focus reaching one settles the finale first (finale.js). */
+.is-finale .contact { position: absolute; inset: 0; }
+.is-finale .contact:not(.is-live) .cell, .is-finale .contact:not(.is-live) .copy { pointer-events: none; }
+.is-finale .contact:not(.is-live) .copy:not(:focus-visible) { opacity: 0; }
 .is-finale .heading { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .is-finale .facts { display: block; }
 .is-finale .cell {

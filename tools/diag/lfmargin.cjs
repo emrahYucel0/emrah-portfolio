@@ -55,7 +55,7 @@ function wordBox(d, W, H, c, dark) {
   for (const [w, h] of [[1440, 900], [390, 844], [320, 568], [844, 390]]) {
     const ctx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1, isMobile: w < 700 && h > w, hasTouch: w < 700 })
     const p = await ctx.newPage()
-    await p.goto(`http://127.0.0.1:${port}/tr?linefield=1&lfv=C`, { waitUntil: 'load', timeout: 90000 })
+    await p.goto(`http://127.0.0.1:${port}/tr?linefield=1`, { waitUntil: 'load', timeout: 90000 })
     await p.waitForFunction(() => !!window.__lf, null, { timeout: 60000 })
     await sleep(700)
     const strip = await p.evaluate(() => window.__lf.strip())

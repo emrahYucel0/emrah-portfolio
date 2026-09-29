@@ -212,5 +212,21 @@ export function sequence(p, W) {
    * about a sixth of the passage at each end.
    */
   const thin = back ? ease(q, 0.19, 0.35) : 1 - ease(q, 0.60, 0.79)
-  return { back, side: back ? 0 : 1, depth, spread, flow, labelA, flash, thin }
+  /*
+   * ── THE FOLD-BACK, THE POINT, AND THE LINE ──────────────────────────────────────────────────────────────
+   *
+   * cc alone closes the fan, but it does not send it away: every row scales toward the horizon while the
+   * corridor keeps the full width of the screen, so the scene folds flat where it should recede. Three
+   * overlapping scalars carry the last tenth of the passage, and the same three, reversed, carry the first
+   * tenth of the other half:
+   *
+   *   pull   the far point is drawn back toward the vanishing point, so the whole corridor throws itself into
+   *          the distance and what is left of the fan is a short wedge with its tip ON the point
+   *   mark   the drawn mark arrives, and the field's rows leave over the same window — the tip hands over
+   *   grow   the mark opens out from a point at the vanishing point into the full-width line that takes the rust
+   */
+  const pull = back ? ease(q, 0.4, 0.478) : 1 - ease(q, 0.522, 0.6)
+  const mark = back ? ease(q, 0.468, 0.492) : 1 - ease(q, 0.508, 0.532)
+  const grow = back ? ease(q, 0.486, 0.5) : 1 - ease(q, 0.5, 0.514)
+  return { back, side: back ? 0 : 1, depth, spread, flow, labelA, flash, thin, pull, mark, grow }
 }

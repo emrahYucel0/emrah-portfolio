@@ -8,13 +8,31 @@
  * Reached only as `?linefield=1` on a locale route, and only in a build where __LINEFIELD__ is true.
  */
 import { createSurface, hex } from '../surface.js'
-import { CORRIDOR_PATCH, corridorUniforms } from './corridor.js'
+import { CORRIDOR_PATCH, LF_ROW_KEEP, corridorImage, corridorUniforms, vanishingPoint } from './corridor.js'
+import { LF_FOLLOW, LF_KEY_STEP, LF_MAX_VEL, LF_MOMENTUM_TAU, LF_TOUCH_SPAN, LF_WHEEL_SPAN, createPacer } from './input.js'
 import { BACKEND_WORDS, FRONTEND_WORDS, faceReady, linefieldState, sequence } from './state.js'
 
 const RUST = hex('#b8622f')
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v)
 
-export async function mountLinefield() {
+/*
+ * ONCE, HOWEVER OFTEN IT IS ASKED FOR.
+ *
+ * The composable's start() is idempotent for the runtime, but this entry returns before the part that makes it
+ * so, and the dev server calls start() twice. That produced two hosts, two WebGL contexts and two docks:
+ * window.__lf drove one of them and the other was the one on screen, so setProgress moved a scene nobody could
+ * see and a harness photographed a frame that never changed. The static build mounts once and never showed it —
+ * which is exactly why this belongs here and not in the harness.
+ *
+ * The claim is staked on the first CALL, not on the first completed mount: mounting is asynchronous, and a
+ * second call arriving while the first is still compiling its shader would otherwise pass any check on __lf.
+ */
+export function mountLinefield() {
+  window.__lfMounting ??= mount()
+  return window.__lfMounting
+}
+
+async function mount() {
   const host = document.createElement('div')
   host.id = 'lf'
   host.setAttribute('aria-hidden', 'true')
@@ -32,62 +50,51 @@ export async function mountLinefield() {
   document.documentElement.dataset.c2 = 'off'
 
   /*
-   * DELIBERATELY BROKEN BUILDS, for calibrating the shimmer measure.
-   *
-   * A measurement that has only ever been run against the build it is meant to approve has not been shown to
-   * measure anything. `?lfbreak=` swaps in a corridor that is wrong in a known way — the row width and fusing
-   * left as the flat field's (which fills the far half solid), or the exact Jacobian replaced by a coarse
-   * finite difference (which is what an estimated gradient does to converging rows). The measure must read
-   * clearly higher on these than on the real one.
+   * THE DENSITY IS SETTLED. Three were built — every 4th, 6th and 8th row — and reviewed on the device; every
+   * 8th was chosen, and it is LF_ROW_KEEP in corridor.js now rather than a switch on the dock. `?lfv=` is
+   * accepted and ignored, so an old bookmark still opens the scene.
    */
-  /*
-   * THREE VARIANTS, and they differ in HOW SPARSE the corridor is — not only in how hard it compresses. The
-   * density is the structural thing: a field ruled for type cannot be squeezed into a corridor and still read
-   * as rays. Each keeps every Nth row and is given the compression that suits that many rays.
-   */
-  /*
-   * THREE DENSITIES. They differ in N alone now: with the demo's mapping the compression is the demo's —
-   * its vanishing points, its 3.4 far-point spread and its 1.7 curve exponent — and those are not ours to
-   * tune. What is still open is how many rays the corridor is made of.
-   */
-  const VARIANTS = [
-    { name: 'A', n: 4 },
-    { name: 'B', n: 6 },
-    { name: 'C', n: 8 },
-  ]
   const qs = new URLSearchParams(location.search)
-  // C is the tentative default, pending the review on the device; ?lfv=A|B still picks the others
-  let vi = Math.max(0, VARIANTS.findIndex((v) => v.name === (qs.get('lfv') || 'C').toUpperCase()))
+  /*
+   * ONE DELIBERATELY BROKEN BUILD, and it is the one that calibrates a measure that works.
+   *
+   * `?lfbreak=dense` sends the field down the corridor at the density the WORDS need, with no thinning — the
+   * fault the density measure exists to detect. It reads roughly two and a half times the high-frequency
+   * energy of the real build, which is what makes that number mean something.
+   *
+   * There were two others, aimed at the shimmer ratio. They patched text belonging to the homography this
+   * corridor no longer uses, so they had silently stopped substituting anything; and the ratio they were meant
+   * to calibrate never discriminated between builds in the first place, and was reported as untrustworthy
+   * rather than used. They are gone rather than left to look like coverage.
+   */
   const broke = qs.get('lfbreak')
   let patch = CORRIDOR_PATCH
-  if (broke === 'dense') {
-    // the field never thins: the density the words need, sent whole down the corridor — the fault this
-    // revision was about
-    patch = CORRIDOR_PATCH
-  } else if (broke === 'fade') {
-    patch = {
-      ...CORRIDOR_PATCH,
-      pars: CORRIDOR_PATCH.pars
-        .replace('#define VARIANT_HW(h, g) ((g) <= 1.0 ? (h) : max((h) / (g), 0.30))', '#define VARIANT_HW(h, g) (h)')
-        .replace('#define VARIANT_FUSE 0.0', '#define VARIANT_FUSE 1.0'),
-    }
-  } else if (broke === 'jacobian') {
+  if (broke === 'inverse') {
+    /*
+     * THE INVERSE AS IT WAS: no residual gate, and a derivative guard that drops the sign. This is the build
+     * that drew a column of dashes and a ghost fan past the vanishing point, and lfbeyond.cjs must report it —
+     * a check that has only ever been run against the build it approves has not been shown to check anything.
+     */
     patch = {
       ...CORRIDOR_PATCH,
       warp: CORRIDOR_PATCH.warp
-        /*
-         * A SIX-PIXEL step, not one. A homography is smooth, so a one-pixel finite difference is very nearly
-         * the analytic derivative everywhere except at the singularity — the "broken" build measured the same
-         * as the real one to three figures, which made the calibration meaningless. Six pixels is coarse
-         * enough to mis-size rows where they converge, which is the failure this is meant to stand in for.
-         */
-        .replace(
-          'float dv_dx = (uLFinv[0][1] - uLFinv[0][2] * fpt.y) * iw;',
-          `vec3 qx = uLFinv * vec3(p.x + 6.0, m, 1.0);
-           vec3 qy = uLFinv * vec3(p.x, m + 6.0, 1.0);
-           float dv_dx = (qx.y / qx.z - fpt.y) / 6.0;`,
-        )
-        .replace('float dv_dy = (uLFinv[1][1] - uLFinv[1][2] * fpt.y) * iw;', 'float dv_dy = (qy.y / qy.z - fpt.y) / 6.0;'),
+        .replace('float gg = abs(g) < 1e-4 ? (g < 0.0 ? -1e-4 : 1e-4) : g;', 'float gg = abs(g) < 1e-4 ? 1e-4 : g;')
+        .replace('fade *= 1.0 - smoothstep(0.35, 1.1, res);', ''),
+    }
+  } else if (broke === 'noextent' || broke === 'extentall') {
+    /*
+     * THE TWO ENDS OF THE FIELD-EXTENT QUESTION, so that "a word is whole in flight" can be MEASURED.
+     *
+     * `noextent` removes the extent altogether: every word is certainly complete, which makes it the reference
+     * a real frame is compared against. `extentall` applies it to every pixel, type included — what the code
+     * did when the top of FEEL went missing mid-flight. The check must find the second one guilty and the real
+     * build innocent, against the same reference.
+     */
+    patch = {
+      ...CORRIDOR_PATCH,
+      pars: broke === 'noextent'
+        ? CORRIDOR_PATCH.pars.replace('((a) * lfKeep(r, sol) * lfExtent(r, sol))', '((a) * lfKeep(r, sol))')
+        : CORRIDOR_PATCH.pars.replace('mix(inside, 1.0, smoothstep(0.08, 0.3, sol))', 'inside'),
     }
   }
 
@@ -144,17 +151,25 @@ export async function mountLinefield() {
      * belongs to the drawn line and to nothing else.
      */
     for (let i = 0; i < 3; i++) st.ink[i] = base[i]
-    // the passage: it arrives as the rows hand over, and it is one or two pixels on the ground
-    // the line arrives over the last of the fan's closing
-    const lineAmt = 1 - Math.min(1, q.spread / 0.05)
     const lineCol = base.map((c, i) => c + (RUST[i] - c) * q.flash)
+    /*
+     * THE MARK: a point at the vanishing point, then the line.
+     *
+     * It arrives where the corridor's tip left off — on the vanishing point — and opens out from there to a
+     * little past both edges of the screen, which is where the demo's rust line runs. Its half-height comes
+     * down from a point's to a line's over the same opening, so the moment it reads as a dot is a real moment
+     * and not a very short line.
+     */
+    const [vpx] = vanishingPoint(V.W, V.H, q.depth, q.side)
+    const a = vpx + (-40 - vpx) * q.grow
+    const b = vpx + (V.W + 40 - vpx) * q.grow
+    const lineAmt = q.mark
 
     surface.pair(st, st, 1)
     surface.beneath(st)
     surface.features = []
 
-    const V0 = VARIANTS[vi]
-    const U = corridorUniforms(V.W, V.H, q.depth, q.side)
+    const U = corridorUniforms(V.W, V.H, q.depth, q.side, q.pull)
     surface.use('corridor')
     // set inside the draw, where the variant's program is bound and the base uniforms are already in place
     surface.onBeforeDraw = () => {
@@ -169,10 +184,11 @@ export async function mountLinefield() {
       surface.vec4('uLFfade', 0.22, 0.85, 0.12, Math.max(8, V.W * 0.012))
       surface.vec4('uLFflow', q.flow[0], q.flow[1], q.flow[2], q.flow[3])
       surface.vec4('uLFband', st.layout.bands[0], st.layout.bands[1], st.layout.bands[2], st.layout.bands[3])
-      surface.vec2('uLFmode', 1, 0)
+      // z: the field leaves exactly as the mark arrives, so the tip hands over rather than fading out early
+      surface.vec4('uLFmode', 1, (a + b) / 2, 1 - q.mark, 0)
       // the `dense` break sends the full field down the corridor, which is the fault this revision was about
-      surface.vec2('uLFthin', V0.n, broke === 'dense' ? 0 : q.thin)
-      surface.vec4('uLFline', V.H * 0.5, 0.85, lineAmt, 0)
+      surface.vec2('uLFthin', LF_ROW_KEEP, broke === 'dense' ? 0 : q.thin)
+      surface.vec4('uLFline', V.H * 0.5, 2.4 + (0.85 - 2.4) * q.grow, lineAmt, Math.max(2.4, (b - a) / 2))
       surface.vec3('uLFlineCol', lineCol)
     }
     surface.render()
@@ -195,21 +211,7 @@ export async function mountLinefield() {
   const note = document.createElement('span')
   note.textContent = faceOk ? 'LINEFIELD' : 'LINEFIELD — FONT FALLBACK'
   note.style.color = faceOk ? '#121212' : '#b8622f'
-  /*
-   * The variant switch, on the dock so it can be reached with a thumb: the review is of three densities and
-   * the phone is where the density matters most.
-   */
-  const vbtn = document.createElement('button')
-  vbtn.type = 'button'
-  vbtn.style.cssText = 'border:1px solid rgba(18,18,18,.2);background:transparent;color:inherit;font:inherit;padding:6px 8px;cursor:pointer'
-  const vlabel = () => { vbtn.textContent = `${VARIANTS[vi].name} · N${VARIANTS[vi].n}` }
-  vbtn.addEventListener('click', () => {
-    vi = (vi + 1) % VARIANTS.length
-    vlabel()
-    draw()
-  })
-  vlabel()
-  dock.append(note, vbtn, scrub, pct)
+  dock.append(note, scrub, pct)
   host.appendChild(dock)
 
   const show = () => {
@@ -217,69 +219,49 @@ export async function mountLinefield() {
     const ms = times.length ? times.reduce((a, b) => a + b, 0) / times.length : 0
     pct.textContent = `${Math.round(p * 100)}% · ${ms.toFixed(1)}ms`
   }
-  const setProgress = (v) => { p = clamp01(v); target = p; show(); draw() }
 
   /*
    * ── PACING ──────────────────────────────────────────────────────────────────────────────────────────────
    *
-   * A wheel notch used to move the scene by a twentieth, so a gesture or two threw the words off the screen and
-   * the one thing worth watching — a word sliding along the corridor, toward the viewer and past — never
-   * happened. Input now moves a TARGET, and what is drawn eases toward it, so every notch is a glide.
-   *
-   * NOTCH is sized so the whole passage takes about eighteen of them: far enough that a single word's journey
-   * is several, short enough that the scene never feels held back. The touch distance is set to about one and a
-   * half screen heights end to end, which is a comfortable two or three swipes on a phone.
+   * All of it is in linefield/input.js, because Phase C drives the same progress from the site's own wheel,
+   * touch and key handling and it has to feel the same there. This entry supplies only the two things that are
+   * its own: where a frame is drawn, and how far a finger travels on this canvas.
    */
-  const NOTCH = 1 / 18
-  let target = 0
-  let raf = 0
-  const ease = () => {
-    raf = 0
-    const d = target - p
-    if (Math.abs(d) < 2e-4) { p = target; show(); draw(); return }
-    p = clamp01(p + d * 0.14)
+  let trace = null
+  const pacer = createPacer((v) => {
+    p = v
+    if (trace) trace.push([performance.now(), v])
     show()
     draw()
-    raf = requestAnimationFrame(ease)
-  }
-  const nudge = (dv) => {
-    target = clamp01(target + dv)
-    if (!raf) raf = requestAnimationFrame(ease)
-  }
+  }, () => LF_TOUCH_SPAN(V.H))
+  const setProgress = (v) => pacer.set(clamp01(v))
 
   scrub.addEventListener('input', () => setProgress(Number(scrub.value) / 1000))
   addEventListener('wheel', (e) => {
     if (e.target === scrub) return
     e.preventDefault()
-    // one notch is one notch, whatever the device reports: a trackpad's flood is not eighteen wheel clicks
-    nudge(Math.sign(e.deltaY) * Math.min(1, Math.abs(e.deltaY) / 100) * NOTCH)
+    pacer.wheel(e)
   }, { passive: false })
   addEventListener('keydown', (e) => {
-    if (['ArrowDown', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); nudge(NOTCH) }
-    if (['ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); nudge(-NOTCH) }
+    if (['ArrowDown', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); pacer.nudge(LF_KEY_STEP) }
+    if (['ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); pacer.nudge(-LF_KEY_STEP) }
     if (e.key === 'Home') setProgress(0)
     if (e.key === 'End') setProgress(1)
   })
 
   /*
-   * AND A FINGER MOVES IT. On the phone the scene could only be driven by the slider, which is not how anyone
-   * reads a page. A drag of about one and a half screen heights carries the whole passage.
+   * AND A FINGER MOVES IT — and lets go of it. The drag is one to one with the finger at the tuned distance;
+   * a flick hands the pacer a velocity and the scene carries on and decelerates, which is what a phone
+   * expects and what the old build did not do.
    */
-  let drag = null
-  const TOUCH_SPAN = () => Math.max(520, V.H * 1.5)
   host.addEventListener('pointerdown', (e) => {
     if (e.target === scrub || dock.contains(e.target)) return
-    drag = { y: e.clientY, at: target }
+    pacer.dragStart(e.clientY)
     host.setPointerCapture?.(e.pointerId)
   })
-  host.addEventListener('pointermove', (e) => {
-    if (!drag) return
-    target = clamp01(drag.at + (drag.y - e.clientY) / TOUCH_SPAN())
-    if (!raf) raf = requestAnimationFrame(ease)
-  })
-  const endDrag = () => { drag = null }
-  host.addEventListener('pointerup', endDrag)
-  host.addEventListener('pointercancel', endDrag)
+  host.addEventListener('pointermove', (e) => pacer.dragMove(e.clientY))
+  host.addEventListener('pointerup', () => pacer.dragEnd())
+  host.addEventListener('pointercancel', () => pacer.dragEnd())
   let rt
   addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { measure(); setProgress(p) }, 140) })
 
@@ -289,17 +271,57 @@ export async function mountLinefield() {
    */
   window.__lf = {
     setProgress,
-    notch: NOTCH,
-    touchSpan: () => TOUCH_SPAN(),
-    nudge,
+    nudge: (dv) => pacer.nudge(dv),
+    // the tuning, so a report quotes the values the build actually runs on rather than the ones it was told
+    input: () => ({
+      follow: LF_FOLLOW,
+      momentumTau: LF_MOMENTUM_TAU,
+      maxVel: LF_MAX_VEL,
+      wheelSpan: LF_WHEEL_SPAN,
+      touchSpan: LF_TOUCH_SPAN(V.H),
+      keyStep: LF_KEY_STEP,
+    }),
+    touchSpan: () => LF_TOUCH_SPAN(V.H),
+    velocity: () => pacer.velocity,
+    /*
+     * EVERY FRAME THAT WAS DRAWN, with the time it was drawn at.
+     *
+     * "A flick must never skip the collapse" is a statement about frames, not about where the progress ends up,
+     * and no screenshot can answer it. With the trace on, the harness can ask what the largest single-frame
+     * step was and whether a frame was actually drawn at the crossing.
+     */
+    trace: (on) => { trace = on ? [] : null; return trace },
+    traced: () => trace || [],
     get progress() { return p },
+    get target() { return pacer.target },
     faceOk,
-    variant: () => VARIANTS[vi],
-    setVariant: (n) => { const k = VARIANTS.findIndex((v) => v.name === String(n).toUpperCase()); if (k >= 0) { vi = k; vlabel(); draw() } },
+    rowKeep: LF_ROW_KEEP,
     frameMs: () => (times.length ? times.reduce((a, b) => a + b, 0) / times.length : 0),
     worstMs: () => (times.length ? Math.max(...times) : 0),
     resetTimes: () => { times.length = 0 },
     sequence: () => sequence(p, V.W),
+    // the colour a pixel carrying nothing comes out: what "ground only" means, exactly, rather than sampled
+    ground: () => {
+      const st = sequence(p, V.W).back ? back : front
+      return st.paper.map((c) => Math.round(c * 255))
+    },
+    // and the colour a pixel carrying a letter comes out: full ink, which is what a word is made of
+    inkColour: () => {
+      const st = sequence(p, V.W).back ? back : front
+      return st.ink.map((c) => Math.round(c * 255))
+    },
+    // where the corridor's image ENDS, so a harness can look on the right side of it
+    vp: () => {
+      const q = sequence(p, V.W)
+      const [vx, vy] = vanishingPoint(V.W, V.H, q.depth, q.side)
+      return { vx, vy, side: q.side, depth: q.depth }
+    },
+    // and the whole band of columns the map can reach: outside it there is no solution and nothing may be drawn
+    image: () => {
+      const q = sequence(p, V.W)
+      const [lo, hi] = corridorImage(V.W, q.depth, q.side, q.pull)
+      return { lo, hi, mark: q.mark, grow: q.grow, pull: q.pull, lineY: V.H * 0.5 }
+    },
     spacing: () => ({ back: back.spacing, front: front.spacing, cap: back.layout.cap }),
     strip: () => V.strip,
     // the dock is this entry's own furniture; a harness measuring where the WORDS are has to be able to

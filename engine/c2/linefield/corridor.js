@@ -38,16 +38,47 @@ export const LF_BANDS = 4
 /** how many Newton steps the shader takes; lfResidual() measures what that is worth */
 export const LF_ITERS = 5
 
+/**
+ * ONE ROW IN EVERY N SURVIVES THE CORRIDOR — the ground's rows, that is; a word keeps all of them.
+ *
+ * The field is ruled at the pitch the TYPE needs, about nine rows through every capital, or a phone cannot
+ * read the words. Sent whole down a corridor that density has nowhere to go: hundreds of rows land inside a
+ * few pixels and add up to a wash with the vanishing point somewhere inside it.
+ *
+ * Three densities were built and reviewed on the device — every 4th, 6th and 8th row. Every 8th was chosen:
+ * it is the one that reads as a countable set of rays rather than a grey field, at 1440x900 and at 390x844.
+ * The switch that offered the other two is gone; this is the number.
+ */
+export const LF_ROW_KEEP = 8
+
+/**
+ * HOW FAR THE CORRIDOR THROWS ITSELF INTO THE DISTANCE as the fan closes.
+ *
+ * The demo's map has two knobs, d and cc, and cc alone closes the fan: every row is scaled toward the horizon
+ * until they are all on it. That closes it, but it does not RECEDE — the fan keeps the full width of the screen
+ * right up to the moment it becomes a line, so the scene folds flat instead of going away.
+ *
+ * So the far point is drawn back toward the vanishing point over the last of the closing. The corridor's whole
+ * image shrinks to a few per cent of the screen at the point, which is the fold-back going deeper, and what is
+ * left of the fan is a short sharp wedge with its tip on the vanishing point. That is the tip the mark then
+ * takes over from.
+ */
+export const LF_PULL = 0.94
+
 const vxOf = (W, side) => (side === 0 ? W * 0.1 : W * 0.9)
-const ExOf = (W, side) => (side === 0 ? W * 1.1 : -W * 0.1)
+const ExOf = (W, side, pull = 0) => {
+  const vx = vxOf(W, side)
+  const Ex = side === 0 ? W * 1.1 : -W * 0.1
+  return vx + (Ex - vx) * (1 - LF_PULL * pull)
+}
 
 /*
  * The same arithmetic as the shader, on the CPU, so the iteration can be MEASURED rather than asserted.
  * Returns the worst absolute error in screen pixels over a grid across the frame.
  */
-export function lfResidual(W, d, side, iters = LF_ITERS) {
+export function lfResidual(W, d, side, iters = LF_ITERS, pull = 0) {
   const vx = vxOf(W, side)
-  const Ex = ExOf(W, side)
+  const Ex = ExOf(W, side, pull)
   const p = 1 + 1.7 * d
   const X = (t) => {
     const tt = side === 0 ? t : 1 - t
@@ -86,11 +117,29 @@ export function vanishingPoint(W, H, d, side) {
   return [flatX + (vxOf(W, side) - flatX) * d, H * 0.5]
 }
 
+/**
+ * THE CORRIDOR'S IMAGE: the band of screen columns the map can actually reach.
+ *
+ * X depends only on t, so the image is the interval between X(0) and X(1) and there is no solution anywhere
+ * else — not past the vanishing point, and not past the far point once the fold-back has drawn it in. A harness
+ * asks for this to know where it is entitled to find a mark, and the shader enforces it by residual.
+ */
+export function corridorImage(W, d, side, pull = 0) {
+  const vx = vxOf(W, side)
+  const Ex = ExOf(W, side, pull)
+  const p = 1 + 1.7 * d
+  const X = (t) => {
+    const tt = side === 0 ? t : 1 - t
+    return t * W * (1 - d) + d * (vx + (Ex - vx) * Math.pow(Math.max(tt, 0), p))
+  }
+  return [Math.min(X(0), X(1)), Math.max(X(0), X(1))]
+}
+
 /** what the shader needs, per frame */
-export function corridorUniforms(W, H, d, side) {
+export function corridorUniforms(W, H, d, side, pull = 0) {
   return {
     map: [d, 0, vxOf(W, side), H * 0.5],
-    map2: [ExOf(W, side), W, side, 1 + 1.7 * d],
+    map2: [ExOf(W, side, pull), W, side, 1 + 1.7 * d],
   }
 }
 
@@ -103,18 +152,18 @@ export const CORRIDOR_PATCH = {
 #define VARIANT_HW(h, g, sol) lfHw(h, g, sol)
 // crowded rows are NOT closed up into a mass here: a corridor should thin out, not turn into a bar
 #define VARIANT_FUSE 0.0
-// and the field thins as the corridor forms; see lfKeep below
-#define VARIANT_ROW(a, r, sol) ((a) * lfKeep(r, sol))
+// and the field thins, and ends, and dissolves where its rays meet — none of which happens to type
+#define VARIANT_ROW(a, r, sol) ((a) * lfKeep(r, sol) * lfExtent(r, sol) * lfWhisker(sol))
 
 uniform vec4 uLFmap;      // x: depth d, y: the fan's opening cc, z: vx, w: vy
-uniform vec4 uLFmap2;     // x: Ex, y: W, z: side (0 dark, 1 cream), w: the exponent 1 + 1.7d
+uniform vec4 uLFmap2;     // x: Ex, drawn in by the fold-back; y: W; z: side (0 dark, 1 cream); w: 1 + 1.7d
 uniform vec4 uLFfade;     // x,y: the whisker at the point itself; z: depth fade; w: the field's own edge
 uniform vec4 uLFflow;     // how far each of the four words has flowed, in flat pixels
 uniform vec4 uLFband;     // the four words' centres up the flat field, in flat pixels
 uniform vec2 uLFthin;     // x: keep every Nth row, y: how far the thinning has gone (0 = the full field)
-uniform vec4 uLFline;     // the drawn passage: screen y, half height, how much of it there is, unused
+uniform vec4 uLFline;     // the drawn mark: screen y, half height, how much of it there is, half width
 uniform vec3 uLFlineCol;  // its colour — the ground's ink, taking the rust only at the crossing
-uniform vec2 uLFmode;     // x: 1 while the corridor is mapping at all
+uniform vec4 uLFmode;     // x: 1 while the corridor is mapping; y: the mark's centre x; z: is the field still here
 
 /*
  * THE FIELD THINS AS THE CORRIDOR FORMS.
@@ -134,6 +183,48 @@ float lfKeep(float r, float sol) {
    * past leaves a thin grey ghost where the reference has a thick bright bar.
    */
   return mix(mix(1.0, kept, clamp(uLFthin.y, 0.0, 1.0)), 1.0, smoothstep(0.08, 0.3, sol));
+}
+
+/*
+ * AND THE FIELD ENDS AT ITS OWN TOP AND BOTTOM — THE GROUND DOES, ANYWAY.
+ *
+ * The demo has sixty-odd rows and no more: its field is a list. C2 makes a row wherever the material coordinate
+ * lands, so rows from far above and below the screen were being mapped into the corridor and piling up around
+ * the vanishing point — a grey halo the demo does not have. The field is given the same extent the demo's has,
+ * arriving with the depth and leaving with it so that at rest the ground is still full screen.
+ *
+ * IT IS DECIDED PER ROW, AND TYPE IS EXEMPT. Applied to the whole pixel it clipped the top of FEEL while FEEL
+ * was in flight: the word was crossing the top of the field's extent, and the extent does not know the
+ * difference between a row of ground and a row inside a letter. A word is whole at every moment of its flight,
+ * exactly as it keeps every row through the thinning — the same rule, for the same reason.
+ *
+ * r * uR1.x is where the row belongs at REST, which is what the extent is about; the corridor may have carried
+ * it anywhere by the time it is drawn.
+ */
+/*
+ * THE WHISKER AT THE POINT — AND IT IS A GROUND RULE TOO.
+ *
+ * Where neighbouring rays come closer than a pixel no coverage answer can keep them apart, so the last band
+ * before the vanishing point is taken out rather than left to boil. That is right for ruled ground and wrong
+ * for a letter: a letter is not two rays the eye is failing to separate, it is a SOLID, and the reference draws
+ * its word segments as filled shapes right up to the point.
+ *
+ * Applied to the whole pixel it was the third thing treating type as ground — and the one that was actually
+ * taking the top off FEEL in flight. The extent was the suspect; the extent was innocent, and exempting type
+ * from it changed nothing, because the rows coming off the top of the word were being dissolved by this.
+ *
+ * Type keeps a whisker of its own, an order tighter: at the singularity itself even a solid has to go, or the
+ * vanishing point is a black dot rather than a point.
+ */
+float lfWhisk_cur;
+float lfWhiskType_cur;
+float lfWhisker(float sol) { return mix(lfWhisk_cur, lfWhiskType_cur, smoothstep(0.08, 0.3, sol)); }
+
+float lfExtent(float r, float sol) {
+  float y = r * uR1.x;
+  float soft = max(4.0, uRes.y * 0.02);
+  float inside = smoothstep(0.0, soft, y - uRes.y * 0.07) * smoothstep(0.0, soft, uRes.y * 0.93 - y);
+  return mix(1.0, mix(inside, 1.0, smoothstep(0.08, 0.3, sol)), smoothstep(0.02, 0.3, uLFmap.x));
 }
 
 /*
@@ -201,8 +292,28 @@ float lfFlowAt(float v) {
     float q = uLFmap2.z < 0.5 ? tGuess : 1.0 - tGuess;
     for (int i = 0; i < ITERS; i++) {
       float g = lfDx(q);
-      q = clamp(q - (lfX(q) - p.x) / (abs(g) < 1e-4 ? 1e-4 : g), 0.0, 1.0);
+      // THE GUARD KEEPS THE SIGN. Written without the second test it did not: at the vanishing point dX/dq
+      // vanishes, and on the cream side, where the derivative is negative, substituting a POSITIVE epsilon sent
+      // the step the wrong way — q left 0 for 1 in one move and then wandered back to an ordinary interior
+      // value. That is where the dashes past the point came from.
+      float gg = abs(g) < 1e-4 ? (g < 0.0 ? -1e-4 : 1e-4) : g;
+      q = clamp(q - (lfX(q) - p.x) / gg, 0.0, 1.0);
     }
+
+    /*
+     * AND OUTSIDE THE CORRIDOR'S IMAGE THERE IS NOTHING.
+     *
+     * Newton always returns something. Past the vanishing point — and past the far point, once the fold-back
+     * has drawn it in — no t maps to this column at all, so what it returns is a number with no meaning, and
+     * the shader was drawing a row at it: a column of dashes just past the point and a ghost fan beyond that.
+     *
+     * The test is the map's own: carry the answer forward and see whether it lands on this pixel. Inside the
+     * image it lands within a fraction of a pixel; outside, it cannot land at all, because the nearest column
+     * the map reaches is the edge of the image. Sub-pixel tolerance, so the corridor's last column is
+     * antialiased and not a saw.
+     */
+    float res = abs(lfX(q) - p.x);
+    fade *= 1.0 - smoothstep(0.35, 1.1, res);
 
     float s = lfS(q);
     float G = 1.0 + d * (3.4 * s - 1.0);
@@ -237,39 +348,32 @@ float lfFlowAt(float v) {
      * itself, where no coverage answer can keep neighbouring rays apart, and the field's own edge.
      */
     float spr = uR1.x / max(length(vec2(dy0dX, dy0dY)), 1e-4);
-    fade *= smoothstep(uLFfade.x, uLFfade.y, spr * uDpr);
+    // decided per row inside rows(), where it is known whether the row is ground or inside a letter
+    lfWhisk_cur = smoothstep(uLFfade.x, uLFfade.y, spr * uDpr);
+    lfWhiskType_cur = smoothstep(uLFfade.x * 0.18, uLFfade.y * 0.21, spr * uDpr);
     fade *= smoothstep(0.0, uLFfade.w, u) * smoothstep(0.0, uLFfade.w, uRes.x - u);
-    /*
-     * AND THE FIELD ENDS AT ITS OWN TOP AND BOTTOM.
-     *
-     * The demo has sixty-odd rows and no more: its field is a list. C2 makes a row wherever the material
-     * coordinate lands, so rows from far above and below the screen were being mapped into the corridor and
-     * piling up around the vanishing point — a grey halo the demo does not have, and the clearest difference
-     * left in the side-by-side. The field is given the same extent the demo's has.
-     */
-    /*
-     * ...BUT ONLY ONCE THERE IS A CORRIDOR. At rest this site's field is full screen, always; clipping it to
-     * the reference's extent left empty bands top and bottom and the ruled ground read as a panel behind the
-     * words. The extent arrives with the depth and leaves with it, smoothly, the way the thinning does.
-     */
-    float top = uRes.y * 0.07;
-    float bot = uRes.y * 0.93;
-    float inside = smoothstep(0.0, uLFfade.w, y0 - top) * smoothstep(0.0, uLFfade.w, bot - y0);
-    fade *= mix(1.0, inside, smoothstep(0.02, 0.3, d));
     fade *= 1.0 - uLFfade.z * d;
-    // and the field leaves over the last of the fan's closing, as the drawn line takes over
-    fade *= smoothstep(0.0, 0.05, uLFmap.y);
+    // and the field leaves exactly as the mark arrives: the tip hands over to the point, the point to the line
+    fade *= uLFmode.z;
   }
 `,
   /*
    * THE PASSAGE IS DRAWN, NOT FUSED. A fused mass cannot be made thin; a drawn line is thin by construction,
    * it is handed over to as the fan finishes closing, and it is the only thing that takes the rust.
+   *
+   * AND IT ARRIVES AS A POINT. The fold-back leaves a short sharp tip on the vanishing point; the mark takes
+   * over from it there, as a point, and only then grows out into the full line that carries the accent. Coming
+   * the other way it does the reverse: the line draws back into a point at the cream side's vanishing point,
+   * and the fan opens out of it.
    */
   composite: `
   if (uLFmode.x > 0.5 && uLFline.z > 0.001) {
     float half_ = max(0.5, uLFline.y);
+    float halfW = max(0.5, uLFline.w);
     float d0 = abs(p.y - uLFline.x);
-    float ln = (1.0 - smoothstep(half_ - 0.5, half_ + 0.5, d0)) * uLFline.z;
+    float dxm = abs(p.x - uLFmode.y);
+    float ln = (1.0 - smoothstep(half_ - 0.5, half_ + 0.5, d0))
+             * (1.0 - smoothstep(halfW - 0.5, halfW + 0.5, dxm)) * uLFline.z;
     col = mix(col, uLFlineCol, ln);
     inkCol = mix(inkCol, uLFlineCol, ln);
     inkAmt = max(inkAmt, ln);

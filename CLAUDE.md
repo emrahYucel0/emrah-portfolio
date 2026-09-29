@@ -1,0 +1,70 @@
+# emrah-portfolio — working notes for Claude
+
+## The site
+
+Nuxt 4, statically generated (`npm run generate` → `.output/public`), hosting the frozen **C2 runtime** in
+`engine/c2/`. The runtime owns the screen on the locale routes; the Lab routes (`/{locale}/lab*`) hand it back to
+the document, which is what gives the studies their scroll. `docs/DEPLOYMENT.md` is the deployment authority.
+
+## Features in progress
+
+A feature under development lives on its own branch — or its own **worktree**, when another branch's work is open
+in the main folder and must not be disturbed — and behind a **build-time flag that is off by default**.
+
+- With the flag off the published site must behave identically and must contain **none of the feature's code**.
+  That is a tested gate, not an intention: the flag is a `define` the bundler resolves, and the feature's modules
+  are imported only where it is true, so a published build has nothing to strip.
+- Each feature keeps its own document under `docs/` as the source of truth: the approved architecture, the phase
+  plan, the approval checkpoints, and every decision agreed so far. Read it before continuing that feature's work,
+  and **re-read it after any context compaction**. Record every later decision there.
+
+## Verification policy — what to run, and when
+
+Proportion is the rule: the size of the check follows the size of the change, not the size of the anxiety.
+
+- **Small follow-ups and fixes:** the targeted harnesses for the area touched, plus `npx nuxt typecheck` and the
+  flag-off route check. Minutes, not hours.
+- **End of a phase, before asking for visual approval:** the same set, plus every harness that phase added.
+- **The full flag-off gate (`tools/diag/run6.sh`, against the `baseline/pre-site-polish` artifact) and the full
+  stability sample run at milestones only:** before asking for a seam or an integration to be approved, before
+  any merge to `main` or deploy, and whenever a change touches `engine/c2/*`, the layout's screen ownership, or
+  navigation.
+- **Never start a run expected to take longer than 30 minutes without asking first.**
+
+Two things the harnesses have learned the hard way, worth knowing before reading their output:
+
+- **A pixel delta is weather.** The ambient wave is always moving, so two runs of the *same* build differ a lot.
+  Compare pixels in reduced motion (`nonlabred.cjs`), where two identical builds come out at 0 on every stop.
+  `nonlab.cjs` asserts the **state** — mode, stop, which layers are up, which destinations exist — and prints the
+  delta without failing on it.
+- **A server started before a rebuild serves the new HTML under the old CSP hash**, the inline script is refused,
+  the runtime never boots, and every test fails in the same confusing way with no failed request. `cspboot.cjs`
+  exists for exactly that, and `serve.sh` runs it after every restart.
+
+## Conventions
+
+- **The C2 runtime is frozen unless a brief says otherwise.** It is one full-screen fragment shader plus a
+  material-coordinate map; changes there are felt everywhere on the site.
+- Shaders and engine modules are plain ES modules with no framework imports.
+
+## Standing rules
+
+- Do not commit, push or deploy without being asked.
+- The research sources at `C:\Users\monster\Desktop\emrah-yucel-porfolio\` are read-only.
+- No mail, cPanel, SMTP or API credentials belong in this repository.
+- Automated browser results are never reported as physical device verification.
+
+## Safety — more than one worktree at a time
+
+Work on two features can be open at once, in two folders sharing **one `.git`**. Everything below follows from
+that: a command that looks local is not.
+
+- **Never `git stash`.** The stash stack is shared, so a pop can take another session's work. Set work aside with
+  a temporary commit on your own branch instead.
+- **Never `git gc`, `git worktree prune`, or anything that rewrites, expires or deletes refs** that are not your
+  own branch's. Another worktree's branch, reflog and index are not yours to touch.
+- **Never touch the other folder** — its branch, its files, its index, tracked or untracked — or assume its state
+  is what you last saw it as. It moves while you work.
+- **Never run `tools/diag/serve.sh` with its default ports from a second worktree.** It force-kills whatever
+  holds 4500-4700, which is the other session's servers. Pass a port override and build into your own
+  `builds/<feature>` folder, and do not change the script's defaults for the other session.

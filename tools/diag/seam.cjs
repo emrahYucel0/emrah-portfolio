@@ -100,9 +100,9 @@ async function diff(pg, a, b) {
   if (bare) {
     const d = await diff(p, bare, firstFinale)
     ok(d.over < 0.5, "the seam: the bench's last frame IS the finale's first frame (sheet, strip and foot excluded)", `mean |Δlum| ${d.mean}, pixels over 8: ${d.over}%`)
-    if (!REDUCED) fs.writeFileSync(path.join(OUT, 'seam-1-bench.png'), benchShot)
-    if (!REDUCED) fs.writeFileSync(path.join(OUT, 'seam-2-bench-bare.png'), bare)
-    if (!REDUCED) fs.writeFileSync(path.join(OUT, 'seam-3-finale-first.png'), firstFinale)
+    if (RECORD) fs.writeFileSync(path.join(OUT, 'seam-1-bench.png'), benchShot)
+    if (RECORD) fs.writeFileSync(path.join(OUT, 'seam-2-bench-bare.png'), bare)
+    if (RECORD) fs.writeFileSync(path.join(OUT, 'seam-3-finale-first.png'), firstFinale)
     await scratch.close(); scratch = null
     await p.bringToFront()
   } else ok(false, 'the bench cleared itself to the bare field before handing over')
@@ -116,7 +116,7 @@ async function diff(pg, a, b) {
   ok(back && s.bench, 'at p = 0 a gesture up returns to the bench', s.path)
   ok(s.path === '/tr/lab', "and its tail does not carry on to Work (hush on the bench)", s.path)
   const benchBack = await p.screenshot()
-  if (!REDUCED) fs.writeFileSync(path.join(OUT, 'seam-4-bench-again.png'), benchBack)
+  if (RECORD) fs.writeFileSync(path.join(OUT, 'seam-4-bench-again.png'), benchBack)
 
   console.log('\n== 3. a scroll back up to the top stays in the finale')
   await p.goto(`${BASE}/tr/contact`, { waitUntil: 'networkidle' }); await atFinale(p); await sleep(1200)

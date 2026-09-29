@@ -1,208 +1,154 @@
 /*
  * ── THE CORRIDOR ────────────────────────────────────────────────────────────────────────────────────────────
  *
- * LINEFIELD's one piece of new rendering: the flat row field bent into a receding corridor, so the words flow
- * toward the viewer and past. Imported only where __LINEFIELD__ is true — a build with the flag off never
- * references this module, so none of the GLSL below exists in it.
+ * The reference demo's own mapping, in C2's renderer. Imported only where __LINEFIELD__ is true.
  *
- * WHY A HOMOGRAPHY, AND NOT THE DEMO'S MAPPING.
+ * WHY NOT THE HOMOGRAPHY IT USED TO BE. A homography maps straight lines to straight lines. The demo's motion
+ * begins with the rows FLEXING — their ends curving away before they become rays — and that bend is where its
+ * breathing quality comes from. A projective map cannot produce it at any setting, so the previous version
+ * could match the demo's end frames and never its movement.
  *
- * The reference demo bends the field with `pow(t, 1 + 1.7 * d)`, which looks right and is not a perspective: it
- * has no closed-form inverse and no closed-form gradient. That matters here far more than it did there, because
- * C2 does not draw rows — it asks, per pixel, "which row is here", and then decides how to anti-alias it, when
- * to fuse it with its neighbours, and when to drop to a level of detail. Every one of those judgements is made
- * from the GRADIENT of the map. A map whose gradient has to be estimated by finite differences would make those
- * judgements out of focus exactly where the rows converge — which is the one place shimmer is unforgivable.
+ * THE DEMO'S MAP, from linefield-v2.html's pt():
  *
- * A homography is a real perspective, its inverse is another homography, and its Jacobian is four lines of
- * arithmetic. So the shader maps the screen point BACK to the flat field, hands the exact gradient to the
- * existing machinery, and every anti-aliasing and fusing decision C2 already makes stays correct in the
- * corridor without being rewritten.
+ *     s  = tt ^ (1 + 1.7 d)            tt = t on the dark side, 1 - t on the cream side
+ *     fx = t W                         fy = vy + (y0 - vy) cc
+ *     px = vx + (Ex - vx) s            py = vy + (Ey - vy) s,   Ey = vy + (y0 - vy) 3.4 cc
+ *     screen = mix(flat, persp, d)
  *
- * WHAT IS UPLOADED. One mat3 (screen -> flat field, in pixels), a fade band, the four word offsets and the four
- * word bands. The per-frame cost on the CPU is one 3x3 inverse; per pixel it is a matrix multiply, a divide and
- * four multiply-adds.
+ * The exponent on s is what curves the rows: at d = 0 it is linear, and as d grows the ends are dragged toward
+ * the vanishing point faster than the middle. That is phases 1 and 2 of the choreography — bend, then
+ * straighten. Phases 3 and 4 follow from cc alone, because cc scales every row toward the horizon: the fan
+ * closes, and what is left is one line. There is no separate gather; the collapse IS this map.
+ *
+ * INVERTING IT. C2 asks, per pixel, which row is here — so the map has to run backwards. The saving grace is
+ * that X DEPENDS ONLY ON t, not on the row. So the inverse is a one-dimensional root find for t, and the row
+ * then falls out in closed form:
+ *
+ *     A  = (Y - vy) / G,   G = 1 + d (3.4 s - 1)
+ *     y0 = vy + A / cc
+ *
+ * X(t) is monotonic on both sides — both of its terms increase with t — so Newton from the flat position
+ * converges in a few steps and cannot fall off the branch. The Jacobian is then analytic from the forward map,
+ * which is what the existing anti-aliasing, fusing and level-of-detail logic needs.
  */
 
 /** the four words are stacked, so a word's horizontal flow is a function of WHERE UP THE FIELD it is */
 export const LF_BANDS = 4
 
+/** how many Newton steps the shader takes; lfResidual() measures what that is worth */
+export const LF_ITERS = 5
+
+const vxOf = (W, side) => (side === 0 ? W * 0.1 : W * 0.9)
+const ExOf = (W, side) => (side === 0 ? W * 1.1 : -W * 0.1)
+
 /*
- * The unit square's corners, in the order the closed form below expects: (0,0) (1,0) (1,1) (0,1).
- * Heckbert's solution for a projective map from the unit square to an arbitrary quadrilateral.
+ * The same arithmetic as the shader, on the CPU, so the iteration can be MEASURED rather than asserted.
+ * Returns the worst absolute error in screen pixels over a grid across the frame.
  */
-function unitToQuad(q) {
-  const [x0, y0] = q[0], [x1, y1] = q[1], [x2, y2] = q[2], [x3, y3] = q[3]
-  const dx1 = x1 - x2, dx2 = x3 - x2, dx3 = x0 - x1 + x2 - x3
-  const dy1 = y1 - y2, dy2 = y3 - y2, dy3 = y0 - y1 + y2 - y3
-  if (Math.abs(dx3) < 1e-9 && Math.abs(dy3) < 1e-9) {
-    // the quad is a parallelogram: the map is affine and the projective terms vanish
-    return [x1 - x0, x2 - x1, x0, y1 - y0, y2 - y1, y0, 0, 0, 1]
+export function lfResidual(W, d, side, iters = LF_ITERS) {
+  const vx = vxOf(W, side)
+  const Ex = ExOf(W, side)
+  const p = 1 + 1.7 * d
+  const X = (t) => {
+    const tt = side === 0 ? t : 1 - t
+    return t * W * (1 - d) + d * (vx + (Ex - vx) * Math.pow(Math.max(tt, 0), p))
   }
-  const den = dx1 * dy2 - dy1 * dx2
-  const g = (dx3 * dy2 - dy3 * dx2) / den
-  const h = (dx1 * dy3 - dy1 * dx3) / den
-  return [x1 - x0 + g * x1, x3 - x0 + h * x3, x0, y1 - y0 + g * y1, y3 - y0 + h * y3, y0, g, h, 1]
-}
-
-/** a 3x3 inverse, row-major in and out */
-function inverse3(m) {
-  const [a, b, c, d, e, f, g, h, i] = m
-  const A = e * i - f * h, B = f * g - d * i, C = d * h - e * g
-  const det = a * A + b * B + c * C
-  if (Math.abs(det) < 1e-12) return null
-  const s = 1 / det
-  return [
-    A * s, (c * h - b * i) * s, (b * f - c * e) * s,
-    B * s, (a * i - c * g) * s, (c * d - a * f) * s,
-    C * s, (b * g - a * h) * s, (a * e - b * d) * s,
-  ]
-}
-
-const mul3 = (m, n) => {
-  const o = new Array(9)
-  for (let r = 0; r < 3; r++) {
-    for (let c = 0; c < 3; c++) {
-      o[r * 3 + c] = m[r * 3] * n[c] + m[r * 3 + 1] * n[3 + c] + m[r * 3 + 2] * n[6 + c]
+  const dX = (t) => {
+    const tt = side === 0 ? t : 1 - t
+    const sgn = side === 0 ? 1 : -1
+    return W * (1 - d) + d * (Ex - vx) * p * Math.pow(Math.max(tt, 1e-6), p - 1) * sgn
+  }
+  /*
+   * ONLY WHERE THE MAP REACHES. At full depth the corridor's image starts at the vanishing point: X(0) is vx,
+   * and no t maps to a screen column beyond it. Measured across the whole frame the "residual" is just the
+   * distance to the nearest reachable column — 144px at d=1, which is vx exactly, and says nothing about the
+   * iteration. Outside the range there is no solution to converge to, and the field's own edge fade is what
+   * covers it.
+   */
+  const lo = Math.min(X(0), X(1))
+  const hi = Math.max(X(0), X(1))
+  let worst = 0
+  for (let k = 0; k <= 200; k++) {
+    const target = lo + ((hi - lo) * k) / 200
+    let t = Math.min(1, Math.max(0, target / W))
+    for (let i = 0; i < iters; i++) {
+      const g = dX(t)
+      t = Math.min(1, Math.max(0, t - (X(t) - target) / (Math.abs(g) < 1e-4 ? 1e-4 : g)))
     }
+    worst = Math.max(worst, Math.abs(X(t) - target))
   }
-  return o
+  return worst
 }
 
-const lerp = (a, b, t) => a + (b - a) * t
-
-/**
- * THE CORRIDOR'S SHAPE, as a quadrilateral on the screen that the flat field is mapped into.
- *
- * At depth 0 it is the screen rectangle itself, so the map is the identity and the field is exactly the flat
- * field every other state on this site is drawn as. As depth goes to 1 one edge collapses toward a vanishing
- * point and the opposite edge opens past the frame — a real corridor, with the viewer inside its near end.
- *
- * `side` 0 recedes to the left (the backend half), 1 to the right (the frontend half, the same corridor seen
- * from the other end), which is what makes the two halves one continuous movement through the collapse.
- */
-export function corridorQuad(W, H, d, side, V = null) {
-  const vx = side === 0 ? W * 0.12 : W * 0.88
-  const vy = H * 0.5
-  // the far edge never collapses to a true point: a degenerate quad has no inverse, and a corridor whose far
-  // end is a mathematical point has a pixel there that belongs to every row at once
-  /*
-   * How tightly the far edge closes decides how much of the frame is packed past the pixel grid. At 0.035 the
-   * whole field height was crushed into sixty pixels, the rows there were closer together than the screen
-   * could hold over nearly half the frame, and what should have been a fan of rays converging on a point came
-   * out as a white mass with a point somewhere inside it. The reference keeps its rays apart until much closer
-   * in; this is the number that does that.
-   */
-  const eps = H * (V ? V.eps : 0.22)
-  const openX = W * (V ? V.openX : 0.22) * d
-  const openY = H * (V ? V.openY : 0.24) * d
-  const L = (a, b) => lerp(a, b, d)
-  /*
-   * The corners stay in the unit square's order — (0,0) (1,0) (1,1) (0,1) — for BOTH sides. Side 1 is built
-   * explicitly rather than by mirroring side 0: mirroring the quad also mirrors the field that is mapped into
-   * it, and the frontend words would have arrived backwards.
-   */
-  return side === 0
-    ? [
-        [L(0, vx), L(0, vy - eps)],
-        [L(W, W + openX), L(0, -openY)],
-        [L(W, W + openX), L(H, H + openY)],
-        [L(0, vx), L(H, vy + eps)],
-      ]
-    : [
-        [L(0, -openX), L(0, -openY)],
-        [L(W, vx), L(0, vy - eps)],
-        [L(W, vx), L(H, vy + eps)],
-        [L(0, -openX), L(H, H + openY)],
-      ]
+/** where the vanishing point lands on screen, so a harness can look in the right place */
+export function vanishingPoint(W, H, d, side) {
+  const flatX = side === 0 ? 0 : W
+  return [flatX + (vxOf(W, side) - flatX) * d, H * 0.5]
 }
 
-/**
- * The matrix the shader wants: SCREEN pixels -> FLAT FIELD pixels.
- *
- * Built as (unit -> flat) composed with the inverse of (unit -> screen quad), so the flat field's own pixel
- * coordinates come back out and rows() can go on working in the units it has always worked in.
- */
-export function corridorMatrix(W, H, d, side, V = null) {
-  const toScreen = unitToQuad(corridorQuad(W, H, d, side, V))
-  const inv = inverse3(toScreen)
-  if (!inv) return null
-  const toFlat = [W, 0, 0, 0, H, 0, 0, 0, 1]
-  const m = mul3(toFlat, inv)
-  // GLSL mat3 is column-major
-  return new Float32Array([m[0], m[3], m[6], m[1], m[4], m[7], m[2], m[5], m[8]])
+/** what the shader needs, per frame */
+export function corridorUniforms(W, H, d, side) {
+  return {
+    map: [d, 0, vxOf(W, side), H * 0.5],
+    map2: [ExOf(W, side), W, side, 1 + 1.7 * d],
+  }
 }
 
-/*
- * THE GLSL. Two chunks: what the variant declares, and what it does at the hook.
- *
- * The Jacobian is the point of the whole file. For u = (a*x + b*y + c) / w and v = (d*x + e*y + f) / w with
- * w = g*x + h*y + i, differentiating the quotient gives
- *
- *     du/dx = (a - g*u) / w        du/dy = (b - h*u) / w
- *     dv/dx = (d - g*v) / w        dv/dy = (e - h*v) / w
- *
- * which is exact, four multiply-adds, and is what makes the corridor's converging rows anti-alias and fuse by
- * the same rules as the flat field's.
- */
 export const CORRIDOR_PATCH = {
   pars: `
 /*
- * A ROW SEEN FURTHER DOWN THE CORRIDOR IS THINNER.
- *
- * The base shader gives every row the same width in screen pixels wherever it is. In a flat field that is
- * correct. In a corridor it is not, and the consequence is not subtle: the spacing shrinks with distance while
- * the width does not, so the proportion of the field covered by ink climbs toward one and the far half of the
- * corridor fills in as a solid white mass with a vanishing point buried somewhere inside it.
- *
- * Dividing the width by the map's own gradient keeps the RATIO of ink to ground constant, which is what a real
- * perspective does and what the reference shows: a dark field, thin rays, all the way in. The floor stops a row
- * disappearing entirely before it reaches the point, and it is at the floor — only in the last pixels — that
- * the rays finally meet and the point goes solid.
+ * A ROW SEEN FURTHER DOWN THE CORRIDOR IS THINNER. The base shader gives every row the same width in screen
+ * pixels wherever it is, which is right for a field mapped vertically and fills a receding one in solid.
  */
 #define VARIANT_HW(h, g) ((g) <= 1.0 ? (h) : max((h) / (g), 0.30))
-// and crowded rows are NOT closed up into a mass here; see the note at VARIANT_FUSE in surface.js
+// crowded rows are NOT closed up into a mass here: a corridor should thin out, not turn into a bar
 #define VARIANT_FUSE 0.0
 // and the field thins as the corridor forms; see lfKeep below
 #define VARIANT_ROW(a, r) ((a) * lfKeep(r))
 
-uniform mat3 uLFinv;      // screen -> flat field, in pixels
-uniform vec4 uLFfade;     // spacing where the rows go out, spacing where they are full, depth fade, edge softness
+uniform vec4 uLFmap;      // x: depth d, y: the fan's opening cc, z: vx, w: vy
+uniform vec4 uLFmap2;     // x: Ex, y: W, z: side (0 dark, 1 cream), w: the exponent 1 + 1.7d
+uniform vec4 uLFfade;     // x,y: the whisker at the point itself; z: depth fade; w: the field's own edge
 uniform vec4 uLFflow;     // how far each of the four words has flowed, in flat pixels
 uniform vec4 uLFband;     // the four words' centres up the flat field, in flat pixels
 uniform vec2 uLFthin;     // x: keep every Nth row, y: how far the thinning has gone (0 = the full field)
-uniform vec4 uLFmode;     // x: on, y: depth, z: how spread the field is (0 = every row on one line), w: horizon
 uniform vec4 uLFline;     // the drawn passage: screen y, half height, how much of it there is, unused
 uniform vec3 uLFlineCol;  // its colour — the ground's ink, taking the rust only at the crossing
+uniform vec2 uLFmode;     // x: 1 while the corridor is mapping at all
 
 /*
  * THE FIELD THINS AS THE CORRIDOR FORMS.
  *
  * The pitch this field is ruled at is the pitch the WORDS need — a capital carried by twenty-odd rows, or it
- * cannot be read on a phone. Sent down a corridor, that density has nowhere to go: hundreds of rows land
- * inside a few pixels, they add up to a wash, and the vanishing point is buried in it. The reference has
- * perhaps eighty rows with wide gaps, and that is why its rays stay countable all the way to the point.
- *
- * So while the words are there the field stays dense and legible, and as they flow out every row but each Nth
- * goes. Smoothly, and by INDEX — the rows that stay are the same rows throughout, so nothing slides and
- * nothing pops. Reversed on the frontend side: sparse rays in the corridor, the field filling back in as the
- * words arrive.
+ * cannot be read on a phone. Sent down a corridor that density has nowhere to go: hundreds of rows land inside
+ * a few pixels and add up to a wash. So while the words are there the field stays dense, and as they flow out
+ * every row but each Nth goes — smoothly, and by INDEX, so the rows that stay are the same rows throughout and
+ * nothing slides or pops.
  */
 float lfKeep(float r) {
   float k = max(2.0, uLFthin.x);
-  // 1 on the rows that survive, 0 on the rest; r is an integer row index, so this is exact
   float kept = 1.0 - step(0.5, mod(abs(r), k));
   return mix(1.0, kept, clamp(uLFthin.y, 0.0, 1.0));
 }
 
-/*
- * WHICH WORD A ROW BELONGS TO — decided, not blended.
- *
- * The first version weighted the four offsets by distance, so a row between two words carried a little of each.
- * A word is a rigid thing: given two different offsets at its cap and at its baseline it shears, and the letters
- * came out slanted and smeared. The nearest band wins outright. Nothing is lost by the hard edge, because the
- * rows between two words carry no ink to be shifted.
- */
+float lfS(float t) {
+  float tt = uLFmap2.z < 0.5 ? t : 1.0 - t;
+  return pow(max(tt, 0.0), uLFmap2.w);
+}
+float lfX(float t) {
+  return t * uLFmap2.y * (1.0 - uLFmap.x) + uLFmap.x * (uLFmap.z + (uLFmap2.x - uLFmap.z) * lfS(t));
+}
+/** ds/dt, carrying the sign of the side */
+float lfDs(float t) {
+  float tt = uLFmap2.z < 0.5 ? t : 1.0 - t;
+  float sgn = uLFmap2.z < 0.5 ? 1.0 : -1.0;
+  return uLFmap2.w * pow(max(tt, 1e-6), uLFmap2.w - 1.0) * sgn;
+}
+float lfDx(float t) {
+  return uLFmap2.y * (1.0 - uLFmap.x) + uLFmap.x * (uLFmap2.x - uLFmap.z) * lfDs(t);
+}
+
+// which word a row belongs to — decided, not blended: a word is rigid, and two offsets across one shears it
 float lfFlowAt(float v) {
   float best = uLFflow[0];
   float bd = abs(v - uLFband[0]);
@@ -215,90 +161,70 @@ float lfFlowAt(float v) {
 `,
   warp: `
   if (uLFmode.x > 0.5) {
-    vec3 q = uLFinv * vec3(p.x, m, 1.0);
-    float w = q.z;
-    // behind the viewer: there is no field here at all, and sampling it would fold the far wall onto the near one
-    if (w <= 1e-4) { fade = 0.0; w = 1e-4; }
-    float iw = 1.0 / w;
-    vec2 fpt = q.xy * iw;
-    // the homography's exact Jacobian (see the note in corridor.js)
-    float du_dx = (uLFinv[0][0] - uLFinv[0][2] * fpt.x) * iw;
-    float du_dy = (uLFinv[1][0] - uLFinv[1][2] * fpt.x) * iw;
-    float dv_dx = (uLFinv[0][1] - uLFinv[0][2] * fpt.y) * iw;
-    float dv_dy = (uLFinv[1][1] - uLFinv[1][2] * fpt.y) * iw;
+    float d = uLFmap.x;
+    float cc = max(uLFmap.y, 0.0025);
+    float vy = uLFmap.w;
 
     /*
-     * THE COLLAPSE, IN THE FLAT FIELD AND NOT ON THE SCREEN.
-     *
-     * Every row drawing toward one line is a scaling of the field about its horizon, and this shader runs the
-     * pipeline BACKWARDS: a screen pixel is un-projected to the field, so the collapse must be un-done too.
-     * Hence the division. Multiplying — collapsing after un-projecting instead of before — is a different
-     * scene altogether: the lines of constant field height in a corridor are the rays through its vanishing
-     * point, so the collapse drew a starburst instead of a line. It looked deliberate, which is how it nearly
-     * survived review.
-     *
-     * The gradient divides with it, which is the whole trick: as the field closes, its rows crowd in screen
-     * terms, and the shader's existing rule for rows packed tighter than the screen can hold — fuse them into
-     * one mass, never let them interfere — is what turns the last of the collapse into a single solid line.
-     * Nothing here draws that line. The floor under the scale is what stops it thinning to nothing: at a true
-     * zero the whole field is one row and the band it makes has no height at all.
+     * THE INVERSE, one dimension of it. X depends only on t, and X(t) is monotonic on both sides, so Newton
+     * from the flat position converges quickly and cannot leave the branch. The worst residual across the
+     * frame is measured by lfResidual() on the CPU and reported rather than assumed.
      */
-    // the rows carry the collapse while they can still be told apart, and no further: past this the band
-    // would only go solid, and the drawn line takes over instead
-    float sp = max(uLFmode.z, 0.16);
-    float vflat = uLFmode.w + (fpt.y - uLFmode.w) / sp;
-    dv_dx /= sp;
-    dv_dy /= sp;
+    float t = clamp(p.x / uLFmap2.y, 0.0, 1.0);
+    for (int i = 0; i < ITERS; i++) {
+      float g = lfDx(t);
+      t = clamp(t - (lfX(t) - p.x) / (abs(g) < 1e-4 ? 1e-4 : g), 0.0, 1.0);
+    }
 
-    // MINUS, because this moves the SAMPLE and not the content. To carry a word to the right of the screen the
-    // field must be read from further to the left; added, the words left the field the instant they began to
-    // flow and the corridor came up empty.
-    cx = fpt.x - lfFlowAt(fpt.y);
-    m = vflat;
-    // the variant owns the map here, so it owns the gradient: LINEFIELD carries no features of its own, and a
-    // gradient left over from a map that no longer applies would mis-size every row in the corridor
-    gm = vec2(dv_dx, dv_dy);
+    float s = lfS(t);
+    float G = 1.0 + d * (3.4 * s - 1.0);
+    float Gs = abs(G) < 1e-4 ? 1e-4 : G;
+    float y0 = vy + (m - vy) / (Gs * cc);
+    float u = t * uLFmap2.y;
 
     /*
-     * THE ROWS THIN, THEY DO NOT FADE.
-     *
-     * The first version took contrast out wherever the screen-space row spacing fell below a couple of pixels.
-     * It removed the moire and it removed the corridor with it: the rays dissolved into a haze long before they
-     * met, so the vanishing point — the one thing that makes a corridor read as depth — never appeared.
-     *
-     * The shader already has the right answer and it is a COVERAGE answer, not a contrast one. Where rows are
-     * packed tighter than the grid can hold them apart, rows() stops trying to resolve individual rows and
-     * returns what they add up to over the pixel. Carried all the way in, that tends to 1 — which is a bright
-     * sharp point, exactly what the reference shows. Nothing needs to be faded for that to happen; the fade was
-     * the only thing preventing it.
-     *
-     * What is left here is the field's own edge, and a whisker at the point itself where even the coverage
-     * answer is asking about more rows than a float can separate.
+     * THE JACOBIAN, analytic from the forward map. The anti-aliasing, the rule that fuses crowded rows and the
+     * level of detail are all decided from it, so an estimate would put those decisions out of focus exactly
+     * where the rays converge.
      */
-    fade *= smoothstep(0.0, uLFfade.w, fpt.x) * smoothstep(0.0, uLFfade.w, uRes.x - fpt.x);
-    float spr = uR1.x / max(length(vec2(dv_dx, dv_dy)), 1e-4);
+    float dxdt = lfDx(t);
+    float dtdX = 1.0 / (abs(dxdt) < 1e-4 ? 1e-4 : dxdt);
+    float dGdt = d * 3.4 * lfDs(t);
+    float dy0dY = 1.0 / (cc * Gs);
+    float dy0dX = -(m - vy) / (cc * Gs * Gs) * dGdt * dtdX;
+
+    cx = u - lfFlowAt(y0);
+    m = y0;
+    // the variant owns the map, so it owns the gradient
+    gm = vec2(dy0dX, dy0dY);
+
+    /*
+     * THE ROWS THIN, THEY DO NOT FADE. The shader's own coverage answer is what makes the point: carried all
+     * the way in it tends to one, which is a sharp point. What is faded is only the whisker at the point
+     * itself, where no coverage answer can keep neighbouring rays apart, and the field's own edge.
+     */
+    float spr = uR1.x / max(length(vec2(dy0dX, dy0dY)), 1e-4);
     fade *= smoothstep(uLFfade.x, uLFfade.y, spr * uDpr);
+    fade *= smoothstep(0.0, uLFfade.w, u) * smoothstep(0.0, uLFfade.w, uRes.x - u);
     /*
-     * AND THE FIELD LEAVES AS THE LINE ARRIVES.
+     * AND THE FIELD ENDS AT ITS OWN TOP AND BOTTOM.
      *
-     * Below the point where the rows can still be told apart there is nothing left for them to say: what is
-     * drawn there is the sampling grid arguing with a field magnified past it. The rows go out over the last
-     * of the collapse and the drawn line takes over, so the two are never both on screen at full strength.
+     * The demo has sixty-odd rows and no more: its field is a list. C2 makes a row wherever the material
+     * coordinate lands, so rows from far above and below the screen were being mapped into the corridor and
+     * piling up around the vanishing point — a grey halo the demo does not have, and the clearest difference
+     * left in the side-by-side. The field is given the same extent the demo's has.
      */
-    fade *= smoothstep(0.0, 0.17, uLFmode.z);
+    float top = uRes.y * 0.07;
+    float bot = uRes.y * 0.93;
+    fade *= smoothstep(0.0, uLFfade.w, y0 - top) * smoothstep(0.0, uLFfade.w, bot - y0);
+    fade *= 1.0 - uLFfade.z * d;
+    // and the field leaves over the last of the fan's closing, as the drawn line takes over
+    fade *= smoothstep(0.0, 0.05, uLFmap.y);
   }
 `,
   /*
-   * THE PASSAGE IS DRAWN, NOT FUSED.
-   *
-   * The collapse used to be left to the rows: magnify the field far enough and every row lands in one band,
-   * and the shader's crowding rule turns that band solid. What it turned solid was the whole screen — every
-   * pixel found a row, coverage went to one everywhere, and the signature moment played as two seconds of
-   * full-frame rust.
-   *
-   * So the last of the collapse is a line this file draws. The rows carry the movement while they can still be
-   * told apart, and hand over to an explicit line, one or two pixels on the ground colour, which is the only
-   * thing that takes the rust. A fused mass cannot be made thin; a drawn line is thin by construction.
+   * THE PASSAGE IS DRAWN, NOT FUSED. A fused mass cannot be made thin; a drawn line is thin by construction,
+   * it is handed over to as the fan finishes closing, and it is the only thing that takes the rust.
    */
   composite: `
   if (uLFmode.x > 0.5 && uLFline.z > 0.001) {
@@ -312,3 +238,6 @@ float lfFlowAt(float v) {
   }
 `,
 }
+
+// the loop bound has to be a constant in GLSL ES 3.00, so it is substituted rather than passed as a uniform
+CORRIDOR_PATCH.warp = CORRIDOR_PATCH.warp.replace('ITERS', String(LF_ITERS))

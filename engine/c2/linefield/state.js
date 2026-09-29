@@ -76,34 +76,36 @@ export function linefieldState(V, side, words, label) {
   // the pitch the TYPE needs, not the pitch the page uses; never coarser than the page's own rows
   const spacing = Math.max(2.6, Math.min(P ? 5.2 : 7, L.cap / ROWS_PER_CAP))
   const x = side === 0 ? W * 0.06 : W * 0.94
-  const bands = words.map((_, i) => L.y0 + i * L.lh + L.size * 0.8 - L.cap * 0.5)
 
   /*
-   * ROUND LETTERS OVERSHOOT, AND A ROW THAT ONLY GRAZES ONE LEAVES AN ARC.
+   * THE TYPE IS ALIGNED TO THE ROW GRID, AND THAT IS WHY NOTHING IS CLIPPED.
    *
-   * S, C, U, G and O are drawn slightly above the cap line and slightly below the baseline, the way every type
-   * designer draws them — otherwise they look smaller than the flat-topped letters beside them. A row passing
-   * through that overshoot catches a sliver of the curve and nothing else, and what it draws is a short arc
-   * floating above or below the word.
+   * Round letters — S, C, U, G, O — are drawn a little above the cap line and a little below the baseline, so
+   * that they do not look smaller than the flat-topped letters beside them. A row passing through that
+   * overshoot catches a sliver of curve and nothing else, and draws a short arc floating above or below the
+   * word.
    *
-   * The reference skips those rows outright. Here the same thing is done to the TYPE rather than to the rows:
-   * each line is clipped to its own cap-to-baseline box, pulled in by a third of a row at each end. The
-   * letters keep their shape where it matters and lose only the overshoot, which was never carried by a whole
-   * row anyway.
+   * The first fix clipped each line to its cap-to-baseline box, pulled in by a third of a row. It removed the
+   * arcs and it also removed a third of a row from the top of EVERY letter — and where a row happened to sit
+   * near the cap line, it took the whole top stroke with it. On the phone FRICTION read FRICTIUN. A fix that
+   * has to be that precise about where it cuts is the wrong fix.
+   *
+   * So nothing is cut. The BASELINE and the CAP LINE are placed on row boundaries instead: the cap height is
+   * rounded to a whole number of rows and the baseline snapped half a row off the grid, so every row inside a
+   * letter is entirely inside it and no row can graze an edge. The letters keep every stroke they have.
    */
-  const inset = spacing * 0.34
+  const rowsPerCap = Math.max(ROWS_PER_CAP, Math.round(L.cap / spacing))
+  const capSnap = rowsPerCap * spacing
+  const size = L.size * (capSnap / L.cap)
+  const lh = L.lh * (capSnap / L.cap)
+  const snap = (y) => (Math.round(y / spacing - 0.5) + 0.5) * spacing
+  const baseOf = (i) => snap(L.y0 + i * lh + size * 0.8)
+  const bands = words.map((_, i) => baseOf(i) - capSnap * 0.5)
+
   const img = build(V, H, ({ solid }) => {
-    solid.font = `900 ${L.size}px ${FAMILY}`
+    solid.font = `900 ${size}px ${FAMILY}`
     solid.textAlign = side === 0 ? 'left' : 'right'
-    words.forEach((w, i) => {
-      const baseY = L.y0 + i * L.lh + L.size * 0.8
-      solid.save()
-      solid.beginPath()
-      solid.rect(0, baseY - L.cap + inset, W, L.cap - inset * 2)
-      solid.clip()
-      solid.fillText(w, x, baseY)
-      solid.restore()
-    })
+    words.forEach((w, i) => solid.fillText(w, x, baseOf(i)))
     solid.textAlign = 'left'
   })
 
@@ -130,7 +132,7 @@ export function linefieldState(V, side, words, label) {
     bg: side === 0 ? '#0b0c0e' : '#efeee9',
     negative: side === 0,
     ...img,
-    layout: { ...L, bands, x, label, words, strip },
+    layout: { ...L, size, lh, cap: capSnap, rowsPerCap, bands, x, label, words, strip },
     capacity: 1.4,
     weak: () => H * 0.5,
   })

@@ -8,7 +8,7 @@
  * Reached only as `?linefield=1` on a locale route, and only in a build where __LINEFIELD__ is true.
  */
 import { createSurface, hex } from '../surface.js'
-import { CORRIDOR_PATCH, corridorMatrix } from './corridor.js'
+import { CORRIDOR_PATCH, corridorUniforms } from './corridor.js'
 import { BACKEND_WORDS, FRONTEND_WORDS, faceReady, linefieldState, sequence } from './state.js'
 
 const RUST = hex('#b8622f')
@@ -45,10 +45,15 @@ export async function mountLinefield() {
    * density is the structural thing: a field ruled for type cannot be squeezed into a corridor and still read
    * as rays. Each keeps every Nth row and is given the compression that suits that many rays.
    */
+  /*
+   * THREE DENSITIES. They differ in N alone now: with the demo's mapping the compression is the demo's —
+   * its vanishing points, its 3.4 far-point spread and its 1.7 curve exponent — and those are not ours to
+   * tune. What is still open is how many rays the corridor is made of.
+   */
   const VARIANTS = [
-    { name: 'A', n: 4, eps: 0.07, openX: 0.30, openY: 0.34 },
-    { name: 'B', n: 6, eps: 0.05, openX: 0.26, openY: 0.30 },
-    { name: 'C', n: 8, eps: 0.035, openX: 0.22, openY: 0.26 },
+    { name: 'A', n: 4 },
+    { name: 'B', n: 6 },
+    { name: 'C', n: 8 },
   ]
   const qs = new URLSearchParams(location.search)
   let vi = Math.max(0, VARIANTS.findIndex((v) => v.name === (qs.get('lfv') || 'B').toUpperCase()))
@@ -137,7 +142,8 @@ export async function mountLinefield() {
      */
     for (let i = 0; i < 3; i++) st.ink[i] = base[i]
     // the passage: it arrives as the rows hand over, and it is one or two pixels on the ground
-    const lineAmt = 1 - Math.min(1, q.spread / 0.16)
+    // the line arrives over the last of the fan's closing
+    const lineAmt = 1 - Math.min(1, q.spread / 0.05)
     const lineCol = base.map((c, i) => c + (RUST[i] - c) * q.flash)
 
     surface.pair(st, st, 1)
@@ -145,11 +151,13 @@ export async function mountLinefield() {
     surface.features = []
 
     const V0 = VARIANTS[vi]
-    const m = corridorMatrix(V.W, V.H, q.depth, q.side, V0)
+    const U = corridorUniforms(V.W, V.H, q.depth, q.side)
     surface.use('corridor')
     // set inside the draw, where the variant's program is bound and the base uniforms are already in place
     surface.onBeforeDraw = () => {
-      surface.mat3('uLFinv', m)
+      // cc is the fan: 1 is the full field, 0 is every row on the horizon. It is the collapse, in the map.
+      surface.vec4('uLFmap', U.map[0], q.spread, U.map[2], U.map[3])
+      surface.vec4('uLFmap2', U.map2[0], U.map2[1], U.map2[2], U.map2[3])
       // x,y: the whisker at the point itself, in device pixels — NOT a haze across the corridor.
       // z: a slight depth fade, as the reference has. w: the softness of the field's own edge.
       // x,y: the whisker at the point itself, in device pixels. The rays are left alone everywhere else; this
@@ -158,7 +166,7 @@ export async function mountLinefield() {
       surface.vec4('uLFfade', 0.22, 0.85, 0.12, Math.max(8, V.W * 0.012))
       surface.vec4('uLFflow', q.flow[0], q.flow[1], q.flow[2], q.flow[3])
       surface.vec4('uLFband', st.layout.bands[0], st.layout.bands[1], st.layout.bands[2], st.layout.bands[3])
-      surface.vec4('uLFmode', 1, q.depth, q.spread, V.H * 0.5)
+      surface.vec2('uLFmode', 1, 0)
       // the `dense` break sends the full field down the corridor, which is the fault this revision was about
       surface.vec2('uLFthin', V0.n, broke === 'dense' ? 0 : q.thin)
       surface.vec4('uLFline', V.H * 0.5, 0.85, lineAmt, 0)

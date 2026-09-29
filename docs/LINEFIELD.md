@@ -210,3 +210,96 @@ say the frame is not cross-hatched, and it cannot say the frame is not boiling b
 
 So the claim that the corridor does not shimmer rests on the frames, on the exact Jacobian, and on that
 spatial number. A working temporal measure is still owed.
+
+---
+
+# PHASE B, REVISION 3 — THE DEMO'S MAPPING
+
+## Why the homography had to go
+
+A homography maps straight lines to straight lines. The demo's motion **begins with the rows flexing** — their
+ends curving away before they become rays — and that bend is where its breathing quality comes from. A
+projective map cannot produce it at any setting, so the previous version could match the demo's end frames and
+never its movement.
+
+## The demo's map, inverted
+
+    s  = tt ^ (1 + 1.7 d)          tt = t on the dark side, 1 - t on the cream side
+    fx = t W                       fy = vy + (y0 - vy) cc
+    px = vx + (Ex - vx) s          py = vy + (Ey - vy) s,   Ey = vy + (y0 - vy) 3.4 cc
+    screen = mix(flat, persp, d)
+
+**X depends only on t.** That is the whole reason this is affordable: the inverse is a one-dimensional root
+find, not a two-dimensional one, and the row then falls out in closed form —
+
+    A = (Y - vy) / G,   G = 1 + d (3.4 s - 1)        y0 = vy + A / cc
+
+X(t) is monotonic on both sides, so Newton from the flat position converges fast and cannot leave the branch.
+
+**Iteration count and residual**, measured on the CPU with the same arithmetic the shader runs, worst case over
+the map's reachable range at 1440 px wide:
+
+| Newton steps | worst residual at d = 1 |
+|---|---|
+| 2 | 88.8 px |
+| 3 | 9.94 px |
+| 4 | 0.234 px |
+| **5 (shipped)** | **0.0056 px** |
+| 8 | 0.00013 px |
+
+At shallower depths five steps gives 10⁻¹³ px. **The inverse only exists inside the corridor's image** — at
+full depth X(0) is vx, so no t maps to a column beyond the vanishing point; measured across the whole frame
+the "residual" is just the distance to the nearest reachable column (144 px = vx exactly), which says nothing
+about the iteration. Outside the range the field's own edge fade covers it.
+
+The Jacobian is analytic from the forward map and feeds the existing anti-aliasing, fusing and level-of-detail
+logic unchanged.
+
+**The collapse is the fan closing.** cc scales every row toward the horizon inside this map, so phases 3 and 4
+are one movement and there is no separate gather. The drawn line still takes over for the last of it and is
+still the only thing that takes the rust.
+
+## The field has an extent
+
+C2 makes a row wherever the material coordinate lands; the demo has sixty-odd rows and no more. Rows from far
+above and below the screen were being mapped into the corridor and piling up around the vanishing point — a
+grey halo the demo does not have, and the clearest remaining difference in the side-by-side. The field is now
+given the demo's own extent, 0.07 H to 0.93 H.
+
+## The type is aligned to the row grid
+
+The previous revision clipped each line to its cap-to-baseline box, inset by a third of a row. It removed the
+grazing arcs and it also removed a third of a row from the top of **every** letter — and where a row sat near
+the cap line it took the whole top stroke with it. On the phone FRICTION read **FRICTIUN**.
+
+Nothing is cut now. The cap height is rounded to a whole number of rows and the baseline snapped half a row off
+the grid, so the cap line and the baseline both fall on row boundaries: every row inside a letter is entirely
+inside it, no row can graze an edge, and no stroke is trimmed. Verified at 100% progress on 1440×900, 390×844
+and 320×568.
+
+## Measured
+
+| | |
+|---|---|
+| frame time, 1440×900 | 3.2 ms at the corridor's hardest frame; 0.3 ms typical |
+| frame time, 390×844 | 4.4 ms at rest, under 1 ms through the corridor |
+| high-frequency energy at the convergence | **5.85** desktop / **7.32** portrait |
+| the same with the thinning disabled | **16.62 / 17.14** — 2.8× and 2.3× |
+
+The spatial measure is kept as the regression check for the density fault, as asked. The temporal measure is
+dropped; motion quality is judged on the device.
+
+### Flag-off, against `pre-linefield`
+
+| | |
+|---|---|
+| reduced motion | **pixel-identical, 0 on every stop** |
+| normal motion | worst 19.3 — the documented same-build weather figure; **0 state differences** |
+| retired Lab | **0 frames** |
+| published build | 13 pages + 404; **0** occurrences of any Linefield marker or word |
+
+## The three variants
+
+They differ in **N alone** now. With the demo's mapping the compression is the demo's — its vanishing points,
+its 3.4 far-point spread, its 1.7 curve exponent — and those are not ours to tune. A: every 4th row.
+B: every 6th. C: every 8th, the tentative default.

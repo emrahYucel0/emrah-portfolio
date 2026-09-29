@@ -171,5 +171,13 @@ export function sequence(p, W) {
   const labelA = back ? 1 - ease(q, 0.02, 0.1) : ease(q, 0.9, 0.97)
   // the rust line lives only at the crossing itself
   const flash = 1 - Math.min(1, Math.abs(q - 0.5) / 0.03)
-  return { back, side: back ? 0 : 1, depth, spread, flow, labelA, flash }
+  /*
+   * AND THE FIELD THINS WHERE THE WORDS ARE NOT.
+   *
+   * It follows the words, not the corridor: dense while there is type to carry, sparse once the type has gone
+   * past, dense again as the frontend words arrive. Smoothed, so no row ever pops — the whole change takes
+   * about a sixth of the passage at each end.
+   */
+  const thin = back ? ease(q, 0.19, 0.35) : 1 - ease(q, 0.60, 0.79)
+  return { back, side: back ? 0 : 1, depth, spread, flow, labelA, flash, thin }
 }

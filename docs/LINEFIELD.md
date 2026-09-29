@@ -155,3 +155,58 @@ higher, **no shimmer claim rests on this number** and none is made here.
   edge and the near opening — not the shading.
 - **Moiré arcs around the opening onto cream are reduced, not gone**, and the faint colour fringes have not
   been isolated to a cause.
+
+---
+
+# PHASE B, REVISION 2 — THE DENSITY WAS THE PROBLEM
+
+The gap to the reference was structural, not a matter of compression. The reference has perhaps eighty rows
+with wide gaps; this field is ruled for TYPE — a capital carried by twenty-odd rows, or it cannot be read on a
+phone. Sent whole down a corridor, hundreds of rows land inside a few pixels, add up to a wash, cross-hatch
+into moiré, and bury the vanishing point. No compression ratio turns that density into a wedge.
+
+## The field thins as the corridor forms
+
+`VARIANT_ROW` — a third `#define` hook in the base shader, defaulting to "draw every row". The corridor's
+definition keeps every Nth row and takes the rest out, **by index**, so the rows that stay are the same rows
+throughout: nothing slides and nothing pops. It follows the WORDS, not the corridor — dense while there is type
+to carry, sparse once it has flowed past, dense again as the frontend words arrive — over about a sixth of the
+passage at each end.
+
+## The three variants
+
+Selectable on the dock (a thumb-sized button) and by `?lfv=A|B|C`.
+
+| | keeps | far edge | near opening |
+|---|---|---|---|
+| A | every 4th row | 0.07 H | 0.30 W / 0.34 H |
+| **B** (default) | **every 6th row** | 0.05 H | 0.26 W / 0.30 H |
+| C | every 8th row | 0.035 H | 0.22 W / 0.26 H |
+
+The compression is tuned per variant: a sparser field tolerates — and needs — a tighter far edge before the
+vanishing point reads.
+
+## Measured
+
+Frame time at 1440×900 over a full sweep: **0.31 ms mean, 0.70 ms worst**. 20 wheel notches end to end, 4 for
+one word's journey, 1266 px (1.50 screen heights) of drag on the phone.
+
+## The temporal shimmer measure has now failed three times, and I am not going to claim it works
+
+Three statistics have been tried against four builds — the real one and three deliberately broken
+(`dense`: no thinning; `fade`: constant row width and fusing restored; `jacobian`: a six-pixel finite
+difference in place of the exact gradient):
+
+| statistic | outcome |
+|---|---|
+| near-region movement ÷ open-field movement | a solid wash MOVES LESS, so the broken build scored better |
+| the same, with a one-pixel finite-difference break | a homography is smooth; the break was nearly a no-op |
+| grain of the frame-to-frame difference ÷ its mean | 0.59–1.14 across all four builds; no separation |
+
+**What does discriminate is a spatial measure**: high-frequency energy inside the converging third of the
+frame reads **14.45** on the real build and **33.41** with the thinning disabled — 2.3× — and it separates the
+density fault cleanly. That is not the temporal measure that was asked for, and the difference matters: it can
+say the frame is not cross-hatched, and it cannot say the frame is not boiling between frames.
+
+So the claim that the corridor does not shimmer rests on the frames, on the exact Jacobian, and on that
+spatial number. A working temporal measure is still owed.

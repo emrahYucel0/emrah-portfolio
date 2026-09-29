@@ -89,13 +89,26 @@ function hfIn(d, W, c, box) {
         await sleep(90)
         const B = await sharp(await p.screenshot()).raw().toBuffer({ resolveWithObject: true })
         const { width: W, channels: c } = A.info
-        nearSum += madIn(A.data, B.data, W, c, near)
-        farSum += madIn(A.data, B.data, W, c, far)
+        /*
+         * THE STATISTIC IS THE GRAIN OF THE CHANGE, not its size.
+         *
+         * The first version compared how much the converging region moved against how much the open field
+         * moved. That is not shimmer: a region that has gone solid moves very little and scored LOW, so a
+         * broken build looked better than the real one. Shimmer is rows winking in and out, which makes the
+         * difference between two frames FINE-GRAINED. So the difference image is built and its
+         * high-frequency content is measured against its own mean: smooth movement scores near zero whatever
+         * its amplitude, and boiling scores high however faint.
+         */
+        const diff = new Uint8Array(A.data.length)
+        for (let i = 0; i < A.data.length; i++) diff[i] = Math.abs(A.data[i] - B.data[i])
+        const mean = madIn(A.data, B.data, W, c, near)
+        nearSum += mean > 0.02 ? hfIn(diff, W, c, near) / mean : 0
+        farSum += 1
         hf += hfIn(A.data, W, c, near)
       }
-      const ratio = farSum > 0.01 ? nearSum / farSum : nearSum
+      const ratio = nearSum / Math.max(1, farSum)
       rows.push({ tag, name, ratio, hf: hf / N })
-      console.log(`  ${tag}  ${name}: converging region moves ${ratio.toFixed(2)}x the open field, high-frequency energy there ${(hf / N).toFixed(2)}`)
+      console.log(`  ${tag}  ${name}: grain of the change where the rays converge ${ratio.toFixed(2)}, high-frequency energy there ${(hf / N).toFixed(2)}`)
     }
     await ctx.close()
   }

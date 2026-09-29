@@ -81,7 +81,7 @@ const lerp = (a, b, t) => a + (b - a) * t
  * `side` 0 recedes to the left (the backend half), 1 to the right (the frontend half, the same corridor seen
  * from the other end), which is what makes the two halves one continuous movement through the collapse.
  */
-export function corridorQuad(W, H, d, side) {
+export function corridorQuad(W, H, d, side, V = null) {
   const vx = side === 0 ? W * 0.12 : W * 0.88
   const vy = H * 0.5
   // the far edge never collapses to a true point: a degenerate quad has no inverse, and a corridor whose far
@@ -93,9 +93,9 @@ export function corridorQuad(W, H, d, side) {
    * out as a white mass with a point somewhere inside it. The reference keeps its rays apart until much closer
    * in; this is the number that does that.
    */
-  const eps = H * 0.22
-  const openX = W * 0.22 * d
-  const openY = H * 0.24 * d
+  const eps = H * (V ? V.eps : 0.22)
+  const openX = W * (V ? V.openX : 0.22) * d
+  const openY = H * (V ? V.openY : 0.24) * d
   const L = (a, b) => lerp(a, b, d)
   /*
    * The corners stay in the unit square's order — (0,0) (1,0) (1,1) (0,1) — for BOTH sides. Side 1 is built
@@ -123,8 +123,8 @@ export function corridorQuad(W, H, d, side) {
  * Built as (unit -> flat) composed with the inverse of (unit -> screen quad), so the flat field's own pixel
  * coordinates come back out and rows() can go on working in the units it has always worked in.
  */
-export function corridorMatrix(W, H, d, side) {
-  const toScreen = unitToQuad(corridorQuad(W, H, d, side))
+export function corridorMatrix(W, H, d, side, V = null) {
+  const toScreen = unitToQuad(corridorQuad(W, H, d, side, V))
   const inv = inverse3(toScreen)
   if (!inv) return null
   const toFlat = [W, 0, 0, 0, H, 0, 0, 0, 1]
@@ -163,14 +163,37 @@ export const CORRIDOR_PATCH = {
 #define VARIANT_HW(h, g) ((g) <= 1.0 ? (h) : max((h) / (g), 0.30))
 // and crowded rows are NOT closed up into a mass here; see the note at VARIANT_FUSE in surface.js
 #define VARIANT_FUSE 0.0
+// and the field thins as the corridor forms; see lfKeep below
+#define VARIANT_ROW(a, r) ((a) * lfKeep(r))
 
 uniform mat3 uLFinv;      // screen -> flat field, in pixels
 uniform vec4 uLFfade;     // spacing where the rows go out, spacing where they are full, depth fade, edge softness
 uniform vec4 uLFflow;     // how far each of the four words has flowed, in flat pixels
 uniform vec4 uLFband;     // the four words' centres up the flat field, in flat pixels
+uniform vec2 uLFthin;     // x: keep every Nth row, y: how far the thinning has gone (0 = the full field)
 uniform vec4 uLFmode;     // x: on, y: depth, z: how spread the field is (0 = every row on one line), w: horizon
 uniform vec4 uLFline;     // the drawn passage: screen y, half height, how much of it there is, unused
 uniform vec3 uLFlineCol;  // its colour — the ground's ink, taking the rust only at the crossing
+
+/*
+ * THE FIELD THINS AS THE CORRIDOR FORMS.
+ *
+ * The pitch this field is ruled at is the pitch the WORDS need — a capital carried by twenty-odd rows, or it
+ * cannot be read on a phone. Sent down a corridor, that density has nowhere to go: hundreds of rows land
+ * inside a few pixels, they add up to a wash, and the vanishing point is buried in it. The reference has
+ * perhaps eighty rows with wide gaps, and that is why its rays stay countable all the way to the point.
+ *
+ * So while the words are there the field stays dense and legible, and as they flow out every row but each Nth
+ * goes. Smoothly, and by INDEX — the rows that stay are the same rows throughout, so nothing slides and
+ * nothing pops. Reversed on the frontend side: sparse rays in the corridor, the field filling back in as the
+ * words arrive.
+ */
+float lfKeep(float r) {
+  float k = max(2.0, uLFthin.x);
+  // 1 on the rows that survive, 0 on the rest; r is an integer row index, so this is exact
+  float kept = 1.0 - step(0.5, mod(abs(r), k));
+  return mix(1.0, kept, clamp(uLFthin.y, 0.0, 1.0));
+}
 
 /*
  * WHICH WORD A ROW BELONGS TO — decided, not blended.

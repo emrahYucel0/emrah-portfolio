@@ -40,9 +40,25 @@ export async function mountLinefield() {
    * finite difference (which is what an estimated gradient does to converging rows). The measure must read
    * clearly higher on these than on the real one.
    */
-  const broke = new URLSearchParams(location.search).get('lfbreak')
+  /*
+   * THREE VARIANTS, and they differ in HOW SPARSE the corridor is — not only in how hard it compresses. The
+   * density is the structural thing: a field ruled for type cannot be squeezed into a corridor and still read
+   * as rays. Each keeps every Nth row and is given the compression that suits that many rays.
+   */
+  const VARIANTS = [
+    { name: 'A', n: 4, eps: 0.07, openX: 0.30, openY: 0.34 },
+    { name: 'B', n: 6, eps: 0.05, openX: 0.26, openY: 0.30 },
+    { name: 'C', n: 8, eps: 0.035, openX: 0.22, openY: 0.26 },
+  ]
+  const qs = new URLSearchParams(location.search)
+  let vi = Math.max(0, VARIANTS.findIndex((v) => v.name === (qs.get('lfv') || 'B').toUpperCase()))
+  const broke = qs.get('lfbreak')
   let patch = CORRIDOR_PATCH
-  if (broke === 'fade') {
+  if (broke === 'dense') {
+    // the field never thins: the density the words need, sent whole down the corridor — the fault this
+    // revision was about
+    patch = CORRIDOR_PATCH
+  } else if (broke === 'fade') {
     patch = {
       ...CORRIDOR_PATCH,
       pars: CORRIDOR_PATCH.pars
@@ -53,13 +69,19 @@ export async function mountLinefield() {
     patch = {
       ...CORRIDOR_PATCH,
       warp: CORRIDOR_PATCH.warp
+        /*
+         * A SIX-PIXEL step, not one. A homography is smooth, so a one-pixel finite difference is very nearly
+         * the analytic derivative everywhere except at the singularity — the "broken" build measured the same
+         * as the real one to three figures, which made the calibration meaningless. Six pixels is coarse
+         * enough to mis-size rows where they converge, which is the failure this is meant to stand in for.
+         */
         .replace(
           'float dv_dx = (uLFinv[0][1] - uLFinv[0][2] * fpt.y) * iw;',
-          `vec3 qx = uLFinv * vec3(p.x + 1.0, m, 1.0);
-           vec3 qy = uLFinv * vec3(p.x, m + 1.0, 1.0);
-           float dv_dx = qx.y / qx.z - fpt.y;`,
+          `vec3 qx = uLFinv * vec3(p.x + 6.0, m, 1.0);
+           vec3 qy = uLFinv * vec3(p.x, m + 6.0, 1.0);
+           float dv_dx = (qx.y / qx.z - fpt.y) / 6.0;`,
         )
-        .replace('float dv_dy = (uLFinv[1][1] - uLFinv[1][2] * fpt.y) * iw;', 'float dv_dy = qy.y / qy.z - fpt.y;'),
+        .replace('float dv_dy = (uLFinv[1][1] - uLFinv[1][2] * fpt.y) * iw;', 'float dv_dy = (qy.y / qy.z - fpt.y) / 6.0;'),
     }
   }
 
@@ -122,17 +144,23 @@ export async function mountLinefield() {
     surface.beneath(st)
     surface.features = []
 
-    const m = corridorMatrix(V.W, V.H, q.depth, q.side)
+    const V0 = VARIANTS[vi]
+    const m = corridorMatrix(V.W, V.H, q.depth, q.side, V0)
     surface.use('corridor')
     // set inside the draw, where the variant's program is bound and the base uniforms are already in place
     surface.onBeforeDraw = () => {
       surface.mat3('uLFinv', m)
       // x,y: the whisker at the point itself, in device pixels — NOT a haze across the corridor.
       // z: a slight depth fade, as the reference has. w: the softness of the field's own edge.
-      surface.vec4('uLFfade', 0.06, 0.34, 0.12, Math.max(8, V.W * 0.012))
+      // x,y: the whisker at the point itself, in device pixels. The rays are left alone everywhere else; this
+      // takes out only the last band, where the spacing is under two pixels and no coverage answer can keep
+      // neighbouring rays apart. z: a slight depth fade, as the reference has. w: the field's own edge.
+      surface.vec4('uLFfade', 0.22, 0.85, 0.12, Math.max(8, V.W * 0.012))
       surface.vec4('uLFflow', q.flow[0], q.flow[1], q.flow[2], q.flow[3])
       surface.vec4('uLFband', st.layout.bands[0], st.layout.bands[1], st.layout.bands[2], st.layout.bands[3])
       surface.vec4('uLFmode', 1, q.depth, q.spread, V.H * 0.5)
+      // the `dense` break sends the full field down the corridor, which is the fault this revision was about
+      surface.vec2('uLFthin', V0.n, broke === 'dense' ? 0 : q.thin)
       surface.vec4('uLFline', V.H * 0.5, 0.85, lineAmt, 0)
       surface.vec3('uLFlineCol', lineCol)
     }
@@ -156,7 +184,21 @@ export async function mountLinefield() {
   const note = document.createElement('span')
   note.textContent = faceOk ? 'LINEFIELD' : 'LINEFIELD — FONT FALLBACK'
   note.style.color = faceOk ? '#121212' : '#b8622f'
-  dock.append(note, scrub, pct)
+  /*
+   * The variant switch, on the dock so it can be reached with a thumb: the review is of three densities and
+   * the phone is where the density matters most.
+   */
+  const vbtn = document.createElement('button')
+  vbtn.type = 'button'
+  vbtn.style.cssText = 'border:1px solid rgba(18,18,18,.2);background:transparent;color:inherit;font:inherit;padding:6px 8px;cursor:pointer'
+  const vlabel = () => { vbtn.textContent = `${VARIANTS[vi].name} · N${VARIANTS[vi].n}` }
+  vbtn.addEventListener('click', () => {
+    vi = (vi + 1) % VARIANTS.length
+    vlabel()
+    draw()
+  })
+  vlabel()
+  dock.append(note, vbtn, scrub, pct)
   host.appendChild(dock)
 
   const show = () => {
@@ -241,6 +283,8 @@ export async function mountLinefield() {
     nudge,
     get progress() { return p },
     faceOk,
+    variant: () => VARIANTS[vi],
+    setVariant: (n) => { const k = VARIANTS.findIndex((v) => v.name === String(n).toUpperCase()); if (k >= 0) { vi = k; vlabel(); draw() } },
     frameMs: () => (times.length ? times.reduce((a, b) => a + b, 0) / times.length : 0),
     worstMs: () => (times.length ? Math.max(...times) : 0),
     resetTimes: () => { times.length = 0 },

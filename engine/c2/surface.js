@@ -99,6 +99,20 @@ float hash(float n) { return fract(sin(n * 12.9898 + 4.1414) * 43758.5453); }
 #define VARIANT_FUSE 1.0
 #endif
 
+/*
+ * AND WHETHER EVERY ROW IS DRAWN AT ALL.
+ *
+ * A field's pitch is chosen for what it has to carry — type needs rows close enough that a letter is made of
+ * twenty of them. Projected down a corridor that same density has nowhere to go: hundreds of rows land inside
+ * a few pixels and what they add up to is a wash, with the vanishing point somewhere inside it. A perspective
+ * variant may take rows OUT as the corridor forms, so that what recedes is a countable set of rays.
+ *
+ * It is given the row's index, so the rows that stay are always the same rows and never slide.
+ */
+#ifndef VARIANT_ROW
+#define VARIANT_ROW(a, r) (a)
+#endif
+
 float rows(float x, float m, vec2 gm, sampler2D C, sampler2D D, vec4 R, vec4 K, vec4 G, vec4 H, vec4 M, vec4 J,
            float dev, float mem, float disturb, out float order) {
   float s = R.x, f = R.y, wt = R.z, th = R.w;
@@ -157,8 +171,10 @@ float rows(float x, float m, vec2 gm, sampler2D C, sampler2D D, vec4 R, vec4 K, 
     hw = mix(hw, max(hw, 0.62 * spr), smoothstep(2.1, 1.3, spr * uDpr) * step(0.001, hw) * VARIANT_FUSE);
     float aa = 0.75 / uDpr;
     float a = smoothstep(hw + aa, hw - aa, dist) * clamp(hw * 4.0, 0.0, 1.0);
+    float keep = VARIANT_ROW(1.0, r);
+    a *= keep;
     if (a > ink) ink = a;
-    hwSum += hw * clamp(hw * 4.0, 0.0, 1.0);
+    hwSum += hw * clamp(hw * 4.0, 0.0, 1.0) * keep;
     if (k == 0) gl0 = glen;
   }
   // rows packed closer than the pixel grid can hold are seen as what they add up to — never as interference
@@ -527,6 +543,7 @@ export function createSurface(canvas) {
     float(name, v) { const l = L(name); if (l) gl.uniform1f(l, v) },
     vec4(name, a2, b2, c2, d2) { const l = L(name); if (l) gl.uniform4f(l, a2, b2, c2, d2) },
     vec3(name, v) { const l = L(name); if (l) gl.uniform3fv(l, v) },
+    vec2(name, a2, b2) { const l = L(name); if (l) gl.uniform2f(l, a2, b2) },
     time: 0, shiver: 0, strip: 0, devId: -1, overlay: 0, beneathStart: 0, beneathCount: 0, fill: 1,
     pen: [-99, -99, 0], penCol: [0, 0, 0], onBeforeDraw: null,
     inks: new Float32Array(36), visited: new Float32Array(12),

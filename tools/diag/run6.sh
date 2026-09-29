@@ -96,6 +96,7 @@ say "LAB SHELL / RESPONSIVE";   node shell.cjs $CUR          2>&1 | tail -10 >> 
 say "LAB A11Y";                 node labaxe.cjs $CUR         2>&1 | tail -3  >> $L
 # the Contact finale's route: a document route (no runtime), its facts as DOM with and without JS, axe, both engines
 say "CONTACT ROUTE";            node contact.cjs $CUR        2>&1 | tail -12 >> $L
+say "CONTACT FINALE — iOS 15.4";   node compat-ios15.cjs $CUR   2>&1 | tail -1  >> $L
 say "JOURNEY TR NORMAL";        node journey.cjs $CUR tr     2>&1 | tail -5  >> $L
 say "JOURNEY EN REDUCED";       node journey.cjs $CUR en reduced 2>&1 | tail -5 >> $L
 say "NON-LAB NORMAL (baseline $BASE)";  node nonlab.cjs $BASE $CUR    2>&1 | tail -13 >> $L

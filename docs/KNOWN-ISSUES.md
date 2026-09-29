@@ -105,3 +105,42 @@ different contract, and it needs its own decision before it can have a check.
 
 Reproduce: `node panelfit.cjs 4500 check 1440x900 tr 0`
 
+
+---
+
+## Gate: "one momentum gesture on the index moves exactly one stop" failed once under full-gate load
+
+**Where** `tools/diag/gesture2.cjs`, second check, in `run6.sh` on `feature/contact-finale` (F0): the index stayed
+on stop 0 (`0 → 0`) after one momentum wheel gesture, in WebKit at 1366×768.
+
+**What is known.** It failed once, inside the full gate; the same check then passed 3/3 alone against this build
+AND 3/3 against the baseline build (`baseline/pre-site-polish`). The branch did not touch the index or its gesture
+code at that point (only the Contact route and the runtime's head-start plugin's route test). Treated as a timing
+escape: the harness waits a fixed 3 s after `A.mode === 'index'` before the gesture, and a loaded machine may not
+have the index ready to promote a stop by then.
+
+**Owed.** F2 of the Contact integration changes this area directly (C2's Contact stop hands off to the finale), so
+at the end of F2 this check runs **at least 5 times under the full gate**; a single further failure means
+investigating the timing, not re-running it away.
+
+---
+
+## The app needs Safari 15.4, not 15.0 (Nuxt runtime: `Array.prototype.at`, `Object.hasOwn`) — RESOLVED: floor is iOS 15.4
+
+**Decision (2026-09-29).** The documented floor is now **iOS 15.4 / Safari 15.4** — Nuxt's own requirement. No
+polyfills. `docs/POST-M5-IOS15-COMPATIBILITY.md` states it; `tools/diag/compat-ios15.cjs` holds the finale's sources
+and runtime to Safari 15.4 (`Array#at`, `Object.hasOwn` and the other 15.4 APIs are no longer failures). The record
+below is how it was found.
+
+**Where** Every route. `docs/POST-M5-IOS15-COMPATIBILITY.md` states Safari 15 / iOS 15 as the floor; the build
+lowers syntax to `safari15` but not APIs, and the Nuxt / vue-router runtime in the client bundle calls
+`matched.at(-1)` and `Object.hasOwn(...)`, which arrived in Safari **15.4**. With those two removed (an imitation of
+15.0–15.3 in `tools/diag/compat-ios15.cjs`, first version) the app renders its 500 page on `/tr/contact` and hydrates
+with mismatches on `/tr/lab`.
+
+**Why it has not bitten.** The real validation device is an iPhone 7 Plus on iOS **15.8.8**, which has both.
+
+**Not fixed here** (found during the Contact integration, outside its scope). The Contact finale's own sources are
+were held to Safari 15.0 by the static half of the first `compat-ios15.cjs`; its runtime half imitated the
+validation device's profile (15.4–15.8). Options were: state the floor as iOS 15.4, or ship the two small polyfills
+— the first was chosen (above).

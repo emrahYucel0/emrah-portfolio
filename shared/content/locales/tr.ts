@@ -165,6 +165,10 @@ export const tr = {
     weight_holds: 'sayfayı tutuyor',
   },
   contact: { heading: 'İletişim', emailLabel: 'E-posta', phoneLabel: 'Telefon' },
+  finale: {
+    copy: 'kopyala', copied: 'kopyalandı', copyEmail: 'E-postayı kopyala', locationRole: 'Konum',
+    ink: 'mürekkep', inkOut: 'mürekkep bitti', revision: 'Revizyon', githubAria: 'GitHub profili', linkedinAria: 'LinkedIn profili',
+  },
   psi: {
     head: 'PageSpeed Insights', mobile: 'Mobil', desktop: 'Masaüstü',
     labels: ['Performans', 'Erişilebilirlik', 'Best Practices', 'SEO'],

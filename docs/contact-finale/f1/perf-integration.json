@@ -1,0 +1,18 @@
+{
+  "side": "repo",
+  "desktopSweep": [
+    1,
+    1.4,
+    1.4
+  ],
+  "desktopInteract": [
+    6.8,
+    5.4,
+    0.8
+  ],
+  "mobileSweep6x": [
+    8.8,
+    9.2,
+    14.4
+  ]
+}

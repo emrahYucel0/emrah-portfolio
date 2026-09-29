@@ -160,6 +160,10 @@ export const en = {
     weight_holds: 'holds the page',
   },
   contact: { heading: 'Contact', emailLabel: 'Email', phoneLabel: 'Phone' },
+  finale: {
+    copy: 'copy', copied: 'copied', copyEmail: 'Copy the email address', locationRole: 'Location',
+    ink: 'ink', inkOut: 'out of ink', revision: 'Revision', githubAria: 'GitHub profile', linkedinAria: 'LinkedIn profile',
+  },
   psi: {
     head: 'PageSpeed Insights', mobile: 'Mobile', desktop: 'Desktop',
     labels: ['Performance', 'Accessibility', 'Best Practices', 'SEO'],

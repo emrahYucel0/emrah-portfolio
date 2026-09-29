@@ -166,6 +166,11 @@ export interface LocaleCopy {
     weight_holds: string
   }
   contact: { heading: string; emailLabel: string; phoneLabel: string }
+  /** the Contact finale's own words (engine/lab/finale): the copy control, the ink counter, the revision record */
+  finale: {
+    copy: string; copied: string; copyEmail: string; locationRole: string
+    ink: string; inkOut: string; revision: string; githubAria: string; linkedinAria: string
+  }
   psi: { head: string; mobile: string; desktop: string; labels: [string, string, string, string]; short: [string, string, string, string] }
   /** the pointer instruction a place shows while it still asks something of the visitor — the hero and the Lab
    *  stop no longer do (About is a control on the hero; the Lab is a route that opens on arrival) */

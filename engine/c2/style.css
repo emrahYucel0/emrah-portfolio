@@ -64,7 +64,8 @@ html[data-c2='on'], html[data-c2='on'] body {
 /* M4 A11Y: the strip's short words (Lab) reach 24px of target too; padding and margin cancel, nothing moves */
 :where(#ui) .strip .nav button { padding-left: 4px; padding-right: 4px; margin: 0 -4px; }
 :where(#ui) .roles { opacity: .82; }
-:where(#ui) #hint { opacity: .78; overflow: hidden; text-overflow: ellipsis; min-width: 0; margin-left: auto; text-align: right; }   /* M3: it shrinks and keeps the right edge on a phone too */
+/* .9, not quieter: in a project the hint sits on the work's ink, and İstanbul's #8e3a17 took .78 to 4.33:1 (AUDIT-01) */
+:where(#ui) #hint { opacity: .9; overflow: hidden; text-overflow: ellipsis; min-width: 0; margin-left: auto; text-align: right; }   /* M3: it shrinks and keeps the right edge on a phone too */
 :where(#ui) .strip[data-tone=dark] { color: var(--paper); }
 :where(#ui) .strip[data-tone=light] { color: var(--ink); }
 :where(#ui) .strip[data-tone=media] { color: var(--paper); }
@@ -91,12 +92,15 @@ body.in-world :where(#ui) .bottom .roles { opacity: 0; }
 
 /* about, on the home surface: an introduction, and one positioning line — not equal */
 /* The hero's About. Utility type, on the name's own right axis, in the fold between the names — the site's language
-   for a small action, not a button: no chip, no fill, no border. The rule under the word is the affordance, and it
+   for a small action, not a button: no chip, no border. The rule under the word is the affordance, and it
    is the fold's own line continuing under it; reaching the control brings the rule up to full ink. Its target is
-   44px tall and wider than the word (WCAG 2.5.8), and the padding is cancelled by the margin, so nothing moves. */
+   44px tall and wider than the word (WCAG 2.5.8), and the padding is cancelled by the margin, so nothing moves.
+   AUDIT-01: the fold's rows ran through the word itself (1.7:1 where they cross it), so the word sits on a narrow
+   band of the state's paper, just taller than the word and its rule — the rows stop at its edges, as at a strip. */
 :where(#ui) .hero-act .ha-line { display: flex; justify-content: flex-end; align-items: center; }
 :where(#ui) .hero-about {
   font: 400 10.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase;
+  background: linear-gradient(var(--paper), var(--paper)) center / 100% 26px no-repeat;
   display: inline-flex; align-items: center; min-height: 44px; padding: 0 13px; margin-right: -13px;
   text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px;
   text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);

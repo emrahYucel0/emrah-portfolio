@@ -42,7 +42,19 @@ const atFinale = (pg) => pg.waitForFunction(() => location.pathname === '/tr/con
 const atBench = (pg) => pg.waitForFunction(() => location.pathname === '/tr/lab' && !!document.querySelector('.lab-stage'), null, { timeout: 20000 }).then(() => true).catch(() => false)
 const push = [6, 14, 26, 38, 44, 40]
 const tail = [34, 27, 21, 16, 12, 9, 7, 5, 4, 3, 2, 2, 1, 1, 1, 1]
-const momentum = async (pg, dir) => { for (const d of [...push, ...tail]) { await pg.mouse.wheel(0, d * dir); await sleep(16) } }
+// A trackpad's momentum, as the OS makes it: every event carries the time it was MADE, 16 ms apart. (It used to be
+// page.mouse.wheel in a loop: under the gate's load each call's round trip stretched, the synthetic tail itself paused
+// for 400 ms, and the page — rightly — read a new gesture. The pages judge a tail by input time: useContactSeam.)
+const momentum = async (pg, dir) => {
+  const cdp = await pg.context().newCDPSession(pg)
+  const t0 = Date.now() / 1000
+  const seq = [...push, ...tail]
+  for (let i = 0; i < seq.length; i++) {
+    await cdp.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 700, y: 450, deltaX: 0, deltaY: seq[i] * dir, timestamp: t0 + i * 0.016 })
+    await sleep(16)
+  }
+  await cdp.detach().catch(() => {})
+}
 
 // the sheet between the strip and the foot band, as luminance
 const sheetOf = async (pg) => pg.evaluate(async () => {

@@ -51,17 +51,24 @@ export const benchSeam: { exit: null | (() => Promise<void>) } = { exit: null }
  */
 export function hushTail(ms = 420) {
   if (!import.meta.client) return
+  /*
+   * Measured in the time the input was MADE (the event's timeStamp), not the time it is handled. The page that
+   * receives the tail is still booting — the finale's engine, the bench's sheet — so under load the tail's events
+   * queue up and arrive together: judged by handling time, the window had already closed, or the burst looked like
+   * a gap, and the rest of the tail scrolled the finale (the gate's SEAM section, once under load: 48 px). Events made
+   * before this page could listen belong to the same tail and are spent too. The hush ends at the first event made
+   * after a real 140 ms pause in the input; nothing else removes it, so a late, queued tail can never slip through.
+   */
+  const stamp = (e: Event) => (e.timeStamp > 0 && e.timeStamp < 1e11 ? e.timeStamp : performance.now()) // (an epoch stamp: an old engine)
   let until = performance.now() + ms
   const onWheel = (e: WheelEvent) => {
-    const now = performance.now()
-    if (now >= until) { removeEventListener('wheel', onWheel, { capture: true }); return }
-    until = now + 140
+    const t = stamp(e)
+    if (t >= until) { removeEventListener('wheel', onWheel, { capture: true }); return }
+    until = Math.max(until, t + 140)
     e.preventDefault()
     e.stopPropagation()
   }
   addEventListener('wheel', onWheel, { capture: true, passive: false })
-  // a tail that never comes still ends the hush
-  setTimeout(() => { if (performance.now() >= until) removeEventListener('wheel', onWheel, { capture: true }) }, ms + 20)
 }
 
 export function useContactSeam() {

@@ -32,3 +32,4 @@ tools/diag/*.log
 
 # production artifacts packaged for upload
 deploy/
+docs/reference/*.mp4

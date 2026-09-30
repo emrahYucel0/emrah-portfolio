@@ -60,9 +60,14 @@ function hfIn(d, W, c, box) {
   for (const [w, h, tag] of [[1440, 900, 'desktop-1440x900'], [390, 844, 'portrait-390x844']]) {
     const ctx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1 })
     const p = await ctx.newPage()
-    await p.goto(`http://127.0.0.1:${port}/tr?linefield=1${BREAK ? `&lfbreak=${BREAK}` : ''}`, { waitUntil: 'load', timeout: 90000 })
-    await p.waitForFunction(() => !!window.__lf, null, { timeout: 60000 })
-    await sleep(600)
+    // the site's own path: the passage is a place now and is travelled to, exactly as a visitor reaches it
+    await p.goto(`http://127.0.0.1:${port}/tr${BREAK ? `?lfbreak=${BREAK}` : ''}`, { waitUntil: 'load', timeout: 90000 })
+    await p.waitForFunction(() => !!window.__lab?.lfSet, null, { timeout: 60000 })
+    await sleep(2400)
+    await p.evaluate(() => window.__lab.go(window.__lab.STOP.linefield))
+    await sleep(1700)
+    await p.evaluate(() => document.querySelectorAll('.layer, .strip').forEach((e) => { e.style.visibility = 'hidden' }))
+    await sleep(2400)
 
     /*
      * The two regions. NEAR is the third of the frame the rays converge into — where the corridor's vanishing
@@ -82,10 +87,10 @@ function hfIn(d, W, c, box) {
       let hf = 0
       const N = 6
       for (let k = 0; k < N; k++) {
-        await p.evaluate((x) => window.__lf.setProgress(x), from + k * step)
+        await p.evaluate((x) => window.__lab.lfSet(x), from + k * step)
         await sleep(90)
         const A = await sharp(await p.screenshot()).raw().toBuffer({ resolveWithObject: true })
-        await p.evaluate((x) => window.__lf.setProgress(x), from + (k + 1) * step)
+        await p.evaluate((x) => window.__lab.lfSet(x), from + (k + 1) * step)
         await sleep(90)
         const B = await sharp(await p.screenshot()).raw().toBuffer({ resolveWithObject: true })
         const { width: W, channels: c } = A.info

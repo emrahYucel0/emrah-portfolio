@@ -73,6 +73,27 @@ export function wheelPixels(e) {
   return Math.max(-LF_WHEEL_CLAMP, Math.min(LF_WHEEL_CLAMP, px))
 }
 
+/*
+ * ── THE DWELL AT THE CROSSING ───────────────────────────────────────────────────────────────────────────────
+ *
+ * One moment in the passage is a single rust line across the frame, and it is the hinge of the whole thing. At
+ * an even rate it goes by in a third of a wheel notch, which is to say a visitor scrolling normally never sees
+ * it. So the progress runs SLOWER there: every input — a notch, a key, a finger, the tail of a flick — moves
+ * it less the nearer it is to the crossing.
+ *
+ * It is a gain on the rate and never a stop. At its slowest a gesture still moves the scene by a third of what
+ * it would elsewhere, so nothing can catch, nothing snaps to it, and reversing behaves identically because the
+ * gain depends only on the distance from the crossing.
+ */
+export const LF_DWELL_AT = 0.5
+export const LF_DWELL_HALF = 0.075
+export const LF_DWELL_GAIN = 0.32
+
+export function dwellGain(p) {
+  const d = Math.min(1, Math.abs(p - LF_DWELL_AT) / LF_DWELL_HALF)
+  return LF_DWELL_GAIN + (1 - LF_DWELL_GAIN) * d * d
+}
+
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v)
 
 /**
@@ -100,7 +121,8 @@ export function createDrive(spanOf) {
     /** advance the drawn progress by one frame of dt seconds, and return it */
     step(p, dt) {
       if (vel !== 0) {
-        const next = clamp01(target + vel * dt)
+        // a flick decelerates as it reaches the line, and picks up again on the far side
+        const next = clamp01(target + vel * dt * dwellGain(target))
         // the ends absorb the flick rather than bouncing off it
         if (next === target) vel = 0
         target = next
@@ -115,17 +137,25 @@ export function createDrive(spanOf) {
     /** jump there, cancelling anything in flight — for a scrub, Home/End, an arrival, and a harness */
     set(v) { vel = 0; drag = null; target = clamp01(v) },
     /** a wheel notch, a key, or any other discrete push */
-    nudge(dv) { vel = 0; target = clamp01(target + dv) },
+    nudge(dv) { vel = 0; target = clamp01(target + dv * dwellGain(target)) },
     wheel(e) { this.nudge(wheelPixels(e) / LF_WHEEL_SPAN) },
     /** the same push, in progress rather than pixels, for a runtime that has already normalised its input */
     push(dv) { this.nudge(dv) },
     dragStart(y) {
       vel = 0
-      drag = { y, at: target, s: [[performance.now(), y]] }
+      drag = { y, last: y, s: [[performance.now(), y]] }
     },
+    /*
+     * THE FINGER MOVES IT BY STEPS, NOT BY ABSOLUTE POSITION. One to one with the finger is what it was, and
+     * that is what it still is everywhere the gain is 1 — but a rate that changes with where you are cannot be
+     * written as a fixed mapping from finger position to progress. So each move contributes its own distance,
+     * through the same gain every other input goes through.
+     */
     dragMove(y) {
       if (!drag) return
-      target = clamp01(drag.at + (drag.y - y) / spanOf())
+      const dv = (drag.last - y) / spanOf()
+      drag.last = y
+      target = clamp01(target + dv * dwellGain(target))
       drag.s.push([performance.now(), y])
       // only the tail matters: a velocity taken over the whole drag is the average speed, not the flick
       if (drag.s.length > 8) drag.s.shift()

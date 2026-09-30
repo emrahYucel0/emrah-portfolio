@@ -203,6 +203,17 @@ const raw = async (p) => {
           ok(k.n > info.width * info.height * 0.01, `${name}  the words are there — ${(k.n / (info.width * info.height) * 100).toFixed(1)}% of the frame is type`)
           ok(k.y0 >= strip && k.y1 <= info.height - strip, `${name}  and the type clears both strips — from y=${k.y0} to y=${k.y1}, strips ${strip}px (${k.y0 - strip} / ${info.height - strip - k.y1} px of air)`)
           ok(k.x0 >= 4 && k.x1 <= info.width - 4, `${name}  and both side margins — from x=${k.x0} to x=${k.x1} of ${info.width}`)
+          /*
+           * AND NOTHING IS DRAWN OUTSIDE THE CAP LINE AND THE LAST BASELINE.
+           *
+           * S, C, U, O and G are drawn a little past both, and at this pitch that overshoot is caught by the
+           * first row beyond the edge and drawn as a detached bar — STATE. reads as ŞTATE. No phase of the row
+           * grid can clear it (the pitch would have to be 9.1px and it is 7), so the overshoot is clipped off.
+           * This is the assertion that says it stayed clipped: the type's ink box is the block's own box.
+           */
+          const capTop = pr.baseline[0] - pr.cap
+          const lastBase = pr.baseline[pr.baseline.length - 1]
+          ok(k.y0 >= capTop - 2 && k.y1 <= lastBase + 2, `${name}  and no ink outside the cap line or the last baseline — ink ${k.y0}..${k.y1} against ${Math.round(capTop)}..${Math.round(lastBase)}`)
           note(`${name}  ${pr.rowsPerCap} rows through a capital, cap ${Math.round(pr.cap)}px, pitch ${pr.spacing.toFixed(2)}px`)
           ok(pr.rowsPerCap >= 10, `${name}  enough rows through a capital for a curve to keep its counter (${pr.rowsPerCap})`)
         }
@@ -288,9 +299,84 @@ const raw = async (p) => {
       ok(cross.rust > w * 1.5, `${w}x${h}  at 50% a single rust line spans the frame — ${cross.rust}px`)
       ok(opening.w > w * 0.92, `${w}x${h}  and on the cream side it opens from the far point across the width — ${opening.w}px at 52%`)
       // no dead segment: something changes between every pair of frames through the passage
+      /*
+       * OUTSIDE THE LINE'S OWN WINDOW. The fan is held shut from 47% to 53% so the single rust line is on
+       * screen long enough to be caught — identical frames there are the point of that hold, not a dead
+       * segment. Everywhere else, something must change between every pair of steps.
+       */
       const still = []
-      for (let i = 1; i < rows.length; i++) if (rows[i].sig === rows[i - 1].sig) still.push(Math.round(rows[i].v * 100))
+      for (let i = 1; i < rows.length; i++) if (rows[i].sig === rows[i - 1].sig && Math.abs(rows[i].v - 0.5) > 0.035) still.push(Math.round(rows[i].v * 100))
       ok(still.length === 0, `${w}x${h}  every step of the passage moves${still.length ? ` — nothing changed at ${still.join(', ')}%` : ''}`)
+      allErrs.push(...errs)
+      await ctx.close()
+    }
+  }
+
+  // ── DWELL ────────────────────────────────────────────────────────────────────────────────────────────────
+  if (on('dwell')) {
+    console.log('\nDWELL — how much scrolling the single rust line is on screen for')
+    /*
+     * TWO THINGS MAKE IT CATCHABLE, and they multiply.
+     *
+     * The fan is held shut across a window of the PROGRESS, so the line is alone for a stretch rather than an
+     * instant. And the drive runs slower through that stretch, so the same wheel notch or the same centimetre
+     * of finger covers less of it. What a visitor experiences is the product, which is what is measured here:
+     * notches of a real wheel, and pixels of a real drag.
+     */
+    for (const [w, h] of [[1440, 900], [390, 844]]) {
+      const { ctx, p, errs } = await open(b, w, h, 'tr')
+      await goTo(p, 'linefield')
+
+      // ── the wheel ──────────────────────────────────────────────────────────────────────────────────────
+      await p.evaluate(() => window.__lab.lfSet(0.3))
+      await sleep(600)
+      let notches = 0
+      let alone = 0
+      let seen = false
+      while (notches < 40) {
+        await p.mouse.wheel(0, 100)
+        await sleep(340)
+        notches++
+        const q = await p.evaluate(() => window.__lab.lfProbe())
+        // alone: the rust is at full strength and the field has collapsed behind it
+        const isAlone = q.seq.flash > 0.98 && q.seq.spread < 0.01
+        if (isAlone) { alone++; seen = true } else if (seen) break
+        if (q.seq.side === 1 && q.seq.spread > 0.4) break
+      }
+      ok(alone >= 1, `${w}x${h}  the single rust line is on screen for ${alone} wheel notch(es) of 100px`)
+      note(`${w}x${h}  it took ${notches - alone} notches to reach it from 30%`)
+
+      /*
+       * THE FINGER, THROUGH THE REAL DRAG PATH. Synthesising pointer events for this measured nothing: on a
+       * desktop context a press on the material is a HOLD, not a drag, and the vertical-drag branch only runs
+       * for a touch pointer. The drive's own dragStart/dragMove are what a finger reaches, gain and all, so
+       * they are driven directly and the distance is counted in the pixels a finger would have travelled.
+       */
+      const touch = await p.evaluate(() => {
+        const LF = window.__lab.lf()
+        const d = LF.drive
+        d.set(0.4)
+        d.dragStart(40000)
+        let y = 40000
+        let px = 0
+        let alone = 0
+        const STEP = 2
+        // lfSet() is not used here: it cancels the drag, which is exactly what made an earlier version of this
+        // travel twelve thousand pixels without moving anything
+        while (d.target < 0.62 && px < 40000) {
+          y -= STEP
+          d.dragMove(y)
+          px += STEP
+          const q = LF.sequence(d.target)
+          if (q.flash > 0.98 && q.spread < 0.01) alone += STEP
+        }
+        const span = d.target
+        d.dragEnd()
+        d.set(0)
+        void span
+        return { px, alone, span: 0 }
+      })
+      ok(touch.alone > 0, `${w}x${h}  and for ${touch.alone}px of finger travel (40% to 62% took ${touch.px}px; the whole passage is ${Math.round(w < 700 ? Math.max(560, h * 1.8) : Math.max(560, h * 1.8))}px at an even rate)`)
       allErrs.push(...errs)
       await ctx.close()
     }
@@ -331,6 +417,14 @@ const raw = async (p) => {
         const { width: W, height: H, channels: c } = f.info
         const lit = (x, y) => {
           const i = (y * W + x) * c
+/*
+           * THE BAR IS 6, AND IT HAS TO BE. Lower, and the dark ground's own dither counts as lit on the
+           * reference: its edge rows read as one unbroken run and the ray count collapses to four. Higher, and
+           * the reference's faintest rays — its per-row alpha starts at 0.2 and is scaled again by cc and by
+           * depth — drop out. Six is the window where both are counting rays. Our rows are drawn brighter than
+           * the reference's, so a handful of its faintest are still missed, and the site's number is the more
+           * complete of the two.
+           */
           return Math.max(Math.abs(f.data[i] - ground[0]), Math.abs(f.data[i + 1] - ground[1]), Math.abs(f.data[i + 2] - ground[2])) > 6
         }
         const b0 = Math.round(H * 0.08)
@@ -355,7 +449,7 @@ const raw = async (p) => {
         return { right, left, top, bot, bandH: b1 - b0, png: f.png }
       }
 
-      for (const v of [0.28, 0.34, 0.42, 0.62, 0.7]) {
+      for (const v of [0.28, 0.34, 0.42, 0.46, 0.54, 0.58, 0.7]) {
         const g = (await site.p.evaluate(() => window.__lab.lfProbe())).ground
         const refGround = v < 0.5 ? [17, 18, 20] : [239, 238, 233]
         const S = await edges(site.p, false, v, g)
@@ -369,7 +463,14 @@ const raw = async (p) => {
         const farRef = v < 0.5 ? R.right : R.left
         note(`${w}x${h} ${pc}%  rays crossing the far edge: site ${farSite} · reference ${farRef}   |   field top+bottom edge, px: site ${S.top + S.bot} · reference ${R.top + R.bot} of ${w}`)
         ok(farSite > 0, `${w}x${h} ${pc}%  the rays run out through the far screen edge — ${farSite} of them (reference ${farRef})`)
-        ok(S.top + S.bot > 0, `${w}x${h} ${pc}%  and out through the top and bottom of the field — ${S.top + S.bot} px (reference ${R.top + R.bot})`)
+        /*
+         * Except where the fan is CLOSED. The site holds it shut from 47% to 53% so the single rust line has a
+         * window a visitor can catch; the reference closes at 50% and is still open at 46 and 54. A collapsed
+         * field has nothing at the top or bottom of the frame by definition, and that is the design.
+         */
+        const shut = (await site.p.evaluate(() => window.__lab.lfProbe())).seq.flash > 0.5
+        if (!shut) ok(S.top + S.bot > 0, `${w}x${h} ${pc}%  and out through the top and bottom of the field — ${S.top + S.bot} px (reference ${R.top + R.bot})`)
+        else note(`${w}x${h} ${pc}%  the fan is shut here by design — the line's window; the reference is still open`)
       }
       allErrs.push(...site.errs)
       await site.ctx.close()

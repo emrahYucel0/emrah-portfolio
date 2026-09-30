@@ -769,3 +769,93 @@ rule and applies to every other place on it.
 cannot decode it, and there is no other ffmpeg on this machine. The work was done against
 `docs/reference/linefield-v2.html`, which is the demo that recording is a recording of, driven to an exact
 progress rather than sampled from a video. Anything that needs the video itself needs a decoder installed first.
+
+---
+
+# THE PASSAGE, SECOND PASS
+
+Five things, from a recording of the site.
+
+## The far end is a mouth
+
+The reference's spread runs from 3.4 at the near end to 0 at the vanishing point, so every ray meets in one
+place and the corridor ends in a singularity. A tunnel does not end in a dot. The spread keeps a floor —
+`LF_MOUTH = 0.055` — so at the far end the field's whole extent maps onto a short vertical aperture, about four
+per cent of the screen high, instead of onto a point. The rays converge toward it and the whisker takes them out
+just before they arrive, which is what makes it read as an opening. It costs nothing at the near end and it
+flattens with cc into the needle's tip exactly as the point did.
+
+## The density comes back as the words leave
+
+Every 8th row while there is type to carry, because that is where a dense field becomes a wash. Once the words
+have gone past, that reason has gone with them, and a fan of a dozen rays makes a weak needle. The level falls
+to every 3rd through the deep part and rises again as the frontend words arrive.
+
+It moves between POWERS OF TWO, and each set contains the one before it: every 8th is inside every 4th is inside
+every 2nd. So the rays that arrive are new rays appearing among the ones already there — never a different set,
+never a row sliding — and between two levels the finer set is faded in.
+
+**It stops at every 3rd, not every 2nd.** Taken all the way the rays crowd near the vanishing point and
+cross-hatch: the half of the frame nearest the point filled with a grey wash and a visible interference pattern,
+which is the exact fault the thinning exists to prevent.
+
+Rays crossing the far screen edge, site against the reference:
+
+| | 28% | 34% | 42% | 46% | 54% | 58% | 70% |
+|---|---|---|---|---|---|---|---|
+| 1440x900 site | 15 | 17 | 30 | — | — | 32 | 23 |
+| 1440x900 reference | 18 | 17 | 23 | 45 | 24 | 18 | 21 |
+| 390x844 site | 26 | 22 | 38 | — | — | 44 | 22 |
+| 390x844 reference | 30 | 29 | 38 | 73 | 39 | 29 | 35 |
+
+At 46% and 54% the site's fan is shut and the reference's is not: that is the line's window (below), and it is
+the one place the two are meant to differ.
+
+High-frequency energy where the rays converge: **7.28** desktop / **9.84** portrait, against **18.02 / 19.83**
+with the thinning disabled. The density decision costs some of the margin the previous, sparser field had
+(7.59 / 7.90) and stays well inside it.
+
+## The stray marks under round letters
+
+S, C, U, O and G are drawn a little past the cap line and the baseline so they do not look smaller than the flat
+letters beside them. At a seven-pixel pitch that is not a nicety, it is a detached mark: the first row below the
+baseline sits 1.33px below it and is 2.17px thick, and the overshoot reaches 2.40px, so the row's top edge is
+inside the overshoot. STATE. reads as ŞTATE.
+
+**No phase of the row grid can clear it.** To leave room on both sides the pitch would have to exceed
+2 x (overshoot + row half-width) = 9.14px, and it is 7. The snapping alone was never enough; it was marginal
+with the Turkish words, whose tighter fit made the type smaller, and became visible when the English set made it
+larger. That is the change that brought it back.
+
+So the overshoot is removed rather than accommodated: each line is clipped to exactly its cap line and its
+baseline, and because the snapping puts both of those exactly halfway between two rows, **no row is cut by the
+clip** — only the ink beyond them. `linefield.cjs` asserts it: the type's ink box is the block's own box, in
+both languages and four viewports.
+
+## The half label is not struck through
+
+The name is DOM text over the field at a fixed place on the screen, so the band behind it is cleared in SCREEN
+space, from the ink's own measured rectangle plus a small margin — and only while the field is flat, because the
+label is shown at the two ends only and the band must not travel off down the corridor with the rows.
+
+## The rust line is catchable
+
+Two things, and they multiply. The fan is held shut from 47% to 53%, so the single line is alone for a stretch
+rather than an instant. And the drive runs slower through it: `dwellGain` falls to 0.32 at the crossing over a
+half-width of 0.075, applied to every input — a notch, a key, a finger, the tail of a flick — so the same
+gesture covers less of the passage there. It is a gain on the rate and never a stop; reversing behaves
+identically, because it depends only on the distance from the crossing.
+
+Measured on the built site: the single rust line is on screen for **2 wheel notches** of 100px, and for
+**314px (desktop) / 294px (phone)** of finger travel, against 1620 / 1519px for the whole passage at an even
+rate.
+
+The finger's drag became incremental rather than absolute, because a rate that changes with position cannot be
+written as a fixed mapping from finger position to progress. Where the gain is 1 — everywhere but the crossing —
+it is the same one-to-one it was.
+
+**A crossfade at the crossing was tried and reverted.** With the fan held shut, the moment the halves swap is no
+longer hidden inside a collapse that is still moving. But `front` is not an opacity between two pictures on this
+surface — it is a sweep over the row order, and with the field collapsed the two halves landed either side of
+the horizon: cream above the line, black below, split down the middle. The reference cuts at the crossing, and
+so does this.

@@ -1175,7 +1175,7 @@ function buildDOM() {
    */
   if (LINEFIELD) {
     D.lf = h('section', 'layer lf-place', `<h2 class="lbl sr" tabindex="-1">${TXT.linefield.heading}</h2>
-      <p class="lf-lab lf-back">${TXT.linefield.backendLabel}</p><p class="lf-lab lf-front">${TXT.linefield.frontendLabel}</p>
+      <p class="lf-lab lf-back"><span>${TXT.linefield.backendLabel}</span></p><p class="lf-lab lf-front"><span>${TXT.linefield.frontendLabel}</span></p>
       <p class="sr">${TXT.linefield.backendLabel}: ${TXT.linefield.backendSaid}. ${TXT.linefield.frontendLabel}: ${TXT.linefield.frontendSaid}.</p>`)
   }
 
@@ -1337,6 +1337,9 @@ function layoutDOM() {
     const box = { x: V.W * 0.06, y: L.labelY, w: V.W * 0.88, h: L.labelH }
     place(D.lf.querySelector('.lf-back'), box)
     place(D.lf.querySelector('.lf-front'), box)
+    // the ink of each name, measured rather than guessed: the rows keep out of exactly that band
+    const inkOf = (sel) => { const r = D.lf.querySelector(sel).getBoundingClientRect(); return { x: r.x / V.u, y: r.y / V.u, w: r.width / V.u, h: r.height / V.u } }
+    LF.setLabels({ back: inkOf('.lf-back span'), front: inkOf('.lf-front span') })
   }
   const ah = aboutHalf(), gy = nm.layout.gapY
   place(D.about.querySelector('.block'), { x: V.pad, y: gy - ah + 14, w: Math.min(V.W - V.pad * 2, 760), h: ah * 2 - 28 })
@@ -1738,7 +1741,11 @@ function frame(now) {
     const here = from === LF.back || from === LF.front || to === LF.back || to === LF.front
     if (here && REDUCED) {
       if (A.base === LFS) { const r = LF.reducedPair(A.lfp); from = r.from; to = r.to; front = r.front }
-    } else lfOn = here
+    } else if (here) {
+      lfOn = true
+      // settled on the passage, the passage decides what is on screen — which at the crossing is both halves
+      if (from === to && from === IDX[LFS]) { const r = LF.pair(A.lfp); from = r.from; to = r.to; front = r.front }
+    }
   }
   /*
    * The program is only ever touched on a Linefield build, and only where there IS a program: in reduced motion

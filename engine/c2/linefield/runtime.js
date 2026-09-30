@@ -12,6 +12,9 @@
  * and this one is the direction of travel and continuous.
  */
 import { LF_ROW_KEEP, corridorImage, corridorUniforms, vanishingPoint } from './corridor.js'
+
+/** the coarse level, as a power of two: every LF_ROW_KEEP-th row */
+const LF_LEVEL = Math.log2(LF_ROW_KEEP)
 import { breakName, patchFor } from './breaks.js'
 import { BACKEND_WORDS, FRONTEND_WORDS, linefieldState, sequence } from './state.js'
 import { LF_KEY_STEP, LF_TOUCH_SPAN, LF_WHEEL_SPAN, createDrive, wheelPixels } from './input.js'
@@ -24,6 +27,14 @@ const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v)
  * The work field uses 0.45 of one project for the same purpose; this is the same idea in units of the passage.
  */
 export const LF_EXIT_MARGIN = 0.16
+
+/**
+ * How tall the corridor's far opening is, as a share of the field's half extent. The reference's spread runs
+ * from 3.4 at the near end to 0 at the vanishing point; this is the floor that replaces the 0, so the far end
+ * is a short aperture a few per cent of the screen high instead of a singularity.
+ */
+export const LF_MOUTH = 0.055
+
 
 /*
  * THE PASSAGE'S OWN CSS TRAVELS WITH ITS CODE.
@@ -56,6 +67,7 @@ export function createLinefield() {
   let back = null
   let front = null
   let V = null
+  let labels = { back: null, front: null }
   let variantReady = null
   const drive = createDrive(() => LF_TOUCH_SPAN(V ? V.H : 800))
   const broke = breakName()
@@ -96,6 +108,23 @@ export function createLinefield() {
     /** which of the two fields carries the passage at this progress */
     at(p) { return sequence(p, V.W).back ? back : front },
 
+    /**
+     * WHAT IS ON SCREEN AT A GIVEN PROGRESS — one field, and at the crossing the other one instead.
+     *
+     * A crossfade was tried here, to soften the moment the halves swap now that the fan is held shut around it.
+     * It cannot be done this way: `front` is not an opacity between two pictures on this surface, it is a
+     * SWEEP over the row order — the new state arrives row by row, in reading order. With the field collapsed
+     * onto the horizon the two halves landed on either side of it and the screen read as cream above the line
+     * and black below, split down the middle. The reference cuts at the crossing, and so does this.
+     */
+    pair(p) {
+      const st = sequence(p, V.W).back ? back : front
+      return { from: st, to: st, front: 1 }
+    },
+
+    /** where each half's name sits on screen, so the rows can keep out of the band behind it */
+    setLabels(l) { labels = l },
+
     sequence(p) { return sequence(p, V.W) },
 
     /**
@@ -132,9 +161,11 @@ export function createLinefield() {
       surface.vec4('uLFfade', 0.22, 0.85, 0.12, Math.max(8, V.W * 0.012))
       surface.vec4('uLFflow', q.flow[0], q.flow[1], q.flow[2], q.flow[3])
       surface.vec4('uLFband', st.layout.bands[0], st.layout.bands[1], st.layout.bands[2], st.layout.bands[3])
-      surface.vec4('uLFmode', 1, 0, 0, 0)
+      surface.vec4('uLFmode', 1, LF_MOUTH, 0, 0)
+      const lab = (q.back ? labels.back : labels.front) || { x: -1e5, y: -1e5, w: 0, h: 0 }
+      surface.vec4('uLFlabel', lab.x - 10, lab.x + lab.w + 10, lab.y - 6, lab.y + lab.h + 6)
       // the `dense` break sends the field down the corridor at the density the words need, unthinned
-      surface.vec2('uLFthin', LF_ROW_KEEP, broke === 'dense' ? 0 : q.thin)
+      surface.vec2('uLFthin', broke === 'dense' ? LF_LEVEL : q.level, broke === 'dense' ? 0 : q.thin)
       // the reference's line: two pixels on the horizon, edge to edge, its opacity the flash and its colour rust
       surface.vec4('uLFline', V.H * 0.5, 1, q.flash, 0)
       surface.vec3('uLFlineCol', RUST)

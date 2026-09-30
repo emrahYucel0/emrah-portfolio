@@ -151,10 +151,11 @@ uniform vec4 uLFmap2;     // x: Ex, drawn in by the fold-back; y: W; z: side (0 
 uniform vec4 uLFfade;     // x,y: the whisker at the point itself; z: depth fade; w: the field's own edge
 uniform vec4 uLFflow;     // how far each of the four words has flowed, in flat pixels
 uniform vec4 uLFband;     // the four words' centres up the flat field, in flat pixels
-uniform vec2 uLFthin;     // x: keep every Nth row, y: how far the thinning has gone (0 = the full field)
+uniform vec2 uLFthin;     // x: log2 of the spacing between kept rows (3 = every 8th, 1 = every 2nd); y: how far
 uniform vec4 uLFline;     // the rust line: screen y, half height, how much of it there is, unused
 uniform vec3 uLFlineCol;  // its colour — the ground's ink, taking the rust only at the crossing
-uniform vec4 uLFmode;     // x: 1 while the corridor is mapping
+uniform vec4 uLFmode;     // x: 1 while the corridor is mapping; y: the far end's mouth (see below)
+uniform vec4 uLFlabel;    // the half's name, in screen pixels: x0, x1, y0, y1 — the rows keep out of it
 
 /*
  * THE FIELD THINS AS THE CORRIDOR FORMS.
@@ -166,8 +167,20 @@ uniform vec4 uLFmode;     // x: 1 while the corridor is mapping
  * nothing slides or pops.
  */
 float lfKeep(float r, float sol) {
-  float k = max(2.0, uLFthin.x);
-  float kept = 1.0 - step(0.5, mod(abs(r), k));
+  /*
+   * THE DENSITY MOVES BETWEEN POWERS OF TWO, AND THAT IS WHY NOTHING POPS.
+   *
+   * Every 8th row, every 4th, every 2nd: each set CONTAINS the one before it. So as the level falls the rows
+   * that arrive are new rows appearing among the ones already there — never a different set, never a row
+   * sliding to a new place. Between two levels the finer set is faded in, so even the arrival is gradual.
+   */
+  float lvl = clamp(uLFthin.x, 1.0, 3.0);
+  float hi = exp2(ceil(lvl));
+  float lo = exp2(floor(lvl));
+  float f = ceil(lvl) - lvl;
+  float inHi = 1.0 - step(0.5, mod(abs(r), hi));
+  float inLo = 1.0 - step(0.5, mod(abs(r), lo));
+  float kept = max(inHi, inLo * f);
   /*
    * THE WORDS KEEP EVERY ROW THEY HAVE. The thinning is for the GROUND — a field ruled for type cannot be sent
    * whole down a corridor. A word is not ground: taking seven rows in eight out of a letter while it flows
@@ -307,7 +320,21 @@ float lfFlowAt(float v) {
     fade *= 1.0 - smoothstep(0.35, 1.1, res);
 
     float s = lfS(q);
-    float G = 1.0 + d * (3.4 * s - 1.0);
+    /*
+     * THE FAR END IS A MOUTH, NOT A POINT.
+     *
+     * The reference's spread is 3.4 at the near end and 0 at the vanishing point, so every ray meets in one
+     * place and the corridor ends in a singularity: nothing is drawn there, and what the eye reads is a dot.
+     * A tunnel does not end in a dot — it ends in a small, distant opening you can see through.
+     *
+     * So the spread keeps a floor. At the far end the field's whole extent maps onto a short vertical aperture
+     * instead of onto a point, a few per cent of the screen high; the rays converge toward it and are taken out
+     * by the whisker just before they reach it, which is what makes it read as an opening rather than a blob.
+     * It costs nothing at the near end (s = 1 is still 3.4) and it flattens with cc into the needle's tip
+     * exactly as the point did.
+     */
+    float mouth = uLFmode.y;
+    float G = 1.0 + d * ((3.4 - mouth) * s + mouth - 1.0);
     float Gs = abs(G) < 1e-4 ? 1e-4 : G;
     float y0 = vy + (m - vy) / (Gs * cc);
     float u = lfT(q) * uLFmap2.y;
@@ -319,7 +346,7 @@ float lfFlowAt(float v) {
      */
     float dxdq = lfDx(q);
     float dqdX = 1.0 / (abs(dxdq) < 1e-4 ? 1e-4 : dxdq);
-    float dGdq = d * 3.4 * lfDs(q);
+    float dGdq = d * (3.4 - mouth) * lfDs(q);
     float dy0dY = 1.0 / (cc * Gs);
     float dy0dX = -(m - vy) / (cc * Gs * Gs) * dGdq * dqdX;
 
@@ -344,6 +371,14 @@ float lfFlowAt(float v) {
     lfWhiskType_cur = smoothstep(uLFfade.x * 0.18, uLFfade.y * 0.21, spr * uDpr);
     fade *= smoothstep(0.0, uLFfade.w, u) * smoothstep(0.0, uLFfade.w, uRes.x - u);
     fade *= 1.0 - uLFfade.z * d;
+    /*
+     * AND THE ROWS KEEP OUT OF THE HALF'S NAME. The label is DOM text over the field at a fixed place on the
+     * screen, so the band behind it is cleared in SCREEN space — and only while the field is flat, because the
+     * label is only shown at the two ends and the band must not travel off down the corridor with the rows.
+     */
+    float labX = step(uLFlabel.x, p.x) * step(p.x, uLFlabel.y);
+    float labY = smoothstep(uLFlabel.z - 2.0, uLFlabel.z + 2.0, p.y) * smoothstep(uLFlabel.w + 2.0, uLFlabel.w - 2.0, p.y);
+    fade *= 1.0 - labX * labY * (1.0 - smoothstep(0.02, 0.3, d));
   }
 `,
   /*

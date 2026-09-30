@@ -157,7 +157,7 @@ async function mount() {
       // z: the field leaves exactly as the mark arrives, so the tip hands over rather than fading out early
       surface.vec4('uLFmode', 1, 0, 0, 0)
       // the `dense` break sends the full field down the corridor, which is the fault this revision was about
-      surface.vec2('uLFthin', LF_ROW_KEEP, broke === 'dense' ? 0 : q.thin)
+      surface.vec2('uLFthin', broke === 'dense' ? Math.log2(LF_ROW_KEEP) : q.level, broke === 'dense' ? 0 : q.thin)
       surface.vec4('uLFline', V.H * 0.5, 1, q.flash, 0)
       surface.vec3('uLFlineCol', RUST)
     }

@@ -184,10 +184,37 @@ export function linefieldState(V, side, words, label) {
   const baseOf = (i) => baseline[i]
   const bands = words.map((_, i) => baseOf(i) - capSnap * 0.5)
 
+  /*
+   * AND THE OPTICAL OVERSHOOT IS CUT OFF, WHICH IS ONLY SAFE BECAUSE OF THE SNAPPING ABOVE.
+   *
+   * S, C, U, O and G are drawn a little past the cap line and a little past the baseline so they do not look
+   * smaller than the flat letters beside them. At a pitch of seven pixels that is not a nicety, it is a
+   * detached mark: the first row below the baseline sits 1.33px below it and is 2.17px thick, and the overshoot
+   * reaches 2.40px — so the row's top edge is inside the overshoot and draws a short bar under every round
+   * letter. STATE. reads as ŞTATE.
+   *
+   * NO PHASE OF THE ROW GRID CAN CLEAR IT. To leave room for the overshoot on both sides the pitch would have
+   * to exceed 2 x (overshoot + row half-width) = 9.14px, and it is 7. Snapping alone was never enough; it was
+   * marginal with the Turkish words, whose tighter fit made the type smaller, and became visible when the
+   * English set made it larger.
+   *
+   * So the overshoot is removed rather than accommodated. Each line is clipped to exactly its cap line and its
+   * baseline — and because the snapping puts BOTH of those exactly halfway between two rows, no row is cut by
+   * the clip. Only the ink outside them goes, which is the overshoot and nothing else. (The eight words are
+   * capitals: nothing in them genuinely descends.)
+   */
   const img = build(V, H, ({ solid }) => {
     solid.font = `900 ${size}px ${FAMILY}`
     solid.textAlign = side === 0 ? 'left' : 'right'
-    words.forEach((w, i) => solid.fillText(w, x, baseOf(i)))
+    words.forEach((w, i) => {
+      const base = baseOf(i)
+      solid.save()
+      solid.beginPath()
+      solid.rect(0, base - capSnap, W, capSnap)
+      solid.clip()
+      solid.fillText(w, x, base)
+      solid.restore()
+    })
     solid.textAlign = 'left'
   })
 
@@ -242,7 +269,14 @@ export function sequence(p, W) {
   const back = q < 0.5
   const depth = back ? ease(q, 0.06, 0.32) : 1 - ease(q, 0.6, 0.9)
   // the collapse: 1 is the full field, 0 is every row on one line
-  const spread = back ? 1 - ease(q, 0.38, 0.5) : ease(q, 0.5, 0.56)
+  /*
+   * IT CLOSES EARLY AND OPENS LATE. The reference's window for the single rust line is about two per cent of
+   * the passage, which at this site's scrolling is a third of a wheel notch — a visitor at a normal pace
+   * simply misses it. The fan is closed from 46% to 54% instead, so the line is alone for eight per cent, and
+   * the drive eases through that window as well (LF_DWELL in input.js). The needle still closes into it and
+   * opens out of it; what changed is how long it is worth looking at.
+   */
+  const spread = back ? 1 - ease(q, 0.38, 0.47) : ease(q, 0.53, 0.62)
   const u = back ? clamp01((q - 0.08) / 0.3) : clamp01((q - 0.53) / 0.36)
   /*
    * Each word leaves, or arrives, in its turn. Backend words are carried away from the viewer's side; frontend
@@ -254,7 +288,8 @@ export function sequence(p, W) {
   // the label fades in at the ends, where there is something to label
   const labelA = back ? 1 - ease(q, 0.02, 0.1) : ease(q, 0.9, 0.97)
   // the rust line lives only at the crossing itself
-  const flash = 1 - Math.min(1, Math.abs(q - 0.5) / 0.03)
+  // full while the field is collapsed, and fading in before that so it is first seen inside the needle
+  const flash = 1 - sm((Math.abs(q - 0.5) - 0.035) / 0.04)
   /*
    * AND THE FIELD THINS WHERE THE WORDS ARE NOT.
    *
@@ -262,7 +297,29 @@ export function sequence(p, W) {
    * past, dense again as the frontend words arrive. Smoothed, so no row ever pops — the whole change takes
    * about a sixth of the passage at each end.
    */
-  const thin = back ? ease(q, 0.19, 0.35) : 1 - ease(q, 0.60, 0.79)
+  /*
+   * AND THE DENSITY COMES BACK AS THE WORDS LEAVE.
+   *
+   * It thins while there is type to carry, because a field ruled for type cannot be sent whole down a corridor
+   * — hundreds of rows inside a few pixels are a wash. Once the words have gone past, that reason has gone with
+   * them, and a fan of a dozen rays makes a weak needle. So the thinning eases back off through the deep part
+   * of the passage: the rays the corridor is made of come back, and they come back by FADING IN rather than by
+   * changing which rows are kept, so nothing pops and nothing slides.
+   */
+  const thin = back ? ease(q, 0.15, 0.26) : 1 - ease(q, 0.7, 0.83)
+  /*
+   * ...AND IT COMES BACK BY LEVELS. 3 is every 8th row, 1 is every 2nd — the density the reference itself is
+   * drawn at. It stays at every 8th while the words are going past, because that is where a dense field turns
+   * into a wash, and falls to every 2nd through the deep part of the passage, where the reason has gone with
+   * the words and a fan of a dozen rays makes a weak needle. It rises again as the frontend words arrive.
+   */
+  /*
+   * IT STOPS AT EVERY THIRD ROW, NOT EVERY SECOND. Taken all the way to every 2nd the rays crowd near the
+   * vanishing point and cross-hatch: the half of the frame nearest the point filled with a grey wash and a
+   * visible interference pattern, which is the exact fault the thinning exists to prevent. Every 3rd carries
+   * the fan without it.
+   */
+  const level = back ? 3 - 1.4 * ease(q, 0.21, 0.35) : 3 - 1.4 * (1 - ease(q, 0.6, 0.76))
   /*
    * ── THE PASSAGE IS cc, AND NOTHING ELSE ─────────────────────────────────────────────────────────────────
    *
@@ -276,5 +333,5 @@ export function sequence(p, W) {
    * An earlier version drew the far point IN as well, so the corridor retreated into a corner and the screen
    * stood nearly empty for seconds. That is not this passage, and it is gone.
    */
-  return { back, side: back ? 0 : 1, depth, spread, flow, labelA, flash, thin }
+  return { back, side: back ? 0 : 1, depth, spread, flow, labelA, flash, thin, level }
 }

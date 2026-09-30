@@ -605,3 +605,47 @@ LAN önizlemesi için ayrı bir port kullanın: `node tools/diag/sv.cjs ../build
 **Sıralama önerisi:**
 - **Hemen, Linefield'dan bağımsız (C2 dışı ya da düşük risk):** 1, 2, 3, 7, 13, 14, 17, 18, 19, 24.
 - **Linefield birleştikten sonra (ortak dosyalar):** 4–6, 8–12, 15, 16, 20–23, 25–31.
+
+---
+
+## 8. Düzeltme turu 1: yapılanlar
+
+Dal `fix/audit-01-batch1`, origin/main b04e1ed'den açıldı. 7 ortak dosyanın hiçbirine dokunulmadı.
+
+| Commit | Madde |
+|---|---|
+| c5f489d | Hareketi azaltılmış modda case study odaları görseli gösteriyor (`engine/c2/flat.js`) |
+| c25ca0a | HAKKIMDA ve proje ipucu en kötü zeminde WCAG AA'yı geçiyor |
+| 7302946 | Mobil Hakkımda'da okuma çizgisi var; metnin nerede bittiği görünüyor |
+| ab842b8 | Rol ve adres yazılı OG görselleri; Lab ve Contact için ayrı OG; web manifest; kök `/` sayfasında JSON-LD; `nuxt prepare` koruması |
+| e45691c | Düz katman: çalışma numaraları, `aria-current`, h1, "C2 surface active" |
+| 3c358bf | JS gelmezse plaka çekiliyor (html.c2-failed ya da 20 sn); 404 sitenin malzemesinde |
+| 54a1c30 | `/contact` doğrudan URL'de bitmiş halde açılıyor |
+| b861703 | Bench yakınlaştırılabiliyor; iki parmak ve Ctrl+tekerlek sayfa değiştirmiyor |
+| 57a07eb | `#work` ve `#lab` doğru yere varıyor; bench numaraları listeden türetiliyor; JS'siz bench listesi |
+| edd2b80 | Çalışma sayfasında dil değişince kaydırma yeri korunuyor |
+
+## 9. Düzeltme turu 2: Linefield sonrası
+
+Bu maddeler Linefield'ın ortak dosyalarına (`LINEFIELD-MERGE.md`) ya da runtime'ın jest koduna dokunuyor. Linefield `main`'e birleştikten sonra yapılacak.
+
+| # | Madde | Dosyalar | Neden bekliyor / not |
+|---|---|---|---|
+| 1 | **§14 TR/EN metin düzeltmeleri** (madde 9): "Seçili freelance…" ifadesi; EN'deki iki farklı durum cümlesinin teke indirilmesi; Istanbul/İstanbul; "production sitesi" ve "Best Practices"; eskimiş `labKeys`; eylem çağrısı satırı; "Ege Kent" açıklaması | `shared/content/locales/tr.ts`, `en.ts`, `types.ts` | Üçü de ortak dosya. Ege PSI bilerek olduğu gibi bırakıldı (kullanıcı kararı). |
+| 2 | **Düz katmanın kalan satırları** (A4 tablosu) | `engine/c2/main.js`; #2, #6, #10 ve #12 için ayrıca locale ve `types.ts` | Satırlar ayrıntılı olarak aşağıda. |
+| 3 | **C2 sayfalarında sayfa yakınlaştırması (WCAG 1.4.4)**: `html, body { touch-action:none }` iki parmakla yakınlaştırmayı kapatıyor. Masaüstünde Ctrl+tekerlek `preventDefault` ediliyor. | `engine/c2/style.css:16`, `engine/c2/main.js:316-322` ve dokunma işleyicileri | Sayfa yakınlaştırması ile iki parmakla "sıkıştırma" jestinin nasıl birlikte yaşayacağına birlikte karar verilecek. Bench ve Contact'ta bu turda çözüldü (b861703). |
+| 4 | **HAKKIMDA odası**: HAKKIMDA'nın arkasında satırların açılması, yani malzemenin kendi odası | `engine/c2/states.js` | Kontrast CSS ile zaten çözüldü (kâğıt bant, c25ca0a). Bu madde isteğe bağlı bir tasarım rafinesi. |
+| 5 | **Yavaş ağda ilk kare**: Fast 3G + 4× CPU'da ad ≈ 10.8 sn'de geliyor, çünkü `prepare()` bütün önizleme görsellerini bekliyor | `engine/c2/main.js:1802-1826` | Adı önizlemeleri beklemeden çiz; önizlemeleri ilk kareden sonra yükle. |
+| 6 | **Ad → CREATIVE boş karesi**: geçişte ~0.35 sn'lik neredeyse boş kare | `engine/c2/style.css:75-76` (katman gecikmesi), `engine/c2/main.js` | Önceki kelime yeni kelime gelene kadar dursun. FULL-STACK → İşler karesi Linefield'la, İşler → Lab karesi Cross Section'la değişecek. |
+| 7 | **OPEN_WORK aria-label**: dokunmatikte ve ekran okuyucuda "görseli basılı tut" okunuyor | `engine/c2/main.js:1288` | `TXT.work.open` yerine `OPEN_WORK()` kullanılmalı. |
+
+**Düz katmanın kalan satırları** (tablo satırı 2; A4 tablosundaki numaralarla):
+- **#1:** runtime'ın düz gezinmesindeki Lab bağlantıları → `/lab/{id}` (`main.js:1044`).
+- **#2 (metin kısmı):** `lab.count` "03" (locale) ve `main.js:1030`.
+- **#4:** runtime Lab sırası `facts.studies`'ten gelsin (`main.js:560`).
+- **#6:** belge rotalarında skip bağlantısının etiketi. Yeni bir metin anahtarı gerekiyor: `types.ts` ve locale dosyaları.
+- **#10:** EN'de Istanbul/İstanbul (`en.ts`).
+- **#11:** runtime düz gezinmesinde case study içeriği (`main.js`). Case study URL'leri gelirse onlarla birlikte yapılmalı.
+- **#12:** `labKeys`.
+
+**Birleştirme planı:** Linefield oturumu durduğunda önce tam kapı koşulacak. Kapı temizse `fix/audit-01-batch1` `--no-ff` ile `main`'e birleştirilip push edilecek. Bu adım kullanıcının haberiyle yapılacak.

@@ -318,8 +318,10 @@ export function createFinale(o) {
     const atTop = () => frame.rawProgress() <= 0.001
     let acc = 0, accAt = 0, fromTop = false, spent = false
     const up = () => { if (spent || dead) return; spent = true; o.onTopUp() }
+    // zooming is the browser's, never a way out: Ctrl + wheel (a trackpad's pinch), or moving around a zoomed page
+    const zoomed = () => (window.visualViewport?.scale ?? 1) > 1.01
     addEventListener('wheel', (e) => {
-      if (spent) return
+      if (spent || e.ctrlKey || zoomed()) return
       const now = performance.now()
       const dy = e.deltaMode === 1 ? e.deltaY * 32 : e.deltaY
       if (!dy) return
@@ -333,7 +335,7 @@ export function createFinale(o) {
     // the pointer but keeps delivering touchmove
     let sx = 0, sy = 0, tracking = false
     addEventListener('touchstart', (e) => {
-      if (e.touches.length !== 1) { tracking = false; return }
+      if (e.touches.length !== 1 || zoomed()) { tracking = false; return }
       tracking = atTop(); sx = e.touches[0].clientX; sy = e.touches[0].clientY
     }, sig)
     addEventListener('touchmove', (e) => {

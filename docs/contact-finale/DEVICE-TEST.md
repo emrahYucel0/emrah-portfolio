@@ -21,11 +21,12 @@ sh serve.sh                      # 4500 / 4501 / 4650'yi yeniden başlatır
 - `serve.sh: ready.` yazınca hazırdır. Komut geri dönmez, çünkü sunucular çalışmaya devam eder. Pencereyi açık bırak.
 - Telefon için port **4501**. Bu port yerel ağa açıktır (`0.0.0.0`). 4500 ve 4650 yalnız bu bilgisayar içindir.
 - Bilgisayarın adresini bulmak için PowerShell'de `ipconfig` çalıştır. Wi-Fi bağdaştırıcısının IPv4 adresini al.
-  Bu makinede şu an **192.168.1.102**. `172.x` ile başlayanlar sanal bağdaştırıcıdır, onları kullanma.
+  Bu adres DHCP ile değişebilir (2026-09-29: 192.168.1.102, 2026-09-30: **192.168.1.5**), her testte yeniden bak.
+  `172.x` ile başlayanlar sanal bağdaştırıcıdır, onları kullanma.
 - Telefon aynı Wi-Fi'da olmalı. Safari'de şunları açacaksın:
-  - `http://192.168.1.102:4501/tr/lab` → Lab
-  - `http://192.168.1.102:4501/tr/contact` → final
-  - `http://192.168.1.102:4501/tr` → ana sayfa (C2)
+  - `http://<IP>:4501/tr/lab` → Lab
+  - `http://<IP>:4501/tr/contact` → final
+  - `http://<IP>:4501/tr` → ana sayfa (C2)
 - Sayfa açılmazsa Windows Güvenlik Duvarı Node için özel ağ izni istemiş olabilir; onayla.
 - Build'i yeniledikten sonra `serve.sh`'ı **mutlaka yeniden başlat**. Eski sunucu yeni sayfaya eski CSP'yi
   gönderir ve site açılmaz. Ayrıntı `serve.sh`'ın başında yazıyor.
@@ -35,7 +36,7 @@ olduğu, bırakılan yerler) sekme başına tutulur.
 
 ## 0.5 Bir şey çalışmıyorsa: teşhis paneli
 
-Adresin sonuna `?debug=1` ekle: `http://192.168.1.102:4501/tr/contact?debug=1`. Üstte bir panel çıkar ve şunları
+Adresin sonuna `?debug=1` ekle: `http://<IP>:4501/tr/contact?debug=1`. Üstte bir panel çıkar ve şunları
 gösterir:
 
 - `finale RUNNING` ya da `NOT STARTED`
@@ -96,7 +97,7 @@ Her birinde **Geç:** final çizimi bitmiş, e-posta emmiş hâlde açılır.
 1. `…/tr`'de şeritteki **İLETİŞİM**.
 2. `…/tr/lab`'de şeritteki **İLETİŞİM**.
 3. Finalde çizimin ortasındayken şeritteki **İLETİŞİM**: final olduğu yerde yerine oturur.
-4. Adres çubuğuna `http://192.168.1.102:4501/tr#contact` yaz: `/tr/contact` açılır, p = 1.
+4. Adres çubuğuna `http://<IP>:4501/tr#contact` yaz: `/tr/contact` açılır, p = 1.
 
 ## 5. Geri / İleri ve dil
 

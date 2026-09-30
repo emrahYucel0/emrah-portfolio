@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { studyNo } from '~~/shared/content'
 /**
  * 01 · WEIGHT. (Accepted reference: research lab-reopen/focused-final/weight; mechanism from typography-2026-09-16.)
  *
@@ -223,7 +224,7 @@ defineExpose({ axis })
       </button>
     </div>
     <div class="head">
-      <span class="no">01</span><span class="nm" aria-hidden="true" lang="en">{{ copy.lab.studies.weight.name }}</span>
+      <span class="no">{{ studyNo('weight') }}</span><span class="nm" aria-hidden="true" lang="en">{{ copy.lab.studies.weight.name }}</span>
       <p>{{ copy.lab.studies.weight.prim }}</p>
     </div>
     <NuxtLink class="back" :to="path('/lab')">← {{ copy.lab.back }}</NuxtLink>

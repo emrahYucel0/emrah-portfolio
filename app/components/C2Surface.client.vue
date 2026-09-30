@@ -18,6 +18,7 @@ watch(() => route.fullPath, () => { void syncRoute() })
 onBeforeUnmount(() => setActive(false))
 </script>
 
+<!-- nothing for anyone to read: the runtime's DOM carries the page (an internal name here was read out by screen readers) -->
 <template>
-  <span class="u-sr">C2 surface active</span>
+  <span hidden />
 </template>

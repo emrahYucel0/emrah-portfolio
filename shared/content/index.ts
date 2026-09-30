@@ -15,6 +15,9 @@ export const isLocale = (value: unknown): value is Locale =>
 /** What the Nuxt shell reads. */
 export const messages = (locale: Locale): LocaleCopy => copies[locale]
 
+/** a study's number, as every place that shows one writes it: from the one order in facts.ts ('01', '02', …) */
+export const studyNo = (id: (typeof studies)[number]): string => String(studies.indexOf(id) + 1).padStart(2, '0')
+
 export interface C2ContentOptions {
   manifest: Manifest
   /** public asset base, e.g. '/' */

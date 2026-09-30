@@ -13,7 +13,8 @@ useLocaleSeo('home')
 <template>
   <div class="u-wrap page">
     <section class="intro" aria-labelledby="name">
-      <h1 id="name" class="name">{{ profile.name }}</h1>
+      <!-- the same heading the runtime gives assistive technology: who, the two roles, where -->
+      <h1 id="name" class="name">{{ profile.name }}<span class="u-sr"> — <span lang="en">{{ copy.roles.creative }}</span> {{ copy.roles.and }} <span lang="en">{{ copy.roles.fullStack }}</span>, {{ copy.identity.location }}</span></h1>
       <p class="roles" lang="en">{{ copy.roles.creative }} / {{ copy.roles.fullStack }}</p>
       <p class="u-measure lead">{{ copy.home.intro }}</p>
       <p><NuxtLink class="more" :to="path('/about')">{{ copy.home.more }} →</NuxtLink></p>

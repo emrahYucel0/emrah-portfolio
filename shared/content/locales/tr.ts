@@ -92,10 +92,10 @@ export const tr = {
    */
   ...(typeof __LINEFIELD__ !== 'undefined' && __LINEFIELD__ ? { linefield: {
     heading: 'Nasıl düşünürüm',
-    backend: ['DURUM.', 'ÖLÇEK.', 'HATA.', 'DOĞRULUK.'],
-    frontend: ['HİS.', 'ZAMANLAMA.', 'SÜRTÜNME.', 'İLK KARE.'],
     backendLabel: 'BACKEND — NASIL DÜŞÜNÜRÜM',
     frontendLabel: 'FRONTEND — NASIL DÜŞÜNÜRÜM',
+    backendSaid: 'Durum, ölçek, hata, doğruluk',
+    frontendSaid: 'His, zamanlama, sürtünme, ilk kare',
   } } : {}),
   work: {
     heading: 'İşler',

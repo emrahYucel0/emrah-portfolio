@@ -1176,7 +1176,7 @@ function buildDOM() {
   if (LINEFIELD) {
     D.lf = h('section', 'layer lf-place', `<h2 class="lbl sr" tabindex="-1">${TXT.linefield.heading}</h2>
       <p class="lf-lab lf-back">${TXT.linefield.backendLabel}</p><p class="lf-lab lf-front">${TXT.linefield.frontendLabel}</p>
-      <p class="sr">${TXT.linefield.backendLabel}: ${TXT.linefield.backend.join(' ')}. ${TXT.linefield.frontendLabel}: ${TXT.linefield.frontend.join(' ')}</p>`)
+      <p class="sr">${TXT.linefield.backendLabel}: ${TXT.linefield.backendSaid}. ${TXT.linefield.frontendLabel}: ${TXT.linefield.frontendSaid}.</p>`)
   }
 
   D.lab = h('section', 'layer lab', `<div class="cap"><h2 class="lbl" tabindex="-1">${lab.title}</h2><p class="ltext">${lab.line}</p>

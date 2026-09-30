@@ -141,13 +141,22 @@ export interface LocaleCopy {
   /** present only in a Linefield build; see the note in the locale files */
   linefield?: {
     heading: string
-    /** four words on black: how the work is thought about underneath */
-    backend: [string, string, string, string]
-    /** and four on cream: how it is thought about at the surface */
-    frontend: [string, string, string, string]
-    /** the small label above each half */
+    /** the small label above each half — the one thing on this place that is read as language */
     backendLabel: string
     frontendLabel: string
+    /**
+     * WHAT THE EIGHT WORDS SAY, for a reader who cannot see them.
+     *
+     * The words themselves are not here. They are MATERIAL — the rows of the field thicken inside their letters,
+     * the way the hero's name does — and nothing this surface paints as material is language-dependent: the
+     * name, the two face words and the project captures are the same in every locale. So the eight are English
+     * everywhere and live with the material, in engine/c2/linefield/state.js.
+     *
+     * A screen reader gets neither the canvas nor the letters, so it gets this instead, in the page's own
+     * language: what the eight words MEAN, said plainly.
+     */
+    backendSaid: string
+    frontendSaid: string
   }
   work: {
     heading: string

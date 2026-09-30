@@ -13,7 +13,7 @@
  */
 import { LF_ROW_KEEP, corridorImage, corridorUniforms, vanishingPoint } from './corridor.js'
 import { breakName, patchFor } from './breaks.js'
-import { linefieldState, sequence } from './state.js'
+import { BACKEND_WORDS, FRONTEND_WORDS, linefieldState, sequence } from './state.js'
 import { LF_KEY_STEP, LF_TOUCH_SPAN, LF_WHEEL_SPAN, createDrive, wheelPixels } from './input.js'
 
 const RUST = [0.722, 0.384, 0.184]   // #b8622f, the site's accent, as the surface wants it
@@ -31,9 +31,13 @@ export const LF_EXIT_MARGIN = 0.16
  * engine/c2/style.css is one stylesheet and it ships in every build, so three rules left in it would have been
  * three rules — and the feature's name — in the published site. They are injected from here instead, which
  * means they exist exactly where the module does and nowhere else.
+ *
+ * THE COLOUR IS --fg, NOT --ink. --ink is the site's black and never changes; --fg is the token that flips with
+ * body[data-tone], which is how every strip on this site stays legible over a dark face. Written as --ink the
+ * backend half's name was near-black on black — present, announced, and invisible.
  */
 const CSS = `
-.lf-place .lf-lab { font: 400 10px/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink); opacity: 0; transition: opacity .45s ease; }
+.lf-place .lf-lab { font: 400 10px/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--fg); opacity: 0; transition: opacity .45s ease; }
 .lf-place .lf-back { text-align: left; }
 .lf-place .lf-front { text-align: right; }
 .lf-place .lf-lab.on { opacity: .72; }
@@ -74,10 +78,18 @@ export function createLinefield() {
     },
 
     /** built with the rest of the spine, and rebuilt with it on a resize or a locale change */
+    /*
+     * THE WORDS ARE THE SAME IN EVERY LANGUAGE, and they are not copy.
+     *
+     * Nothing this surface paints as material is language-dependent — the name, the two face words and the
+     * project captures are the same in every locale, and this is that. The eight live in state.js beside the
+     * field they are cut out of; what the locale supplies is the two half names, which are read as language,
+     * and a spoken alternative for a reader who gets neither the canvas nor the letters.
+     */
     build(v, copy) {
       V = v
-      back = linefieldState(v, 0, copy.backend, copy.backendLabel)
-      front = linefieldState(v, 1, copy.frontend, copy.frontendLabel)
+      back = linefieldState(v, 0, BACKEND_WORDS, copy.backendLabel)
+      front = linefieldState(v, 1, FRONTEND_WORDS, copy.frontendLabel)
       return back
     },
 

@@ -88,10 +88,10 @@ export const en = {
    */
   ...(typeof __LINEFIELD__ !== 'undefined' && __LINEFIELD__ ? { linefield: {
     heading: 'How I think',
-    backend: ['STATE.', 'SCALE.', 'FAILURE.', 'TRUTH.'],
-    frontend: ['FEEL.', 'TIMING.', 'FRICTION.', 'FIRST PAINT.'],
     backendLabel: 'BACKEND — HOW I THINK',
     frontendLabel: 'FRONTEND — HOW I THINK',
+    backendSaid: 'State, scale, failure, truth',
+    frontendSaid: 'Feel, timing, friction, first paint',
   } } : {}),
   work: {
     heading: 'Work',

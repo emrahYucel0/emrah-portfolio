@@ -369,3 +369,259 @@ stills show is what is reported.
 
 Flag-off against `pre-linefield`: reduced motion **pixel-identical**, normal worst 20.45 with **0 state
 differences**, retired Lab **0 frames**, published build **0** Linefield markers.
+
+---
+
+# PHASE B, CLOSED — APPROVED 2026-09-29
+
+Approved on the side-by-side pair recording and on the device: the motion matches the reference, the words keep
+their weight in the corridor and at rest, and the seam and the box are gone. Four fixes were asked for with the
+approval and are recorded below. **Everything from here is the state the feature is in.**
+
+## The map, and how it is inverted
+
+The reference's own `pt()`, and nothing else:
+
+    s  = tt^(1 + 1.7 d)        tt = t on the dark side, 1 - t on the cream side
+    fx = t W                   fy = vy + (y0 - vy) cc
+    px = vx + (Ex - vx) s      py = vy + (Ey - vy) s,   Ey = vy + (y0 - vy) 3.4 cc
+    screen = mix(flat, persp, d)
+
+C2 asks per pixel *which row is here*, so the map runs backwards. **X depends only on t**, so the inverse is a
+one-dimensional root find and the row falls out in closed form — `A = (Y - vy)/G`, `y0 = vy + A/cc`, with
+`G = 1 + d(3.4 s - 1)`. Five Newton steps; `lfResidual()` measures what that is worth on the CPU rather than
+asserting it.
+
+**It is solved in q, not in t.** q is the reference's `tt` — the distance from the vanishing point — so q tends
+to 0 at the point on both sides. On the cream side t is near 1 there, and `1 - t` in float32 throws away most of
+its significant digits exactly where the map is most sensitive; on the phone that was a sandy grain with a
+vertical seam across it, the seam being the line where the cancellation began to bite. In q nothing nearly-equal
+is ever subtracted.
+
+The **Jacobian is analytic** from the forward map. Anti-aliasing, the fusing of crowded rows and the level of
+detail are all decided from it, so an estimate would put those decisions out of focus exactly where the rays
+converge.
+
+## Nothing is drawn outside the corridor's image
+
+Newton always returns something. Past the vanishing point — and past the far point, once the fold-back has drawn
+it in — no t maps to that column at all, so what it returns is a number with no meaning, and the shader was
+drawing a row at it: a column of short dashes just past the point and a ghost fan beyond that.
+
+Two faults, one fix each:
+
+- the derivative guard, written without a second test, **dropped the sign**. At the vanishing point dX/dq
+  vanishes, and on the cream side, where it is negative, substituting a positive epsilon sent the step the wrong
+  way: q left 0 for 1 in a single move and then wandered back to an ordinary interior value.
+- there was **no residual test**. The answer is now carried forward through the map, and a pixel it does not
+  land back on is ground colour. Sub-pixel tolerance, so the corridor's last column is antialiased, not a saw.
+
+`lfbeyond.cjs` and `linefield.cjs --only outside` measure the whole screen outside the image, every 2% from 20
+to 80, at 1440x900, 1920x1080 and 390x844. Clean. Both fail on `?lfbreak=inverse`, which is the old arithmetic.
+
+## Type is not ground
+
+Three rules exist for the ruled ground and each of them was being applied to the words as well:
+
+| rule | what it does to ground | why type is exempt |
+|---|---|---|
+| **thinning** | keeps every Nth row so a field ruled for type can go down a corridor at all | seven rows in eight out of a letter in flight is a thin grey ghost where the reference has a thick bright bar |
+| **extent** | ends the field at 7% and 93% of the height, as the reference's does, so rows from off-screen do not pile up at the point | a word crossing that edge loses its top |
+| **whisker** | takes out the last band before the point, where no coverage answer can keep two rays apart | a letter is not two rays the eye is failing to separate, it is a SOLID; the reference draws its word segments as filled shapes right to the point |
+
+All three are decided **per row**, inside `rows()`, where it is known whether the row is inside a letter. Type
+keeps a whisker of its own an order tighter, so the vanishing point is a point and not a black dot.
+
+And type follows the reference's **widening law** rather than the ground's gradient division: a word segment is
+`P * 0.62 * ((1-d) + d(0.1 + 1.9 s)) * (0.35 + 0.65 cc)`, so it widens toward the viewer. Ground is divided by
+the map's gradient so its ink-to-ground ratio holds.
+
+**The extent arrives with the depth and leaves with it.** At rest this site's field is full screen, always;
+clipping it to the reference's extent left empty bands top and bottom and the ruled ground read as a panel
+behind the words.
+
+**A note on which of the three was actually the fault.** The extent was the suspect and was innocent: exempting
+type from it changed nothing, because the rows coming off the top of FEEL were being dissolved by the whisker.
+And with the block now sized on its real ink inside the strips (below), it is clear of the extent in every
+viewport, so the extent cannot reach the type whether it is exempt or not. The exemption is belt and braces, and
+`?lfbreak=extentall` no longer discriminates. `?lfbreak=thinall` does, and is what the check is calibrated on.
+
+## The fold-back goes deeper, and ends in a point
+
+`cc` closes the fan but does not send it away: every row scales toward the horizon while the corridor keeps the
+full width of the screen, so the scene folds flat where it should recede. Three overlapping scalars carry the
+last tenth of the passage, and the same three reversed carry the first tenth of the other half:
+
+    pull   0.40 -> 0.478   the far point is drawn back toward the vanishing point (LF_PULL = 0.94 of the span),
+                           so the corridor's whole image shrinks to a few per cent of the screen and what is
+                           left of the fan is a short wedge with its tip ON the point
+    mark   0.468 -> 0.492  the drawn mark arrives and the field's rows leave over the same window — the tip
+                           hands over to the point
+    grow   0.486 -> 0.500  the mark opens out from a point at the vanishing point into the full-width line that
+                           takes the rust
+
+Measured at 1440x900: the ink spans 254px at 46%, 115px at 47%, **89px at 48%** — the point — then 302px at 49%
+as the mark opens, then **1440px at 50%**, and the exact mirror coming out. At 390x844: 67, 30, **26**, 94,
+**390**.
+
+## The input
+
+All of it in `engine/c2/linefield/input.js`, because the site's own wheel, touch and key handling drives the
+same progress and it has to feel the same there.
+
+| | |
+|---|---|
+| follow | **16 /s** — a 63 ms time constant. 90% of one wheel notch in **147 ms**, against the old build's 273 ms |
+| momentum | decays with a **0.32 s** time constant, capped at **0.7** of the passage per second. A flick carries **21.8%** of the passage after the finger lifts |
+| flick floor | **0.1** of the passage per second: a deliberate positioning drag hands over no momentum and stays where it was put — measured, a 220 px/s drag coasts **0.00%** |
+| per-frame cap | **1.6%** of the passage, so the collapse cannot be jumped. A flick straight through the crossing drew **3 frames** within 1.5% of it, worst step 1.60% |
+| wheel | **1500 px** end to end, normalised through pixels: a mouse notch, a trackpad's flood of small deltas and a wheel reporting LINES all measure **6.67%** — they agreed to **0.0%** |
+| touch | **max(560, 1.8 H)** px end to end — 1519 px on a 390x844 phone |
+| keys | 1/18 of the passage |
+
+## Cap and baseline on the row grid, and margins against the strips
+
+Round letters are drawn a little above the cap line and below the baseline so they do not look smaller than the
+flat letters beside them. A row passing through that overshoot catches a sliver of curve and draws a short arc
+floating above the word. The first fix clipped each line to its cap-to-baseline box and took a third of a row
+off the top of *every* letter; on the phone FRICTION read FRICTIUN.
+
+So nothing is cut. The **cap height is rounded to a whole number of rows** and every **baseline is snapped half
+a row off the grid**, so each row inside a letter is entirely inside it and none can graze an edge. The block is
+then pushed out of whichever strip it has reached, **in whole rows**, so the alignment survives the correction.
+
+The block is sized and centred on its **true ink extent** — `(n-1)` leadings plus one ascent plus one descent,
+not `n` leadings — inside `strip + air`, with a line kept at the top for the half's name.
+
+Measured at rest, type to strip, in both languages: 1440x900 **46-74 px** of air above and **37-44** below
+against a 50 px strip; 390x844 **183-256 / 155-230** against 44; 320x568 **74-143 / 61-120** against 44;
+844x390 **42-46 / 30-36** against 50. Side margins clear in all sixteen.
+
+## The density measure
+
+Variant C — **every 8th row**, `LF_ROW_KEEP` — is the density, chosen on the device from three that were built.
+The A/B/C switch is gone.
+
+High-frequency energy where the rays converge: **7.59** desktop / **7.90** portrait, against **16.87 / 16.99**
+with the thinning disabled (`?lfbreak=dense`). That is the one measure of this kind in the feature that
+discriminates; the temporal shimmer ratio failed to, three times, and is reported rather than used.
+
+---
+
+# PHASE C — THE PASSAGE IS A PLACE
+
+## Stops are named, not numbered
+
+The index is a spine of places and their positions are derived from one list of names. The rule is in
+`CLAUDE.md`. This was not tidying: inserting a place between Full-Stack and Work moved four stop numbers, and
+the two faults that caused were both invisible in review —
+
+- the work field's *back off the near end goes to stop 2* silently **skipped** the new place;
+- the heading and announcement tables, indexed by stop, moved every place's **focus target** one along.
+
+With the flag off the list is the six it has always been and every number is what it always was, which the
+flag-off comparison asserts.
+
+## How the passage sits on the spine
+
+One entry between Full-Stack and Work, with an **inner progress** routed exactly as the work field's is. One
+gesture out of Full-Stack enters at the backend field; scrolling drives the corridor; at the far end the next
+gesture continues to Work. Entering from Work enters at the frontend field and runs the whole thing in reverse.
+Leaving arms the same tail guard the work field uses, so one gesture is still one stop.
+
+- **The seam from Full-Stack is invisible because there is nothing to hide.** Both states are pale ink on
+  `NIGHT` over `BG_DARK`; what crosses between them is a change of row density, which is this site's native
+  transition. The corridor's program is bound for the whole of the travel in and out, where its map is the
+  identity, so no program swap ever happens while anything is moving.
+- **A finger is the passage's own drag**, not a swipe between places: routed through `scrollBy()` it would have
+  run at about twice the tuned distance and thrown the flick away, so it goes to the drive directly and hands
+  over its velocity on lift. Held at either end, a finger that travels another 14% of the screen height hands
+  the gesture to the spine.
+- **The drive is stepped by the runtime's own frame loop.** One clock owns the time step, the stall cap and the
+  decision to draw.
+
+## Reduced motion
+
+Two static states and a crossfade. The passage is a movement whose whole content is movement and there is no
+honest still of the middle of it, so what is given is its two ends — both readable, both the real states — and
+a crossfade between them, which is what every other pair of places on this site does. The corridor's program is
+not bound at all: in reduced motion the renderer is the flat 2D one, which has no variants. Measured: every
+frame the harness asked for is one of the two ends, never a sample of the passage.
+
+## Turkish
+
+Copy is in `shared/content/locales/{tr,en}.ts`, and **leaves with the code**: the whole block is behind the same
+build-time flag, so a published bundle has no words.
+
+**Turkish is measured by its own ink.** O-diaeresis, C-cedilla, G-breve, S-cedilla and dotted I all put ink
+outside the cap box — a diaeresis and a breve above the cap line, a cedilla below the baseline. Measured by the
+cap the block sat with its diaereses in the header strip and a cedilla in the top of the next word. It is now
+sized and placed on the real ascent and descent, and the **leading is per pair of lines** rather than one
+leading big enough for the worst pair — which is what had made the Turkish set visibly smaller than the English
+one.
+
+## Curved letters at small sizes
+
+Nine rows through a capital is the reference's rule and is not enough for a curve: at 390x844 the S in FIRST
+closed at its waist and read as an 8. **Twelve** now, everywhere — measured at 12 to 23 rows per capital across
+both languages and four viewports.
+
+## The debug entry
+
+Development only. The passage is reached by scrolling to it, so on any built site — flag on or off — the entry
+and its dock are gone. It is kept for development because it is still the only way to hold the corridor at an
+exact progress and photograph it, which is what the corridor harnesses do.
+
+## What the published build contains
+
+Measured on a real flag-off `npm run generate`: **0** occurrences of `linefield`, `LINEFIELD`, `corridor`,
+`uLFmap`, `CORRIDOR_PATCH`, `lf-place`, `lf-lab`, or any of the eight words in either language. The place name
+is written once, in `LINEFIELD ? STOP.linefield : -1`; the tables keyed by place name spread their Linefield
+entry in behind the flag; the CSS travels with the module rather than sitting in the one stylesheet every build
+ships; and the three comments in the base shader that named the corridor are now written in terms of the general
+perspective variant.
+
+## Measured
+
+### The Phase C harness — `tools/diag/linefield.cjs`
+
+**98 checks, 0 failures**, 4m37s. Eight sections: ENTER, EXIT, LEGIBLE, CORRIDOR and POINT, OUTSIDE, WHOLE,
+REVERSE, REDUCED. Three are calibrated on a deliberately broken build (`engine/c2/linefield/breaks.js`): OUTSIDE
+on `inverse`, WHOLE on `thinall` (48 182 px lost against 0), and the density measure on `dense`.
+
+REVERSE is exact: at six progresses, forwards and backwards are **byte-identical**.
+
+### The flag-off gate, against `pre-linefield`
+
+| | |
+|---|---|
+| `nonlabred` | worst pixel delta **0** — pixel-identical on every stop, 0 state differences, 0 errors |
+| `nonlab` | worst pixel delta 13.05 (the ambient wave), **0 state differences**, 0 errors |
+| `spine` normal / reduced | PASS / PASS |
+| `gesture2` | PASS — one gesture is one stop, on the index and inside a project |
+| `labflash` tr normal / tr reduced / en normal | retired Lab **0 frames** in all three |
+| `journey` tr normal / en reduced | PASS / PASS |
+| `shell`, `touch`, `touchjourney`, `moblayout`, `labaxe` | PASS |
+| `npx nuxt typecheck` | clean |
+
+## Three harness faults worth remembering
+
+- **The site's own chrome is not the material.** The navigation is pale mono on the dark half — the same colour,
+  in runs the same height, as a letter's rows. Measured with it on screen, every frame reported type inside the
+  header strip, and the ink span across the crossing was a constant 1368 px at every progress, including the
+  ones where the corridor is a dot. The strips are hidden for the measurement; what is under test is the
+  material.
+- **Two pages driven independently are not one moment.** The whole-word check renders each frame twice, in two
+  contexts; without a settle between them one could be a frame behind, which read as a few hundred pixels lost
+  in one frame of forty and was not.
+- **The dev server mounted the debug entry twice.** Two hosts, two WebGL contexts: `window.__lf` drove one and
+  the other was the one on screen, so `setProgress` moved a scene nobody could see and the harness photographed
+  a frame that never changed. Every number from that run was measured against a picture that was never drawn.
+  The entry now claims its mount on the first call.
+
+## The review artifacts
+
+`tools/diag/compare/lf-compare.html` and its driver are **tracked** now. They lived only in the built artifact,
+so every rebuild deleted the one page the whole visual review is done against; `lfpair.cjs` stages them, with the
+reference from `docs/reference/`, into whichever build is being served. `sv.cjs --review` exempts those two files
+— and nothing else — from the site's CSP, which otherwise refuses their scripts and blocks the reference's face.

@@ -1718,8 +1718,15 @@ function frame(now) {
       if (A.base === LFS) { const r = LF.reducedPair(A.lfp); from = r.from; to = r.to; front = r.front }
     } else lfOn = here
   }
-  surface.use(lfOn ? 'corridor' : null)
-  surface.onBeforeDraw = lfOn ? () => LF.apply(surface, A.lfp) : null
+  /*
+   * The program is only ever touched on a Linefield build, and only where there IS a program: in reduced motion
+   * `surface` is the flat 2D renderer, which has no variants and no use() — reaching for one there threw on
+   * every frame of the published build, which took the DOM layers down with it.
+   */
+  if (LINEFIELD) {
+    surface.use?.(lfOn ? 'corridor' : null)
+    surface.onBeforeDraw = lfOn ? () => LF.apply(surface, A.lfp) : null
+  }
 
   registration(now, et)
   updatePress(now, dt)
@@ -1978,6 +1985,7 @@ window.__lab = { A, V, ptr, phys, surface, works, STOP, SPINE,
     lf: () => LF,
     lfSet: (v) => { LF.drive.set(v); A.lfp = clamp(v, 0, 1); lastSig = '' },
     lfState: () => ({ p: A.lfp, target: LF.drive.target, seq: LF.sequence(A.lfp), rowKeep: LF.rowKeep, stop: LFS }),
+    lfProbe: () => LF.probe(A.lfp),
   } : {}),
   configure, routeChanged, setLocale, locale: () => TXT,  previewOf, go, forcedPress, navigate, exit, expandAbout, collapseAbout, startBridge, openLab, arriveAt, replayIntro: playIntro, IDX: () => IDX, WORKS: () => WORKS, WORLD: () => WORLD, frames: framesOf, touches, sig: () => lastSig, redraw: () => { lastSig = '' } }
 let rt = 0, booted = false

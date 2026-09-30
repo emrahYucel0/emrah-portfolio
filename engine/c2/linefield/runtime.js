@@ -11,7 +11,8 @@
  * is the work field's rule — the only difference is that the work field's inner axis is sideways and a list,
  * and this one is the direction of travel and continuous.
  */
-import { CORRIDOR_PATCH, LF_ROW_KEEP, corridorUniforms, vanishingPoint } from './corridor.js'
+import { LF_ROW_KEEP, corridorImage, corridorUniforms, vanishingPoint } from './corridor.js'
+import { breakName, patchFor } from './breaks.js'
 import { linefieldState, sequence } from './state.js'
 import { LF_KEY_STEP, LF_TOUCH_SPAN, LF_WHEEL_SPAN, createDrive, wheelPixels } from './input.js'
 
@@ -53,6 +54,7 @@ export function createLinefield() {
   let V = null
   let variantReady = null
   const drive = createDrive(() => LF_TOUCH_SPAN(V ? V.H : 800))
+  const broke = breakName()
 
   return {
     drive,
@@ -62,9 +64,12 @@ export function createLinefield() {
     get back() { return back },
     get front() { return front },
 
-    /** the corridor's program, linked once and off the main thread where the driver allows it */
+    /**
+     * The corridor's program, linked once and off the main thread where the driver allows it. In reduced motion
+     * there is no program to link: the flat renderer draws the two ends and the crossfade between them.
+     */
     prepare(surface) {
-      variantReady ??= surface.variant('corridor', CORRIDOR_PATCH)
+      variantReady ??= surface.variant?.('corridor', patchFor(broke)) ?? null
       return variantReady
     },
 
@@ -80,6 +85,24 @@ export function createLinefield() {
     at(p) { return sequence(p, V.W).back ? back : front },
 
     sequence(p) { return sequence(p, V.W) },
+
+    /**
+     * Everything a harness needs to judge a frame without guessing any of it: where the corridor's image ends,
+     * what "ground only" and "full ink" are exactly, and where each word's band is.
+     */
+    probe(p) {
+      const q = sequence(p, V.W)
+      const st = q.back ? back : front
+      const [vx, vy] = vanishingPoint(V.W, V.H, q.depth, q.side)
+      const [lo, hi] = corridorImage(V.W, q.depth, q.side, q.pull)
+      return {
+        seq: q, vx, vy, lo, hi, lineY: V.H * 0.5, broke,
+        ground: st.paper.map((c) => Math.round(c * 255)),
+        ink: st.ink.map((c) => Math.round(c * 255)),
+        words: st.layout.words, bands: st.layout.bands, baseline: st.layout.baseline,
+        spacing: st.spacing, cap: st.layout.cap, rowsPerCap: st.layout.rowsPerCap, size: st.layout.size,
+      }
+    },
 
     /** a wheel event, already owned by the runtime, in units of the passage */
     wheelStep(e) { return wheelPixels(e) / LF_WHEEL_SPAN },
@@ -102,7 +125,8 @@ export function createLinefield() {
       surface.vec4('uLFflow', q.flow[0], q.flow[1], q.flow[2], q.flow[3])
       surface.vec4('uLFband', st.layout.bands[0], st.layout.bands[1], st.layout.bands[2], st.layout.bands[3])
       surface.vec4('uLFmode', 1, (a + b) / 2, 1 - q.mark, 0)
-      surface.vec2('uLFthin', LF_ROW_KEEP, q.thin)
+      // the `dense` break sends the field down the corridor at the density the words need, undinned
+      surface.vec2('uLFthin', LF_ROW_KEEP, broke === 'dense' ? 0 : q.thin)
       surface.vec4('uLFline', V.H * 0.5, 2.4 + (0.85 - 2.4) * q.grow, q.mark, Math.max(2.4, (b - a) / 2))
       surface.vec3('uLFlineCol', lineCol)
     },

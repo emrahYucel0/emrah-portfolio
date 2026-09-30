@@ -9,6 +9,7 @@
  */
 import { createSurface, hex } from '../surface.js'
 import { CORRIDOR_PATCH, LF_ROW_KEEP, corridorImage, corridorUniforms, vanishingPoint } from './corridor.js'
+import { patchFor } from './breaks.js'
 import { LF_FOLLOW, LF_KEY_STEP, LF_MAX_VEL, LF_MOMENTUM_TAU, LF_TOUCH_SPAN, LF_WHEEL_SPAN, createPacer } from './input.js'
 import { BACKEND_WORDS, FRONTEND_WORDS, faceReady, linefieldState, sequence } from './state.js'
 
@@ -68,35 +69,7 @@ async function mount() {
    * rather than used. They are gone rather than left to look like coverage.
    */
   const broke = qs.get('lfbreak')
-  let patch = CORRIDOR_PATCH
-  if (broke === 'inverse') {
-    /*
-     * THE INVERSE AS IT WAS: no residual gate, and a derivative guard that drops the sign. This is the build
-     * that drew a column of dashes and a ghost fan past the vanishing point, and lfbeyond.cjs must report it —
-     * a check that has only ever been run against the build it approves has not been shown to check anything.
-     */
-    patch = {
-      ...CORRIDOR_PATCH,
-      warp: CORRIDOR_PATCH.warp
-        .replace('float gg = abs(g) < 1e-4 ? (g < 0.0 ? -1e-4 : 1e-4) : g;', 'float gg = abs(g) < 1e-4 ? 1e-4 : g;')
-        .replace('fade *= 1.0 - smoothstep(0.35, 1.1, res);', ''),
-    }
-  } else if (broke === 'noextent' || broke === 'extentall') {
-    /*
-     * THE TWO ENDS OF THE FIELD-EXTENT QUESTION, so that "a word is whole in flight" can be MEASURED.
-     *
-     * `noextent` removes the extent altogether: every word is certainly complete, which makes it the reference
-     * a real frame is compared against. `extentall` applies it to every pixel, type included — what the code
-     * did when the top of FEEL went missing mid-flight. The check must find the second one guilty and the real
-     * build innocent, against the same reference.
-     */
-    patch = {
-      ...CORRIDOR_PATCH,
-      pars: broke === 'noextent'
-        ? CORRIDOR_PATCH.pars.replace('((a) * lfKeep(r, sol) * lfExtent(r, sol))', '((a) * lfKeep(r, sol))')
-        : CORRIDOR_PATCH.pars.replace('mix(inside, 1.0, smoothstep(0.08, 0.3, sol))', 'inside'),
-    }
-  }
+  const patch = patchFor(broke)
 
   const surface = createSurface(canvas)
   await surface.ready

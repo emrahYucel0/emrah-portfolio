@@ -521,23 +521,39 @@ export function createSurface(canvas) {
         .replace('//VARIANT_COMPOSITE', patch.composite || '')
       const p2 = link(VERT, src)
       locs.set(p2, {})
-      variants.set(name, {
-        prog: p2,
-        ready: new Promise((resolve, reject) => {
-          const check = () => {
-            if (par && !gl.getProgramParameter(p2, par.COMPLETION_STATUS_KHR)) { requestAnimationFrame(check); return }
-            if (!gl.getProgramParameter(p2, gl.LINK_STATUS)) { reject(new Error(gl.getProgramInfoLog(p2))); return }
-            resolve()
-          }
-          check()
-        }),
+      const rec = { prog: p2, linked: false }
+      rec.ready = new Promise((resolve, reject) => {
+        const check = () => {
+          if (par && !gl.getProgramParameter(p2, par.COMPLETION_STATUS_KHR)) { requestAnimationFrame(check); return }
+          if (!gl.getProgramParameter(p2, gl.LINK_STATUS)) { reject(new Error(gl.getProgramInfoLog(p2))); return }
+          rec.linked = true
+          resolve()
+        }
+        check()
       })
+      variants.set(name, rec)
       return variants.get(name).ready
     },
+    /*
+     * SWITCHING PROGRAMS BINDS THE PROGRAM, and that is not a detail.
+     *
+     * `active` decides which program's uniform-location cache is used, and GL decides which program a uniform
+     * is actually written to. Setting `active` without binding leaves the two disagreeing for the rest of the
+     * frame, and anything that writes a uniform before the next draw — phys() writes uGrid every frame — is
+     * refused with "location not for current program" and silently does nothing. The driver logged it; the
+     * value was simply lost.
+     *
+     * And a variant is not used until it has linked. Linking is deferred and off the main thread, so between
+     * the first use() and the link completing there would be nothing legal to bind; the base program draws
+     * those frames, which is what it did before the variant existed.
+     */
     use(name) {
       if (!VARIANTS_ON) return
       const v = name ? variants.get(name) : null
-      active = v ? v.prog : prog
+      const next = v && v.linked ? v.prog : prog
+      if (next === active) return
+      active = next
+      gl.useProgram(active)
     },
     usingVariant: () => active !== prog,
     /** set a mat3 on whichever program is active — variants carry uniforms the base program does not have */

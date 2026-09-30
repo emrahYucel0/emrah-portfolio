@@ -4,6 +4,7 @@
 // node journey.cjs <port> [locale] [reduced]
 const pw = require('playwright')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const { stopsOf } = require('./stops.cjs')
 const [port, loc = 'tr', motion = 'normal'] = process.argv.slice(2)
 const reduced = motion === 'reduced'
 const BASE = `http://127.0.0.1:${port}`
@@ -53,10 +54,11 @@ const LITERAL = /\b(undefined|null|NaN|\[object Object\])\b/
   console.log(`\n== JOURNEY ${loc.toUpperCase()} ${reduced ? 'REDUCED' : 'NORMAL'}`)
   await p.goto(`${BASE}/${loc}`, { waitUntil: 'networkidle', timeout: 60000 })
   await p.waitForFunction(() => window.__lab?.A.mode === 'index', null, { timeout: 40000 }).catch(() => {})
-  await step('Hero', null, (s) => s.base === 0)
-  await step('Creative', () => click('#ui [data-go="creative"]'), (s) => s.base === 1)
-  await step('Full-Stack', () => click('#ui [data-go="system"]'), (s) => s.base === 2)
-  await step('Work', () => click('#ui [data-go="work"]'), (s) => s.base === 3)
+  const STOP = await stopsOf(p)
+  await step('Hero', null, (s) => s.base === STOP.name)
+  await step('Creative', () => click('#ui [data-go="creative"]'), (s) => s.base === STOP.creative)
+  await step('Full-Stack', () => click('#ui [data-go="system"]'), (s) => s.base === STOP.system)
+  await step('Work', () => click('#ui [data-go="work"]'), (s) => s.base === STOP.work)
   await step('→ Lab (bridge)', async () => {
     await click('#ui [data-go="lab"]')
     await p.waitForFunction(() => /\/lab$/.test(location.pathname), null, { timeout: 25000 }).catch(() => {})
@@ -65,14 +67,14 @@ const LITERAL = /\b(undefined|null|NaN|\[object Object\])\b/
     await step(`→ ${id.toUpperCase()}`, async () => { await p.goto(`${BASE}/${loc}/lab/${id}`, { waitUntil: 'networkidle' }) }, (s) => s.study && s.back && s.labControls === 1)
     await step(`${id} → Lab`, () => click('.study .back'), (s) => s.bench)
   }
-  await step('→ Contact', () => p.mouse.wheel(0, 130), (s) => s.c2 === 'on' && s.base === 5)
+  await step('→ Contact', () => p.mouse.wheel(0, 130), (s) => s.c2 === 'on' && s.base === STOP.rest)
   await step('→ Lab', async () => {
     await p.mouse.wheel(0, -130)
     await p.waitForFunction(() => /\/lab$/.test(location.pathname), null, { timeout: 25000 }).catch(() => {})
   }, (s) => s.bench)
-  await step('→ Work', () => p.mouse.wheel(0, -130), (s) => s.c2 === 'on' && s.base === 3)
+  await step('→ Work', () => p.mouse.wheel(0, -130), (s) => s.c2 === 'on' && s.base === STOP.work)
   await step('→ About', () => click('#ui [data-go="about"]'), (s) => s.c2 === 'on')
-  await step('→ back to Hero', () => click('#ui [data-go="name"]'), (s) => s.base === 0)
+  await step('→ back to Hero', () => click('#ui [data-go="name"]'), (s) => s.base === STOP.name)
 
   console.log(`  errors ${errs.length} ${JSON.stringify([...new Set(errs)].slice(0, 2))}`)
   if (warned.length) console.log(`  benign warnings ${warned.length} ${JSON.stringify([...new Set(warned)].slice(0, 1))} — counted, not a failure`)

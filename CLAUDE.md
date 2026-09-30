@@ -68,6 +68,14 @@ silently moved every announcement one place along. Both were real, and both were
 
 Adding, removing or reordering a place is an edit to that one list.
 
+**And in the harnesses too.** A check that writes `base === 3` asserts a position, not a place. They read
+`window.__lab.STOP` through `tools/diag/stops.cjs`, which falls back to the historical spine for artifacts built
+before the renaming — and which has to be asked on a locale route, because the Lab routes never start the
+runtime and cannot answer.
+
+**A stop can hide in arithmetic.** The one that reached a review was `Math.abs(A.p - 3) < 0.6`: not a comparison
+against a stop, a stop used as a distance, which every search for `=== 3` walked straight past.
+
 ## Standing rules
 
 - Do not commit, push or deploy without being asked.

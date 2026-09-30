@@ -1,6 +1,7 @@
 // A FINGER ON THE WORK FIELD — a tap opens the registered project, a swipe changes it, and neither is the other.
 const pw = require('playwright')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const { stopsOf } = require('./stops.cjs')
 const [port, W = '390', H = '844', loc = 'tr'] = process.argv.slice(2)
 let fails = 0
 const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'FAIL'} ${l}${x ? ` — ${x}` : ''}`) }
@@ -27,7 +28,8 @@ const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'F
   await p.evaluate(() => document.querySelector('#ui [data-go="work"]').click()); await sleep(4200)
   console.log(`== WORK FIELD, REAL TOUCH ${W}x${H} ${loc} ==`)
   let s = await st()
-  ok(s.base === 3, 'standing on the work field')
+  const STOP = await stopsOf(p)
+  ok(s.base === STOP.work, 'standing on the work field')
   ok(!/basılı tut|hold the image/i.test(s.hint), 'the hint no longer asks for a hold', s.hint)
   ok(/dokun|tap/i.test(s.hint), 'and names the tap', s.hint)
 

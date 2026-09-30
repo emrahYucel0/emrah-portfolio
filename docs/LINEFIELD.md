@@ -625,3 +625,68 @@ REVERSE is exact: at six progresses, forwards and backwards are **byte-identical
 so every rebuild deleted the one page the whole visual review is done against; `lfpair.cjs` stages them, with the
 reference from `docs/reference/`, into whichever build is being served. `sv.cjs --review` exempts those two files
 — and nothing else — from the site's CSP, which otherwise refuses their scripts and blocks the reference's face.
+
+---
+
+# THE WORK FIELD BUG — FOUND, AND WHAT IT TEACHES
+
+Reported after Phase C: on the Work stop the project images look broken, and clicking one no longer opens it.
+
+## Where it was, and where it was not
+
+| build | the capture | hold to open | tap to open |
+|---|---|---|---|
+| `pre-linefield` (= `origin/main` plus one docs file) | resolved, `fill 1 · lod 0` | opens | opens |
+| Phase C, **flag off** | resolved, `fill 1 · lod 0` | opens | opens |
+| Phase C, **flag on** | **unresolved**, `fill 0 · lod 2.1` | **refused** | **refused** |
+
+There is no finale merge in this repository: `main` is `origin/main` plus the twelve Linefield commits, and the
+finale is on its own branch in the other worktree. The bug is this branch's, and **only with the flag on** — the
+published build was never affected.
+
+## One cause, both symptoms
+
+```js
+const onWork = A.mode === 'index' && Math.abs(A.p - 3) < 0.6   // in registration()
+```
+
+A stop inside an **arithmetic expression**. The renaming swept comparisons — `=== 3`, `settledAt(3)`, `IDX[3]` —
+and this read as a distance, not a place. With a place inserted before Work the test is false at the work field,
+so `lockWork()` never runs. That one function does three things: it resolves the capture (`lod` to 0), fills the
+rows with it (`fill` to 1), and sets `A.wLocked`, which is what `registeredWork()` reports and what `pressable()`
+requires. Without it the visitor sees the unresolved patchwork the two row sets make out of register — which is
+exactly "the image looks broken" — and both the hold and the tap are refused because the work is not registered.
+
+Every other numeric stop in the engine is now named, including four that were correct (`STOP.creative` in the
+face transition) and would not have failed — the rule is worth nothing if it is only true of the lines that
+happened to break.
+
+## And a second fault the journey found
+
+`surface.use()` set which program's uniform-location cache to read from without **binding** that program. GL
+then refused every uniform written before the next draw — `phys()` writes `uGrid` every frame — with
+"location not for current program", and dropped the value. Four errors per journey on the flag-on build, none
+on the flag-off one, because nothing switched programs there. `use()` binds now, and will not bind a variant
+that has not finished linking.
+
+## What let it reach a review
+
+**Nothing in the gate opened a project from its image.** `proj.cjs` measures project-to-project transitions from
+inside a project; `worktap.cjs` taps the image but its first assertion was `base === 3`, so on a flag-on build
+it failed on the harness's own stop number before reaching anything that mattered. The one gesture that opens a
+project from the material had no check of its own.
+
+`workopen.cjs` is that check: it asserts the register (`wLocked`, `fill`, `lod`) before it asserts the opening,
+because "it does not open" and "the image looks broken" are the same fault seen twice, and it opens the project
+both ways — held on a pointer, tapped on a finger — on flag-on and flag-off builds.
+
+**And the harnesses carry stop numbers too.** `journey.cjs`, `spine.cjs`, `worktap.cjs` and `labflash.cjs` all
+asserted positions rather than places; they read `window.__lab.STOP` now, through `tools/diag/stops.cjs`, and
+fall back to the historical spine for artifacts built before the renaming.
+
+## One measurement of my own that was wrong
+
+The first run of this check reported the hold failing on the **flag-off** build as well. It was holding for a
+fixed 1.4 s and the load needs about 1.5 s: the check was standing on the edge of the threshold and calling the
+coin toss a regression. It holds until the material yields now, and reports the peak load and how long it took.
+The flag-off build was never affected.

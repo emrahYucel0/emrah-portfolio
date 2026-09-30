@@ -305,7 +305,13 @@ const settledAt = (i) => A.mode === 'index' && A.base === i && Math.abs(A.p - i)
  */
 const LF_PUSH = 0.067 / (100 * 0.0011)
 /** is a vertical finger right now the passage's own drag rather than travel between places */
-const lfDrag = () => LINEFIELD && settledAt(LFS) && !A.busy && !A.aboutOpen
+/*
+ * AND THE MODULE HAS TO BE THERE. LINEFIELD is a build-time constant and is what lets the bundler drop all of
+ * this; LF is the module, and it arrives one dynamic import after the page does. The frame loop never runs
+ * before it, but a pointerup, a key or a wheel can — WebKit found it as "null is not an object (evaluating
+ * LF.drive)" on a pointer event during boot. Both guards, everywhere an event can reach LF.
+ */
+const lfDrag = () => LINEFIELD && LF && settledAt(LFS) && !A.busy && !A.aboutOpen
 /*
  * A FINGER HELD AT EITHER END CARRIES ON ALONG THE SPINE. The drive clamps at 0 and 1, so a drag that has
  * arrived at an end would otherwise sit there pulling against nothing. What it pulls against is measured — the
@@ -345,7 +351,7 @@ function scrollBy(d, touch = false) {
      * plainly is: the visitor continuing along the spine. One gesture stays one stop, because leaving sets
      * A.gesture false and arms the same tail guard the work field uses.
      */
-    if (LINEFIELD && settledAt(LFS)) {
+    if (LINEFIELD && LF && settledAt(LFS)) {
       const t = LF.drive.target
       const atEnd = (d > 0 && t > 0.9995) || (d < 0 && t < 0.0005)
       if (atEnd) {
@@ -494,7 +500,7 @@ const up = (e) => {
   }
   // a cancelled gesture was not a tap
   if (e?.type !== 'pointercancel' && ptr.down && !ptr.ui && now - ptr.downT < 200 && ptr.moved < 8) tap(ptr.x, ptr.y)
-  if (LINEFIELD && LF.drive.dragging) LF.drive.dragEnd()
+  if (LINEFIELD && LF && LF.drive.dragging) LF.drive.dragEnd()
   // a gesture that travelled was not a click on what it started on (see the swallow in the UI's click handler)
   ptr.swiped = ptr.down && (ptr.axis !== null || ptr.moved > 12)
   ptr.down = false; ptr.axis = null; ptr.ui = false; ptr.rub = 0
@@ -537,7 +543,7 @@ addEventListener('keydown', (e) => {
     e.preventDefault()
     if (A.aboutOpen) { if (!A.aboutDetail) closeAbout(); return }
     // on the passage a key advances the passage, and only carries on along the spine from its far end
-    if (LINEFIELD && settledAt(LFS)) {
+    if (LINEFIELD && LF && settledAt(LFS)) {
       const t = LF.drive.target
       if (!((step > 0 && t > 0.9995) || (step < 0 && t < 0.0005))) { LF.drive.nudge(step * LF.keyStep); A.lastInput = performance.now(); return }
       LF.drive.stop()
@@ -939,14 +945,23 @@ function registration(now, dt) {
   }
   split(IDX[STOP.name], A.introReg, spread * 1.4)
   IDX[STOP.name].amp = A.nameAmp
-  if (A.mode === 'index' && A.p > 1 && A.p < 2) split(IDX[STOP.creative], smooth(0.02, 0.4, A.p - 1) * 0.6, spread)
+  if (A.mode === 'index' && A.p > STOP.creative && A.p < STOP.system) split(IDX[STOP.creative], smooth(0.02, 0.4, A.p - STOP.creative) * 0.6, spread)
   if (!ptr.down) A.regDragT = damp(A.regDragT, 0, 9, dt)
   A.regDrag = damp(A.regDrag, A.regDragT, ptr.down ? 16 : 11, dt)
   if ((settledAt(STOP.creative) || settledAt(STOP.system)) && Math.abs(A.regDrag) > 0.5) split(IDX[A.base], clamp(Math.abs(A.regDrag) / spread, 0, 1), Math.sign(A.regDrag) * spread * 0.5)
 
   // the work field: every work is written as fragments on its own key; only one agrees at a time
   const sx = V.P ? V.W * 0.24 : V.W * 0.13, sy = V.P ? 5.2 : 7
-  const onWork = A.mode === 'index' && Math.abs(A.p - 3) < 0.6
+  /*
+   * A BARE 3 SURVIVED THE RENAMING HERE, and it is the one that mattered.
+   *
+   * It was not a comparison against a stop, it was a stop inside an ARITHMETIC expression, so it read as a
+   * distance rather than a place and every search for `=== 3` walked straight past it. With a place inserted
+   * before Work this is false at the work field, so lockWork() never runs: the capture never comes into
+   * register (it stays at LOD_OFF with fill 0, which is the unresolved patchwork the visitor sees as a broken
+   * image), the work never becomes pressable, and neither holding it nor tapping it opens the project.
+   */
+  const onWork = A.mode === 'index' && Math.abs(A.p - STOP.work) < 0.6
   WORKS.forEach((s, i) => {
     const d = A.wt - i, ad = Math.abs(d)
     s.reg.a0 = d * sx; s.reg.a1 = -d * sx * 0.62; s.reg.va0 = d * sy; s.reg.va1 = -d * sy
@@ -1004,7 +1019,7 @@ function onArrive(stop, prev) {
    * Whatever a flick had left running is stopped on the way out, so a momentum from one place never carries
    * into the next.
    */
-  if (LINEFIELD && (stop === LFS || prev === LFS)) {
+  if (LINEFIELD && LF && (stop === LFS || prev === LFS)) {
     LF.drive.stop()
     A.lfExit = 0; A.lfEdgeY = null
     if (stop === LFS) { const at = prev > LFS ? 1 : 0; LF.drive.set(at); A.lfp = at }
@@ -1304,7 +1319,7 @@ const place = (el, r) => Object.assign(el.style, { left: `${r.x}px`, top: `${r.y
 function placeRest() { place(D.rest.querySelector('.contact'), IDX[STOP.rest].layout.block) }
 function layoutDOM() {
   const [nm, cre, sys] = IDX
-  if (LINEFIELD && D.lf) {
+  if (LINEFIELD && LF?.back && D.lf) {
     // one box for both labels, set from the same margin the words are: the back reads from the left, the
     // front from the right, exactly as their words do
     const L = LF.back.layout
@@ -1384,7 +1399,7 @@ function stripTones(dom) {
 const FACE_WHOLE = [0.1, 0.7]
 function domUpdate(from, to, front) {
   focusStep()
-  const faceT = A.mode === 'index' && from === IDX[STOP.creative] && to === IDX[STOP.system] ? A.p - 1 : null
+  const faceT = A.mode === 'index' && from === IDX[STOP.creative] && to === IDX[STOP.system] ? A.p - STOP.creative : null
   const face = faceT == null ? null : A.base === STOP.system && faceT >= FACE_WHOLE[1] ? IDX[STOP.system] : A.base === STOP.creative && faceT <= FACE_WHOLE[0] ? IDX[STOP.creative] : null
   const dom = face || (front < 0.5 ? from : to)
   const idleIdx = A.mode === 'index' && !A.busy
@@ -1401,7 +1416,7 @@ function domUpdate(from, to, front) {
     setOn(D.creative, d === 'creative')
     setOn(D.system, d === 'system')
     setOn(D.work, d === 'work')
-    if (LINEFIELD) setOn(D.lf, d === 'linefield')
+    if (LINEFIELD && LF) setOn(D.lf, d === 'linefield')
     setOn(D.rest, d === 'rest')
     setOn(D.world, d === 'world')
   } else {
@@ -1414,7 +1429,7 @@ function domUpdate(from, to, front) {
     setOn(D.system, idleIdx && at(STOP.system) && !loaded)
     setOn(D.work, idleIdx && at(STOP.work) && !loaded)
     // the heading belongs to the ends of the passage, not to the middle of it: nothing is read while it moves
-    if (LINEFIELD) {
+    if (LINEFIELD && LF) {
       setOn(D.lf, idleIdx && at(LFS) && !loaded && (A.lfp < 0.02 || A.lfp > 0.98) && !LF.drive.moving(A.lfp))
       // and only the half that is actually on screen is named
       D.lf.querySelector('.lf-back').classList.toggle('on', A.lfp < 0.5)
@@ -1444,7 +1459,7 @@ function domUpdate(from, to, front) {
   const [tt, tb] = stripTones(dom)
   if (tt !== lastTT) { D.top.dataset.tone = tt; D.world.querySelector('.wnav').dataset.tone = tt; lastTT = tt }
   if (tb !== lastTB) { D.bottom.dataset.tone = tb; lastTB = tb }
-  const parting = A.mode === 'index' && ((from === IDX[STOP.creative] && to === IDX[STOP.system] && A.p > 1.001) || A.press?.st.beneath === 'state' || A.squeeze?.st.beneath === 'state')
+  const parting = A.mode === 'index' && ((from === IDX[STOP.creative] && to === IDX[STOP.system] && A.p > STOP.creative + 0.001) || A.press?.st.beneath === 'state' || A.squeeze?.st.beneath === 'state')
   const bg = inWorld || A.mode === 'exit' ? '#0b0c0e' : (parting && A.beneathSt ? A.beneathSt.bg : dom.bg)
   if (bg !== lastBg) { document.body.style.backgroundColor = bg; lastBg = bg }
 
@@ -1649,7 +1664,7 @@ function canonical() {
    * between them. So what is SHOWN rounds to an end while the drive keeps its continuous target: a gesture still
    * carries the visitor across, and past the far end it still continues along the spine.
    */
-  if (LINEFIELD) A.lfp = LF.drive.target < 0.5 ? 0 : 1
+  if (LINEFIELD && LF) A.lfp = LF.drive.target < 0.5 ? 0 : 1
   A.introReg = 0; A.nameAmp = 0
 }
 let last = performance.now()
@@ -1680,10 +1695,10 @@ function frame(now) {
    * one loop owns the time step, the stall cap and the decision to draw. Reduced motion keeps the drive — it
    * is what a gesture acts on — and quantises what is SHOWN in canonical().
    */
-  if (LINEFIELD) A.lfp = LF.drive.step(A.lfp, et)
+  if (LINEFIELD && LF) A.lfp = LF.drive.step(A.lfp, et)
   if (REDUCED) canonical()
   IDX[STOP.work] = WORKS[clamp(Math.round(A.wt), 0, N - 1)]
-  if (LINEFIELD) IDX[LFS] = LF.at(A.lfp)
+  if (LINEFIELD && LF) IDX[LFS] = LF.at(A.lfp)
 
   let from, to, front, overlay = 0
   if (A.mode === 'index') {
@@ -1712,7 +1727,7 @@ function frame(now) {
    *                   ends and a crossfade between them — the same thing every other pair of places does.
    */
   let lfOn = false
-  if (LINEFIELD && A.mode === 'index') {
+  if (LINEFIELD && LF && A.mode === 'index') {
     const here = from === LF.back || from === LF.front || to === LF.back || to === LF.front
     if (here && REDUCED) {
       if (A.base === LFS) { const r = LF.reducedPair(A.lfp); from = r.from; to = r.to; front = r.front }
@@ -1723,7 +1738,7 @@ function frame(now) {
    * `surface` is the flat 2D renderer, which has no variants and no use() — reaching for one there threw on
    * every frame of the published build, which took the DOM layers down with it.
    */
-  if (LINEFIELD) {
+  if (LINEFIELD && LF) {
     surface.use?.(lfOn ? 'corridor' : null)
     surface.onBeforeDraw = lfOn ? () => LF.apply(surface, A.lfp) : null
   }
@@ -1774,7 +1789,7 @@ function frame(now) {
   // composition. order matters: what the visitor does acts on the screen first; the place's own composition then maps that material
   const fs = [...A.features]
   if (A.about && A.aboutDetailK > 0.0005) fs.push(...aboutRoomFeatures())
-  const ft = A.p - 1
+  const ft = A.p - STOP.creative
   if (A.mode === 'index' && from === IDX[STOP.creative] && to === IDX[STOP.system] && ft > 0 && ft < 1) {
     const e = smooth(0.04, 0.96, ft)
     Object.assign(A.faceF, { cx: V.W * 0.5, cy: IDX[STOP.creative].weak(), h: V.H * 1.12 * Math.pow(e, 1.9), hw: lerp(V.W * 0.32, 16000, smooth(0.08, 0.7, ft)), falloff: lerp(22, 90, e), kind: 1, reach: 0, lip: 0 })
@@ -1983,7 +1998,7 @@ window.__lab = { A, V, ptr, phys, surface, works, STOP, SPINE,
   // the passage's own hooks leave with the flag: hold it at an exact progress, and read what it is doing
   ...(LINEFIELD ? {
     lf: () => LF,
-    lfSet: (v) => { LF.drive.set(v); A.lfp = clamp(v, 0, 1); lastSig = '' },
+    lfSet: (v) => { if (!LF) return; LF.drive.set(v); A.lfp = clamp(v, 0, 1); lastSig = '' },
     lfState: () => ({ p: A.lfp, target: LF.drive.target, seq: LF.sequence(A.lfp), rowKeep: LF.rowKeep, stop: LFS }),
     lfProbe: () => LF.probe(A.lfp),
   } : {}),

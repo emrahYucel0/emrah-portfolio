@@ -2,6 +2,7 @@
 // node spine.cjs <port> [reduced]
 const pw = require('playwright')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const { stopsOf } = require('./stops.cjs')
 const [port, motion] = process.argv.slice(2)
 const reduced = motion === 'reduced'
 const BASE = `http://127.0.0.1:${port}`
@@ -122,6 +123,9 @@ const swipe = async (p, dy) => {
   }
 
   console.log(`== ${reduced ? 'REDUCED' : 'NORMAL'} — Lab Home as the fifth destination`)
+  // the spine is read from a locale route: on /tr/lab the runtime is never started and cannot be asked
+  await fresh('/tr')
+  const STOP = await stopsOf(p)
   await fresh('/tr/lab')
   let s = await p.evaluate(state)
   ok(!s.docScroll, 'Lab Home does not scroll as a document', `scrollHeight vs viewport: ${s.docScroll ? 'taller' : 'exactly one screen'}`)
@@ -136,24 +140,24 @@ const swipe = async (p, dy) => {
   await fresh('/tr/lab')
   await p.evaluate(watchP)
   await wheelBurst(p, -110, 1)
-  await settleIndex(p, '/tr', 3, 'wheel: Lab -> Work')
+  await settleIndex(p, '/tr', STOP.work, 'wheel: Lab -> Work')
   s = await p.evaluate(state)
   let path1 = await p.evaluate(seen)
-  ok(s.path === '/tr' && s.c2 === 'on' && s.base === 3, 'Lab → Work', `at ${s.path} c2 ${s.c2} mode ${s.mode} base ${s.base} p ${s.p}`)
+  ok(s.path === '/tr' && s.c2 === 'on' && s.base === STOP.work, 'Lab → Work', `at ${s.path} c2 ${s.c2} mode ${s.mode} base ${s.base} p ${s.p}`)
   ok(!path1.some((v) => v < 2.5), 'no flash through Name on the way to Work', `p seen: ${Math.min(...path1)}…${Math.max(...path1)}`)
 
   await fresh('/tr/lab')
   await p.evaluate(watchP)
   await wheelBurst(p, 110, 1)
-  await settleIndex(p, '/tr', 5, 'wheel: Lab -> Contact')
+  await settleIndex(p, '/tr', STOP.rest, 'wheel: Lab -> Contact')
   s = await p.evaluate(state)
   path1 = await p.evaluate(seen)
-  ok(s.path === '/tr' && s.base === 5, 'Lab → Contact', `at ${s.path} c2 ${s.c2} mode ${s.mode} base ${s.base} p ${s.p}`)
+  ok(s.path === '/tr' && s.base === STOP.rest, 'Lab → Contact', `at ${s.path} c2 ${s.c2} mode ${s.mode} base ${s.base} p ${s.p}`)
   ok(!path1.some((v) => v < 4.5), 'no flash through Name on the way to Contact', `p seen: ${Math.min(...path1)}…${Math.max(...path1)}`)
 
   // ── trackpad momentum: the tail must not carry a second stop ──────────────
   console.log('\n-- trackpad momentum')
-  for (const [dir, want, label] of [[-1, 3, 'Lab → Work'], [1, 5, 'Lab → Contact']]) {
+  for (const [dir, want, label] of [[-1, STOP.work, 'Lab → Work'], [1, STOP.rest, 'Lab → Contact']]) {
     await fresh('/tr/lab')
     await momentum(p, dir)
     await settleIndex(p, '/tr', want, `momentum: ${label}`)
@@ -164,7 +168,7 @@ const swipe = async (p, dy) => {
   // ── touch swipe ───────────────────────────────────────────────────────────
   console.log('\n-- touch swipe (phone)')
   p = phonePage
-  for (const [dy, want, label] of [[220, 3, 'Lab → Work'], [-220, 5, 'Lab → Contact']]) {
+  for (const [dy, want, label] of [[220, STOP.work, 'Lab → Work'], [-220, STOP.rest, 'Lab → Contact']]) {
     await fresh('/tr/lab')
     await swipe(p, dy)
     await settleIndex(p, '/tr', want, `swipe: ${label}`)
@@ -177,8 +181,8 @@ const swipe = async (p, dy) => {
   p = deskPage
   await fresh('/tr/lab')
   await wheelBurst(p, 110, 1)
-  await settleIndex(p, '/tr', 5, 'wheel down to Contact')
-  ok((await p.evaluate(state)).base === 5, 'standing at Contact')
+  await settleIndex(p, '/tr', STOP.rest, 'wheel down to Contact')
+  ok((await p.evaluate(state)).base === STOP.rest, 'standing at Contact')
   await wheelBurst(p, -110, 1)
   await settleBench(p, '/tr/lab', 'Contact -> reverse -> bench')
   s = await p.evaluate(state)
@@ -189,8 +193,8 @@ const swipe = async (p, dy) => {
   p = phonePage
   await fresh('/tr')
   await p.evaluate(() => document.querySelector('#ui [data-go="work"]')?.click())
-  await settleIndex(p, '/tr', 3, 'nav control to Work')
-  ok((await p.evaluate(state)).base === 3, 'standing at Work')
+  await settleIndex(p, '/tr', STOP.work, 'nav control to Work')
+  ok((await p.evaluate(state)).base === STOP.work, 'standing at Work')
   await swipe(p, -220)
   await settleBench(p, '/tr/lab', 'Work -> bridge -> bench')
   s = await p.evaluate(state)
@@ -200,13 +204,13 @@ const swipe = async (p, dy) => {
   console.log('\n-- browser history')
   p = deskPage
   await fresh('/tr/lab')
-  await wheelBurst(p, -110, 1); await settleIndex(p, '/tr', 3, 'wheel to Work (history setup)')
+  await wheelBurst(p, -110, 1); await settleIndex(p, '/tr', STOP.work, 'wheel to Work (history setup)')
   await p.goBack(); await settleBench(p, '/tr/lab', 'Back -> bench')
   s = await p.evaluate(state)
   ok(s.path === '/tr/lab' && s.bench, 'one Back returns to the bench', `at ${s.path}`)
-  await p.goForward(); await settleIndex(p, '/tr', 3, 'Forward -> Work')
+  await p.goForward(); await settleIndex(p, '/tr', STOP.work, 'Forward -> Work')
   s = await p.evaluate(state)
-  ok(s.path === '/tr' && s.base === 3, 'Forward restores Work', `base ${s.base}`)
+  ok(s.path === '/tr' && s.base === STOP.work, 'Forward restores Work', `base ${s.base}`)
 
   // bench → study → Back → bench → reverse gesture → Work
   await fresh('/tr/lab')
@@ -218,9 +222,9 @@ const swipe = async (p, dy) => {
   await p.goBack(); await settleBench(p, '/tr/lab', 'study -> Back -> bench')
   s = await p.evaluate(state)
   ok(s.path === '/tr/lab' && s.bench && !s.docScroll, 'Back → the bench, and it does not scroll')
-  await wheelBurst(p, -110, 1); await settleIndex(p, '/tr', 3, 'bench -> wheel -> Work')
+  await wheelBurst(p, -110, 1); await settleIndex(p, '/tr', STOP.work, 'bench -> wheel -> Work')
   s = await p.evaluate(state)
-  ok(s.path === '/tr' && s.base === 3, 'and the site grammar resumes: → Work', `base ${s.base}`)
+  ok(s.path === '/tr' && s.base === STOP.work, 'and the site grammar resumes: → Work', `base ${s.base}`)
 
   // ── a study owns its scroll, and never navigates ───────────────────────────
   console.log('\n-- the studies keep their scroll')

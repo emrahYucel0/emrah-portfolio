@@ -15,6 +15,8 @@ const WATCH = () => {
   window.__f = []
   const tick = () => {
     const A = window.__lab?.A
+    // the Lab's position, from the runtime's own spine; 4 is what it was before the places were named
+    const LABSTOP = window.__lab?.STOP ? window.__lab.STOP.lab : 4
     const c2 = document.documentElement.dataset.c2 === 'on'
     const labLayerOn = !!document.querySelector('#ui .layer.lab.on')
     const capVisible = (() => { const e = document.querySelector('#ui .layer.lab .cap'); if (!e) return false; const r = e.getBoundingClientRect(); const cs = getComputedStyle(e.closest('.layer')); return r.width > 4 && +cs.opacity > 0.02 })()
@@ -23,10 +25,10 @@ const WATCH = () => {
       // Being AT index 4 is allowed — it is the semantic Lab stop. What is not allowed is the retired ARTWORK:
       // the caption room and the opening that held it. So the test is whether the state the surface is drawing
       // at that position still carries them.
-      atLab: c2 && A.mode === 'index' && Math.abs(A.p - 4) < 0.5,
+      atLab: c2 && A.mode === 'index' && Math.abs(A.p - LABSTOP) < 0.5,
       labArtwork: (() => {
-        if (!(c2 && A.mode === 'index' && Math.abs(A.p - 4) < 0.5)) return false
-        const st = window.__lab.IDX()[4]
+        if (!(c2 && A.mode === 'index' && Math.abs(A.p - LABSTOP) < 0.5)) return false
+        const st = window.__lab.IDX()[LABSTOP]
         const feats = st.features ? (st.features.length ?? 0) : 0
         return feats > 0 || !!st.layout?.cap || st.beneath === 'pin'
       })(),

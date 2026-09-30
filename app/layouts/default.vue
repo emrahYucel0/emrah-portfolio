@@ -18,6 +18,19 @@ const route = useRoute()
 // the Contact finale (/[locale]/contact) is the same kind of place: a document route that reads its own scroll,
 // without the runtime, in the runtime's strip. It carries the Contact itself, so no footer Contact under it.
 const inLab = computed(() => isDocumentRoute(route.path))
+
+// on those routes, once the page has settled, the runtime is warmed in idle time (useC2Engine.warm): going up to Work
+// from the Lab or the finale is then a handover, not a cold boot. requestIdleCallback where it exists (not in Safari);
+// elsewhere after the load event and a pause. It never runs before the page's own first seconds.
+const { warm } = useC2Engine()
+const warmLater = () => {
+  const go = () => { if (inLab.value) warm() }
+  const idle = (globalThis as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback
+  const later = () => setTimeout(() => (idle ? idle(go, { timeout: 4000 }) : go()), 2500)
+  if (document.readyState === 'complete') later(); else addEventListener('load', later, { once: true })
+}
+onMounted(() => { if (inLab.value) warmLater() })
+watch(inLab, (on) => { if (on) warmLater() })
 </script>
 
 <template>

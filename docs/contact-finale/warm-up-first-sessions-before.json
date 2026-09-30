@@ -1,0 +1,97 @@
+{
+  "label": "before",
+  "rows": [
+    {
+      "from": "/tr/contact",
+      "cpu": 1,
+      "ms": [
+        2330,
+        550,
+        574
+      ],
+      "warmedBeforeClick": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "from": "/tr/contact",
+      "cpu": 4,
+      "ms": [
+        3450,
+        3943,
+        1433
+      ],
+      "warmedBeforeClick": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "from": "/tr/lab",
+      "cpu": 1,
+      "ms": [
+        538,
+        564,
+        221
+      ],
+      "warmedBeforeClick": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "from": "/tr/lab",
+      "cpu": 4,
+      "ms": [
+        4747,
+        1966,
+        3592
+      ],
+      "warmedBeforeClick": [
+        false,
+        false,
+        false
+      ]
+    }
+  ],
+  "cost": [
+    {
+      "cpu": 1,
+      "p95": [
+        1.4,
+        1.6
+      ],
+      "long": [
+        [],
+        []
+      ],
+      "warmed": [
+        false,
+        false
+      ]
+    },
+    {
+      "cpu": 4,
+      "p95": [
+        7.1,
+        6.9
+      ],
+      "long": [
+        [],
+        []
+      ],
+      "warmed": [
+        false,
+        false
+      ]
+    }
+  ],
+  "still": {
+    "same": true,
+    "warmed": false
+  }
+}

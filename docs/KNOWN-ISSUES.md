@@ -154,7 +154,41 @@ validation device's profile (15.4–15.8). Options were: state the floor as iOS 
 
 ---
 
-## Gate: JOURNEY TR NORMAL failed once in the F4 gate — a cold runtime boot, now waited for
+## Gate: JOURNEY TR NORMAL failed once in the F4 gate — a cold runtime boot, now waited for — RESOLVED (warm-up)
+
+**Resolved (2026-09-29).** The cold boot is now warmed up on the Lab and Contact finale routes (`useC2Engine.warm`,
+scheduled from `layouts/default.vue`). The runtime is fetched and PREPARED after the page has settled:
+
+- **Prepared:** fonts, surface, the Work and name textures, DOM, states.
+- **Not begun:** nothing plays or shows, and its loop does not run.
+- **Paced:** each heavy step waits until the visitor has been still for 0.7 s, then for idle time.
+- **Skipped:** with Save-Data.
+
+Measured with `tools/diag/warm.cjs` (Chromium 1440×900). Cold and warm were interleaved in one session, on the same
+build: cold = click on WORK 1.5 s after load, warm = click after 9 s. Figures: `docs/contact-finale/warm-up.json`.
+
+| from → Work on screen | CPU 1× cold | CPU 1× warm | CPU 4× cold | CPU 4× warm |
+|---|---|---|---|---|
+| /tr/contact | 0.34–1.79 s | 0.28–0.32 s | 1.79–2.01 s | 0.97–1.03 s |
+| the bench | 0.32–0.39 s | 0.12–0.19 s | 1.74–1.94 s | 0.86–0.94 s |
+
+What it costs the finale: the finale was swept through the warm-up window. Its frame p95 was unchanged (the warm-up
+waits while the visitor scrolls), there was no added long task, and the resting finale was pixel-identical before and
+after. First load is untouched: nothing starts before the load event plus 2.5 s.
+
+The same round fixed three leaks. All three affected any visitor who reached the Lab or the finale after the index,
+and the warm-up would have spread them to everyone:
+
+1. **The runtime took the keyboard off its own routes.** After one visit to the index, PageDown, Space and the
+   arrows did nothing on the finale or a study, and moved the hidden index instead. Fixed with an `owns()` guard,
+   and `beckon.cjs` checks it.
+2. **The runtime's stylesheet was global.** `a, button`, `:focus-visible`, `p`/`ul`, `.lbl`, `.roles`, `html, body`
+   and `:root` applied to every page once it was loaded. It is now scoped: `:where(#ui)`, and
+   `html[data-c2='on']` for the root rules. That adds no specificity, so the runtime's own look is unchanged.
+3. **The runtime's frame loop kept running beside pages that own the screen.** It now parks after a second without
+   the screen, and wakes when `data-c2` returns.
+
+The record of the original failure follows.
 
 **Where** `tools/diag/journey.cjs`, the step Lab → Work, in the F4 full gate.
 
@@ -175,3 +209,14 @@ reduced run passes too.
 stop. What is new is where a visitor meets it: someone who landed on a study, the bench or the finale directly and
 then goes up to Work. The bench already fetches the finale's engine ahead of time. It could warm the runtime's module
 the same way, in idle time. That is a separate decision.
+
+
+---
+
+## Release: waiting — goes out together with Linefield
+
+**State (2026-09-29).** The Contact finale integration (`feature/contact-finale`: F0–F4, the design and responsive
+rounds, the runtime warm-up) is complete on its branch, and is merged into `main` after the final review. It is **not
+released**. User decision: the Contact finale and **Linefield** are released together, once Linefield is done. Until
+then there is no `npm run generate` for release and no `DEPLOY.md` preparation for this change. Both come after
+Linefield, for the two together.

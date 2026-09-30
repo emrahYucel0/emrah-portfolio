@@ -1,0 +1,139 @@
+{
+  "label": "final",
+  "rows": [
+    {
+      "from": "/tr/contact",
+      "cpu": 1,
+      "cold": [
+        1786,
+        397,
+        335
+      ],
+      "warm": [
+        321,
+        279,
+        318
+      ],
+      "warmedBeforeClick": [
+        true,
+        true,
+        true
+      ],
+      "coldHadRuntime": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "from": "/tr/contact",
+      "cpu": 4,
+      "cold": [
+        1835,
+        1794,
+        2006
+      ],
+      "warm": [
+        1031,
+        968,
+        993
+      ],
+      "warmedBeforeClick": [
+        true,
+        true,
+        true
+      ],
+      "coldHadRuntime": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "from": "/tr/lab",
+      "cpu": 1,
+      "cold": [
+        386,
+        332,
+        322
+      ],
+      "warm": [
+        188,
+        122,
+        137
+      ],
+      "warmedBeforeClick": [
+        true,
+        true,
+        true
+      ],
+      "coldHadRuntime": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "from": "/tr/lab",
+      "cpu": 4,
+      "cold": [
+        1908,
+        1742,
+        1941
+      ],
+      "warm": [
+        877,
+        856,
+        935
+      ],
+      "warmedBeforeClick": [
+        true,
+        true,
+        true
+      ],
+      "coldHadRuntime": [
+        false,
+        false,
+        false
+      ]
+    }
+  ],
+  "cost": [
+    {
+      "cpu": 1,
+      "p95": [
+        1.4,
+        1.2
+      ],
+      "long": [
+        [],
+        []
+      ],
+      "warmed": [
+        false,
+        false
+      ]
+    },
+    {
+      "cpu": 4,
+      "p95": [
+        6.8,
+        6.9
+      ],
+      "long": [
+        [
+          50
+        ],
+        []
+      ],
+      "warmed": [
+        false,
+        false
+      ]
+    }
+  ],
+  "still": {
+    "same": true,
+    "warmed": true
+  }
+}

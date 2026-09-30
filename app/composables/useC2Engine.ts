@@ -12,10 +12,14 @@ interface C2Module {
   configure: (o: C2MountOptions) => void
   routeChanged: () => void
   mountC2: () => Promise<void>
+  warmC2: (pace?: () => Promise<void>) => Promise<void>
   setLocale: (locale: Locale) => boolean
 }
 
 let modulePromise: Promise<C2Module> | null = null
+/** the warm-up: the module fetched and prepared (warmC2) while another route has the screen — see warm() below */
+let warmPromise: Promise<unknown> | null = null
+const loadModule = () => import('../../engine/c2/main.js') as unknown as Promise<C2Module>
 /** the runtime has put its first frame on the screen — only then may the semantic shell step aside */
 let presented = false
 /**
@@ -110,8 +114,9 @@ export function useC2Engine() {
     m.routeChanged()
   }
 
-  const start = async () => {
-    if (!import.meta.client) return
+  // what the runtime must find before its module is evaluated: its host DOM, and that it is hosted, where /public is
+  // served and which language it speaks
+  const host = () => {
     createHostDom()
     // the module boots itself when loaded standalone; hosted, the shell decides when
     ;(globalThis as Record<string, unknown>).__c2Hosted = true
@@ -119,12 +124,55 @@ export function useC2Engine() {
     ;(globalThis as Record<string, unknown>).__c2Base = useRuntimeConfig().app.baseURL
     // the runtime is told its language; it never guesses one from the URL
     ;(globalThis as Record<string, unknown>).__c2Locale = locale.value
+  }
+
+  /**
+   * THE WARM-UP. The Lab and the Contact finale are routes without the runtime, so a visitor who landed on one of them
+   * and then goes up to Work met the runtime's COLD boot there (measured from /tr/contact: 0.6–2.0 s, 3.5–4.3 s with
+   * the CPU slowed 4×). Once such a page has settled, in idle time, the runtime is fetched and PREPARED — fonts,
+   * surface, textures, DOM, states — but not begun: nothing plays, nothing is shown (the host DOM is hidden off its
+   * routes) and its loop does not run. Going to the index then only has to begin. Skipped when the visitor asked to
+   * save data.
+   */
+  const warm = () => {
+    if (!import.meta.client || modulePromise || warmPromise) return
+    const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
+    if (conn?.saveData) return
+    host()
+    // Each heavy step (the module's evaluation, the surface, the DOM, the states) waits until the visitor has been
+    // still for a moment — no scroll, wheel, pointer, touch or key for 0.7 s — and then for the browser's idle time
+    // where there is one (not in Safari). Measured with the CPU slowed 4×: stepping on idle alone still put 50–220 ms
+    // tasks beside a drawing being scrolled; stepping on stillness keeps them where nobody is moving.
+    const ric = (globalThis as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback
+    let lastInput = performance.now()
+    const moved = () => { lastInput = performance.now() }
+    const INPUT = ['scroll', 'wheel', 'pointermove', 'pointerdown', 'touchstart', 'touchmove', 'keydown'] as const
+    for (const t of INPUT) addEventListener(t, moved, { passive: true, capture: true })
+    const still = () => new Promise<void>((r) => {
+      const check = () => {
+        const quiet = performance.now() - lastInput
+        if (quiet < 700) { setTimeout(check, 720 - quiet); return }
+        if (ric) ric(() => r(), { timeout: 1000 }); else r()
+      }
+      check()
+    })
+    warmPromise = still()
+      // the index route's own page chunk too: the strip's Work is a plain link, so nothing else would fetch it
+      .then(() => { void preloadRouteComponents(path('/')).catch(() => {}) })
+      .then(() => loadModule())
+      .then(async (m) => { m.configure(options()); await m.warmC2(still) })
+      .catch(() => { warmPromise = null })
+      .finally(() => { for (const t of INPUT) removeEventListener(t, moved, { capture: true }) })
+  }
+
+  const start = async () => {
+    if (!import.meta.client) return
+    host()
     // A remount — the visitor coming back from the Lab — is not a boot: the runtime never stopped and its visit is
     // intact. It is only told where it now is, through the same handover every route change uses. The mount
     // watcher does not fire for the route the component is created on, so this is where that is said.
     if (modulePromise) { await syncRoute(); return modulePromise }
-    modulePromise = import('../../engine/c2/main.js').then(async (mod: unknown) => {
-      const m = mod as C2Module
+    modulePromise = loadModule().then(async (m) => {
       m.configure(options())
       await m.mountC2()
       // the shell keeps the screen until there is something to hand it over to: on a slow connection the
@@ -147,5 +195,5 @@ export function useC2Engine() {
     else delete document.documentElement.dataset.c2
   }
 
-  return { start, syncRoute, setActive, locale }
+  return { start, warm, syncRoute, setActive, locale }
 }

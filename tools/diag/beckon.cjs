@@ -159,6 +159,22 @@ const attOf = (id) => window.__finale.partition.attOf(id)?.att ?? 0
     await ctx.close()
   }
 
+  {
+    // after a visit to the index the runtime stays in memory; its keys must not be taken from the finale (they were:
+    // PageDown did nothing here and moved the hidden index instead — fixed with the warm-up round)
+    const [ctx, p] = await page(desk)
+    await p.goto(`${BASE}/tr`, { waitUntil: 'networkidle' })
+    await p.waitForFunction(() => window.__lab?.A.mode === 'index', null, { timeout: 30000 }).catch(() => {})
+    await sleep(1500)
+    await p.evaluate(() => document.querySelector('#ui [data-go="rest"]').click()); await ready(p); await sleep(1200)
+    await p.evaluate(() => scrollTo(0, 0)); await sleep(400)
+    const base0 = await p.evaluate(() => window.__lab.A.base)
+    await p.mouse.click(700, 120); await p.keyboard.press('PageDown'); await sleep(700)
+    const r = await p.evaluate(() => ({ y: Math.round(scrollY), base: window.__lab.A.base }))
+    ok(r.y > 200 && r.base === base0, 'after a visit to the index, PageDown still scrolls the drawing and the hidden index stays put', `scrollY ${r.y}, index ${base0} → ${r.base}`)
+    await ctx.close()
+  }
+
   await br.close()
   console.log(`\n  console errors ${errs.length} ${JSON.stringify([...new Set(errs)].slice(0, 3))}`)
   if (errs.length) fails++

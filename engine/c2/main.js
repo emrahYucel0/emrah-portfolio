@@ -417,10 +417,14 @@ addEventListener('touchcancel', settleTouches, { passive: true })
 // the native long-press menu (save image, open image…) is not offered for a hold on the material itself; links,
 // buttons, readable text and every mouse keep the browser's own menu
 addEventListener('contextmenu', (e) => {
-  if (!ptr.touch || e.target.closest?.('a, button, .scroll')) return
+  if (!owns() || !ptr.touch || e.target.closest?.('a, button, .scroll')) return
   e.preventDefault()
 })
 addEventListener('keydown', (e) => {
+  // on a route the runtime does not own (the Lab, the Contact finale) the keys are the document's: its arrows, Space
+  // and PageDown scroll a study or the drawing. They were taken here — the runtime kept listening after the visitor
+  // left it, so after one visit to the index PageDown did nothing on the finale and moved the hidden index instead.
+  if (!owns()) return
   // M4 A11Y: a place reached from the keyboard takes keyboard focus with it (see arrived())
   if (['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'PageDown', 'PageUp', ' ', 'Enter', 'Escape'].includes(e.key)) A.kbd = true
   if (e.key === 'Escape') { if (A.aboutDetail) leaveDetail(); else if (A.aboutOpen) closeAbout(); else exit(); return }
@@ -1625,8 +1629,22 @@ function frame(now) {
     noteFrame(drawn, et)
   } else if (!A.cleared) { surface.clear(); A.cleared = true; lastSig = ''; capReset() }
   A.jsMs = lerp(A.jsMs || 0, performance.now() - now, 0.05)
+  // PARKED while the host shows another route. Nothing is drawn there anyway (absent above), and the loop's own work
+  // (physics, DOM, registration) ran every frame beside the page that does own the screen — the Contact finale, a
+  // study. After a second without the screen the loop stops; the host handing the screen back wakes it (wakeLoop).
+  if (!owns()) { if (!notOwnedSince) notOwnedSince = now; if (now - notOwnedSince > 1000 && A.mode !== 'intro') { parked = true; return } }
+  else notOwnedSince = 0
   requestAnimationFrame(frame)
 }
+let parked = false, notOwnedSince = 0, resizedWhileAway = false
+function wakeLoop() {
+  if (!parked || !owns()) return
+  parked = false; notOwnedSince = 0
+  if (resizedWhileAway) { resizedWhileAway = false; measure(); ensurePreviews().then(rebuild) }
+  requestAnimationFrame((t) => { last = t; frame(t) })
+}
+// the screen comes back when the host sets data-c2='on' again — whichever way it does
+new MutationObserver(wakeLoop).observe(document.documentElement, { attributes: true, attributeFilter: ['data-c2'] })
 
 // ─── POST-M5 PERF: static hero for a software renderer ───────────────────────
 // Where WebGL is rendered in software every drawn frame blocks the page for most of a second. There the visit begins
@@ -1758,19 +1776,50 @@ export function setLocale(next) {
 window.__lab = { A, V, ptr, phys, surface, works, configure, routeChanged, setLocale, locale: () => TXT,  previewOf, go, forcedPress, navigate, exit, expandAbout, collapseAbout, startBridge, openLab, arriveAt, replayIntro: playIntro, IDX: () => IDX, WORKS: () => WORKS, WORLD: () => WORLD, frames: framesOf, touches, sig: () => lastSig, redraw: () => { lastSig = '' } }
 let rt = 0, booted = false
 // a resize before the surface exists (a phone's URL bar settling during load) is picked up once start() finishes
-addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(async () => { if (!booted) return; measure(); await ensurePreviews(); rebuild() }, 140) })
+addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(async () => { if (!booted) return; if (!owns()) { resizedWhileAway = true; return } measure(); await ensurePreviews(); rebuild() }, 140) })
 
-async function start() {
+/**
+ * THE BOOT, IN TWO HALVES. prepare() is everything that takes time and shows nothing: the fonts, the measure, the
+ * WebGL surface and its textures, the previews, the DOM, the visit's memory, the states. begin() is what the visitor
+ * sees: the loop, and the arrival or the opening. The host may run prepare() alone, in idle time, on a route the
+ * runtime does not own (warmC2 — the Lab and the Contact finale), so that going up to Work from there is a warm
+ * handover instead of a cold boot; mountC2() then only has to begin. Nothing of prepare() is visible off the
+ * runtime's routes (#ui and #surface are not shown there) and it plays nothing: no opening, no static plate, no title.
+ */
+let prepared = null
+// `pace` (the warm-up's): awaited between the steps, so each heavy step waits for the page's next idle moment
+// instead of running back to back beside a page that is being read. The marks name the steps for the harnesses.
+function prepare(pace) {
+  const step = async (name) => { performance.mark?.(`c2:prep:${name}`); if (pace) await pace() }
+  return (prepared ??= (async () => {
   try { await document.fonts.load(`900 100px ${ST.FAMILY}`, 'EMRAHYÜCEL') } catch {}
   try { await document.fonts.load('400 20px "Geist Variable"') } catch {}
   await document.fonts.ready
+  await step('fonts')
   measure()
   await Promise.all([surface.ready, ensurePreviews()])
+  await step('surface')
   buildDOM()
   restoreMemory('history'); restoreMemory('order')
+  await step('dom')
   rebuild()
+  await step('rebuild')
+  // the runtime's own texture queue waits while the opening plays, and a prepared-only runtime is still 'intro':
+  // the two places a visitor arrives at from the Lab or the finale — Work, and the name — are uploaded here, one at
+  // a time, each on the host's pace, so the first frame after the handover does not upload them itself
+  if (pace) for (const st of [IDX[3], IDX[0]]) { await pace(); if (st && !st.dead) surface.warm(st) }
+  performance.mark?.('c2:prep:textures')
   restoreMemory('sheet')
   booted = true
+  if (Math.abs(innerWidth - V.W * V.u) > 1 || Math.abs(innerHeight - V.H * V.u) > 1) { measure(); await ensurePreviews(); rebuild() }
+  })())
+}
+let begun = false
+async function start() {
+  await prepare()
+  if (begun) return
+  begun = true
+  // prepared a while ago, perhaps at another size: the screen it begins on is measured now
   if (Math.abs(innerWidth - V.W * V.u) > 1 || Math.abs(innerHeight - V.H * V.u) > 1) { measure(); await ensurePreviews(); rebuild() }
   A.from = A.to = IDX[0]; A.front = 1
   if (isAboutPath()) { A.pending = 'detail'; document.title = TITLE_ABOUT() } else document.title = TITLE()
@@ -1783,5 +1832,5 @@ async function start() {
   if (REDUCED) { A.mode = 'index'; A.introReg = 0; A.nameAmp = 0; return }
   playIntro()
 }
-export { start as mountC2 }
+export { start as mountC2, prepare as warmC2 }
 if (!globalThis.__c2Hosted) start()

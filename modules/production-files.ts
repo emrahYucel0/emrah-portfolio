@@ -176,7 +176,8 @@ ErrorDocument 404 /404.html
   AddType font/woff .woff
   AddType video/mp4 .mp4
   AddType image/x-icon .ico
-  AddCharset utf-8 .html .css .js .mjs .json .txt .xml .svg
+  AddType application/manifest+json .webmanifest
+  AddCharset utf-8 .html .css .js .mjs .json .txt .xml .svg .webmanifest
 </IfModule>
 
 # text only: images, fonts and video are already compressed
@@ -200,8 +201,8 @@ ErrorDocument 404 /404.html
   <FilesMatch "\\.(html|json)$">
     Header set Cache-Control "public, max-age=0, must-revalidate"
   </FilesMatch>
-  # crawl files, icons and the share image: a day
-  <FilesMatch "\\.(txt|xml|ico|svg|png|jpg)$">
+  # crawl files, icons, the manifest and the share images: a day
+  <FilesMatch "\\.(txt|xml|ico|svg|png|jpg|webmanifest)$">
     Header set Cache-Control "public, max-age=86400"
   </FilesMatch>
 </IfModule>
@@ -232,6 +233,9 @@ export default defineNuxtModule({
       nitro.hooks.hook('close', () => {
         const site = String(nuxt.options.runtimeConfig.public.siteUrl)
         const out = nitro.options.output.publicDir
+        // nitro also closes after `nuxt prepare` (the postinstall), when there is no build to write into: a fresh
+        // checkout has no .output yet, and writing robots.txt there failed the install
+        if (!existsSync(out)) return
         writeFileSync(join(out, 'robots.txt'), robots(site))
         writeFileSync(join(out, 'sitemap.xml'), sitemap(site))
         writeFileSync(join(out, '404.html'), notFound())

@@ -36,7 +36,7 @@ still applied and nothing 404'd — so the site looked styled and deliberate and
 the same mismatch is one forgotten file away, because the policy travels in `.htaccess` and the hashes travel in
 the HTML.
 
-Brand assets (`public/favicon.*`, `public/apple-touch-icon.png`, `public/og/emrah-yucel-portfolio.jpg`) are committed. Regenerate them only on purpose, with `tools/brand-assets.cjs` (see its header).
+Brand assets (`public/favicon.*`, `public/apple-touch-icon.png`, the manifest icons `public/icon-*.png`, and the share images `public/og/emrah-yucel-portfolio.jpg`, `…-lab.jpg`, `…-contact.jpg`) are committed. Regenerate them only on purpose, with `tools/brand-assets.cjs` (see its header).
 
 ## What goes on the server
 **Upload:** the *contents* of `.output/public/`, including the hidden `.htaccess` files:

@@ -22,3 +22,10 @@ and the rule, so that nothing in the production shell grows a dependency the eng
 
 `#engine` is aliased in `nuxt.config.ts`, so the first migration commit can add files here and import
 them as `#engine/...` without touching the shell.
+
+## Since M0
+
+- `c2/`: the migrated runtime.
+- `lab/`: the Lab studies' shared cores.
+- `lab/finale/`: the Contact finale. It is framework-free, like the rest; the page hands it canvases, DOM and
+  words. The integration's map and decisions are in `docs/contact-finale/README.md`.

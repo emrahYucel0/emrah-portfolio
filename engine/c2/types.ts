@@ -44,6 +44,11 @@ export interface C2MountOptions {
   replace?: (url: string, state: unknown) => void
   /** the runtime asks the host to go back */
   back?: () => void
+  /**
+   * F2: Contact is the host's own route. Given, the Contact stop and the Contact control hand over to it — 'start'
+   * when travel carried the visitor there, 'end' when it was asked for by name. Absent, the runtime's own Contact.
+   */
+  openContact?: (how: 'start' | 'end') => void
   /** semantic checkpoints out */
   emit?: (type: C2Event['type'], payload: Record<string, unknown>) => void
 }

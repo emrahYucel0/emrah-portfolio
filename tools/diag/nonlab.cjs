@@ -30,6 +30,16 @@ async function walk(browser, port) {
   await sleep(3200)
   const out = []
   const snap = async (name) => {
+    // F2: on the current build Contact is the finale's own route — that stop is recorded as where it went, and the
+    // walk returns to the runtime (Back) so every later stop is compared from the same place again
+    if (/\/contact$/.test(new URL(p.url()).pathname)) {
+      const fin = await p.evaluate(() => ({ route: location.pathname, finale: !!window.__finale, c2: document.documentElement.dataset.c2 ?? 'off' }))
+      out.push({ name, st: fin, png: await p.screenshot(), moved: fin.finale && fin.c2 === 'off' })
+      await p.goBack()
+      await p.waitForFunction(() => document.documentElement.dataset.c2 === 'on' && !!window.__lab, null, { timeout: 20000 }).catch(() => {})
+      await sleep(reduced ? 1600 : 2600)
+      return
+    }
     const st = await p.evaluate(() => ({
       mode: window.__lab.A.mode,
       base: window.__lab.A.base,
@@ -70,8 +80,9 @@ async function walk(browser, port) {
     const len = Math.min(ia.data.length, ic.data.length)
     for (let j = 0; j < len; j++) if (Math.abs(ia.data[j] - ic.data[j]) > 12) n++
     const pct = +((n / len) * 100).toFixed(2)
-    worst = Math.max(worst, pct)
+    if (!c.moved) worst = Math.max(worst, pct)
     const same = JSON.stringify(a.st) === JSON.stringify(c.st)
+    if (c.moved) { console.log(`  ${a.name.padEnd(14)} MOVED BY DESIGN (F2: Contact is the finale's route) → ${c.st.route}, finale running`); continue }
     if (!same) diffs++
     console.log(`  ${a.name.padEnd(14)} pixΔ ${String(pct).padStart(6)} | state ${same ? 'same' : 'DIFF'}`)
     if (!same) {

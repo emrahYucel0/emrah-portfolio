@@ -1,0 +1,305 @@
+{
+  "table": [
+    {
+      "eng": "chromium",
+      "size": "360×780",
+      "attention": "scroll",
+      "soaked": true,
+      "emailCap": 33.3,
+      "emailCapPct": 4.3,
+      "minClear": 9.7,
+      "seam": 0
+    },
+    {
+      "eng": "chromium",
+      "size": "430×932",
+      "attention": "scroll",
+      "soaked": true,
+      "emailCap": 41,
+      "emailCapPct": 4.4,
+      "minClear": 11.8,
+      "seam": 0
+    },
+    {
+      "eng": "chromium",
+      "size": "768×1024",
+      "attention": "scroll",
+      "soaked": true,
+      "emailCap": 78,
+      "emailCapPct": 7.6,
+      "minClear": 4.6,
+      "seam": 0
+    },
+    {
+      "eng": "chromium",
+      "size": "1024×768",
+      "attention": "scroll",
+      "soaked": true,
+      "emailCap": 53,
+      "emailCapPct": 6.9,
+      "minClear": 15,
+      "seam": 0
+    },
+    {
+      "eng": "chromium",
+      "size": "820×1180",
+      "attention": "scroll",
+      "soaked": true,
+      "emailCap": 83.4,
+      "emailCapPct": 7.1,
+      "minClear": 3,
+      "seam": 0
+    },
+    {
+      "eng": "chromium",
+      "size": "1180×820",
+      "attention": "scroll",
+      "soaked": true,
+      "emailCap": 61.4,
+      "emailCapPct": 7.5,
+      "minClear": 15.1,
+      "seam": 0
+    },
+    {
+      "eng": "chromium",
+      "size": "1024×1366",
+      "attention": "scroll",
+      "soaked": true,
+      "emailCap": 104.8,
+      "emailCapPct": 7.7,
+      "minClear": 3,
+      "seam": 0
+    },
+    {
+      "eng": "chromium",
+      "size": "1366×1024",
+      "attention": "scroll",
+      "soaked": true,
+      "emailCap": 71.4,
+      "emailCapPct": 7,
+      "minClear": 16.1,
+      "seam": 0
+    },
+    {
+      "eng": "chromium",
+      "size": "1280×800",
+      "attention": "cursor",
+      "soaked": true,
+      "emailCap": 66.8,
+      "emailCapPct": 8.3,
+      "minClear": 15.6,
+      "seam": 0
+    },
+    {
+      "eng": "chromium",
+      "size": "1366×768",
+      "attention": "cursor",
+      "soaked": true,
+      "emailCap": 71.4,
+      "emailCapPct": 9.3,
+      "minClear": 16.1,
+      "seam": 0
+    },
+    {
+      "eng": "chromium",
+      "size": "1512×982",
+      "attention": "cursor",
+      "soaked": true,
+      "emailCap": 79.5,
+      "emailCapPct": 8.1,
+      "minClear": 16.9,
+      "seam": 0
+    },
+    {
+      "eng": "chromium",
+      "size": "1728×1117",
+      "attention": "cursor",
+      "soaked": true,
+      "emailCap": 91.7,
+      "emailCapPct": 8.2,
+      "minClear": 18.2,
+      "seam": 0
+    },
+    {
+      "eng": "chromium",
+      "size": "1920×1080",
+      "attention": "cursor",
+      "soaked": true,
+      "emailCap": 102.6,
+      "emailCapPct": 9.5,
+      "minClear": 17.9,
+      "seam": 0
+    },
+    {
+      "eng": "chromium",
+      "size": "2560×1440",
+      "attention": "cursor",
+      "soaked": true,
+      "emailCap": 138.9,
+      "emailCapPct": 9.6,
+      "minClear": 16.8,
+      "seam": 0
+    },
+    {
+      "eng": "chromium",
+      "size": "3440×1440",
+      "attention": "cursor",
+      "soaked": true,
+      "emailCap": 144,
+      "emailCapPct": 10,
+      "minClear": 16.7,
+      "seam": 0
+    },
+    {
+      "eng": "webkit",
+      "size": "360×780",
+      "attention": "scroll",
+      "soaked": true,
+      "emailCap": 33.3,
+      "emailCapPct": 4.3,
+      "minClear": 9.7,
+      "seam": 0
+    },
+    {
+      "eng": "webkit",
+      "size": "430×932",
+      "attention": "scroll",
+      "soaked": true,
+      "emailCap": 41,
+      "emailCapPct": 4.4,
+      "minClear": 11.8,
+      "seam": 0
+    },
+    {
+      "eng": "webkit",
+      "size": "768×1024",
+      "attention": "scroll",
+      "soaked": true,
+      "emailCap": 78,
+      "emailCapPct": 7.6,
+      "minClear": 4.6,
+      "seam": 0
+    },
+    {
+      "eng": "webkit",
+      "size": "1024×768",
+      "attention": "scroll",
+      "soaked": true,
+      "emailCap": 53,
+      "emailCapPct": 6.9,
+      "minClear": 15,
+      "seam": 0
+    },
+    {
+      "eng": "webkit",
+      "size": "820×1180",
+      "attention": "scroll",
+      "soaked": true,
+      "emailCap": 83.4,
+      "emailCapPct": 7.1,
+      "minClear": 3,
+      "seam": 0
+    },
+    {
+      "eng": "webkit",
+      "size": "1180×820",
+      "attention": "scroll",
+      "soaked": true,
+      "emailCap": 61.4,
+      "emailCapPct": 7.5,
+      "minClear": 15.1,
+      "seam": 0
+    },
+    {
+      "eng": "webkit",
+      "size": "1024×1366",
+      "attention": "scroll",
+      "soaked": true,
+      "emailCap": 104.8,
+      "emailCapPct": 7.7,
+      "minClear": 3,
+      "seam": 0
+    },
+    {
+      "eng": "webkit",
+      "size": "1366×1024",
+      "attention": "scroll",
+      "soaked": true,
+      "emailCap": 71.4,
+      "emailCapPct": 7,
+      "minClear": 16.1,
+      "seam": 0
+    },
+    {
+      "eng": "webkit",
+      "size": "1280×800",
+      "attention": "cursor",
+      "soaked": true,
+      "emailCap": 66.8,
+      "emailCapPct": 8.3,
+      "minClear": 15.6,
+      "seam": 0
+    },
+    {
+      "eng": "webkit",
+      "size": "1366×768",
+      "attention": "cursor",
+      "soaked": true,
+      "emailCap": 71.4,
+      "emailCapPct": 9.3,
+      "minClear": 16.1,
+      "seam": 0
+    },
+    {
+      "eng": "webkit",
+      "size": "1512×982",
+      "attention": "cursor",
+      "soaked": true,
+      "emailCap": 79.5,
+      "emailCapPct": 8.1,
+      "minClear": 16.9,
+      "seam": 0
+    },
+    {
+      "eng": "webkit",
+      "size": "1728×1117",
+      "attention": "cursor",
+      "soaked": true,
+      "emailCap": 91.7,
+      "emailCapPct": 8.2,
+      "minClear": 18.2,
+      "seam": 0
+    },
+    {
+      "eng": "webkit",
+      "size": "1920×1080",
+      "attention": "cursor",
+      "soaked": true,
+      "emailCap": 102.6,
+      "emailCapPct": 9.5,
+      "minClear": 17.9,
+      "seam": 0
+    },
+    {
+      "eng": "webkit",
+      "size": "2560×1440",
+      "attention": "cursor",
+      "soaked": true,
+      "emailCap": 138.9,
+      "emailCapPct": 9.6,
+      "minClear": 16.8,
+      "seam": 0
+    },
+    {
+      "eng": "webkit",
+      "size": "3440×1440",
+      "attention": "cursor",
+      "soaked": true,
+      "emailCap": 144,
+      "emailCapPct": 10,
+      "minClear": 16.7,
+      "seam": 0
+    }
+  ],
+  "findings": []
+}

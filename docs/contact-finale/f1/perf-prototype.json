@@ -1,0 +1,18 @@
+{
+  "side": "proto",
+  "desktopSweep": [
+    1.1,
+    1.4,
+    1.6
+  ],
+  "desktopInteract": [
+    6.5,
+    4.9,
+    2.2
+  ],
+  "mobileSweep6x": [
+    8.7,
+    9.2,
+    12.2
+  ]
+}

@@ -41,7 +41,8 @@ export default defineNuxtConfig({
   // production builds ship no source maps
   sourcemap: { server: false, client: false },
 
-  // the browser support contract: Safari 15 / iOS 15 at minimum (the real validation device is an iPhone 7 Plus on
+  // the browser support contract: Safari 15.4 / iOS 15.4 at minimum — the Nuxt runtime's own APIs (Array#at,
+  // Object.hasOwn); syntax is still lowered to 15 below (the real validation device is an iPhone 7 Plus on
   // iOS 15.8.8). Vite's default target is Safari/iOS 16.4; with it Nuxt also emits an entry import map, which Safari
   // before 16.4 cannot resolve — the app then fails to boot (docs/POST-M5-IOS15-COMPATIBILITY.md). An older target
   // lowers the syntax and makes Nuxt drop the import map on its own.

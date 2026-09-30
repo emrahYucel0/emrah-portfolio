@@ -20,6 +20,10 @@ export const en = {
       description:
         'The same material on something other than my name: area and share, length and structure, an image built from row weight alone.',
     },
+    contact: {
+      title: 'Contact — Emrah Yücel',
+      description: 'Contact Emrah Yücel: email, phone, GitHub, LinkedIn. İstanbul, Türkiye.',
+    },
     imageAlt: 'Emrah Yücel — Creative Developer and Full-Stack Developer. The name set in horizontal rows of ink on paper.',
   },
   nav: { skip: 'Skip to plain navigation', label: 'Portfolio', work: 'Work', about: 'About', lab: 'Lab', contact: 'Contact' },
@@ -171,6 +175,11 @@ export const en = {
     weight_holds: 'holds the page',
   },
   contact: { heading: 'Contact', emailLabel: 'Email', phoneLabel: 'Phone' },
+  finale: {
+    copy: 'copy', copied: 'copied', copyEmail: 'Copy the email address', locationRole: 'Location',
+    revision: 'Revision', githubAria: 'GitHub profile', linkedinAria: 'LinkedIn profile',
+    hintScroll: 'scroll', hintCursor: 'move your cursor', hintKeepScrolling: 'keep scrolling',
+  },
   psi: {
     head: 'PageSpeed Insights', mobile: 'Mobile', desktop: 'Desktop',
     labels: ['Performance', 'Accessibility', 'Best Practices', 'SEO'],

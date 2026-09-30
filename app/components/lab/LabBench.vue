@@ -42,7 +42,28 @@ const damp = (a: number, b: number, l: number, dt: number) => a + (b - a) * (1 -
 
 let ctx: CanvasRenderingContext2D | null = null
 let W = 0, H = 0, DPR = 1, TOP = 50, BOT = 44
-const S = { reg: 0, fill: 1, datum: 0, datumT: 0, edges: null as number[] | null, hover: -1 }
+const S = { reg: 0, fill: 1, datum: 0, datumT: 0, edges: null as number[] | null, hover: -1, veil: 0, veilT: 0 }
+/*
+ * THE SEAM TO CONTACT (F2, useContactSeam). The finale opens on the bench's bare row field, value for value, so the
+ * bench crosses to it by clearing itself to that field first — the field, the register and the records fade, the
+ * trim's rows run on across the sheet — and hands over only when it IS the finale's first frame. Coming back up out
+ * of the finale it does the reverse: it arrives bare and registers itself out of the field. `veil` is 0 for the
+ * bench, 1 for the bare field; reduced motion is simply at the end of either.
+ */
+const VEIL_OUT = 0.28, VEIL_IN = 0.42 // seconds
+let veilDone: (() => void) | null = null
+function exitToBare() {
+  S.veilT = 1
+  if (REDUCED) { S.veil = 1; paintVeilDom(); request(); return Promise.resolve() }
+  request()
+  return new Promise<void>((res) => { veilDone = res })
+}
+let veilDom = -1
+function paintVeilDom() {
+  if (veilDom === S.veil || !stage.value) return
+  veilDom = S.veil
+  stage.value.style.setProperty('--veil', String(smooth(S.veil)))
+}
 let L: { portrait: boolean; short: boolean; spacing: number; th: number; pad: number; railX: number; ys: number[]; fieldX: number } | null = null
 
 function select(i: number, how: string) {
@@ -396,6 +417,10 @@ function frame(now: number) {
     if (Math.abs(S.datum - S.datumT) < 0.4) S.datum = S.datumT
     if (S.reg < 0.004 && registering.value) registering.value = false
   } else S.datum = S.datumT
+  if (S.veil !== S.veilT) {
+    const step = dt / (S.veilT > S.veil ? VEIL_OUT : VEIL_IN)
+    S.veil = REDUCED ? S.veilT : S.veilT > S.veil ? Math.min(S.veilT, S.veil + step) : Math.max(S.veilT, S.veil - step)
+  }
   stepWeight(dt)
   const c = ctx
   c.fillStyle = '#efeee9'; c.fillRect(0, 0, W, H)
@@ -407,6 +432,16 @@ function frame(now: number) {
   c.globalAlpha = 1
   clearVoids()
   paintRegister()
+  // the bare field the finale opens on: at 1 it is exactly its first frame (the same ground, the same fillRect rows)
+  if (S.veil > 0.0005) {
+    const v = smooth(S.veil)
+    c.globalAlpha = v; c.fillStyle = '#efeee9'; c.fillRect(0, 0, W, H)
+    c.fillStyle = 'rgba(18,18,18,.5)'; rowsLoop((cy) => c.fillRect(0, cy - L!.th * 0.5, W, L!.th))
+    c.globalAlpha = 1
+  }
+  paintVeilDom()
+  if (S.veil === S.veilT && S.veilT === 1 && veilDone) { const d = veilDone; veilDone = null; requestAnimationFrame(() => d()) }
+  if (S.veil !== S.veilT) { request(); return }
   // the bench lives while it is seen: WEIGHT's rules move, LINE breathes; reduced motion holds still
   if (!REDUCED || S.reg > 0.004) request()
   else last = 0
@@ -426,6 +461,13 @@ function scheduleResize() {
 onMounted(() => {
   const remembered = studies.indexOf((visit.value.lab.activeStudy ?? 'weight') as StudyId)
   if (remembered > 0) sel.value = remembered
+  benchSeam.exit = exitToBare
+  // up out of the finale: the tail of that gesture is spent, and the bench registers itself out of the bare field
+  if (takeHistoryFlag(LAB_ARRIVE) === 'contact') {
+    hushTail()
+    if (!REDUCED) { S.veil = 1; S.veilT = 0 }
+  }
+  paintVeilDom()
   resize()
   select(sel.value, 'boot')
   io = new IntersectionObserver((es) => {
@@ -436,7 +478,7 @@ onMounted(() => {
   document.fonts?.ready.then(() => { place(); request() })
   loadTone().catch(() => {})
 })
-onBeforeUnmount(() => { io?.disconnect(); ro?.disconnect(); if (raf) cancelAnimationFrame(raf); if (roRaf) cancelAnimationFrame(roRaf) })
+onBeforeUnmount(() => { if (benchSeam.exit === exitToBare) benchSeam.exit = null; io?.disconnect(); ro?.disconnect(); if (raf) cancelAnimationFrame(raf); if (roRaf) cancelAnimationFrame(roRaf) })
 </script>
 
 <template>
@@ -474,6 +516,11 @@ onBeforeUnmount(() => { io?.disconnect(); ro?.disconnect(); if (raf) cancelAnima
 <style>
 .lab-track { position: relative; }
 .lab-stage { position: relative; height: 100svh; min-height: 420px; overflow: hidden; background: var(--ground); }
+/* the bench never pans: a finger's gesture here is the site's (useLabSpine), and a touch sequence that began here must
+   not start scrolling the finale's document when the route changes under it mid-swipe (pinch zoom stays) */
+.lab-stage { touch-action: pinch-zoom; }
+/* the seam to Contact: what is not the bare field fades with the veil */
+.lab-stage .spine, .lab-stage .open, .lab-stage .note, .lab-stage .mark, .lab-stage .foot span { opacity: calc(1 - var(--veil, 0)); }
 .lab-sheet { position: absolute; inset: 0; width: 100%; height: 100%; }
 .lab-stage .spine { position: absolute; inset: 0; pointer-events: none; }
 .lab-stage .rec-wrap { position: absolute; }

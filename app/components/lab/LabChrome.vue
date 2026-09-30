@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { HTML_LANG, profile } from '~~/shared/content'
-import type { LabExit } from '~/composables/useLabHandoff'
+import { STUDY_AT, type LabExit } from '~/composables/useLabHandoff'
 import { NuxtLink } from '#components'
 
 /**
@@ -37,11 +37,16 @@ const go = (e: MouseEvent, to: LabExit) => {
 // Contact is its own route now (F2): asked for by name, the finale opens settled — and pressed while already there,
 // it settles the finale in place. Its href is the page itself, so a modified click or no script still reaches it.
 // the language control on the finale keeps the reader's place on the drawing (F3); elsewhere it is a plain link
+// inside a study it keeps the reader's place in the study the same way (the study restores it: [study].vue)
+const router = useRouter()
+const keepsPlace = computed(() => onContact.value || inStudy.value)
 const toLocale = (e: MouseEvent) => {
   setLanguage(other.value)
-  if (!onContact.value || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+  if (!keepsPlace.value || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
   e.preventDefault()
-  void seam.toLocale(switchPath.value)
+  if (onContact.value) { void seam.toLocale(switchPath.value); return }
+  const at = scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight)
+  void router.push({ path: switchPath.value, state: { [STUDY_AT]: at.toFixed(4) } })
 }
 const contactHref = computed(() => path('/contact'))
 const toContact = (e: MouseEvent) => {
@@ -69,11 +74,11 @@ const toContact = (e: MouseEvent) => {
         <li>
           <!-- two quiet letters, as on the runtime's own strip: a language control, not a word of English -->
           <!-- a language change is a step the visitor took, so Back undoes it — as it now does on the C2 routes -->
-          <!-- on the finale a plain link: the router is asked with the reader's place on the entry (RouterLink would
-               navigate before it could be given) -->
+          <!-- on the finale and in a study a plain link: the router is asked with the reader's place on the entry
+               (RouterLink would navigate before it could be given) -->
           <component
-            :is="onContact ? 'a' : NuxtLink"
-            class="lang" :href="onContact ? switchPath : undefined" :to="onContact ? undefined : switchPath"
+            :is="keepsPlace ? 'a' : NuxtLink"
+            class="lang" :href="keepsPlace ? switchPath : undefined" :to="keepsPlace ? undefined : switchPath"
             :hreflang="HTML_LANG[other]" :lang="HTML_LANG[other]"
             :aria-label="`${copy.localeSwitch.label}: ${copy.localeSwitch.to}`"
             :title="`${copy.localeSwitch.label}: ${copy.localeSwitch.to}`"

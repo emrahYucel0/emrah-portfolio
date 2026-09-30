@@ -224,6 +224,9 @@ const A = {
   pending: null, lastIdx: 0, lastTo: null, cleared: false,
   // the Lab stop hands over to the bench when travel settles on it, never when a state is restored onto it
   labArmed: false, hush: 0,
+  // the gesture being metered: where it began, whether it has spent its stop, how far it has carried a place's own
+  // axis, and the stream it is being read out of (see opensGesture)
+  gFrom: 0, gSpent: false, gInner: 0, gAt: -1e9, gEnv: 0, gMinGap: Infinity,
   aboutDetailK: 0, bridgeF: null, bridgePK: 0,
   // LINEFIELD: the passage's own progress, 0 at the backend field and 1 at the frontend one. It is to this
   // place what A.wt is to the work field — the axis INSIDE the stop, which the spine does not travel.
@@ -335,6 +338,9 @@ function lfEdge(now) {
   const t = LF.drive.target
   if (t > 0.0005 && t < 0.9995) { A.lfExit = 0; A.lfEdgeY = null; return }
   const dir = t > 0.5 ? 1 : -1
+  // the same rule the wheel obeys: a finger that has run the passage has spent itself on the passage, and the place
+  // beyond it waits for the finger to lift and come back
+  if (A.gInner > GEST_INNER) return
   A.lfEdgeY ??= ptr.y
   const past = (A.lfEdgeY - ptr.y) * dir
   if (past < V.H * 0.14) return
@@ -345,6 +351,104 @@ function lfEdge(now) {
   A.leftWork = now
   endGesture()
   A.base = A.pT = clamp(LFS + dir, 0, LAST)
+  A.gSpent = true   // endGesture() opened a fresh one; this finger has already used it to leave
+}
+/*
+ * ONE GESTURE IS ONE STOP, HOWEVER HARD IT IS THROWN.
+ *
+ * A gesture was never a thing here. It was the interval between two 240 ms silences, and its size was whatever the
+ * events inside it happened to add up to; snap() then promoted that distance to as many stops as it covered,
+ * Math.round(|pT - base|). Measured on the built site, from the hero: ten 400 px notches thrown inside 80 ms
+ * arrived four places along, and twenty landed on Contact. A stream with a decaying tail was worse than wrong —
+ * each burst after a 240 ms gap counted as a fresh gesture, and because snap moves base toward pT while pT damps
+ * toward base, base oscillated (1, 2, 1, 2) and where the visitor landed depended on when the tail stopped.
+ *
+ * So a gesture is a named unit now. It has a beginning, the place it began at, and a budget of exactly one stop.
+ *
+ * WHERE IT BEGINS. A finger declares its own boundaries — pointerdown opens one, the lift closes it — and the index
+ * has no touch momentum, so a hard flick is one drag. A wheel carries no such marks, and one fixed window cannot
+ * serve both a trackpad tail, which is still one gesture across a gap of a fifth of a second, and a deliberate
+ * second flick straight after arriving, which must be obeyed at once. So two signals, either of which opens one:
+ *
+ *   A SILENCE — but a re-arming one, and only after a gesture that arrived as a STREAM. Once such a gesture has
+ *     landed its stop, everything is absorbed until the input has been quiet for GEST_REST, and every event that
+ *     arrives meanwhile pushes that quiet out again. This is what a free-spinning wheel needs, and a free-spinning
+ *     wheel is what the reported flick was: its detents are one notch EACH, at full size, with gaps that GROW as it
+ *     runs down, so no threshold on the gap alone can tell its coast from a hand notching deliberately.
+ *
+ *     WHICH IS WHY THE HUSH ASKS HOW THE GESTURE ARRIVED. Held against every gap, the hush swallowed deliberate
+ *     notches 300 ms apart — measured: origin/main advances one stop for three such notches, five times out of five,
+ *     and a 340 ms hush gave 1, 1, 0, 0, 0. But a coast and a hand differ at the START, not at the end: a coast opens
+ *     with detents milliseconds apart and decays into slow ones, while a hand notching deliberately is slow from its
+ *     first event to its last. So the narrowest gap the gesture ever showed is what earns it a hush, and one
+ *     deliberate input — which never has a narrow gap at all — earns none.
+ *   A RISE — an event far above what the stream has been delivering: a second throw made while the first is still
+ *     arriving, and the one case no silence can find. The envelope it is judged against decays PER EVENT rather
+ *     than per millisecond, so a stream of equal events is never a rise however widely spaced (a clock-decayed
+ *     envelope got this wrong at around 100 ms apart, calling every event of a steady stream a new gesture) while
+ *     a coast, which decays, always is. It is floored at about one notch, so a normal swipe — which ramps
+ *     6 · 14 · 26 · 38 · 44 px, more than doubling each time — is not cut into five gestures by its own ramp.
+ *
+ * WHAT THE BUDGET BOUNDS is the target, not the events: travel is held within one stop of where the gesture began,
+ * and everything past that is absorbed. So the pacing is untouched — the target still follows the finger and snap
+ * still commits on the silence — and a notch, a normal swipe and a normal drag are the movements they always were.
+ */
+const GEST_GAP = 400       // ms of silence that opens a gesture when nothing has landed yet
+const GEST_REST = 340      // and ms of quiet a landed STREAM holds the door for, re-armed by every event
+const GEST_STREAM = 120    // events closer together than this arrived as a stream, not as separate intentions
+const GEST_RISE = 2.6      // an event this many times the envelope is a new throw
+const GEST_FLOOR = 0.12    // and a real one: about one notch of travel, which is a stop's own threshold
+const GEST_ENV_KEEP = 0.75 // what the envelope keeps from one event to the next
+/*
+ * AND A PLACE WITH AN AXIS OF ITS OWN IS LEFT BY ITS OWN GESTURE. A flick that ran the work field or the passage is
+ * spent on it: it may reach the end and stop there, and the next place waits. This is how much of that axis counts
+ * as having travelled it — half a project, half the passage. Below it nothing changes, which is what keeps the two
+ * notches that have always left the far end of the field leaving it.
+ */
+const GEST_INNER = 0.5
+/** the place a gesture is measured from: the stop on the index, the frame inside a project */
+const gestureBase = () => (A.mode === 'world' ? A.wbase : A.base)
+/** measure the next gesture from here, with nothing spent */
+function resetGesture() { A.gFrom = gestureBase(); A.gSpent = false; A.gInner = 0; A.gMinGap = Infinity }
+/** and forget the stream, so that whatever comes next opens a gesture of its own */
+function forgetStream() { A.gAt = -1e9; A.gEnv = 0 }
+/*
+ * A NEW GESTURE LANDS THE ONE BEFORE IT. A second throw can arrive before snap's silence has committed the first —
+ * 150 ms is a comfortable repeat for a hand and snap waits 240 — and the place the new gesture is measured from
+ * would then be a place the visitor has already left, so its one stop would be spent arriving where they already
+ * are. Opening one therefore settles whatever is still in the air, through the arithmetic snap uses, and the new
+ * gesture is measured from where that put them.
+ */
+function landGesture() {
+  if (!A.gesture) return false
+  const world = A.mode === 'world'
+  const keyT = world ? 'wpT' : 'pT', keyBase = world ? 'wbase' : 'base', max = world ? lastFrame() : LAST
+  const d = A[keyT] - A[keyBase]
+  A.gesture = false
+  if (Math.abs(d) <= 0.12) return false
+  A[keyBase] = clamp(A[keyBase] + Math.sign(d) * Math.max(1, Math.round(Math.abs(d))), 0, max)
+  return true
+}
+function beginGesture() { landGesture(); resetGesture() }
+/** does this wheel event open a new gesture — and fold it into the envelope either way */
+function opensGesture(d, now) {
+  const mag = Math.abs(d)
+  const rise = mag > GEST_FLOOR && mag > A.gEnv * GEST_RISE
+  A.gEnv = Math.max(A.gEnv * GEST_ENV_KEEP, mag)
+  const gap = now - A.gAt
+  A.gAt = now
+  // a landed gesture holds the door until the input has gone quiet; nothing else is asked of a gesture still in the air
+  /*
+   * ALWAYS, and not only while nothing has landed. Guarded by !A.gSpent this stopped learning at the one moment the
+   * answer is wanted: a flick whose FIRST event lands a stop — leaving the work field does exactly that — reached its
+   * second event with no gap on record, was read as a single deliberate input, earned no hush, and let the rest of
+   * itself through. Measured: `burst up from work` ended back where it started and `long up from work` moved two.
+   */
+  A.gMinGap = Math.min(A.gMinGap, gap)
+  // a landed STREAM holds the door until the input has gone quiet; a landed single input holds nothing, and a
+  // gesture still in the air is only interrupted by a real silence or a new throw
+  const rest = A.gMinGap < GEST_STREAM ? GEST_REST : 0
+  return A.gSpent ? rise || gap > rest : rise || gap > GEST_GAP
 }
 function scrollBy(d, touch = false) {
   const now = performance.now()
@@ -356,6 +460,11 @@ function scrollBy(d, touch = false) {
   if (A.busy || A.squeeze || A.mode === 'intro') return
   // in the long About the wheel reads; it never throws the reader out of the room
   if (A.aboutOpen) { if (!A.aboutDetail && A.aboutDetailK < 0.01 && now - A.lastInput > 120) closeAbout(); A.lastInput = now; return }
+  // Only a wheel is read for its boundaries: a finger's are the pointer stream's own, and pointerdown has already
+  // opened this one. A gesture that has spent its stop is then absorbed until the next one opens — which is what a
+  // momentum tail meets, and why the tail cannot buy a second place.
+  if (!touch && opensGesture(d, now)) beginGesture()
+  if (A.gSpent) { A.lastInput = now; return }
   if (A.mode === 'index') {
     // the rest of a gesture that just carried the visitor off the work field does not also carry them past the next place
     if (now - (A.leftWork || 0) < 650) { A.lastInput = now; return }
@@ -369,9 +478,12 @@ function scrollBy(d, touch = false) {
       const t = LF.drive.target
       const atEnd = (d > 0 && t > 0.9995) || (d < 0 && t < 0.0005)
       if (atEnd) {
+        // a gesture that has run the passage is spent on the passage; the next place waits for a new one
+        if (A.gInner > GEST_INNER) { A.lastInput = now; return }
         A.lfExit += Math.abs(d)
         if (A.lfExit > LF.exitMargin) {
           A.lfExit = 0
+          A.gSpent = true
           A.gesture = false
           A.leftWork = now
           A.base = A.pT = clamp(LFS + Math.sign(d), 0, LAST)
@@ -380,28 +492,54 @@ function scrollBy(d, touch = false) {
         return
       }
       A.lfExit = 0
+      // what the gesture TRAVELLED, not what it asked for: the drive clamps, and a push that spends itself against
+      // an end has moved nothing. Otherwise a hard flick at an end would count as having run the passage and the
+      // way out would be barred by travel that never happened.
+      const t0 = LF.drive.target
       LF.drive.push(d * LF_PUSH)
+      A.gInner += Math.abs(LF.drive.target - t0)
       A.lastInput = now
       return
     }
     // wheel tunes the work field; a finger tunes it sideways and swipes vertically between places
     if (settledAt(STOP.work) && !touch) {
+      // the register as the field can actually hold it, so that a flick at either end counts as the nothing it moved
+      const held = clamp(A.wT, 0, N - 1)
       A.wT += d * 2.6   // two notches of a wheel carry one work out of register and the next one in
+      A.gInner += Math.abs(clamp(A.wT, 0, N - 1) - held)
       A.lastInput = now
+      // A gesture that has travelled the field does not also leave it: it is pinned at whichever end it reached and
+      // the way out is a new gesture. What is left of a flick is what would otherwise have taken the whole spine.
+      const ran = A.gInner > GEST_INNER
       // back off the near end of the work field is back to whatever place comes before it — which is Full-Stack
       // on a published build and the passage on a Linefield one. Named, so inserting a place cannot skip it.
-      if (A.wT < -0.45) { A.wT = 0; A.base = STOP.work - 1; A.pT = A.base + 0.35; A.gesture = false; A.leftWork = now }
-      else if (A.wT > N - 1 + 0.45) { A.wT = N - 1; A.gesture = false; startBridge() }
+      if (A.wT < -0.45) {
+        if (ran) { A.wT = 0; return }
+        A.wT = 0; A.base = STOP.work - 1; A.pT = A.base + 0.35; A.gesture = false; A.gSpent = true; A.leftWork = now
+      } else if (A.wT > N - 1 + 0.45) {
+        if (ran) { A.wT = N - 1; return }
+        A.wT = N - 1; A.gesture = false; A.gSpent = true; startBridge()
+      }
       return
     }
     // a finger swiping on past the work field carries the whole field into the Lab
-    if (settledAt(STOP.work) && touch && d > 0) { A.bridgeAcc = (A.bridgeAcc || 0) + d; if (A.bridgeAcc > 0.12) { A.bridgeAcc = 0; startBridge() } A.lastInput = now; return }
-    A.pT = clamp(A.pT + d, 0, LAST)
+    if (settledAt(STOP.work) && touch && d > 0) { A.bridgeAcc = (A.bridgeAcc || 0) + d; if (A.bridgeAcc > 0.12) { A.bridgeAcc = 0; A.gSpent = true; startBridge() } A.lastInput = now; return }
+    // THE BUDGET: one stop from where this gesture began, and the rest of a flick is absorbed
+    A.pT = clamp(A.pT + d, Math.max(0, A.gFrom - 1), Math.min(LAST, A.gFrom + 1))
   } else if (A.mode === 'world') {
     const last = lastFrame()
-    if (A.wbase === last && d > 0 && A.wp > last - 0.03) { A.exitAccum += d; if (A.exitAccum > 0.3) { A.exitAccum = 0; exit() } A.lastInput = now; return }
+    if (A.wbase === last && d > 0 && A.wp > last - 0.03) {
+      // and a gesture that has read frames does not also leave the project
+      if (A.gInner > GEST_INNER) { A.lastInput = now; return }
+      A.exitAccum += d
+      if (A.exitAccum > 0.3) { A.exitAccum = 0; A.gSpent = true; exit() }
+      A.lastInput = now
+      return
+    }
     A.exitAccum = 0
-    A.wpT = clamp(A.wpT + d, 0, last)
+    const was = A.wpT
+    A.wpT = clamp(A.wpT + d, Math.max(0, A.gFrom - 1), Math.min(last, A.gFrom + 1))
+    A.gInner += Math.abs(A.wpT - was)
     A.learned.world = true
   } else return
   A.gesture = true; A.lastInput = now; A.labArmed = true
@@ -410,6 +548,9 @@ function go(i) {
   if (A.mode === 'index') { if (i === STOP.lab && settledAt(STOP.work)) { startBridge(); return } A.base = A.pT = clamp(i, 0, LAST) }
   else if (A.mode === 'world') { A.wbase = A.wpT = clamp(i, 0, lastFrame()) }
   A.gesture = false; A.lastInput = -1e9; A.labArmed = true
+  // asked for by name — a key or a control in the strip — so the meter starts again from where that put us, and
+  // there is nothing in the air to land: this place was composed, not travelled to
+  resetGesture(); forgetStream()
 }
 const canScroll = (el, dy) => (dy > 0 ? el.scrollTop + el.clientHeight < el.scrollHeight - 1 : el.scrollTop > 0)
 addEventListener('wheel', (e) => {
@@ -437,6 +578,8 @@ function endGesture() {
   if (A.squeeze) endSqueeze()
   ptr.down = false; ptr.axis = null; ptr.ui = false; ptr.rub = 0
   if (ptr.touch) ptr.hover = false
+  // an interruption is not an arrival: whatever this gesture had travelled is left for snap to settle as before
+  resetGesture(); forgetStream()
 }
 addEventListener('pointerdown', (e) => {
   if (!owns()) return
@@ -458,6 +601,8 @@ addEventListener('pointerdown', (e) => {
     if (touches.size > 2) return
   }
   Object.assign(ptr, { down: true, downT: performance.now(), sx: e.clientX / V.u, sy: e.clientY / V.u, x: e.clientX / V.u, y: e.clientY / V.u, moved: 0, axis: null, rub: 0, ui: !!on, swiped: false, touch: e.pointerType !== 'mouse' })
+  // a finger on the glass is the beginning of one gesture, whatever it turns into, and it carries one stop
+  beginGesture(); forgetStream()
 })
 addEventListener('pointermove', (e) => {
   if (!owns()) return
@@ -496,7 +641,8 @@ addEventListener('pointermove', (e) => {
       else if (ptr.axis === 'y') scrollBy(-(oy - dy) / (V.H * 0.5), true)
     }
     if (ptr.axis === 'y') {
-      if (lfDrag()) { LF.drive.dragMove(cy); A.lastInput = now; lfEdge(now) }
+      // the finger's own travel along the passage is inner progress, measured the same way the wheel's is
+      if (lfDrag()) { const t0 = LF.drive.target; LF.drive.dragMove(cy); A.gInner += Math.abs(LF.drive.target - t0); A.lastInput = now; lfEdge(now) }
       else scrollBy(-dy / (V.H * 0.5), true)
     }
     if (ptr.axis === 'x') {
@@ -520,6 +666,8 @@ const up = (e) => {
   ptr.down = false; ptr.axis = null; ptr.ui = false; ptr.rub = 0
   if (ptr.touch) ptr.hover = false
   A.lastInput = now
+  // the finger left: this gesture is over, and a wheel arriving next opens its own
+  forgetStream()
 }
 addEventListener('pointerup', up)
 addEventListener('pointercancel', up)
@@ -726,6 +874,7 @@ function arriveAt(target) {
   A.gesture = false; A.lastInput = -1e9
   A.labArmed = false
   A.hush = performance.now() + 420
+  resetGesture(); forgetStream()
   document.title = TITLE()
   lastSig = ''
   return true
@@ -1564,13 +1713,12 @@ function finishBridge() {
 }
 
 // ─── loop ────────────────────────────────────────────────────────────────────
-function snap(keyT, keyBase, max, now, dt) {
+// the axis's own ceiling is landGesture()'s business now, so this takes only the pair it settles
+function snap(keyT, keyBase, now, dt) {
   if (ptr.down || now - A.lastInput < 240) return
-  if (A.gesture) {
-    const d = A[keyT] - A[keyBase]
-    if (Math.abs(d) > 0.12) A[keyBase] = clamp(A[keyBase] + Math.sign(d) * Math.max(1, Math.round(Math.abs(d))), 0, max)
-    A.gesture = false
-  }
+  // The budget in scrollBy() holds the distance inside one place, so landGesture() can only ever promote one — and
+  // marking it spent is what holds the door against the rest of a coast (see opensGesture).
+  if (A.gesture && landGesture()) A.gSpent = true
   A[keyT] = damp(A[keyT], A[keyBase], 4.5 * RM, dt)
 }
 function tuneWork(now, dt) {
@@ -1687,9 +1835,9 @@ function frame(now) {
   const dt = Math.min(0.05, et)
   last = now
   // positions land exactly on their stop: a place that has arrived is still, so it is not drawn again
-  if (A.mode === 'index') { snap('pT', 'base', LAST, now, et); A.p = damp(A.p, A.pT, 3.4 * RM, et); if (Math.abs(A.p - A.pT) < 5e-4 && A.pT === A.base) A.p = A.pT }
+  if (A.mode === 'index') { snap('pT', 'base', now, et); A.p = damp(A.p, A.pT, 3.4 * RM, et); if (Math.abs(A.p - A.pT) < 5e-4 && A.pT === A.base) A.p = A.pT }
   if (A.mode === 'world') {
-    snap('wpT', 'wbase', lastFrame(), now, et)
+    snap('wpT', 'wbase', now, et)
     // Travelling a project's frames is reading it, and reads at the pace the visitor sets. Being carried to the
     // end because they asked for the NEXT project is not reading — it is the way out, across material they have
     // chosen to leave. That one crossing goes quicker, and quicker again once this visit has done it before.

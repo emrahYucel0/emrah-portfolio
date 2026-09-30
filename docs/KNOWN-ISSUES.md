@@ -213,6 +213,65 @@ the same way, in idle time. That is a separate decision.
 
 ---
 
+## A vertical swipe that begins on a project row on the Work stop is ignored
+
+**Where** The Work stop, on touch. A finger that lands on one of the three project rows and swipes vertically does
+nothing at all — the field does not travel, and the visitor has to find a part of the screen that is not a row.
+Twelve pixels to the side of the same row, the identical swipe travels one stop.
+
+**Wanted behaviour** A tap opens the project; a vertical swipe that starts on the row scrolls like a swipe anywhere
+else. The first half already works.
+
+**Measured 2026-09-30**, Chrome's own touch pipeline via CDP at 390×844, on `origin/main` (`b04e1ed`, the finale)
+and on the gesture-fix build, **identically** — so this is not caused by the gesture work, and it is not new:
+
+| | tap on the row | vertical swipe from the row | the same swipe 12 px beside it |
+|---|---|---|---|
+| origin/main | opens the project (`mode: world`) | **ignored** — base 3 → 3, still `/tr` | travels — base 3 → 4, `/tr/lab` |
+| gesture fix | opens the project (`mode: world`) | **ignored** — base 3 → 3, still `/tr` | travels — base 3 → 4, `/tr/lab` |
+
+**What it is.** `pointerdown` in `engine/c2/main.js` treats anything inside `a, button, .scroll` as chrome:
+
+```js
+const on = e.target.closest('a, button, .scroll')
+if (on && !on.hasAttribute('data-through')) { ptr.ui = true; return }
+```
+
+The project row is a `button[data-work]` and does not carry `data-through`, so the handler returns before `ptr.down`
+is ever set. `pointermove` then exits on `if (!ptr.down) return`, `ptr.axis` never resolves and `scrollBy()` is
+never called. Traced live: `ui true, axis null, moved 0` for the whole gesture, on both builds.
+
+**It is worse than "do not start on the row": the catchment is wider than the row.** A touch has an area, and the
+browser retargets a touchstart onto a nearby clickable element. Measured on the Work stop at 390×844, rows at
+143–186 / 187–229 / 230–273:
+
+| the finger lands at | `elementFromPoint` says | the touch event actually arrives on |
+|---|---|---|
+| y = 128 | `body` | `body` — the swipe works |
+| **y = 136** | `body` | **`button[data-work]`** — snapped ~7 px, the swipe is swallowed |
+| y = 144 | `button` | `button[data-work]` |
+
+So a thumb aimed at clear material a few pixels from a row is swallowed too, and the dead zone is the rows plus a
+margin all round. This is also what made the fault hard to read: `tools/diag/touch.cjs` chose its start point with
+`elementFromPoint`, which models a mathematical point rather than a finger, and the swallowed swipe then looked
+like a fault in the gesture rule — which had never been reached (`ptr.ui true`, `ptr.down false`, no call into
+`scrollBy`). The harness now requires a candidate to be clear across ±16 px, and says so in its output.
+
+**Why `data-through` is not simply added here.** That attribute is what the hero's About button uses, and its
+contract is "track the gesture, keep the pointer marked as UI, and swallow the click a swipe ends in". On the hero
+that control is one button in open material. The Work stop is a *list* of three rows that fill the middle of the
+screen and whose whole purpose is to be pressed — the press-and-hold that loads a project is the site's central
+gesture — so making them gesture-transparent touches how a project is opened, which is the one interaction the
+recent Work-field bug was about. It wants its own step and its own review, not a line in a gesture commit.
+
+**How the harness treats it.** `tools/diag/touch.cjs`, section 10, asserts the behaviour **as it is** and prints it
+as `note … (known issue)`. If it ever changes, the check reports `GONE ← FIXED` and fails, so this entry cannot rot
+quietly. The two halves that already work — the tap, and the swipe beside the row — are ordinary assertions.
+
+Reproduce: `node tools/diag/touch.cjs <port>` (section 10).
+
+---
+
 ## Release: waiting — goes out together with Linefield
 
 **State (2026-09-29).** The Contact finale integration (`feature/contact-finale`: F0–F4, the design and responsive

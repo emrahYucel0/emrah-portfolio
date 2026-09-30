@@ -3,21 +3,21 @@
    STATEMENT  Geist 360, large        INTRO / DETAIL  Geist 380, 15–18
    TITLE      Geist 440, modest       UTILITY / EVIDENCE  Geist Mono 10.5, uppercase
    Quiet never means unreadable: muted text keeps at least WCAG AA contrast on the ground it sits on. */
-:root {
+html[data-c2='on'] {
   --paper: #e7e6e0; --ink: #121212; --night: #0e0f11;
   --fg: var(--ink); --pad: 36px; --strip: 50px;
   --mono: 'Geist Mono', ui-monospace, monospace;
   --sans: 'Geist Variable', 'Geist', system-ui, sans-serif;
 }
 * { box-sizing: border-box; }
-html, body {
+html[data-c2='on'], html[data-c2='on'] body {
   margin: 0; height: 100%; overflow: hidden; background: #efeee9; color: var(--fg);
   font-family: var(--sans); -webkit-font-smoothing: antialiased; font-feature-settings: 'ss01' on;
   overscroll-behavior: none; touch-action: none; -webkit-user-select: none; user-select: none;
 }
-body[data-tone=dark] { --fg: var(--paper); }
-body[data-tone=media] { --fg: var(--paper); }
-.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+:where(html[data-c2='on']) body[data-tone=dark] { --fg: var(--paper); }
+:where(html[data-c2='on']) body[data-tone=media] { --fg: var(--paper); }
+:where(#ui) .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* M3 MOBILE BUG FIX — the media under the surface is seen, never touched. Input is read on the window, so nothing is
    lost; but as the element under a finger, an image gave iOS its save-image callout, and it held the touch's
@@ -29,51 +29,51 @@ body[data-tone=media] { --fg: var(--paper); }
 #ui { position: fixed; inset: 0; z-index: 2; pointer-events: none; color: var(--fg); transition: color .4s ease; }
 #ui > .layers { position: absolute; inset: 0; z-index: 1; }
 
-a, button { color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-decoration: none; text-align: inherit; }
-a:hover { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+:where(#ui) a, :where(#ui) button { color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-decoration: none; text-align: inherit; }
+:where(#ui) a:hover { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
 /* focus: a clear ring in the text's own colour, offset from it — visible on paper, night and every project ink */
-:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; border-radius: 2px; }
-.scroll:focus-visible { outline-offset: -6px; }
+:where(#ui) :focus-visible { outline: 2px solid currentColor; outline-offset: 4px; border-radius: 2px; }
+:where(#ui) .scroll:focus-visible { outline-offset: -6px; }
 /* M4 A11Y: a heading that receives focus on arrival is a reading position, not a control — no ring */
 #ui h1[tabindex="-1"]:focus, #ui h2[tabindex="-1"]:focus { outline: none; }
-p, ul, ol, dl, dd, dt, h2, h3, address { margin: 0; padding: 0; font-weight: inherit; font-style: normal; }
-ul, ol { list-style: none; }
-abbr { text-decoration: none; }
+:where(#ui) p, :where(#ui) ul, :where(#ui) ol, :where(#ui) dl, :where(#ui) dd, :where(#ui) dt, :where(#ui) h2, :where(#ui) h3, :where(#ui) address { margin: 0; padding: 0; font-weight: inherit; font-style: normal; }
+:where(#ui) ul, :where(#ui) ol { list-style: none; }
+:where(#ui) abbr { text-decoration: none; }
 
-.lbl { font: 400 10.5px/1.35 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
+:where(#ui) .lbl { font: 400 10.5px/1.35 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
 
-.skip { position: absolute; z-index: 5; left: var(--pad); top: 8px; padding: 10px 14px; background: var(--ink); color: var(--paper); font: 400 11px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; pointer-events: auto; transform: translateY(-160%); }
-.skip:focus-visible { transform: none; outline-color: var(--paper); }
+:where(#ui) .skip { position: absolute; z-index: 5; left: var(--pad); top: 8px; padding: 10px 14px; background: var(--ink); color: var(--paper); font: 400 11px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; pointer-events: auto; transform: translateY(-160%); }
+:where(#ui) .skip:focus-visible { transform: none; outline-color: var(--paper); }
 
 /* strips: utility only */
-.strip {
+:where(#ui) .strip {
   position: absolute; z-index: 3; left: 0; right: 0; height: var(--strip); padding: 0 var(--pad);
   display: flex; justify-content: space-between; align-items: center; gap: 18px;
   font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; white-space: nowrap;
   transition: opacity .45s ease, color .4s ease;
 }
-.strip a, .strip button { pointer-events: auto; padding: 10px 0; }
-.top { top: 0; }
-.bottom { bottom: 0; }
+:where(#ui) .strip a, :where(#ui) .strip button { pointer-events: auto; padding: 10px 0; }
+:where(#ui) .top { top: 0; }
+:where(#ui) .bottom { bottom: 0; }
 /* M3 SAFE-AREA — the strips grow by the inset (see measure()); their text stays clear of the notch and the home indicator */
-.top, .world .wnav { padding-top: var(--safe-t, 0px); }
-.bottom, .wb-strip { padding-bottom: var(--safe-b, 0px); }
-.nav { display: flex; gap: 26px; }
+:where(#ui) .top, :where(#ui) .world .wnav { padding-top: var(--safe-t, 0px); }
+:where(#ui) .bottom, :where(#ui) .wb-strip { padding-bottom: var(--safe-b, 0px); }
+:where(#ui) .nav { display: flex; gap: 26px; }
 /* M3 A11Y — the language control stays two quiet letters; its target is wider than its text (24px minimum, WCAG 2.2) */
-.strip .lang { padding: 10px 10px; margin: 0 -10px; }
+:where(#ui) .strip .lang { padding: 10px 10px; margin: 0 -10px; }
 /* M4 A11Y: the strip's short words (Lab) reach 24px of target too; padding and margin cancel, nothing moves */
-.strip .nav button { padding-left: 4px; padding-right: 4px; margin: 0 -4px; }
-.roles { opacity: .82; }
-#hint { opacity: .78; overflow: hidden; text-overflow: ellipsis; min-width: 0; margin-left: auto; text-align: right; }   /* M3: it shrinks and keeps the right edge on a phone too */
-.strip[data-tone=dark] { color: var(--paper); }
-.strip[data-tone=light] { color: var(--ink); }
-.strip[data-tone=media] { color: var(--paper); }
-body.in-world .top, body.releasing .top { opacity: 0; pointer-events: none; }
-body.in-world .top * { pointer-events: none; }
-body.in-world .bottom .roles { opacity: 0; }
+:where(#ui) .strip .nav button { padding-left: 4px; padding-right: 4px; margin: 0 -4px; }
+:where(#ui) .roles { opacity: .82; }
+:where(#ui) #hint { opacity: .78; overflow: hidden; text-overflow: ellipsis; min-width: 0; margin-left: auto; text-align: right; }   /* M3: it shrinks and keeps the right edge on a phone too */
+:where(#ui) .strip[data-tone=dark] { color: var(--paper); }
+:where(#ui) .strip[data-tone=light] { color: var(--ink); }
+:where(#ui) .strip[data-tone=media] { color: var(--paper); }
+body.in-world :where(#ui) .top, body.releasing :where(#ui) .top { opacity: 0; pointer-events: none; }
+body.in-world :where(#ui) .top * { pointer-events: none; }
+body.in-world :where(#ui) .bottom .roles { opacity: 0; }
 
-.layer { position: absolute; inset: 0; opacity: 0; transition: opacity .6s ease; pointer-events: none; }
-.layer.on { opacity: 1; transition-delay: .1s; }
+:where(#ui) .layer { position: absolute; inset: 0; opacity: 0; transition: opacity .6s ease; pointer-events: none; }
+:where(#ui) .layer.on { opacity: 1; transition-delay: .1s; }
 /* Reduced motion: a destination's text is shown or it is not — the fade is switched off, so a layer is never
    left part-way through one and nothing of a place the visitor has left can be painted over the place they are in.
    The state is carried by opacity alone, on the layer itself. `visibility: hidden` for the inactive layers was
@@ -83,143 +83,135 @@ body.in-world .bottom .roles { opacity: 0; }
    the destination's own text stays unpainted under a live layer, which is the failure this is here to prevent.
    Opacity has no such problem: it applies to the layer as a whole and is never inherited. */
 @media (prefers-reduced-motion: reduce) {
-  .layer { opacity: 0; transition: none; }
-  .layer.on { opacity: 1; transition: none; transition-delay: 0s; }
+  :where(#ui) .layer { opacity: 0; transition: none; }
+  :where(#ui) .layer.on { opacity: 1; transition: none; transition-delay: 0s; }
 }
-.layer.on a, .layer.on button, .layer.on .scroll { pointer-events: auto; }
-.layer > * { position: absolute; }
+:where(#ui) .layer.on a, :where(#ui) .layer.on button, :where(#ui) .layer.on .scroll { pointer-events: auto; }
+:where(#ui) .layer > * { position: absolute; }
 
 /* about, on the home surface: an introduction, and one positioning line — not equal */
 /* The hero's About. Utility type, on the name's own right axis, in the fold between the names — the site's language
    for a small action, not a button: no chip, no fill, no border. The rule under the word is the affordance, and it
    is the fold's own line continuing under it; reaching the control brings the rule up to full ink. Its target is
    44px tall and wider than the word (WCAG 2.5.8), and the padding is cancelled by the margin, so nothing moves. */
-.hero-act .ha-line { display: flex; justify-content: flex-end; align-items: center; }
-.hero-about {
+:where(#ui) .hero-act .ha-line { display: flex; justify-content: flex-end; align-items: center; }
+:where(#ui) .hero-about {
   font: 400 10.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase;
   display: inline-flex; align-items: center; min-height: 44px; padding: 0 13px; margin-right: -13px;
   text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px;
   text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
   transition: text-decoration-color .25s ease;
 }
-.hero-about:hover, .hero-about:focus-visible { text-decoration-color: currentColor; }
+:where(#ui) .hero-about:hover, :where(#ui) .hero-about:focus-visible { text-decoration-color: currentColor; }
 
-.about .block { display: flex; flex-direction: column; justify-content: center; gap: 16px; }
-.about .intro { font: 380 clamp(15px, 1.2vw, 17px)/1.5 var(--sans); max-width: 46ch; opacity: .88; text-wrap: pretty; }
-.about .statement { font: 360 clamp(25px, 2.7vw, 38px)/1.12 var(--sans); letter-spacing: -.022em; max-width: 21ch; text-wrap: balance; }
-.about .avail { opacity: .78; margin-top: 4px; }
-.about .more { align-self: flex-start; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; padding: 8px 0; opacity: .88; }
+:where(#ui) .about .block { display: flex; flex-direction: column; justify-content: center; gap: 16px; }
+:where(#ui) .about .intro { font: 380 clamp(15px, 1.2vw, 17px)/1.5 var(--sans); max-width: 46ch; opacity: .88; text-wrap: pretty; }
+:where(#ui) .about .statement { font: 360 clamp(25px, 2.7vw, 38px)/1.12 var(--sans); letter-spacing: -.022em; max-width: 21ch; text-wrap: balance; }
+:where(#ui) .about .avail { opacity: .78; margin-top: 4px; }
+:where(#ui) .about .more { align-self: flex-start; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; padding: 8px 0; opacity: .88; }
 
 /* about, the grown room: every part of the story sits in a room the material has made for it */
-.about-detail .ad { top: var(--strip); bottom: var(--strip); left: 0; right: 0; overflow-y: auto;
+:where(#ui) .about-detail .ad { top: var(--strip); bottom: var(--strip); left: 0; right: 0; overflow-y: auto;
   -webkit-mask-image: linear-gradient(transparent, #000 18px, #000 calc(100% - 18px), transparent); mask-image: linear-gradient(transparent, #000 18px, #000 calc(100% - 18px), transparent); overscroll-behavior: contain; touch-action: pan-y; -webkit-user-select: text; user-select: text; scrollbar-width: none; outline: none; }
-.about-detail .ad::-webkit-scrollbar { display: none; }
-.about-detail .ad-flow { position: relative; }
-.about-detail .ab { position: absolute; }
-.about-detail .ab-intro { display: flex; flex-direction: column; gap: 16px; }
-.about-detail .ab-intro .lbl { opacity: .78; }
-.about-detail .ad-intro { font: 360 clamp(22px, 2.1vw, 31px)/1.2 var(--sans); letter-spacing: -.018em; text-wrap: pretty; }
-.about-detail .ab p { text-wrap: pretty; }
-.about-detail .ab-bg p, .about-detail .ab-tr p, .about-detail .ab-now > p { font: 380 clamp(15px, 1.12vw, 16.5px)/1.58 var(--sans); max-width: 60ch; }
-.about-detail .ad-caps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 24px; margin-top: 18px; padding-top: 14px; border-top: 1px solid color-mix(in srgb, currentColor 22%, transparent); font: 400 10.5px/1.4 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
-.about-detail .ab-meta { display: flex; flex-direction: column; gap: 6px; }
-.about-detail .ad-status { font: 380 15px/1.45 var(--sans); margin-bottom: 8px; }
-.about-detail .ad-contact { display: flex; flex-direction: column; gap: 3px; font: 380 15px/1.45 var(--sans); }
-.about-detail .ad-contact span { opacity: .78; }
-.about-detail .ad-links { display: flex; gap: 22px; margin-top: 8px; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
-.about-detail .ad-links a { padding: 6px 0; }
-.about-detail .ad-back { align-self: flex-start; margin-top: 10px; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; opacity: .86; padding: 8px 0; }
+:where(#ui) .about-detail .ad::-webkit-scrollbar { display: none; }
+:where(#ui) .about-detail .ad-flow { position: relative; }
+:where(#ui) .about-detail .ab { position: absolute; }
+:where(#ui) .about-detail .ab-intro { display: flex; flex-direction: column; gap: 16px; }
+:where(#ui) .about-detail .ab-intro .lbl { opacity: .78; }
+:where(#ui) .about-detail .ad-intro { font: 360 clamp(22px, 2.1vw, 31px)/1.2 var(--sans); letter-spacing: -.018em; text-wrap: pretty; }
+:where(#ui) .about-detail .ab p { text-wrap: pretty; }
+:where(#ui) .about-detail .ab-bg p, :where(#ui) .about-detail .ab-tr p, :where(#ui) .about-detail .ab-now > p { font: 380 clamp(15px, 1.12vw, 16.5px)/1.58 var(--sans); max-width: 60ch; }
+:where(#ui) .about-detail .ad-caps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 24px; margin-top: 18px; padding-top: 14px; border-top: 1px solid color-mix(in srgb, currentColor 22%, transparent); font: 400 10.5px/1.4 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
+:where(#ui) .about-detail .ab-meta { display: flex; flex-direction: column; gap: 6px; }
+:where(#ui) .about-detail .ad-status { font: 380 15px/1.45 var(--sans); margin-bottom: 8px; }
+:where(#ui) .about-detail .ad-contact { display: flex; flex-direction: column; gap: 3px; font: 380 15px/1.45 var(--sans); }
+:where(#ui) .about-detail .ad-contact span { opacity: .78; }
+:where(#ui) .about-detail .ad-links { display: flex; gap: 22px; margin-top: 8px; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
+:where(#ui) .about-detail .ad-links a { padding: 6px 0; }
+:where(#ui) .about-detail .ad-back { align-self: flex-start; margin-top: 10px; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; opacity: .86; padding: 8px 0; }
 
 /* faces */
-.face .pos { display: flex; flex-direction: column; justify-content: center; gap: 18px; }
-.face .positioning { font: 300 clamp(34px, 4.4vw, 66px)/.98 var(--sans); letter-spacing: -.045em; text-wrap: balance; max-width: 15ch; }
-.face .stack { font: 380 13px/1.4 var(--sans); opacity: .78; }
-.face .list { display: flex; flex-direction: column; justify-content: center; gap: 15px; }
-.face .list li { display: flex; flex-direction: column; gap: 3px; }
-.face .nm { font: 440 16px/1.15 var(--sans); letter-spacing: -.01em; }
-.face .nt { font: 380 13px/1.3 var(--sans); opacity: .78; }
-.face .role { font: 380 clamp(18px, 1.6vw, 24px)/1 var(--sans); letter-spacing: -.02em; opacity: .86; }
+:where(#ui) .face .pos { display: flex; flex-direction: column; justify-content: center; gap: 18px; }
+:where(#ui) .face .positioning { font: 300 clamp(34px, 4.4vw, 66px)/.98 var(--sans); letter-spacing: -.045em; text-wrap: balance; max-width: 15ch; }
+:where(#ui) .face .stack { font: 380 13px/1.4 var(--sans); opacity: .78; }
+:where(#ui) .face .list { display: flex; flex-direction: column; justify-content: center; gap: 15px; }
+:where(#ui) .face .list li { display: flex; flex-direction: column; gap: 3px; }
+:where(#ui) .face .nm { font: 440 16px/1.15 var(--sans); letter-spacing: -.01em; }
+:where(#ui) .face .nt { font: 380 13px/1.3 var(--sans); opacity: .78; }
+:where(#ui) .face .role { font: 380 clamp(18px, 1.6vw, 24px)/1 var(--sans); letter-spacing: -.02em; opacity: .86; }
 
 /* work field: the index lives on saturated material */
-.work .col { color: var(--paper); padding: 40px var(--pad) 36px; display: flex; flex-direction: column; gap: 28px; }
-.work .head { display: flex; flex-direction: column; gap: 10px; }
-.work .head .lbl { opacity: .78; }
-.work .wline { font: 360 16px/1.4 var(--sans); max-width: 26ch; opacity: .86; }
-.work .index { display: flex; flex-direction: column; gap: 1px; }
-.work .index button { display: grid; grid-template-columns: 14px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 8px; row-gap: 4px; width: 100%; padding: 8px 0; opacity: .64; transition: opacity .3s; }
-.work .index button.active, .work .index button:focus-visible { opacity: 1; }
-.work .index .swatch { width: 6px; height: 6px; background: currentColor; opacity: .35; align-self: center; grid-row: 1; }
-.work .index button.visited .swatch { opacity: 1; }
-.work .index .wid { font: 460 15px/1.1 var(--sans); letter-spacing: -.005em; grid-column: 2; }
-.work .index .wk { font: 400 10px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; opacity: .86; grid-column: 2; }
-.work .current { margin-top: auto; display: flex; flex-direction: column; gap: 10px; opacity: 0; transform: translateY(6px); transition: opacity .45s ease, transform .6s cubic-bezier(.2,.8,.2,1); }
-.work .current.on { opacity: 1; transform: none; }
-.work .wtitle { font: 440 clamp(30px, 2.9vw, 44px)/1 var(--sans); letter-spacing: -.035em; }
-.work .wmeta { font: 380 14px/1.45 var(--sans); opacity: .82; max-width: 32ch; }
-.work .open { align-self: flex-start; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; opacity: .78; padding: 8px 0; }
+:where(#ui) .work .col { color: var(--paper); padding: 40px var(--pad) 36px; display: flex; flex-direction: column; gap: 28px; }
+:where(#ui) .work .head { display: flex; flex-direction: column; gap: 10px; }
+:where(#ui) .work .head .lbl { opacity: .78; }
+:where(#ui) .work .wline { font: 360 16px/1.4 var(--sans); max-width: 26ch; opacity: .86; }
+:where(#ui) .work .index { display: flex; flex-direction: column; gap: 1px; }
+:where(#ui) .work .index button { display: grid; grid-template-columns: 14px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 8px; row-gap: 4px; width: 100%; padding: 8px 0; opacity: .64; transition: opacity .3s; }
+:where(#ui) .work .index button.active, :where(#ui) .work .index button:focus-visible { opacity: 1; }
+:where(#ui) .work .index .swatch { width: 6px; height: 6px; background: currentColor; opacity: .35; align-self: center; grid-row: 1; }
+:where(#ui) .work .index button.visited .swatch { opacity: 1; }
+:where(#ui) .work .index .wid { font: 460 15px/1.1 var(--sans); letter-spacing: -.005em; grid-column: 2; }
+:where(#ui) .work .index .wk { font: 400 10px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; opacity: .86; grid-column: 2; }
+:where(#ui) .work .current { margin-top: auto; display: flex; flex-direction: column; gap: 10px; opacity: 0; transform: translateY(6px); transition: opacity .45s ease, transform .6s cubic-bezier(.2,.8,.2,1); }
+:where(#ui) .work .current.on { opacity: 1; transform: none; }
+:where(#ui) .work .wtitle { font: 440 clamp(30px, 2.9vw, 44px)/1 var(--sans); letter-spacing: -.035em; }
+:where(#ui) .work .wmeta { font: 380 14px/1.45 var(--sans); opacity: .82; max-width: 32ch; }
+:where(#ui) .work .open { align-self: flex-start; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; opacity: .78; padding: 8px 0; }
 
 /* lab: a small caption; the material is the piece */
-.lab .cap { display: flex; flex-direction: column; justify-content: center; gap: 8px; }
-.lab .cap .lbl { opacity: .78; }
-.lab .ltext { font: 380 15px/1.4 var(--sans); opacity: .88; }
-.lab .lab-now { white-space: nowrap; font: 400 10px/1.3 var(--mono); letter-spacing: .04em; text-transform: uppercase; opacity: 0; transition: opacity .4s ease; color: var(--ink); }
-.lab .lab-now.on { opacity: .82; }
+:where(#ui) .lab .cap { display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+:where(#ui) .lab .cap .lbl { opacity: .78; }
+:where(#ui) .lab .ltext { font: 380 15px/1.4 var(--sans); opacity: .88; }
+:where(#ui) .lab .lab-now { white-space: nowrap; font: 400 10px/1.3 var(--mono); letter-spacing: .04em; text-transform: uppercase; opacity: 0; transition: opacity .4s ease; color: var(--ink); }
+:where(#ui) .lab .lab-now.on { opacity: .82; }
 
 /* rest: utilities, quietly, in the room the surface made */
-.rest .contact { display: flex; flex-direction: column; justify-content: center; gap: 6px; }
-.rest .cname { font: 460 15px/1.2 var(--sans); letter-spacing: -.005em; }
-.rest .croles { font: 380 14px/1.3 var(--sans); opacity: .78; margin-bottom: 14px; }
-.rest .email { font: 360 clamp(19px, 1.6vw, 22px)/1.2 var(--sans); letter-spacing: -.015em; align-self: flex-start; }
-.rest .phone { font: 380 15px/1.4 var(--sans); align-self: flex-start; }
-.rest .clinks { display: flex; gap: 22px; margin-top: 8px; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
-.rest .clinks a { padding: 6px 0; }
-.rest .cmeta { font: 380 13px/1.4 var(--sans); opacity: .78; margin-top: 8px; }
 
 /* project world */
-.world .wnav { top: 0; position: absolute; left: 0; right: 0; }
-.world .wlink { text-transform: none; letter-spacing: .01em; font: 400 13px/1 var(--sans); overflow: hidden; text-overflow: ellipsis; }
-.world .whost { font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; opacity: .86; }
-.world .wblocks { inset: 0; }
-.wb { position: absolute; opacity: 0; transition: opacity .55s ease; color: var(--paper); }
-.wb.on { opacity: 1; transition-delay: .2s; }
-.wb.on a, .wb.on button { pointer-events: auto; }
-.wb-strip { display: flex; align-items: center; gap: 18px; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
-.wb-strip .wb-sname { font: 460 13px/1 var(--sans); letter-spacing: 0; text-transform: none; white-space: nowrap; }
-.wb-strip .wb-str { opacity: .88; }
-.wb-band { color: var(--ink); display: flex; flex-direction: column; justify-content: center; gap: 8px; }
-.wb-band.wb-at-top { justify-content: flex-end; padding-bottom: 6px; }
-.wb-band.wb-proof { justify-content: center; gap: 10px; }
-.wb-name { font: 440 clamp(24px, 2.4vw, 36px)/1 var(--sans); letter-spacing: -.03em; }
-.wb-line { font: 380 clamp(15px, 1.2vw, 17px)/1.45 var(--sans); max-width: 62ch; text-wrap: pretty; }
-.wb-cap { display: flex; justify-content: space-between; align-items: center; color: var(--ink); font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
-.wb-facts { display: flex; flex-direction: column; gap: 14px; justify-content: flex-start; }
-.wb-facts.wb-bottom { justify-content: flex-end; }
+:where(#ui) .world .wnav { top: 0; position: absolute; left: 0; right: 0; }
+:where(#ui) .world .wlink { text-transform: none; letter-spacing: .01em; font: 400 13px/1 var(--sans); overflow: hidden; text-overflow: ellipsis; }
+:where(#ui) .world .whost { font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; opacity: .86; }
+:where(#ui) .world .wblocks { inset: 0; }
+:where(#ui) .wb { position: absolute; opacity: 0; transition: opacity .55s ease; color: var(--paper); }
+:where(#ui) .wb.on { opacity: 1; transition-delay: .2s; }
+:where(#ui) .wb.on a, :where(#ui) .wb.on button { pointer-events: auto; }
+:where(#ui) .wb-strip { display: flex; align-items: center; gap: 18px; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
+:where(#ui) .wb-strip .wb-sname { font: 460 13px/1 var(--sans); letter-spacing: 0; text-transform: none; white-space: nowrap; }
+:where(#ui) .wb-strip .wb-str { opacity: .88; }
+:where(#ui) .wb-band { color: var(--ink); display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+:where(#ui) .wb-band.wb-at-top { justify-content: flex-end; padding-bottom: 6px; }
+:where(#ui) .wb-band.wb-proof { justify-content: center; gap: 10px; }
+:where(#ui) .wb-name { font: 440 clamp(24px, 2.4vw, 36px)/1 var(--sans); letter-spacing: -.03em; }
+:where(#ui) .wb-line { font: 380 clamp(15px, 1.2vw, 17px)/1.45 var(--sans); max-width: 62ch; text-wrap: pretty; }
+:where(#ui) .wb-cap { display: flex; justify-content: space-between; align-items: center; color: var(--ink); font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
+:where(#ui) .wb-facts { display: flex; flex-direction: column; gap: 14px; justify-content: flex-start; }
+:where(#ui) .wb-facts.wb-bottom { justify-content: flex-end; }
 /* THE IDENTITY PANEL — a project's name and its line, on a desktop opening. The padding is not decoration: the
    name is set at line-height 1, so its glyph box stands a few pixels proud of its line box at top and bottom, and
    without this the first line of type sat outside the area the material had cleared, on the bare rows. */
-.wb-facts.wb-id { padding: 8px 0 6px; }
-.wb-facts.wb-system { justify-content: center; }
-.wb-facts.wb-admin { justify-content: flex-start; }
-.wb-kicker { font: 400 10.5px/1.3 var(--mono); letter-spacing: .04em; text-transform: uppercase; opacity: .9; }
-.wb-big { font: 360 clamp(24px, 2.4vw, 36px)/1.08 var(--sans); letter-spacing: -.022em; text-wrap: balance; }
-.wb-list { display: flex; flex-direction: column; }
-.wb-list li { font: 380 15px/1.35 var(--sans); padding: 7px 0; border-top: 1px solid color-mix(in srgb, currentColor 20%, transparent); }
-.wb-stack { font: 400 10.5px/1.5 var(--mono); letter-spacing: .03em; text-transform: uppercase; opacity: .88; }
-.wb-role { font: 380 14px/1.4 var(--sans); opacity: .88; }
-.psi { display: flex; flex-direction: column; gap: 5px; font: 400 10px/1.2 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
-.psi-head { opacity: .88; }
-.psi-rows { display: flex; flex-direction: column; gap: inherit; }
-.psi-row { display: grid; grid-template-columns: 62px minmax(0, 1fr); align-items: baseline; }
-.psi-row dt { opacity: .88; }
-.psi-row dd { display: flex; flex-wrap: wrap; gap: 4px 14px; }
-.psi-row b { font: 460 13px/1 var(--sans); letter-spacing: 0; }
-.psi-row abbr { opacity: .88; }
-.wb-close { display: flex; flex-direction: column; justify-content: center; gap: 16px; }
-.wb-close .wb-line { font: 360 clamp(19px, 1.7vw, 25px)/1.28 var(--sans); letter-spacing: -.012em; max-width: 30ch; }
-.wb-links { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 6px; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
-.wb-links a, .wb-links button { padding: 6px 0; }
-.wb-next { font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
-.wb.wb-next.on { opacity: .9; }
+:where(#ui) .wb-facts.wb-id { padding: 8px 0 6px; }
+:where(#ui) .wb-facts.wb-system { justify-content: center; }
+:where(#ui) .wb-facts.wb-admin { justify-content: flex-start; }
+:where(#ui) .wb-kicker { font: 400 10.5px/1.3 var(--mono); letter-spacing: .04em; text-transform: uppercase; opacity: .9; }
+:where(#ui) .wb-big { font: 360 clamp(24px, 2.4vw, 36px)/1.08 var(--sans); letter-spacing: -.022em; text-wrap: balance; }
+:where(#ui) .wb-list { display: flex; flex-direction: column; }
+:where(#ui) .wb-list li { font: 380 15px/1.35 var(--sans); padding: 7px 0; border-top: 1px solid color-mix(in srgb, currentColor 20%, transparent); }
+:where(#ui) .wb-stack { font: 400 10.5px/1.5 var(--mono); letter-spacing: .03em; text-transform: uppercase; opacity: .88; }
+:where(#ui) .wb-role { font: 380 14px/1.4 var(--sans); opacity: .88; }
+:where(#ui) .psi { display: flex; flex-direction: column; gap: 5px; font: 400 10px/1.2 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
+:where(#ui) .psi-head { opacity: .88; }
+:where(#ui) .psi-rows { display: flex; flex-direction: column; gap: inherit; }
+:where(#ui) .psi-row { display: grid; grid-template-columns: 62px minmax(0, 1fr); align-items: baseline; }
+:where(#ui) .psi-row dt { opacity: .88; }
+:where(#ui) .psi-row dd { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+:where(#ui) .psi-row b { font: 460 13px/1 var(--sans); letter-spacing: 0; }
+:where(#ui) .psi-row abbr { opacity: .88; }
+:where(#ui) .wb-close { display: flex; flex-direction: column; justify-content: center; gap: 16px; }
+:where(#ui) .wb-close .wb-line { font: 360 clamp(19px, 1.7vw, 25px)/1.28 var(--sans); letter-spacing: -.012em; max-width: 30ch; }
+:where(#ui) .wb-links { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 6px; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
+:where(#ui) .wb-links a, :where(#ui) .wb-links button { padding: 6px 0; }
+:where(#ui) .wb-next { font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
+:where(#ui) .wb.wb-next.on { opacity: .9; }
 
 /* media: real images, never processed, placed at their own proportions */
 #media .media { position: absolute; opacity: 0; transition: opacity .35s ease; overflow: hidden; }
@@ -230,131 +222,127 @@ body.in-world .bottom .roles { opacity: 0; }
 #media .lab-media video.media-node { position: absolute; inset: 0; }
 
 /* a plain route through everything, for keyboard and assistive technology; visible only when focused */
-.a11y { position: absolute; z-index: 4; left: var(--pad); bottom: calc(var(--strip) + 12px); padding: 16px 18px; background: var(--paper); color: var(--ink); font: 380 14px/1.5 var(--sans); max-width: min(440px, calc(100% - var(--pad) * 2));
+:where(#ui) .a11y { position: absolute; z-index: 4; left: var(--pad); bottom: calc(var(--strip) + 12px); padding: 16px 18px; background: var(--paper); color: var(--ink); font: 380 14px/1.5 var(--sans); max-width: min(440px, calc(100% - var(--pad) * 2));
   clip-path: inset(50%); opacity: 0; pointer-events: none; }
-.a11y:focus, .a11y:focus-within { clip-path: none; opacity: 1; pointer-events: auto; outline: none; }
-.a11y a, .a11y button { pointer-events: auto; }
-.a11y .a11y-places { display: flex; gap: 18px; }
-.a11y .a11y-places button { padding: 4px 0; text-decoration: underline; text-underline-offset: 3px; }
-.a11y ul { margin: 4px 0 10px; }
-.a11y .a11y-links { display: flex; gap: 18px; }
+:where(#ui) .a11y:focus, :where(#ui) .a11y:focus-within { clip-path: none; opacity: 1; pointer-events: auto; outline: none; }
+:where(#ui) .a11y a, :where(#ui) .a11y button { pointer-events: auto; }
+:where(#ui) .a11y .a11y-places { display: flex; gap: 18px; }
+:where(#ui) .a11y .a11y-places button { padding: 4px 0; text-decoration: underline; text-underline-offset: 3px; }
+:where(#ui) .a11y ul { margin: 4px 0 10px; }
+:where(#ui) .a11y .a11y-links { display: flex; gap: 18px; }
 
 /* M3 RESPONSIVE TYPOGRAPHY — the narrowest phones: the strip keeps every control on screen, in both languages */
 @media (max-width: 360px) {
-  .strip { gap: 10px; }
-  .nav { gap: 11px !important; }
-  .psi-row { grid-template-columns: 54px minmax(0, 1fr); }
-  .psi-row dd { column-gap: 9px; }   /* four scores stay on one line */
+  :where(#ui) .strip { gap: 10px; }
+  :where(#ui) .nav { gap: 11px !important; }
+  :where(#ui) .psi-row { grid-template-columns: 54px minmax(0, 1fr); }
+  :where(#ui) .psi-row dd { column-gap: 9px; }   /* four scores stay on one line */
 }
 @media (max-width: 480px) {
   /* a project's first frame names it on the strip; its strength line returns in the frames that follow */
-  .wb-strip .wb-str { display: none; }
+  :where(#ui) .wb-strip .wb-str { display: none; }
 }
 /* M3 RESPONSIVE TYPOGRAPHY — short phones (SE-class): the same hierarchy, set tighter, so nothing runs off the screen or onto the media */
 @media (max-width: 700px) and (max-height: 759px) {
-  .about .block { gap: 10px; }
-  .about .intro { font-size: 13.5px; line-height: 1.45; }
-  .about .statement { font-size: 21px; }
-  .work .col { gap: 10px; }
-  .work .wline { font-size: 13px; }
-  .work .index button { padding: 4px 0; }
-  .work .current { display: none; }   /* the active entry of the index already names the work */
-  .wb-facts { gap: 10px; }
-  .wb-list li { font-size: 13px; padding: 4px 0; }
-  .wb-close { gap: 10px; }
-  .wb-close .wb-line { font-size: 16px; }
-  .wb-big { font-size: 21px; }
+  :where(#ui) .about .block { gap: 10px; }
+  :where(#ui) .about .intro { font-size: 13.5px; line-height: 1.45; }
+  :where(#ui) .about .statement { font-size: 21px; }
+  :where(#ui) .work .col { gap: 10px; }
+  :where(#ui) .work .wline { font-size: 13px; }
+  :where(#ui) .work .index button { padding: 4px 0; }
+  :where(#ui) .work .current { display: none; }   /* the active entry of the index already names the work */
+  :where(#ui) .wb-facts { gap: 10px; }
+  :where(#ui) .wb-list li { font-size: 13px; padding: 4px 0; }
+  :where(#ui) .wb-close { gap: 10px; }
+  :where(#ui) .wb-close .wb-line { font-size: 16px; }
+  :where(#ui) .wb-big { font-size: 21px; }
 }
 /* the smallest phones (568px tall): the closing block keeps name, line and links visible; the role sentence stays in the DOM for assistive technology */
 @media (max-width: 700px) and (max-height: 639px) {
-  .wb-close .wb-role { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  .psi { gap: 3px; }
+  :where(#ui) .wb-close .wb-role { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  :where(#ui) .psi { gap: 3px; }
 }
 @media (max-width: 700px) {
-  .wb-close { justify-content: flex-start; }
-  .strip { font-size: 10px; gap: 12px; }
-  .nav { gap: 16px; }
-  .bottom .roles { display: none; }
-  .about .intro { font-size: 14.5px; }
-  .about .statement { font-size: 24px; }
-  .about-detail .ad-flow { padding: 34px var(--pad) 64px; }
-  .lab .lab-now .d { display: none; }
+  :where(#ui) .wb-close { justify-content: flex-start; }
+  :where(#ui) .strip { font-size: 10px; gap: 12px; }
+  :where(#ui) .nav { gap: 16px; }
+  :where(#ui) .bottom .roles { display: none; }
+  :where(#ui) .about .intro { font-size: 14.5px; }
+  :where(#ui) .about .statement { font-size: 24px; }
+  :where(#ui) .about-detail .ad-flow { padding: 34px var(--pad) 64px; }
+  :where(#ui) .lab .lab-now .d { display: none; }
   /* a thumb needs at least 24px of target (WCAG 2.2 AA); the type stays the size it is */
-  .rest .email, .rest .phone, .rest .clinks a, .about-detail .ad-contact a, .about-detail .ad-links a,
-  .about .more, .about-detail .ad-back, .wb-links a, .wb-links button, .world .wlink { padding-top: 7px; padding-bottom: 7px; }
-  .rest .contact { gap: 2px; }
-  .about-detail .ad-contact { gap: 0; }
-  .about-detail .ab { position: static; }
-  .about-detail .ab + .ab { margin-top: 62px; }
-  .about-detail .ad-intro { font-size: 21px; }
-  .about-detail .ad-caps { grid-template-columns: 1fr; }
-  .face .positioning { font-size: 32px; max-width: none; }
-  .face .pos { justify-content: flex-end; gap: 12px; }
-  .face .list { gap: 14px; }
-  .work .col { padding: 22px var(--pad) 18px; gap: 14px; }
-  .work .wline { font-size: 14px; max-width: none; }
-  .work .index button { padding: 6px 0; }
-  .work .wtitle { font-size: 28px; }
-  .work .current { gap: 4px; }
-  .work .wmeta { max-width: none; font-size: 13px; }
-  .work .wrole { display: none; }
-  .work .open { display: none; }
-  .world .wlink .whost { display: none; }
-  .wb-name { font-size: 24px; }
-  .wb-line { font-size: 14.5px; }
-  .wb-big { font-size: 24px; }
-  .wb-list li { font-size: 14px; padding: 6px 0; }
-  .wb-close .wb-line { font-size: 18px; }
-  .rest .email { font-size: 19px; }
+  :where(#ui) .about-detail .ad-contact a, :where(#ui) .about-detail .ad-links a,
+  :where(#ui) .about .more, :where(#ui) .about-detail .ad-back, :where(#ui) .wb-links a, :where(#ui) .wb-links button, :where(#ui) .world .wlink { padding-top: 7px; padding-bottom: 7px; }
+  :where(#ui) .about-detail .ad-contact { gap: 0; }
+  :where(#ui) .about-detail .ab { position: static; }
+  :where(#ui) .about-detail .ab + .ab { margin-top: 62px; }
+  :where(#ui) .about-detail .ad-intro { font-size: 21px; }
+  :where(#ui) .about-detail .ad-caps { grid-template-columns: 1fr; }
+  :where(#ui) .face .positioning { font-size: 32px; max-width: none; }
+  :where(#ui) .face .pos { justify-content: flex-end; gap: 12px; }
+  :where(#ui) .face .list { gap: 14px; }
+  :where(#ui) .work .col { padding: 22px var(--pad) 18px; gap: 14px; }
+  :where(#ui) .work .wline { font-size: 14px; max-width: none; }
+  :where(#ui) .work .index button { padding: 6px 0; }
+  :where(#ui) .work .wtitle { font-size: 28px; }
+  :where(#ui) .work .current { gap: 4px; }
+  :where(#ui) .work .wmeta { max-width: none; font-size: 13px; }
+  :where(#ui) .work .wrole { display: none; }
+  :where(#ui) .work .open { display: none; }
+  :where(#ui) .world .wlink .whost { display: none; }
+  :where(#ui) .wb-name { font-size: 24px; }
+  :where(#ui) .wb-line { font-size: 14.5px; }
+  :where(#ui) .wb-big { font-size: 24px; }
+  :where(#ui) .wb-list li { font-size: 14px; padding: 6px 0; }
+  :where(#ui) .wb-close .wb-line { font-size: 18px; }
 }
 
 /* ─── M3 RESPONSIVE TYPOGRAPHY — composition classes set by measure() on <html data-c2-shape> ───────────────────
    tablet  a tablet held upright: the portrait laws (the long About stacks, the word runs up the edge) at a tablet's measure
    short   a phone on its side: the landscape laws with less height than any laptop — same hierarchy, set tighter  */
-html[data-c2-shape='tablet'] .about .intro { font-size: 17px; max-width: 52ch; }
-html[data-c2-shape='tablet'] .about .statement { font-size: clamp(30px, 4.2vw, 40px); max-width: 20ch; }
-html[data-c2-shape='tablet'] .about-detail .ab { position: static; }
-html[data-c2-shape='tablet'] .about-detail .ab + .ab { margin-top: 76px; }
-html[data-c2-shape='tablet'] .about-detail .ad-flow { padding: 64px var(--pad) 110px; max-width: 780px; }
-html[data-c2-shape='tablet'] .about-detail .ad-intro { font-size: clamp(26px, 3.4vw, 34px); }
-html[data-c2-shape='tablet'] .about-detail .ab-bg p, html[data-c2-shape='tablet'] .about-detail .ab-tr p, html[data-c2-shape='tablet'] .about-detail .ab-now > p { font-size: 17px; }
-html[data-c2-shape='tablet'] .face .pos { justify-content: flex-end; gap: 16px; }
-html[data-c2-shape='tablet'] .face .positioning { font-size: clamp(44px, 6.2vw, 68px); max-width: 13ch; }
-html[data-c2-shape='tablet'] .face .stack { font-size: 15px; }
-html[data-c2-shape='tablet'] .face .list { gap: 22px; }
-html[data-c2-shape='tablet'] .face .nm { font-size: 20px; }
-html[data-c2-shape='tablet'] .face .nt { font-size: 15px; }
-html[data-c2-shape='tablet'] .work .col { padding: 34px var(--pad) 22px; gap: 22px; }
-html[data-c2-shape='tablet'] .work .wline { font-size: 18px; max-width: 34ch; }
-html[data-c2-shape='tablet'] .work .index .wid { font-size: 18px; }
-html[data-c2-shape='tablet'] .work .current { display: none; }   /* the frame sits under the index; the active entry names the work */
-html[data-c2-shape='tablet'] .lab .ltext { font-size: 17px; }
-html[data-c2-shape='tablet'] .rest .email { font-size: 26px; }
-html[data-c2-shape='tablet'] .rest .cname, html[data-c2-shape='tablet'] .rest .phone { font-size: 17px; }
-html[data-c2-shape='tablet'] .wb-line { font-size: 17px; }
-html[data-c2-shape='tablet'] .wb-list li { font-size: 17px; }
-html[data-c2-shape='tablet'] .wb-big { font-size: 34px; }
-html[data-c2-shape='tablet'] .wb-name { font-size: 36px; }
-html[data-c2-shape='tablet'] .wb-close .wb-line { font-size: 24px; }
+html[data-c2-shape='tablet'] :where(#ui) .about .intro { font-size: 17px; max-width: 52ch; }
+html[data-c2-shape='tablet'] :where(#ui) .about .statement { font-size: clamp(30px, 4.2vw, 40px); max-width: 20ch; }
+html[data-c2-shape='tablet'] :where(#ui) .about-detail .ab { position: static; }
+html[data-c2-shape='tablet'] :where(#ui) .about-detail .ab + .ab { margin-top: 76px; }
+html[data-c2-shape='tablet'] :where(#ui) .about-detail .ad-flow { padding: 64px var(--pad) 110px; max-width: 780px; }
+html[data-c2-shape='tablet'] :where(#ui) .about-detail .ad-intro { font-size: clamp(26px, 3.4vw, 34px); }
+html[data-c2-shape='tablet'] :where(#ui) .about-detail .ab-bg p, html[data-c2-shape='tablet'] :where(#ui) .about-detail .ab-tr p, html[data-c2-shape='tablet'] :where(#ui) .about-detail .ab-now > p { font-size: 17px; }
+html[data-c2-shape='tablet'] :where(#ui) .face .pos { justify-content: flex-end; gap: 16px; }
+html[data-c2-shape='tablet'] :where(#ui) .face .positioning { font-size: clamp(44px, 6.2vw, 68px); max-width: 13ch; }
+html[data-c2-shape='tablet'] :where(#ui) .face .stack { font-size: 15px; }
+html[data-c2-shape='tablet'] :where(#ui) .face .list { gap: 22px; }
+html[data-c2-shape='tablet'] :where(#ui) .face .nm { font-size: 20px; }
+html[data-c2-shape='tablet'] :where(#ui) .face .nt { font-size: 15px; }
+html[data-c2-shape='tablet'] :where(#ui) .work .col { padding: 34px var(--pad) 22px; gap: 22px; }
+html[data-c2-shape='tablet'] :where(#ui) .work .wline { font-size: 18px; max-width: 34ch; }
+html[data-c2-shape='tablet'] :where(#ui) .work .index .wid { font-size: 18px; }
+html[data-c2-shape='tablet'] :where(#ui) .work .current { display: none; }   /* the frame sits under the index; the active entry names the work */
+html[data-c2-shape='tablet'] :where(#ui) .lab .ltext { font-size: 17px; }
+html[data-c2-shape='tablet'] :where(#ui) .wb-line { font-size: 17px; }
+html[data-c2-shape='tablet'] :where(#ui) .wb-list li { font-size: 17px; }
+html[data-c2-shape='tablet'] :where(#ui) .wb-big { font-size: 34px; }
+html[data-c2-shape='tablet'] :where(#ui) .wb-name { font-size: 36px; }
+html[data-c2-shape='tablet'] :where(#ui) .wb-close .wb-line { font-size: 24px; }
 
-html[data-c2-shape='short'] .bottom .roles { display: none; }
-html[data-c2-shape='short'] .about .block { gap: 8px; }
-html[data-c2-shape='short'] .about .intro { font-size: 13.5px; line-height: 1.42; }
-html[data-c2-shape='short'] .about .statement { font-size: 21px; }
-html[data-c2-shape='short'] .face .pos { gap: 8px; justify-content: flex-start; }
-html[data-c2-shape='short'] .face .positioning { font-size: clamp(26px, 3.6vw, 34px); }
-html[data-c2-shape='short'] .face .list { gap: 7px; justify-content: flex-start; }
-html[data-c2-shape='short'] .face .nm { font-size: 14px; }
-html[data-c2-shape='short'] .face .nt { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }   /* a phone on its side shows the names only; the notes are still read by assistive technology */
-html[data-c2-shape='short'] .work .col { padding: 16px var(--pad) 12px; gap: 10px; }
-html[data-c2-shape='short'] .work .wline { font-size: 13px; }
-html[data-c2-shape='short'] .work .index button { padding: 3px 0; }
-html[data-c2-shape='short'] .work .current { display: none; }
-html[data-c2-shape='short'] .wb-at-top .wb-line { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-html[data-c2-shape='short'] .wb-facts, html[data-c2-shape='short'] .wb-close { gap: 7px; }
-html[data-c2-shape='short'] .wb-big { font-size: 20px; }
-html[data-c2-shape='short'] .wb-name { font-size: 22px; }
-html[data-c2-shape='short'] .wb-line, html[data-c2-shape='short'] .wb-close .wb-line { font-size: 14px; }
-html[data-c2-shape='short'] .wb-list li { font-size: 13px; padding: 3px 0; }
-html[data-c2-shape='short'] .wb-role { font-size: 13px; }
-html[data-c2-shape='short'] .psi { gap: 3px; }
+html[data-c2-shape='short'] :where(#ui) .bottom .roles { display: none; }
+html[data-c2-shape='short'] :where(#ui) .about .block { gap: 8px; }
+html[data-c2-shape='short'] :where(#ui) .about .intro { font-size: 13.5px; line-height: 1.42; }
+html[data-c2-shape='short'] :where(#ui) .about .statement { font-size: 21px; }
+html[data-c2-shape='short'] :where(#ui) .face .pos { gap: 8px; justify-content: flex-start; }
+html[data-c2-shape='short'] :where(#ui) .face .positioning { font-size: clamp(26px, 3.6vw, 34px); }
+html[data-c2-shape='short'] :where(#ui) .face .list { gap: 7px; justify-content: flex-start; }
+html[data-c2-shape='short'] :where(#ui) .face .nm { font-size: 14px; }
+html[data-c2-shape='short'] :where(#ui) .face .nt { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }   /* a phone on its side shows the names only; the notes are still read by assistive technology */
+html[data-c2-shape='short'] :where(#ui) .work .col { padding: 16px var(--pad) 12px; gap: 10px; }
+html[data-c2-shape='short'] :where(#ui) .work .wline { font-size: 13px; }
+html[data-c2-shape='short'] :where(#ui) .work .index button { padding: 3px 0; }
+html[data-c2-shape='short'] :where(#ui) .work .current { display: none; }
+html[data-c2-shape='short'] :where(#ui) .wb-at-top .wb-line { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+html[data-c2-shape='short'] :where(#ui) .wb-facts, html[data-c2-shape='short'] :where(#ui) .wb-close { gap: 7px; }
+html[data-c2-shape='short'] :where(#ui) .wb-big { font-size: 20px; }
+html[data-c2-shape='short'] :where(#ui) .wb-name { font-size: 22px; }
+html[data-c2-shape='short'] :where(#ui) .wb-line, html[data-c2-shape='short'] :where(#ui) .wb-close .wb-line { font-size: 14px; }
+html[data-c2-shape='short'] :where(#ui) .wb-list li { font-size: 13px; padding: 3px 0; }
+html[data-c2-shape='short'] :where(#ui) .wb-role { font-size: 13px; }
+html[data-c2-shape='short'] :where(#ui) .psi { gap: 3px; }

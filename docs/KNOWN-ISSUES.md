@@ -105,3 +105,118 @@ different contract, and it needs its own decision before it can have a check.
 
 Reproduce: `node panelfit.cjs 4500 check 1440x900 tr 0`
 
+
+---
+
+## Gate: "one momentum gesture on the index moves exactly one stop" failed once under full-gate load
+
+**Where** `tools/diag/gesture2.cjs`, second check, in `run6.sh` on `feature/contact-finale` (F0): the index stayed
+on stop 0 (`0 → 0`) after one momentum wheel gesture, in WebKit at 1366×768.
+
+**What is known.** It failed once, inside the full gate; the same check then passed 3/3 alone against this build
+AND 3/3 against the baseline build (`baseline/pre-site-polish`). The branch did not touch the index or its gesture
+code at that point (only the Contact route and the runtime's head-start plugin's route test). Treated as a timing
+escape: the harness waits a fixed 3 s after `A.mode === 'index'` before the gesture, and a loaded machine may not
+have the index ready to promote a stop by then.
+
+**Owed.** F2 of the Contact integration changes this area directly (C2's Contact stop hands off to the finale), so
+at the end of F2 this check runs **at least 5 times under the full gate**; a single further failure means
+investigating the timing, not re-running it away.
+
+**F2 result (2026-09-29): 5 / 5 PASS.** The check was repeated 5 times inside one full gate
+(`GESTURE_RUNS=5 sh run6.sh 4500 4650`), in its normal place and under the gate's own load, on the F2 build. Every
+other section passed as well, except three that still expected the runtime's old Contact stop: the two JOURNEY
+runs and the NON-LAB comparison. Those harnesses were updated for the move and then passed when run alone. The
+gesture check itself did not fail again, so no timing investigation was opened. The entry stays
+here as a record, and the check keeps its place in the gate.
+
+---
+
+## The app needs Safari 15.4, not 15.0 (Nuxt runtime: `Array.prototype.at`, `Object.hasOwn`) — RESOLVED: floor is iOS 15.4
+
+**Decision (2026-09-29).** The documented floor is now **iOS 15.4 / Safari 15.4** — Nuxt's own requirement. No
+polyfills. `docs/POST-M5-IOS15-COMPATIBILITY.md` states it; `tools/diag/compat-ios15.cjs` holds the finale's sources
+and runtime to Safari 15.4 (`Array#at`, `Object.hasOwn` and the other 15.4 APIs are no longer failures). The record
+below is how it was found.
+
+**Where** Every route. `docs/POST-M5-IOS15-COMPATIBILITY.md` states Safari 15 / iOS 15 as the floor; the build
+lowers syntax to `safari15` but not APIs, and the Nuxt / vue-router runtime in the client bundle calls
+`matched.at(-1)` and `Object.hasOwn(...)`, which arrived in Safari **15.4**. With those two removed (an imitation of
+15.0–15.3 in `tools/diag/compat-ios15.cjs`, first version) the app renders its 500 page on `/tr/contact` and hydrates
+with mismatches on `/tr/lab`.
+
+**Why it has not bitten.** The real validation device is an iPhone 7 Plus on iOS **15.8.8**, which has both.
+
+**Not fixed here** (found during the Contact integration, outside its scope). The Contact finale's own sources are
+were held to Safari 15.0 by the static half of the first `compat-ios15.cjs`; its runtime half imitated the
+validation device's profile (15.4–15.8). Options were: state the floor as iOS 15.4, or ship the two small polyfills
+— the first was chosen (above).
+
+---
+
+## Gate: JOURNEY TR NORMAL failed once in the F4 gate — a cold runtime boot, now waited for — RESOLVED (warm-up)
+
+**Resolved (2026-09-29).** The cold boot is now warmed up on the Lab and Contact finale routes (`useC2Engine.warm`,
+scheduled from `layouts/default.vue`). The runtime is fetched and PREPARED after the page has settled:
+
+- **Prepared:** fonts, surface, the Work and name textures, DOM, states.
+- **Not begun:** nothing plays or shows, and its loop does not run.
+- **Paced:** each heavy step waits until the visitor has been still for 0.7 s, then for idle time.
+- **Skipped:** with Save-Data.
+
+Measured with `tools/diag/warm.cjs` (Chromium 1440×900). Cold and warm were interleaved in one session, on the same
+build: cold = click on WORK 1.5 s after load, warm = click after 9 s. Figures: `docs/contact-finale/warm-up.json`.
+
+| from → Work on screen | CPU 1× cold | CPU 1× warm | CPU 4× cold | CPU 4× warm |
+|---|---|---|---|---|
+| /tr/contact | 0.34–1.79 s | 0.28–0.32 s | 1.79–2.01 s | 0.97–1.03 s |
+| the bench | 0.32–0.39 s | 0.12–0.19 s | 1.74–1.94 s | 0.86–0.94 s |
+
+What it costs the finale: the finale was swept through the warm-up window. Its frame p95 was unchanged (the warm-up
+waits while the visitor scrolls), there was no added long task, and the resting finale was pixel-identical before and
+after. First load is untouched: nothing starts before the load event plus 2.5 s.
+
+The same round fixed three leaks. All three affected any visitor who reached the Lab or the finale after the index,
+and the warm-up would have spread them to everyone:
+
+1. **The runtime took the keyboard off its own routes.** After one visit to the index, PageDown, Space and the
+   arrows did nothing on the finale or a study, and moved the hidden index instead. Fixed with an `owns()` guard,
+   and `beckon.cjs` checks it.
+2. **The runtime's stylesheet was global.** `a, button`, `:focus-visible`, `p`/`ul`, `.lbl`, `.roles`, `html, body`
+   and `:root` applied to every page once it was loaded. It is now scoped: `:where(#ui)`, and
+   `html[data-c2='on']` for the root rules. That adds no specificity, so the runtime's own look is unchanged.
+3. **The runtime's frame loop kept running beside pages that own the screen.** It now parks after a second without
+   the screen, and wakes when `data-c2` returns.
+
+The record of the original failure follows.
+
+**Where** `tools/diag/journey.cjs`, the step Lab → Work, in the F4 full gate.
+
+**What happened.** The journey loads each Lab study directly (a full page load), so the runtime is not in memory
+when it returns to the bench. Before F2 it came back through the runtime's Contact stop, and the runtime booted
+there. Now Contact and the Lab are both routes without the runtime, so the runtime's first boot of that session
+lands on Lab → Work. That boot is a cold one: engine, fonts, textures and WebGL.
+
+**Measured** (headless WebKit, 2026-09-29): 3.3 s without load, 8–9 s under load. The step slept a fixed 4.2 s,
+so under the gate's load it saw `/tr` with the runtime not yet on screen. The same Lab → Work step with a warm
+runtime hands over in about 0.15 s, with or without load.
+
+**Fix, in the harness.** Each step now waits for its expected state (up to 25 s), as `spine.cjs` already does, and
+reports any arrival slower than its settle time. Under load it passed 3/3 (Lab → Work arrived after 8.4 s). The EN
+reduced run passes too.
+
+**For the product, not changed here.** The cold-boot time is not new: the old flow had the same boot at its Contact
+stop. What is new is where a visitor meets it: someone who landed on a study, the bench or the finale directly and
+then goes up to Work. The bench already fetches the finale's engine ahead of time. It could warm the runtime's module
+the same way, in idle time. That is a separate decision.
+
+
+---
+
+## Release: waiting — goes out together with Linefield
+
+**State (2026-09-29).** The Contact finale integration (`feature/contact-finale`: F0–F4, the design and responsive
+rounds, the runtime warm-up) is complete on its branch, and is merged into `main` after the final review. It is **not
+released**. User decision: the Contact finale and **Linefield** are released together, once Linefield is done. Until
+then there is no `npm run generate` for release and no `DEPLOY.md` preparation for this change. Both come after
+Linefield, for the two together.

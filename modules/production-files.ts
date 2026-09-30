@@ -31,7 +31,8 @@ const htmlFiles = (dir: string): string[] =>
 const escapeXml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
 function robots(site: string) {
-  return `User-agent: *\nAllow: /\n\nSitemap: ${site}/sitemap.xml\n`
+  // the Contact finale's ?debug=1 panel is a diagnostics file, not a page
+  return `User-agent: *\nAllow: /\nDisallow: /finale-debug.js\n\nSitemap: ${site}/sitemap.xml\n`
 }
 
 function sitemap(site: string) {

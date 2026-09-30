@@ -114,6 +114,16 @@ const swipe = async (p, dy) => {
     return reached
   }
 
+  // F2: down from the bench is the Contact finale, its own route — arrival is the finale running, at p = 0
+  const settleFinale = async (pg, label) => {
+    const t0 = Date.now(); let reached = true
+    await pg.waitForFunction(() => location.pathname === '/tr/contact' && !!window.__finale, null, { timeout: ARRIVE_MS }).catch(() => { reached = false })
+    arrivals.push(`${label.padEnd(34)} ${reached ? `${String(Date.now() - t0).padStart(5)} ms` : `NEVER (gave up at ${ARRIVE_MS} ms)`}`)
+    await sleep(900)
+    return reached
+  }
+  const finaleAt = () => ({ path: location.pathname, y: Math.round(scrollY), running: !!window.__finale })
+
   const fresh = async (path) => {
     await p.goto(BASE + path, { waitUntil: 'networkidle', timeout: 60000 })
     // on a C2 route the opening plays before the index can be travelled at all; the Lab has no such wait
@@ -143,42 +153,47 @@ const swipe = async (p, dy) => {
   ok(!path1.some((v) => v < 2.5), 'no flash through Name on the way to Work', `p seen: ${Math.min(...path1)}…${Math.max(...path1)}`)
 
   await fresh('/tr/lab')
-  await p.evaluate(watchP)
   await wheelBurst(p, 110, 1)
-  await settleIndex(p, '/tr', 5, 'wheel: Lab -> Contact')
-  s = await p.evaluate(state)
-  path1 = await p.evaluate(seen)
-  ok(s.path === '/tr' && s.base === 5, 'Lab → Contact', `at ${s.path} c2 ${s.c2} mode ${s.mode} base ${s.base} p ${s.p}`)
-  ok(!path1.some((v) => v < 4.5), 'no flash through Name on the way to Contact', `p seen: ${Math.min(...path1)}…${Math.max(...path1)}`)
+  await settleFinale(p, 'wheel: Lab -> Contact finale')
+  let f = await p.evaluate(finaleAt)
+  ok(f.path === '/tr/contact' && f.running && f.y === 0, 'Lab → Contact: the finale, from its first frame', `at ${f.path} scrollY ${f.y}`)
 
   // ── trackpad momentum: the tail must not carry a second stop ──────────────
   console.log('\n-- trackpad momentum')
-  for (const [dir, want, label] of [[-1, 3, 'Lab → Work'], [1, 5, 'Lab → Contact']]) {
-    await fresh('/tr/lab')
-    await momentum(p, dir)
-    await settleIndex(p, '/tr', want, `momentum: ${label}`)
-    s = await p.evaluate(state)
-    ok(s.path === '/tr' && s.base === want, `${label} (momentum) — one gesture, one stop`, `at ${s.path} c2 ${s.c2} base ${s.base} (wanted ${want})`)
-  }
+  await fresh('/tr/lab')
+  await momentum(p, -1)
+  await settleIndex(p, '/tr', 3, 'momentum: Lab -> Work')
+  s = await p.evaluate(state)
+  ok(s.path === '/tr' && s.base === 3, 'Lab → Work (momentum) — one gesture, one stop', `at ${s.path} c2 ${s.c2} base ${s.base} (wanted 3)`)
+  await fresh('/tr/lab')
+  await momentum(p, 1)
+  await settleFinale(p, 'momentum: Lab -> Contact finale')
+  await sleep(600)
+  f = await p.evaluate(finaleAt)
+  ok(f.path === '/tr/contact' && f.y === 0, 'Lab → Contact (momentum) — one gesture, one stop: the tail does not scroll the finale', `at ${f.path} scrollY ${f.y}`)
 
   // ── touch swipe ───────────────────────────────────────────────────────────
   console.log('\n-- touch swipe (phone)')
   p = phonePage
-  for (const [dy, want, label] of [[220, 3, 'Lab → Work'], [-220, 5, 'Lab → Contact']]) {
-    await fresh('/tr/lab')
-    await swipe(p, dy)
-    await settleIndex(p, '/tr', want, `swipe: ${label}`)
-    s = await p.evaluate(state)
-    ok(s.path === '/tr' && s.base === want, `${label} (swipe) — one gesture, one stop`, `at ${s.path} c2 ${s.c2} base ${s.base} (wanted ${want})`)
-  }
+  await fresh('/tr/lab')
+  await swipe(p, 220)
+  await settleIndex(p, '/tr', 3, 'swipe: Lab -> Work')
+  s = await p.evaluate(state)
+  ok(s.path === '/tr' && s.base === 3, 'Lab → Work (swipe) — one gesture, one stop', `at ${s.path} c2 ${s.c2} base ${s.base} (wanted 3)`)
+  await fresh('/tr/lab')
+  await swipe(p, -220)
+  await settleFinale(p, 'swipe: Lab -> Contact finale')
+  f = await p.evaluate(finaleAt)
+  ok(f.path === '/tr/contact' && f.y === 0, 'Lab → Contact (swipe) — one gesture, one stop', `at ${f.path} scrollY ${f.y}`)
 
   // ── Contact → Lab, the reverse of the same grammar ─────────────────────────
   console.log('\n-- Contact → Lab')
   p = deskPage
   await fresh('/tr/lab')
   await wheelBurst(p, 110, 1)
-  await settleIndex(p, '/tr', 5, 'wheel down to Contact')
-  ok((await p.evaluate(state)).base === 5, 'standing at Contact')
+  await settleFinale(p, 'wheel down to the Contact finale')
+  ok((await p.evaluate(finaleAt)).y === 0, 'standing at the top of the finale')
+  await sleep(500)
   await wheelBurst(p, -110, 1)
   await settleBench(p, '/tr/lab', 'Contact -> reverse -> bench')
   s = await p.evaluate(state)

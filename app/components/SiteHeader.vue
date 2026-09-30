@@ -2,6 +2,14 @@
 import { profile } from '~~/shared/content'
 
 const { copy, path } = useLocale()
+const seam = useContactSeam()
+// the site's one Contact is the finale's route; asked for by name, it opens settled
+const contactTo = computed(() => path('/contact'))
+const toContact = (e: MouseEvent) => {
+  if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+  e.preventDefault()
+  void seam.toContact('end')
+}
 </script>
 
 <template>
@@ -17,7 +25,10 @@ const { copy, path } = useLocale()
           <li><NuxtLink :to="`${path('/')}#work`">{{ copy.nav.work }}</NuxtLink></li>
           <li><NuxtLink :to="path('/about')">{{ copy.nav.about }}</NuxtLink></li>
           <li><NuxtLink :to="`${path('/')}#lab`">{{ copy.nav.lab }}</NuxtLink></li>
-          <li><NuxtLink :to="`${path('/')}#contact`">{{ copy.nav.contact }}</NuxtLink></li>
+          <li>
+            <!-- a plain link: the router is asked with the arrival on the history entry (RouterLink would navigate first) -->
+            <a :href="contactTo" @click="toContact">{{ copy.nav.contact }}</a>
+          </li>
           <li><LocaleSwitcher /></li>
         </ul>
       </nav>

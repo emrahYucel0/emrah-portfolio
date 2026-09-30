@@ -1,7 +1,7 @@
 # Post-M5 compatibility: iOS 15 / Safari 15
 
 ## Browser support contract
-The production build supports **Safari 15 and iOS 15 at minimum**. The real validation device is an **iPhone 7 Plus on iOS 15.8.8 (Safari)**.
+The production build supports **Safari 15.4 and iOS 15.4 at minimum** (raised from 15.0 on 2026-09-29: the Nuxt / vue-router runtime calls `Array.prototype.at` and `Object.hasOwn`, which arrived in 15.4; no polyfills — `docs/KNOWN-ISSUES.md`). The build still lowers syntax to `safari15`. The real validation device is an **iPhone 7 Plus on iOS 15.8.8 (Safari)**.
 
 The contract is stated once, as the Vite build target in `nuxt.config.ts`:
 

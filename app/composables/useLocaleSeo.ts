@@ -2,7 +2,7 @@ import type { ResolvableLink } from '@unhead/vue'
 import { HTML_LANG, LOCALES, OG_LOCALE, profile } from '~~/shared/content'
 import { SOCIAL_IMAGE } from '~~/shared/site'
 
-type Page = 'home' | 'about' | 'lab'
+type Page = 'home' | 'about' | 'lab' | 'contact'
 
 /**
  * One call per page: html lang, title, description, canonical, hreflang tr / en / x-default, Open Graph, Twitter and

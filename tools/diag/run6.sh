@@ -76,7 +76,11 @@ say "RETIRED LAB — EN NORMAL";  MSYS_NO_PATHCONV=1 node labflash.cjs $CUR norm
 say "DESKTOP SPINE";            node spine.cjs $CUR          2>&1 | tail -34 >> $L
 # tail -4 used to cut the reason off: the log said "SPINE: FAIL (1)" with nothing above it
 say "DESKTOP SPINE REDUCED";    node spine.cjs $CUR reduced  2>&1 | tail -34 >> $L
-say "ONE GESTURE = ONE STOP";   MSYS_NO_PATHCONV=1 node gesture2.cjs $CUR 2>&1 | tail -4 >> $L
+# GESTURE_RUNS=n repeats this section in place, under the gate's own load (docs/KNOWN-ISSUES.md: owed after F2)
+g=1; while [ $g -le ${GESTURE_RUNS:-1} ]; do
+  say "ONE GESTURE = ONE STOP (run $g of ${GESTURE_RUNS:-1})";   MSYS_NO_PATHCONV=1 node gesture2.cjs $CUR 2>&1 | tail -4 >> $L
+  g=$((g + 1))
+done
 say "INITIAL LOAD webkit";      MSYS_NO_PATHCONV=1 node boot.cjs $CUR webkit /tr 2>&1 | tail -11 >> $L
 say "INITIAL LOAD chrome";      MSYS_NO_PATHCONV=1 node boot.cjs $CUR chrome /tr 2>&1 | tail -11 >> $L
 say "BOOT RESPONSIVE webkit";   MSYS_NO_PATHCONV=1 node bootresp.cjs $CUR webkit 2>&1 | tail -3 >> $L
@@ -94,8 +98,14 @@ say "PROJECT IDENTITY PANELS — INSIDE, AND AA AGAINST WHAT IS BEHIND"
 MSYS_NO_PATHCONV=1 node panelfit.cjs $CUR gate 1920x1080,1440x900,1280x720 tr,en 1,2 2>&1 | tail -12 >> $L
 say "LAB SHELL / RESPONSIVE";   node shell.cjs $CUR          2>&1 | tail -10 >> $L
 say "LAB A11Y";                 node labaxe.cjs $CUR         2>&1 | tail -3  >> $L
-say "JOURNEY TR NORMAL";        node journey.cjs $CUR tr     2>&1 | tail -5  >> $L
-say "JOURNEY EN REDUCED";       node journey.cjs $CUR en reduced 2>&1 | tail -5 >> $L
+# the Contact finale's route: a document route (no runtime), its facts as DOM with and without JS, axe, both engines
+say "CONTACT ROUTE";            node contact.cjs $CUR        2>&1 | tail -12 >> $L
+say "CONTACT FINALE — iOS 15.4";   node compat-ios15.cjs $CUR   2>&1 | tail -1  >> $L
+say "CONTACT SEAM — LAB ⇄ FINALE, ARRIVALS, HISTORY";   node seam.cjs $CUR   2>&1 | grep -E "FAIL|seam:|SEAM" >> $L
+say "CONTACT FINALE — A11Y, KEYBOARD, LANGUAGE, REDUCED, PHONES";   node finale-a11y.cjs $CUR   2>&1 | grep -E "FAIL|FINALE A11Y" >> $L
+say "CONTACT FINALE — THE WAY IN, THE GUIDE, THE FOOT BAND";   node beckon.cjs $CUR   2>&1 | grep -E "FAIL|BECKON" >> $L
+say "JOURNEY TR NORMAL";        node journey.cjs $CUR tr     2>&1 | grep -E "FAIL|errors|JOURNEY" >> $L
+say "JOURNEY EN REDUCED";       node journey.cjs $CUR en reduced 2>&1 | grep -E "FAIL|errors|JOURNEY" >> $L
 say "NON-LAB NORMAL (baseline $BASE)";  node nonlab.cjs $BASE $CUR    2>&1 | tail -13 >> $L
 say "NON-LAB REDUCED (baseline $BASE)"; node nonlabred.cjs $BASE $CUR 2>&1 | tail -13 >> $L
 echo "" >> $L; echo "RUN6 DONE" >> $L

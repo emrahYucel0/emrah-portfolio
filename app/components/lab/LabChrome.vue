@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { HTML_LANG, profile } from '~~/shared/content'
 import type { LabExit } from '~/composables/useLabHandoff'
+import { NuxtLink } from '#components'
 
 /**
  * THE LAB'S CHROME. On the Lab routes the C2 runtime is not mounted — that is what gives the studies the document's
@@ -9,24 +10,45 @@ import type { LabExit } from '~/composables/useLabHandoff'
  * right, in the same order. The visitor should not be able to tell that the chrome changed hands; only that the
  * Lab is the place they are in.
  *
- * Its four places are the site's, not the Lab's. Work and Contact are destinations on the runtime's index, so they
- * are a navigation back to the locale route carrying which place was asked for (useLabHandoff); About is already a
- * route of its own; Lab is the bench. That is the whole navigation system on these routes — the studies' own return
+ * Its four places are the site's, not the Lab's. Work is a destination on the runtime's index, so it is a
+ * navigation back to the locale route carrying which place was asked for (useLabHandoff); About and Contact (the
+ * finale — asked for by name, it opens settled: useContactSeam) are routes of their own; Lab is the bench. That is the whole navigation system on these routes — the studies' own return
  * control is stood down in lab.css so there is never a second control for the same place.
  */
 const { copy, path, other, switchPath } = useLocale()
 const { setLanguage } = useVisit()
 const { leave } = useLabHandoff()
+const seam = useContactSeam()
 const route = useRoute()
 
 const home = computed(() => path('/'))
 const onBench = computed(() => /\/lab\/?$/.test(route.path))
+// inside a study the way back to the bench is the study's own control; everywhere else (the bench, the Contact
+// finale) the strip offers the Lab like the runtime's own strip does
+const inStudy = computed(() => /\/lab\/[^/]+/.test(route.path))
+const onContact = computed(() => /\/contact\/?$/.test(route.path))
 
 // a plain click is the site's navigation; a modified one is the browser's, and is left alone
 const go = (e: MouseEvent, to: LabExit) => {
   if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
   e.preventDefault()
   void leave(to)
+}
+// Contact is its own route now (F2): asked for by name, the finale opens settled — and pressed while already there,
+// it settles the finale in place. Its href is the page itself, so a modified click or no script still reaches it.
+// the language control on the finale keeps the reader's place on the drawing (F3); elsewhere it is a plain link
+const toLocale = (e: MouseEvent) => {
+  setLanguage(other.value)
+  if (!onContact.value || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+  e.preventDefault()
+  void seam.toLocale(switchPath.value)
+}
+const contactHref = computed(() => path('/contact'))
+const toContact = (e: MouseEvent) => {
+  if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+  e.preventDefault()
+  if (onContact.value) dispatchEvent(new Event('finale:arrive'))
+  else void seam.toContact('end')
 }
 </script>
 
@@ -40,20 +62,23 @@ const go = (e: MouseEvent, to: LabExit) => {
         <li><NuxtLink :to="path('/about')">{{ copy.nav.about }}</NuxtLink></li>
         <!-- On the bench this is where the visitor is. Inside a study the way back to the bench is the study's
              own control, in the study's own field, so the strip does not offer a second one competing with it. -->
-        <li v-if="onBench">
-          <NuxtLink :to="path('/lab')" aria-current="page">{{ copy.nav.lab }}</NuxtLink>
+        <li v-if="!inStudy">
+          <NuxtLink :to="path('/lab')" :aria-current="onBench ? 'page' : undefined">{{ copy.nav.lab }}</NuxtLink>
         </li>
-        <li><a :href="home" @click="go($event, 'rest')">{{ copy.nav.contact }}</a></li>
+        <li><a :href="contactHref" :aria-current="onContact ? 'page' : undefined" @click="toContact">{{ copy.nav.contact }}</a></li>
         <li>
           <!-- two quiet letters, as on the runtime's own strip: a language control, not a word of English -->
           <!-- a language change is a step the visitor took, so Back undoes it — as it now does on the C2 routes -->
-          <NuxtLink
-            class="lang" :to="switchPath"
+          <!-- on the finale a plain link: the router is asked with the reader's place on the entry (RouterLink would
+               navigate before it could be given) -->
+          <component
+            :is="onContact ? 'a' : NuxtLink"
+            class="lang" :href="onContact ? switchPath : undefined" :to="onContact ? undefined : switchPath"
             :hreflang="HTML_LANG[other]" :lang="HTML_LANG[other]"
             :aria-label="`${copy.localeSwitch.label}: ${copy.localeSwitch.to}`"
             :title="`${copy.localeSwitch.label}: ${copy.localeSwitch.to}`"
-            @click="setLanguage(other)"
-          >{{ copy.localeSwitch.short }}</NuxtLink>
+            @click="toLocale"
+          >{{ copy.localeSwitch.short }}</component>
         </li>
       </ul>
     </nav>

@@ -30,15 +30,21 @@ const TW = 320
       await sleep(1200)
       await p.evaluate(() => document.getElementById('dock').classList.add('hidden'))
     } else {
-      await p.goto(`http://127.0.0.1:${port}/tr?linefield=1`, { waitUntil: 'load', timeout: 90000 })
-      await p.waitForFunction(() => !!window.__lf, null, { timeout: 60000 })
-      await p.evaluate(() => window.__lf.dock(false))
-      await p.evaluate(() => window.__lf.play(0, 0.3, 300))
-      await sleep(300)
+      // the site's own path: the passage is a place now, so it is travelled to and held, exactly as a
+      // visitor reaches it. The retired debug entry is not on a built site at all.
+      await p.goto(`http://127.0.0.1:${port}/tr`, { waitUntil: 'load', timeout: 90000 })
+      await p.waitForFunction(() => !!window.__lab?.lfSet, null, { timeout: 60000 })
+      await sleep(2400)
+      await p.evaluate(() => window.__lab.go(window.__lab.STOP.linefield))
+      await sleep(1700)
+      // the site's chrome is not the passage; what is being sheeted is the material
+      await p.evaluate(() => document.querySelectorAll('.layer, .strip').forEach((e) => { e.style.visibility = 'hidden' }))
+      await p.evaluate(() => window.__lab.lfSet(0.3))
+      await sleep(2600)
     }
     const set = (v) => (DEMO
       ? p.evaluate((x) => window.__demo.setProgress(x / 100), v)
-      : p.evaluate((x) => window.__lf.setProgress(x / 100), v))
+      : p.evaluate((x) => window.__lab.lfSet(x / 100), v))
 
     const th = Math.round((TW * h) / w)
     const tiles = []

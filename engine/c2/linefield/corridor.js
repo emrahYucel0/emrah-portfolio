@@ -51,34 +51,25 @@ export const LF_ITERS = 5
  */
 export const LF_ROW_KEEP = 8
 
-/**
- * HOW FAR THE CORRIDOR THROWS ITSELF INTO THE DISTANCE as the fan closes.
+/*
+ * THE FAN CLOSES; IT DOES NOT RETREAT.
  *
- * The demo's map has two knobs, d and cc, and cc alone closes the fan: every row is scaled toward the horizon
- * until they are all on it. That closes it, but it does not RECEDE — the fan keeps the full width of the screen
- * right up to the moment it becomes a line, so the scene folds flat instead of going away.
- *
- * So the far point is drawn back toward the vanishing point over the last of the closing. The corridor's whole
- * image shrinks to a few per cent of the screen at the point, which is the fold-back going deeper, and what is
- * left of the fan is a short sharp wedge with its tip on the vanishing point. That is the tip the mark then
- * takes over from.
+ * There was a version of this that drew the far point back toward the vanishing point as the fan closed, so the
+ * corridor's whole image shrank to a few per cent of the screen and what was left was a small wedge in a corner.
+ * That is not the reference's passage and it left the screen nearly empty for seconds. The reference closes the
+ * fan on cc ALONE: the vanishing point stays where it is, the far end stays at the screen edge, and the fan
+ * flattens vertically onto the horizon until it is a needle spanning the whole width with its tip on the point.
  */
-export const LF_PULL = 0.94
-
 const vxOf = (W, side) => (side === 0 ? W * 0.1 : W * 0.9)
-const ExOf = (W, side, pull = 0) => {
-  const vx = vxOf(W, side)
-  const Ex = side === 0 ? W * 1.1 : -W * 0.1
-  return vx + (Ex - vx) * (1 - LF_PULL * pull)
-}
+const ExOf = (W, side) => (side === 0 ? W * 1.1 : -W * 0.1)
 
 /*
  * The same arithmetic as the shader, on the CPU, so the iteration can be MEASURED rather than asserted.
  * Returns the worst absolute error in screen pixels over a grid across the frame.
  */
-export function lfResidual(W, d, side, iters = LF_ITERS, pull = 0) {
+export function lfResidual(W, d, side, iters = LF_ITERS) {
   const vx = vxOf(W, side)
-  const Ex = ExOf(W, side, pull)
+  const Ex = ExOf(W, side)
   const p = 1 + 1.7 * d
   const X = (t) => {
     const tt = side === 0 ? t : 1 - t
@@ -124,9 +115,9 @@ export function vanishingPoint(W, H, d, side) {
  * else — not past the vanishing point, and not past the far point once the fold-back has drawn it in. A harness
  * asks for this to know where it is entitled to find a mark, and the shader enforces it by residual.
  */
-export function corridorImage(W, d, side, pull = 0) {
+export function corridorImage(W, d, side) {
   const vx = vxOf(W, side)
-  const Ex = ExOf(W, side, pull)
+  const Ex = ExOf(W, side)
   const p = 1 + 1.7 * d
   const X = (t) => {
     const tt = side === 0 ? t : 1 - t
@@ -136,10 +127,10 @@ export function corridorImage(W, d, side, pull = 0) {
 }
 
 /** what the shader needs, per frame */
-export function corridorUniforms(W, H, d, side, pull = 0) {
+export function corridorUniforms(W, H, d, side) {
   return {
     map: [d, 0, vxOf(W, side), H * 0.5],
-    map2: [ExOf(W, side, pull), W, side, 1 + 1.7 * d],
+    map2: [ExOf(W, side), W, side, 1 + 1.7 * d],
   }
 }
 
@@ -161,9 +152,9 @@ uniform vec4 uLFfade;     // x,y: the whisker at the point itself; z: depth fade
 uniform vec4 uLFflow;     // how far each of the four words has flowed, in flat pixels
 uniform vec4 uLFband;     // the four words' centres up the flat field, in flat pixels
 uniform vec2 uLFthin;     // x: keep every Nth row, y: how far the thinning has gone (0 = the full field)
-uniform vec4 uLFline;     // the drawn mark: screen y, half height, how much of it there is, half width
+uniform vec4 uLFline;     // the rust line: screen y, half height, how much of it there is, unused
 uniform vec3 uLFlineCol;  // its colour — the ground's ink, taking the rust only at the crossing
-uniform vec4 uLFmode;     // x: 1 while the corridor is mapping; y: the mark's centre x; z: is the field still here
+uniform vec4 uLFmode;     // x: 1 while the corridor is mapping
 
 /*
  * THE FIELD THINS AS THE CORRIDOR FORMS.
@@ -353,27 +344,22 @@ float lfFlowAt(float v) {
     lfWhiskType_cur = smoothstep(uLFfade.x * 0.18, uLFfade.y * 0.21, spr * uDpr);
     fade *= smoothstep(0.0, uLFfade.w, u) * smoothstep(0.0, uLFfade.w, uRes.x - u);
     fade *= 1.0 - uLFfade.z * d;
-    // and the field leaves exactly as the mark arrives: the tip hands over to the point, the point to the line
-    fade *= uLFmode.z;
   }
 `,
   /*
-   * THE PASSAGE IS DRAWN, NOT FUSED. A fused mass cannot be made thin; a drawn line is thin by construction,
-   * it is handed over to as the fan finishes closing, and it is the only thing that takes the rust.
+   * THE RUST LINE IS DRAWN ALONG THE HORIZON, ACROSS THE WHOLE WIDTH, exactly as the reference strokes it: two
+   * pixels at the vanishing point's own height, from edge to edge, its opacity the flash. It appears while the
+   * fan is still a needle — so it is first seen INSIDE the wedge, along its centre — and it is the last thing
+   * left when the needle has closed.
    *
-   * AND IT ARRIVES AS A POINT. The fold-back leaves a short sharp tip on the vanishing point; the mark takes
-   * over from it there, as a point, and only then grows out into the full line that carries the accent. Coming
-   * the other way it does the reverse: the line draws back into a point at the cream side's vanishing point,
-   * and the fan opens out of it.
+   * It is drawn rather than fused because a fused mass cannot be made thin, and because the accent belongs to
+   * this line and to nothing else on the screen.
    */
   composite: `
   if (uLFmode.x > 0.5 && uLFline.z > 0.001) {
     float half_ = max(0.5, uLFline.y);
-    float halfW = max(0.5, uLFline.w);
     float d0 = abs(p.y - uLFline.x);
-    float dxm = abs(p.x - uLFmode.y);
-    float ln = (1.0 - smoothstep(half_ - 0.5, half_ + 0.5, d0))
-             * (1.0 - smoothstep(halfW - 0.5, halfW + 0.5, dxm)) * uLFline.z;
+    float ln = (1.0 - smoothstep(half_ - 0.5, half_ + 0.5, d0)) * uLFline.z;
     col = mix(col, uLFlineCol, ln);
     inkCol = mix(inkCol, uLFlineCol, ln);
     inkAmt = max(inkAmt, ln);

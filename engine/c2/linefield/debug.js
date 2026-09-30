@@ -124,7 +124,7 @@ async function mount() {
      * belongs to the drawn line and to nothing else.
      */
     for (let i = 0; i < 3; i++) st.ink[i] = base[i]
-    const lineCol = base.map((c, i) => c + (RUST[i] - c) * q.flash)
+    // the reference's line: its COLOUR is rust and its PRESENCE is the flash, which is not the same as mixing
     /*
      * THE MARK: a point at the vanishing point, then the line.
      *
@@ -133,16 +133,13 @@ async function mount() {
      * down from a point's to a line's over the same opening, so the moment it reads as a dot is a real moment
      * and not a very short line.
      */
-    const [vpx] = vanishingPoint(V.W, V.H, q.depth, q.side)
-    const a = vpx + (-40 - vpx) * q.grow
-    const b = vpx + (V.W + 40 - vpx) * q.grow
-    const lineAmt = q.mark
+
 
     surface.pair(st, st, 1)
     surface.beneath(st)
     surface.features = []
 
-    const U = corridorUniforms(V.W, V.H, q.depth, q.side, q.pull)
+    const U = corridorUniforms(V.W, V.H, q.depth, q.side)
     surface.use('corridor')
     // set inside the draw, where the variant's program is bound and the base uniforms are already in place
     surface.onBeforeDraw = () => {
@@ -158,11 +155,11 @@ async function mount() {
       surface.vec4('uLFflow', q.flow[0], q.flow[1], q.flow[2], q.flow[3])
       surface.vec4('uLFband', st.layout.bands[0], st.layout.bands[1], st.layout.bands[2], st.layout.bands[3])
       // z: the field leaves exactly as the mark arrives, so the tip hands over rather than fading out early
-      surface.vec4('uLFmode', 1, (a + b) / 2, 1 - q.mark, 0)
+      surface.vec4('uLFmode', 1, 0, 0, 0)
       // the `dense` break sends the full field down the corridor, which is the fault this revision was about
       surface.vec2('uLFthin', LF_ROW_KEEP, broke === 'dense' ? 0 : q.thin)
-      surface.vec4('uLFline', V.H * 0.5, 2.4 + (0.85 - 2.4) * q.grow, lineAmt, Math.max(2.4, (b - a) / 2))
-      surface.vec3('uLFlineCol', lineCol)
+      surface.vec4('uLFline', V.H * 0.5, 1, q.flash, 0)
+      surface.vec3('uLFlineCol', RUST)
     }
     surface.render()
 
@@ -292,8 +289,8 @@ async function mount() {
     // and the whole band of columns the map can reach: outside it there is no solution and nothing may be drawn
     image: () => {
       const q = sequence(p, V.W)
-      const [lo, hi] = corridorImage(V.W, q.depth, q.side, q.pull)
-      return { lo, hi, mark: q.mark, grow: q.grow, pull: q.pull, lineY: V.H * 0.5 }
+      const [lo, hi] = corridorImage(V.W, q.depth, q.side)
+      return { lo, hi, flash: q.flash, lineY: V.H * 0.5 }
     },
     spacing: () => ({ back: back.spacing, front: front.spacing, cap: back.layout.cap }),
     strip: () => V.strip,

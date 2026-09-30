@@ -264,20 +264,17 @@ export function sequence(p, W) {
    */
   const thin = back ? ease(q, 0.19, 0.35) : 1 - ease(q, 0.60, 0.79)
   /*
-   * ── THE FOLD-BACK, THE POINT, AND THE LINE ──────────────────────────────────────────────────────────────
+   * ── THE PASSAGE IS cc, AND NOTHING ELSE ─────────────────────────────────────────────────────────────────
    *
-   * cc alone closes the fan, but it does not send it away: every row scales toward the horizon while the
-   * corridor keeps the full width of the screen, so the scene folds flat where it should recede. Three
-   * overlapping scalars carry the last tenth of the passage, and the same three, reversed, carry the first
-   * tenth of the other half:
+   * The fan closes on `spread` (the reference's cc) alone. The vanishing point does not move and the far end
+   * stays at the screen edge; what happens is that every row is scaled toward the horizon until they are all on
+   * it, so the fan flattens into a needle spanning the whole width with its tip on the point, and then into
+   * nothing. The rust line is `flash`, which the reference already gave us: two pixels along the horizon, from
+   * edge to edge, appearing while the needle is still open — so it is first seen along the needle's own centre
+   * — and left alone when the needle has closed. Every part of it moves; there is no held frame anywhere in it.
    *
-   *   pull   the far point is drawn back toward the vanishing point, so the whole corridor throws itself into
-   *          the distance and what is left of the fan is a short wedge with its tip ON the point
-   *   mark   the drawn mark arrives, and the field's rows leave over the same window — the tip hands over
-   *   grow   the mark opens out from a point at the vanishing point into the full-width line that takes the rust
+   * An earlier version drew the far point IN as well, so the corridor retreated into a corner and the screen
+   * stood nearly empty for seconds. That is not this passage, and it is gone.
    */
-  const pull = back ? ease(q, 0.4, 0.478) : 1 - ease(q, 0.522, 0.6)
-  const mark = back ? ease(q, 0.468, 0.492) : 1 - ease(q, 0.508, 0.532)
-  const grow = back ? ease(q, 0.486, 0.5) : 1 - ease(q, 0.5, 0.514)
-  return { back, side: back ? 0 : 1, depth, spread, flow, labelA, flash, thin, pull, mark, grow }
+  return { back, side: back ? 0 : 1, depth, spread, flow, labelA, flash, thin }
 }

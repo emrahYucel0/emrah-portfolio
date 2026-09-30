@@ -106,7 +106,7 @@ export function createLinefield() {
       const q = sequence(p, V.W)
       const st = q.back ? back : front
       const [vx, vy] = vanishingPoint(V.W, V.H, q.depth, q.side)
-      const [lo, hi] = corridorImage(V.W, q.depth, q.side, q.pull)
+      const [lo, hi] = corridorImage(V.W, q.depth, q.side)
       return {
         seq: q, vx, vy, lo, hi, lineY: V.H * 0.5, broke,
         ground: st.paper.map((c) => Math.round(c * 255)),
@@ -126,21 +126,18 @@ export function createLinefield() {
     apply(surface, p) {
       const q = sequence(p, V.W)
       const st = q.back ? back : front
-      const [vpx] = vanishingPoint(V.W, V.H, q.depth, q.side)
-      const a = vpx + (-40 - vpx) * q.grow
-      const b = vpx + (V.W + 40 - vpx) * q.grow
-      const U = corridorUniforms(V.W, V.H, q.depth, q.side, q.pull)
-      const lineCol = st.ink.map((c, i) => c + (RUST[i] - c) * q.flash)
+      const U = corridorUniforms(V.W, V.H, q.depth, q.side)
       surface.vec4('uLFmap', U.map[0], q.spread, U.map[2], U.map[3])
       surface.vec4('uLFmap2', U.map2[0], U.map2[1], U.map2[2], U.map2[3])
       surface.vec4('uLFfade', 0.22, 0.85, 0.12, Math.max(8, V.W * 0.012))
       surface.vec4('uLFflow', q.flow[0], q.flow[1], q.flow[2], q.flow[3])
       surface.vec4('uLFband', st.layout.bands[0], st.layout.bands[1], st.layout.bands[2], st.layout.bands[3])
-      surface.vec4('uLFmode', 1, (a + b) / 2, 1 - q.mark, 0)
-      // the `dense` break sends the field down the corridor at the density the words need, undinned
+      surface.vec4('uLFmode', 1, 0, 0, 0)
+      // the `dense` break sends the field down the corridor at the density the words need, unthinned
       surface.vec2('uLFthin', LF_ROW_KEEP, broke === 'dense' ? 0 : q.thin)
-      surface.vec4('uLFline', V.H * 0.5, 2.4 + (0.85 - 2.4) * q.grow, q.mark, Math.max(2.4, (b - a) / 2))
-      surface.vec3('uLFlineCol', lineCol)
+      // the reference's line: two pixels on the horizon, edge to edge, its opacity the flash and its colour rust
+      surface.vec4('uLFline', V.H * 0.5, 1, q.flash, 0)
+      surface.vec3('uLFlineCol', RUST)
     },
 
     /**

@@ -690,3 +690,82 @@ The first run of this check reported the hold failing on the **flag-off** build 
 fixed 1.4 s and the load needs about 1.5 s: the check was standing on the edge of the threshold and calling the
 coin toss a regression. It holds until the material yields now, and reports the peak load and how long it took.
 The flag-off build was never affected.
+
+---
+
+# DECISIONS, 2026-09-30
+
+- **The half labels stay as they are.** BACKEND / FRONTEND above each half, localised, in the site's mono, at
+  the top of the band the words are set in. They cost about four per cent of the type size and they are what
+  tells a visitor the eight words are answers to something.
+- **The full stops stay.** STATE. SCALE. FAILURE. TRUTH. / FEEL. TIMING. FRICTION. FIRST PAINT. — each word
+  ends in a full stop, as the reference sets them. They are statements, not a list.
+
+---
+
+# THE PASSAGE IS THE REFERENCE'S PASSAGE
+
+An earlier round asked for the fold-back to go deeper and end in a point. It was built as the corridor
+RETREATING: the far point was drawn in toward the vanishing point, so the whole image shrank to a few per cent
+of the screen and what was left was a small wedge in a corner with the screen nearly empty around it. That is
+not the reference's passage and it is gone.
+
+## What the reference does
+
+The fan closes on **cc alone**. The vanishing point does not move and the far end stays at the screen edge;
+every row is scaled toward the horizon until they are all on it. So:
+
+1. the wide fan **flattens** vertically;
+2. it becomes a **needle** spanning the whole width, its tip on the vanishing point;
+3. the **rust line** appears along the needle's centre while the needle is still open, and is alone when it has
+   closed — two pixels on the horizon, edge to edge, its opacity the reference's own `flash`
+   (`1 - |p - 0.5| / 0.03`, so it lives only between 47% and 53%);
+4. the cream side is the same in reverse: the line opens into a needle from the opposite vanishing point, which
+   widens back into the fan.
+
+`LF_PULL`, `pull`, `mark` and `grow` are gone. The line's colour is rust and its presence is the flash — which
+is not the same as mixing rust into the ground's ink, and the earlier version did the latter.
+
+## The wide fan
+
+The viewer is inside it. The reference's far point is at **1.1 × width**, so the rays run past the screen edge
+horizontally, and its spread is **3.4 ×** the distance from the horizon, so at the near end a band of about
+±13% of the height fills the whole screen and everything outside it runs past the top and bottom. Both numbers
+are the reference's and both are in the map unchanged; removing the retreat is what let them be seen again.
+
+## Measured
+
+Every 2% from 40 to 60, at 1440x900 and 390x844, on the site and on the reference:
+
+| | 42% | 46% | 48% | 50% | 52% |
+|---|---|---|---|---|---|
+| ink, 1440x900 | 1440 x 756 | 1440 x 530 | **1440 x 154** | 1440 x 2 | 1440 x 534 |
+| rust on the horizon | 0 | 0 | **2880 px** | 2880 px | 2880 px |
+| ink, 390x844 | 341 x 708 | 323 x 530 | **390 x 154** | 390 x 2 | 390 x 530 |
+
+The needle spans the full width at 48% in both viewports, has flattened to a fifth of its 42% height, and the
+rust is already inside it. Nothing is held: no two consecutive frames through the passage have the same
+signature.
+
+Rays crossing the far screen edge, site against the reference at matched progress:
+
+| | 28% | 34% | 42% | 70% |
+|---|---|---|---|---|
+| site | 37 | 5 | 6 | 42 |
+| reference | 18 | 17 | 23 | 21 |
+
+They run out through the far edge everywhere. Where the site has fewer, that is the density decision — every
+8th row, approved on the device — biting hardest in the deepest part of the passage, where the reference keeps
+all of its sixty. It is a difference in how many rays, not in where they go.
+
+The rays leave through the top and bottom of the FIELD rather than of the window, because this site keeps a
+50 px strip at the top and the bottom of every screen and no row ever crosses into one. That is the site's own
+rule and applies to every other place on it.
+
+## A note on the reference recording
+
+`docs/reference/linefield-demo-passage.mp4` is not at that path. What is there is
+`docs/reference/Ekran Kaydı 2026-09-30 111436.mp4`, and Playwright's bundled ffmpeg is an encoder only — it
+cannot decode it, and there is no other ffmpeg on this machine. The work was done against
+`docs/reference/linefield-v2.html`, which is the demo that recording is a recording of, driven to an exact
+progress rather than sampled from a video. Anything that needs the video itself needs a decoder installed first.

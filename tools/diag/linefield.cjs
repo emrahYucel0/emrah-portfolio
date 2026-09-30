@@ -214,10 +214,11 @@ const raw = async (p) => {
 
   // ── CORRIDOR, POINT ──────────────────────────────────────────────────────────────────────────────────────
   if (on('corridor')) {
-    console.log('\nCORRIDOR and POINT — the middle converges, then a tip, then a point, then the line')
+    console.log('\nNEEDLE — the fan flattens onto the horizon, becomes a needle across the whole width, and the rust line appears inside it')
     for (const [w, h] of [[1440, 900], [390, 844]]) {
       const { ctx, p, errs } = await open(b, w, h, 'tr')
       await goTo(p, 'linefield')
+      await p.evaluate(() => document.querySelectorAll('.layer, .strip').forEach((e) => { e.style.visibility = 'hidden' }))
       /*
        * THE FIELD'S OWN BAND, not the whole screen. The site keeps its name, its navigation and its status line
        * in the strips, and measured across the whole frame every one of these numbers was the width of the
@@ -225,6 +226,7 @@ const raw = async (p) => {
        */
       const band = { y0: Math.round(h * 0.08), y1: Math.round(h * 0.92) }
       const field = (x, wd) => ({ x, y: band.y0, w: wd, h: band.y1 - band.y0 })
+
       // the corridor: at full depth the ink must be concentrated toward the vanishing point
       await holdAt(p, 0.34)
       const pr = await p.evaluate(() => window.__lab.lfProbe())
@@ -235,24 +237,143 @@ const raw = async (p) => {
       fs.writeFileSync(`${OUT}/corridor-${w}x${h}-34.png`, A.png)
       ok(nearVp > farVp, `${w}x${h}  at 34% the field is denser toward the vanishing point (${nearVp} vs ${farVp} px)`)
 
-      // the sequence across the crossing
-      const widths = []
-      for (const v of [0.46, 0.47, 0.48, 0.49, 0.5, 0.51, 0.52, 0.53]) {
+      /*
+       * THE PASSAGE, MEASURED AS THE REFERENCE DRAWS IT.
+       *
+       * The fan closes on cc alone: the vanishing point does not move and the far end stays at the screen edge,
+       * so what happens is that the fan FLATTENS. Three things follow, and each is a number:
+       *
+       *   the span stays full width — a needle from the point across the frame, never a wedge in a corner;
+       *   the height falls, monotonically, to almost nothing;
+       *   the rust line appears while the needle is still open, along its centre, and is alone at the crossing.
+       */
+      const rows = []
+      for (const v of [0.42, 0.44, 0.46, 0.48, 0.49, 0.5, 0.51, 0.52, 0.54, 0.56]) {
         await holdAt(p, v)
         const q = await p.evaluate(() => window.__lab.lfProbe())
         const f = await raw(p)
         const k = inkBox(f.data, f.info, q.ground, field(0, w), 8)
-        widths.push({ v, w: k.n ? k.x1 - k.x0 + 1 : 0, n: k.n, mark: +q.seq.mark.toFixed(2), grow: +q.seq.grow.toFixed(2) })
-        fs.writeFileSync(`${OUT}/point-${w}x${h}-${Math.round(v * 100)}.png`, f.png)
+        // the rust, anywhere on the horizon: the accent belongs to this line and to nothing else on screen
+        const { width: W, channels: c } = f.info
+        /*
+         * RUST IS MEASURED AGAINST THE GROUND, not against a fixed brightness. #b8622f is far redder than it is
+         * blue; neither half's ground nor its ink is. An absolute threshold found the line at 1440 and missed
+         * two thirds of it at 390, because at 48% the line is only a third opaque and what it is drawn OVER
+         * differs — the reading was about the blend, not about the line.
+         */
+        const gRB = q.ground[0] - q.ground[2]
+        let rust = 0
+        for (let y = Math.round(q.lineY) - 2; y <= Math.round(q.lineY) + 2; y++) {
+          for (let x = 0; x < W; x++) {
+            const i = (y * W + x) * c
+            if ((f.data[i] - f.data[i + 2]) - gRB > 12) rust++
+          }
+        }
+        // and the frame's own signature, so "every step moves" is about the picture and not about two counts
+        let sig = 0
+        for (let i = 0; i < f.data.length; i += c) sig += f.data[i] + f.data[i + 1] * 3 + f.data[i + 2] * 7
+        rows.push({ v, w: k.n ? k.x1 - k.x0 + 1 : 0, h: k.n ? k.y1 - k.y0 + 1 : 0, n: k.n, rust, sig, flash: +q.seq.flash.toFixed(2) })
+        fs.writeFileSync(`${OUT}/needle-${w}x${h}-${Math.round(v * 100)}.png`, f.png)
       }
-      for (const r of widths) note(`${w}x${h}  ${Math.round(r.v * 100)}%  ink spans ${r.w}px, ${r.n} px of it  (mark ${r.mark}, grow ${r.grow})`)
-      const tip = widths.find((r) => r.v === 0.48)
-      const line = widths.find((r) => r.v === 0.5)
-      ok(tip.w < w * 0.35, `${w}x${h}  at 48% what is left is a tip, not a field — ${tip.w}px of ${w}`)
-      ok(line.w > w * 0.9, `${w}x${h}  at 50% the single line runs across the frame — ${line.w}px of ${w}`)
-      ok(tip.w < line.w * 0.5, `${w}x${h}  the point comes before the line and is a fraction of its length`)
+      for (const r of rows) note(`${w}x${h}  ${Math.round(r.v * 100)}%  ink ${String(r.w).padStart(4)} x ${String(r.h).padStart(3)} px  ·  rust on the horizon ${String(r.rust).padStart(4)} px  (flash ${r.flash})`)
+
+      const at = (v) => rows.find((r) => Math.abs(r.v - v) < 1e-6)
+      const wide = at(0.42)
+      const needle = at(0.48)
+      const cross = at(0.5)
+      const opening = at(0.52)
+      ok(needle.w > w * 0.92, `${w}x${h}  at 48% the needle spans the whole width — ${needle.w}px of ${w}`)
+      ok(needle.h < wide.h * 0.45, `${w}x${h}  and it has flattened — ${needle.h}px tall against ${wide.h}px at 42%`)
+      ok(needle.rust > w * 0.5, `${w}x${h}  the rust line is already inside the needle at 48% — ${needle.rust}px of it on the horizon`)
+      ok(cross.rust > w * 1.5, `${w}x${h}  at 50% a single rust line spans the frame — ${cross.rust}px`)
+      ok(opening.w > w * 0.92, `${w}x${h}  and on the cream side it opens from the far point across the width — ${opening.w}px at 52%`)
+      // no dead segment: something changes between every pair of frames through the passage
+      const still = []
+      for (let i = 1; i < rows.length; i++) if (rows[i].sig === rows[i - 1].sig) still.push(Math.round(rows[i].v * 100))
+      ok(still.length === 0, `${w}x${h}  every step of the passage moves${still.length ? ` — nothing changed at ${still.join(', ')}%` : ''}`)
       allErrs.push(...errs)
       await ctx.close()
+    }
+  }
+
+  // ── WIDE ─────────────────────────────────────────────────────────────────────────────────────────────────
+  if (on('wide')) {
+    console.log('\nWIDE — the viewer is inside the fan: the rays run past the screen edge, as in the reference')
+    /*
+     * MEASURED ON BOTH, AT THE SAME PROGRESS. The reference is the arbiter, so the same numbers are taken from
+     * it and from the site: how much of the FAR screen edge carries a ray, and how much of the field's top and
+     * bottom edges do.
+     *
+     * One difference is expected and is the site's own rule rather than a fault: this site keeps a strip at the
+     * top and the bottom of every screen, and no row ever crosses into one. So the rays run past the top and
+     * bottom of the FIELD, where the reference's run past the top and bottom of the window. It is reported as a
+     * number rather than hidden behind a threshold.
+     */
+    const path = require('node:path')
+    const REF = `file:///${path.resolve(__dirname, '..', '..', 'docs', 'reference', 'linefield-v2.html').replace(/\\/g, '/')}`
+    for (const [w, h] of [[1440, 900], [390, 844]]) {
+      const site = await open(b, w, h, 'tr')
+      await goTo(site.p, 'linefield')
+      await site.p.evaluate(() => document.querySelectorAll('.layer, .strip').forEach((e) => { e.style.visibility = 'hidden' }))
+
+      const refCtx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1 })
+      const refP = await refCtx.newPage()
+      await refP.goto(REF, { waitUntil: 'load', timeout: 60000 })
+      await refP.waitForFunction(() => !!window.__demo, null, { timeout: 30000 })
+      await sleep(1400)
+      await refP.evaluate(() => document.getElementById('dock').classList.add('hidden'))
+
+      const edges = async (page, isRef, v, ground) => {
+        if (isRef) await page.evaluate((x) => window.__demo.setProgress(x), v)
+        else await holdAt(page, v)
+        await sleep(280)
+        const f = await raw(page)
+        const { width: W, height: H, channels: c } = f.info
+        const lit = (x, y) => {
+          const i = (y * W + x) * c
+          return Math.max(Math.abs(f.data[i] - ground[0]), Math.abs(f.data[i + 1] - ground[1]), Math.abs(f.data[i + 2] - ground[2])) > 6
+        }
+        const b0 = Math.round(H * 0.08)
+        const b1 = Math.round(H * 0.92)
+        /*
+         * RAYS, NOT PIXELS. A lit pixel count at the far edge is really a count of how many rows are drawn
+         * there, and this field is deliberately sparser than the reference's — every 8th row, approved on the
+         * device. Counting RUNS says how many rays cross the edge, which is the thing being compared; the
+         * densities then differ by the ratio they are meant to.
+         */
+        const runsAt = (x) => {
+          let n = 0
+          let on = false
+          for (let y = b0; y < b1; y++) { const v = lit(x, y); if (v && !on) n++; on = v }
+          return n
+        }
+        const right = runsAt(W - 2)
+        const left = runsAt(1)
+        let top = 0
+        let bot = 0
+        for (let x = 0; x < W; x++) { if (lit(x, b0 + 1)) top++; if (lit(x, b1 - 2)) bot++ }
+        return { right, left, top, bot, bandH: b1 - b0, png: f.png }
+      }
+
+      for (const v of [0.28, 0.34, 0.42, 0.62, 0.7]) {
+        const g = (await site.p.evaluate(() => window.__lab.lfProbe())).ground
+        const refGround = v < 0.5 ? [17, 18, 20] : [239, 238, 233]
+        const S = await edges(site.p, false, v, g)
+        const R = await edges(refP, true, v, refGround)
+        const pc = Math.round(v * 100)
+        fs.writeFileSync(`${OUT}/wide-site-${w}x${h}-${pc}.png`, S.png)
+        fs.writeFileSync(`${OUT}/wide-ref-${w}x${h}-${pc}.png`, R.png)
+        // on the dark half the fan opens to the right, on the cream half to the left: the FAR edge is the one
+        // the rays run out through, and it swaps at the crossing
+        const farSite = v < 0.5 ? S.right : S.left
+        const farRef = v < 0.5 ? R.right : R.left
+        note(`${w}x${h} ${pc}%  rays crossing the far edge: site ${farSite} · reference ${farRef}   |   field top+bottom edge, px: site ${S.top + S.bot} · reference ${R.top + R.bot} of ${w}`)
+        ok(farSite > 0, `${w}x${h} ${pc}%  the rays run out through the far screen edge — ${farSite} of them (reference ${farRef})`)
+        ok(S.top + S.bot > 0, `${w}x${h} ${pc}%  and out through the top and bottom of the field — ${S.top + S.bot} px (reference ${R.top + R.bot})`)
+      }
+      allErrs.push(...site.errs)
+      await site.ctx.close()
+      await refCtx.close()
     }
   }
 
@@ -274,7 +395,7 @@ const raw = async (p) => {
           const f = await raw(p)
           const lo = Math.floor(q.lo) - 6
           const hi = Math.ceil(q.hi) + 6
-          const markY = q.seq.mark > 0.002 ? q.lineY : -1e9
+          const markY = q.seq.flash > 0.002 ? q.lineY : -1e9
           let n = 0
           for (let y = 0; y < f.info.height; y++) {
             if (Math.abs(y - markY) < 5) continue

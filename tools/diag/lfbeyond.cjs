@@ -87,7 +87,7 @@ const TOL = 6
        */
       const lo = Math.floor(img.lo) - MARGIN
       const hi = Math.ceil(img.hi) + MARGIN
-      const markY = img.mark > 0.002 ? img.lineY : -1e9
+      const markY = img.flash > 0.002 ? img.lineY : -1e9
       for (let y = 0; y < info.height; y++) {
         if (Math.abs(y - markY) < 5) continue
         for (let x = 0; x < info.width; x++) {

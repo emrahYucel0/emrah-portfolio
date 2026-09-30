@@ -64,9 +64,13 @@ function notFound() {
 <style>
   :root { color-scheme: light; }
   * { box-sizing: border-box; }
-  body { margin: 0; min-height: 100vh; min-height: 100svh; display: grid; align-content: center; gap: 18px;
-    padding: 48px max(18px, 6vw); background: #efeee9; color: #121212;
+  /* the site's own material, without script: the first-paint plate's rows (its spacing and ink), and the message
+     in a room of paper opened in them (AUDIT-01) */
+  body { margin: 0; min-height: 100vh; min-height: 100svh; display: grid; align-content: center; justify-items: start; gap: 18px;
+    padding: 48px max(18px, 6vw); color: #121212;
+    background: #efeee9 repeating-linear-gradient(to bottom, #121212 0 0.85px, transparent 0.85px 7px);
     font: 400 17px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  main { background: #efeee9; padding: 28px 32px; margin: -28px -32px; border-radius: 28px; }
   .id { font: 400 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .08em; text-transform: uppercase; }
   h1 { margin: 12px 0 0; font-size: clamp(56px, 12vw, 120px); line-height: .9; letter-spacing: -.04em; font-weight: 700; }
   p { margin: 0; max-width: 40ch; }

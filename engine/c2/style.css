@@ -266,6 +266,7 @@ body.in-world :where(#ui) .bottom .roles { opacity: 0; }
   :where(#ui) .wb-close .wb-role { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   :where(#ui) .psi { gap: 3px; }
 }
+@keyframes ad-read { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @media (max-width: 700px) {
   :where(#ui) .wb-close { justify-content: flex-start; }
   :where(#ui) .strip { font-size: 10px; gap: 12px; }
@@ -281,6 +282,25 @@ body.in-world :where(#ui) .bottom .roles { opacity: 0; }
   :where(#ui) .about-detail .ad-contact { gap: 0; }
   :where(#ui) .about-detail .ab { position: static; }
   :where(#ui) .about-detail .ab + .ab { margin-top: 62px; }
+  /* AUDIT-01: on a phone the story is its own scroll, about two screens, and nothing said how much of it was left.
+     A reading line in the paper of the bottom strip fills as the story is read, where the browser can drive it from
+     the scroll alone; where it cannot (an older Safari), the scroll keeps the system's own indicator instead. */
+  @supports (timeline-scope: --ad) and (animation-timeline: --ad) {
+    /* the scope sits above the element that draws the line: WebKit does not drive a pseudo-element from a timeline
+       scoped on its own host (measured), and does from one scoped on an ancestor */
+    :where(#ui) { timeline-scope: --ad; }
+    :where(#ui) .about-detail .ad { scroll-timeline: --ad block; }
+    :where(#ui) .about-detail::before, :where(#ui) .about-detail::after {
+      content: ''; position: absolute; left: var(--pad); right: var(--pad); bottom: calc(10px + var(--safe-b, 0px)); height: 1px;
+      background: currentColor; transform-origin: left center; pointer-events: none;
+    }
+    :where(#ui) .about-detail::before { opacity: .18; }
+    :where(#ui) .about-detail::after { height: 2px; margin-bottom: -.5px; animation: ad-read linear both; animation-timeline: --ad; }
+  }
+  @supports not ((timeline-scope: --ad) and (animation-timeline: --ad)) {
+    :where(#ui) .about-detail .ad { scrollbar-width: auto; }
+    :where(#ui) .about-detail .ad::-webkit-scrollbar { display: initial; }
+  }
   :where(#ui) .about-detail .ad-intro { font-size: 21px; }
   :where(#ui) .about-detail .ad-caps { grid-template-columns: 1fr; }
   :where(#ui) .face .positioning { font-size: 32px; max-width: none; }

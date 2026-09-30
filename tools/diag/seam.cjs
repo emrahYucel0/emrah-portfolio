@@ -35,7 +35,7 @@ const state = () => {
     // the PLOT's p: on the narrow touch sheet the track runs on into the attention stretch
     p: raw == null ? null : +(touch ? Math.min(1, (raw * (F.STAGES + F.ATT_STAGES)) / F.STAGES) : raw).toFixed(3),
     bench: !!document.querySelector('.lab-stage'), c2: document.documentElement.dataset.c2 ?? 'off',
-    base: window.__lab?.A?.base ?? null,
+    base: window.__lab?.A?.base ?? null, contactStop: window.__lab?.CONTACT_STOP ?? null,
   }
 }
 const atFinale = (pg) => pg.waitForFunction(() => location.pathname === '/tr/contact' && !!window.__finale, null, { timeout: 20000 }).then(() => true).catch(() => false)
@@ -153,7 +153,7 @@ async function diff(pg, a, b) {
   await p.goto(`${BASE}/tr`, { waitUntil: 'networkidle' })
   await p.waitForFunction(() => window.__lab?.A.mode === 'index', null, { timeout: 30000 }).catch(() => {})
   await sleep(800)
-  await p.evaluate(() => { window.__lab.A.base = window.__lab.A.pT = 4; window.__lab.A.labArmed = false; window.__lab.go(5) })
+  await p.evaluate(() => { const L = window.__lab; L.A.base = L.A.pT = L.CONTACT_STOP - 1; L.A.labArmed = false; L.go(L.CONTACT_STOP) })
   a = await atFinale(p); await sleep(900)
   s = await p.evaluate(state)
   ok(a && s.p === 0, 'travel that settles on Contact → the finale from p = 0', `${s.path} p ${s.p}`)
@@ -173,7 +173,7 @@ async function diff(pg, a, b) {
   await p.goBack(); await p.waitForFunction(() => location.pathname === '/tr' && document.documentElement.dataset.c2 === 'on', null, { timeout: 20000 }).catch(() => {})
   await sleep(1500)
   s = await p.evaluate(state)
-  ok(s.path === '/tr' && s.base === 5, "Back past the finale → the runtime, standing quietly on its Contact stop", `${s.path} base ${s.base}`)
+  ok(s.path === '/tr' && s.base === s.contactStop, "Back past the finale → the runtime, standing quietly on its Contact stop", `${s.path} base ${s.base}`)
   await sleep(600)
   await p.mouse.wheel(0, 140)
   a = await atFinale(p); await sleep(900)

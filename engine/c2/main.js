@@ -156,7 +156,17 @@ function measure() {
   root.setProperty('--safe-b', `${safe.b}px`)
 }
 
-const LAST = 5
+/**
+ * THE CONTACT STOP — the index position that hands over to the Contact finale (/[locale]/contact). Every use of
+ * that position reads this constant: the handover (frame), the stop tables of the strip and of navigate(), IDX's
+ * slot for the stop's material (rebuild), the texture warm queue and the imprint's visibility there.
+ *
+ * MERGING WITH LINEFIELD: Linefield replaces the fixed stop numbers with its SPINE / STOP map and adds a stop of its
+ * own. On that merge CONTACT_STOP must be bound to the map's Contact stop (STOP.rest), not kept at 5 — and LAST,
+ * IDX's order, DEST_AT, PLACE_HEADING and PLACE_NAME follow the map. docs/contact-finale/LINEFIELD-MERGE.md.
+ */
+const CONTACT_STOP = 5
+const LAST = CONTACT_STOP // Contact is the index's last stop
 const N = works.length
 let IDX = [], WORKS = [], WORLD = {}, FR = {}, BLANK = null, MEDIA = {}, BRIDGE = null
 const framesOf = (k) => (FR[k] ??= framesFor(V, works[k]))
@@ -220,7 +230,7 @@ function rebuild() {
   const old = new Set([...IDX, ...WORKS, ...Object.values(WORLD).flat(), BLANK])
   BLANK = ST.blank(V)
   WORKS = works.map((w, i) => ST.workState(V, w, i))
-  IDX = [ST.name(V), ST.face(V, 'surface'), ST.face(V, 'system'), WORKS[0], ST.labState(V), ST.rest(V, A.visitOrder, A.aboutMark)]
+  IDX = [ST.name(V), ST.face(V, 'surface'), ST.face(V, 'system'), WORKS[0], ST.labState(V), ST.rest(V, A.visitOrder, A.aboutMark)] // … the last is IDX[CONTACT_STOP]
   if (REDUCED) for (const s of IDX) s.ampK = 0
   capReset()
   WORLD = {}; FR = {}
@@ -242,7 +252,7 @@ function rebuild() {
   if (A.mode === 'exit') { A.mode = 'index'; A.p = A.pT = A.base = A.prevBase = 3; A.worldOn = false }
   layoutDOM()
   if (A.mode === 'world') { mediaFor(A.k); fillWorldDOM(A.k); Object.assign(A.world, worldGeom(A.wp)) }
-  queueWarm([IDX[1], IDX[2], IDX[4], IDX[5]])
+  queueWarm([IDX[1], IDX[2], IDX[4], IDX[CONTACT_STOP]])
   const built = WORKS
   tonesReady.then(() => { if (WORKS === built) queueWarm(WORKS.slice(0, 3)) })
 }
@@ -925,7 +935,7 @@ ui.addEventListener('click', (e) => {
   if (b.dataset.go === 'rest') { HOST.contact('end'); return }
   if (b.dataset.go) {
     A.focusNext = performance.now()   // M4 A11Y
-    const stop = { name: 0, creative: 1, system: 2, work: 3, lab: 4, rest: 5 }[b.dataset.go]
+    const stop = { name: 0, creative: 1, system: 2, work: 3, lab: 4, rest: CONTACT_STOP }[b.dataset.go]
     // already there: nothing arrives, so focus goes now
     if (stop != null && A.mode === 'index' && !A.aboutOpen && A.base === stop && Math.abs(A.p - stop) < 0.05) { A.focusNext = 0; wantFocus(PLACE_HEADING[stop]) }
     navigate(b.dataset.go)
@@ -1056,7 +1066,7 @@ function buildDOM() {
 
 }
 function navigate(target) {
-  const stop = { name: 0, about: 0, creative: 1, system: 2, work: 3, lab: 4, rest: 5 }[target]
+  const stop = { name: 0, about: 0, creative: 1, system: 2, work: 3, lab: 4, rest: CONTACT_STOP }[target]
   if (A.mode === 'world') { exit(); A.pending = target; return }
   if (A.aboutOpen && target !== 'about') closeAbout()
   if (A.mode !== 'index') return
@@ -1517,7 +1527,7 @@ function frame(now) {
   // there quietly instead of pushing the route again.
   if (A.labArmed && A.mode === 'index' && A.base === 4 && Math.abs(A.p - 4) < 0.02 && Math.abs(A.pT - 4) < 0.02 && !A.busy && !A.aboutOpen && !ptr.down && owns()) openLab()
   // …and travel that settles on Contact hands over to the finale, which then plays from its first frame
-  if (A.labArmed && A.mode === 'index' && A.base === 5 && Math.abs(A.p - 5) < 0.02 && Math.abs(A.pT - 5) < 0.02 && !A.busy && !A.aboutOpen && !ptr.down && owns()) openContact('start')
+  if (A.labArmed && A.mode === 'index' && A.base === CONTACT_STOP && Math.abs(A.p - CONTACT_STOP) < 0.02 && Math.abs(A.pT - CONTACT_STOP) < 0.02 && !A.busy && !A.aboutOpen && !ptr.down && owns()) openContact('start')
   if (A.mode === 'world' && !A.busy) Object.assign(A.world, worldGeom(A.wp))
   const lf = A.mode === 'world' ? lastFrame() : 0
   if (A.mode === 'world' && A.wp > lf - 0.1 && !A.nextArmed) {
@@ -1578,8 +1588,8 @@ function frame(now) {
 
   // how much of the visit's imprint each place lets show; at rest everything else is straight, so it shows most
   const stop = Math.round(A.p)
-  const impT = A.mode !== 'index' ? 0 : stop === 4 ? 1 : stop === 5 ? 1.35 : 0.75
-  phys.impVis = damp(phys.impVis, impT, stop === 5 ? 1.1 : 3, et)
+  const impT = A.mode !== 'index' ? 0 : stop === 4 ? 1 : stop === CONTACT_STOP ? 1.35 : 0.75
+  phys.impVis = damp(phys.impVis, impT, stop === CONTACT_STOP ? 1.1 : 3, et)
 
   const src = { x: ptr.x, y: ptr.y, vx: ptr.vx, vy: ptr.vy, hover: ptr.hover }
   const pr = A.press
@@ -1773,7 +1783,7 @@ export function setLocale(next) {
   return true
 }
 
-window.__lab = { A, V, ptr, phys, surface, works, configure, routeChanged, setLocale, locale: () => TXT,  previewOf, go, forcedPress, navigate, exit, expandAbout, collapseAbout, startBridge, openLab, arriveAt, replayIntro: playIntro, IDX: () => IDX, WORKS: () => WORKS, WORLD: () => WORLD, frames: framesOf, touches, sig: () => lastSig, redraw: () => { lastSig = '' } }
+window.__lab = { CONTACT_STOP, A, V, ptr, phys, surface, works, configure, routeChanged, setLocale, locale: () => TXT,  previewOf, go, forcedPress, navigate, exit, expandAbout, collapseAbout, startBridge, openLab, arriveAt, replayIntro: playIntro, IDX: () => IDX, WORKS: () => WORKS, WORLD: () => WORLD, frames: framesOf, touches, sig: () => lastSig, redraw: () => { lastSig = '' } }
 let rt = 0, booted = false
 // a resize before the surface exists (a phone's URL bar settling during load) is picked up once start() finishes
 addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(async () => { if (!booted) return; if (!owns()) { resizedWhileAway = true; return } measure(); await ensurePreviews(); rebuild() }, 140) })

@@ -155,6 +155,7 @@ uniform vec2 uLFthin;     // x: log2 of the spacing between kept rows (3 = every
 uniform vec4 uLFline;     // the rust line: screen y, half height, how much of it there is, unused
 uniform vec3 uLFlineCol;  // its colour — the ground's ink, taking the rust only at the crossing
 uniform vec4 uLFmode;     // x: 1 while the corridor is mapping; y: the far end's mouth (see below)
+                          // z: how much the type is type — 0 and the words are field rows (see lfSol)
 uniform vec4 uLFlabel;    // the half's name, in screen pixels: x0, x1, y0, y1 — the rows keep out of it
 
 /*
@@ -166,6 +167,22 @@ uniform vec4 uLFlabel;    // the half's name, in screen pixels: x0, x1, y0, y1 �
  * every row but each Nth goes — smoothly, and by INDEX, so the rows that stay are the same rows throughout and
  * nothing slides or pops.
  */
+/*
+ * HOW MUCH THE TYPE IS TYPE.
+ *
+ * Four rules below ask the same question — is this row inside a letter — and answer it from the content's own
+ * solidity: the words are exempt from the field's thinning, from its extent and from its whisker, and they carry a
+ * word's width rather than a row's. Scaling that one answer scales all four together, so at 0 a letter's rows ARE
+ * field rows: same width, thinned with the rest, ending where the field ends. The words do not fade out; they
+ * dissolve into the material they are made of, and coming back they thicken inside the letters out of those rows.
+ *
+ * It is what keeps two scenes' type off the screen at once. The site's transition is a sweep over ROW ORDER, so
+ * both scenes are legitimately interleaved during it and that is the language, not a fault. What must not happen is
+ * the passage's words FORMING while the place being left still has its own type up, or their still being up when
+ * the next place's content arrives. So they are absent for the whole sweep and form only as the passage itself
+ * lands — see wordsGate() in runtime.js, which owns the two numbers.
+ */
+float lfSol(float sol) { return smoothstep(0.08, 0.3, sol) * clamp(uLFmode.z, 0.0, 1.0); }
 float lfKeep(float r, float sol) {
   /*
    * THE DENSITY MOVES BETWEEN POWERS OF TWO, AND THAT IS WHY NOTHING POPS.
@@ -186,7 +203,7 @@ float lfKeep(float r, float sol) {
    * whole down a corridor. A word is not ground: taking seven rows in eight out of a letter while it flows
    * past leaves a thin grey ghost where the reference has a thick bright bar.
    */
-  return mix(mix(1.0, kept, clamp(uLFthin.y, 0.0, 1.0)), 1.0, smoothstep(0.08, 0.3, sol));
+  return mix(mix(1.0, kept, clamp(uLFthin.y, 0.0, 1.0)), 1.0, lfSol(sol));
 }
 
 /*
@@ -222,13 +239,13 @@ float lfKeep(float r, float sol) {
  */
 float lfWhisk_cur;
 float lfWhiskType_cur;
-float lfWhisker(float sol) { return mix(lfWhisk_cur, lfWhiskType_cur, smoothstep(0.08, 0.3, sol)); }
+float lfWhisker(float sol) { return mix(lfWhisk_cur, lfWhiskType_cur, lfSol(sol)); }
 
 float lfExtent(float r, float sol) {
   float y = r * uR1.x;
   float soft = max(4.0, uRes.y * 0.02);
   float inside = smoothstep(0.0, soft, y - uRes.y * 0.07) * smoothstep(0.0, soft, uRes.y * 0.93 - y);
-  return mix(1.0, mix(inside, 1.0, smoothstep(0.08, 0.3, sol)), smoothstep(0.02, 0.3, uLFmap.x));
+  return mix(1.0, mix(inside, 1.0, lfSol(sol)), smoothstep(0.02, 0.3, uLFmap.x));
 }
 
 /*
@@ -246,7 +263,7 @@ float lfHw(float h, float g, float sol) {
   float ground = (g <= 1.0) ? h : max(h / g, 0.30);
   float ws = (1.0 - lfD_cur) + lfD_cur * (0.1 + 1.9 * lfS_cur);
   float word = uR1.x * 0.31 * ws * (0.35 + 0.65 * lfCC_cur);
-  return mix(ground, max(word, 0.35), smoothstep(0.08, 0.3, sol));
+  return mix(ground, max(word, 0.35), lfSol(sol));
 }
 
 /*

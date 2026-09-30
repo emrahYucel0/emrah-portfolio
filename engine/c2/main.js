@@ -227,6 +227,8 @@ const A = {
   // the gesture being metered: where it began, whether it has spent its stop, how far it has carried a place's own
   // axis, and the stream it is being read out of (see opensGesture)
   gFrom: 0, gSpent: false, gInner: 0, gAt: -1e9, gEnv: 0, gMinGap: Infinity,
+  // a harness may pin how much the type is type, to difference the words out of a frame (see lfWords below)
+  lfWordsAt: null, lfWords: 1, lfLeg: false,
   aboutDetailK: 0, bridgeF: null, bridgePK: 0,
   // LINEFIELD: the passage's own progress, 0 at the backend field and 1 at the frontend one. It is to this
   // place what A.wt is to the work field — the axis INSIDE the stop, which the spine does not travel.
@@ -437,7 +439,6 @@ function opensGesture(d, now) {
   A.gEnv = Math.max(A.gEnv * GEST_ENV_KEEP, mag)
   const gap = now - A.gAt
   A.gAt = now
-  // a landed gesture holds the door until the input has gone quiet; nothing else is asked of a gesture still in the air
   /*
    * ALWAYS, and not only while nothing has landed. Guarded by !A.gSpent this stopped learning at the one moment the
    * answer is wanted: a flick whose FIRST event lands a stop — leaving the work field does exactly that — reached its
@@ -1195,10 +1196,28 @@ function onArrive(stop, prev) {
    * Whatever a flick had left running is stopped on the way out, so a momentum from one place never carries
    * into the next.
    */
-  if (LINEFIELD && LF && (stop === LFS || prev === LFS)) {
-    LF.drive.stop()
-    A.lfExit = 0; A.lfEdgeY = null
-    if (stop === LFS) { const at = prev > LFS ? 1 : 0; LF.drive.set(at); A.lfp = at }
+  if (LINEFIELD && LF) {
+    /*
+     * IS THE PASSAGE AN END OF THIS LEG, or is it merely on the way? It has to be recorded here, because it cannot be
+     * worked out later: A.prevBase is set to A.base in the same frame the arrival is announced, so by the time
+     * anything draws, where the leg STARTED is gone.
+     */
+    A.lfLeg = stop === LFS || prev === LFS
+    if (A.lfLeg) {
+      LF.drive.stop()
+      A.lfExit = 0; A.lfEdgeY = null
+      if (stop === LFS) { const at = prev > LFS ? 1 : 0; LF.drive.set(at); A.lfp = at }
+    } else if ((prev - LFS) * (stop - LFS) < 0) {
+      /*
+       * A PLACE THAT IS ONLY BEING PASSED IS MET AT ITS NEAR END. The header and the keyboard can ask for a place on
+       * the far side of the passage, and the spine then travels straight through it. Its own progress was not touched
+       * by that, so it kept whatever the last visit left — and a jump from Creative to Work drew the passage at its
+       * CREAM end for the whole crossing, which is the blank cream in the review. It is now met at the end it is
+       * approached from, exactly as an arrival is, so the ground a passing visitor crosses is the ground they came from.
+       */
+      const at = stop > LFS ? 0 : 1
+      LF.drive.stop(); LF.drive.set(at); A.lfp = at
+    }
   }
   if (stop === STOP.work && prev !== STOP.work) {
     // arriving on the work field, the first (or last) work is still in pieces
@@ -1746,9 +1765,11 @@ function penAt(st, front) {
 }
 // everything the shader reads, reduced to a string: equal strings draw equal pixels
 let lastSig = '', stillMem = 0, lastMem = 0, lastMemT = 0
+// LINEFIELD: the passage's progress AS DRAWN this frame — its own while the visitor is on it, the near end otherwise
+let lfDrawn = 0
 const q2 = (v) => Math.round((v || 0) * 100)
 function stillSig(from, to, fs, overlay, front) {
-  let s = `${from.id}|${to.id}|${from.visitKey || ''}|${to.visitKey || ''}|${q2(front * 100)}|${q2(A.lfp * 1000)}|${overlay}|${surface.fill}|${A.beneathSt?.id}|${surface.beneathStart},${surface.beneathCount}|${surface.devId}|${surface.visited.join('')}|`
+  let s = `${from.id}|${to.id}|${from.visitKey || ''}|${to.visitKey || ''}|${q2(front * 100)}|${q2(lfDrawn * 1000)}|${overlay}|${surface.fill}|${A.beneathSt?.id}|${surface.beneathStart},${surface.beneathCount}|${surface.devId}|${surface.visited.join('')}|`
   for (const st of [from, to]) { const g = st.reg; s += `${q2(g.a0)},${q2(g.a1)},${q2(g.va0)},${q2(g.va1)},${q2(g.holdA)},${q2(st.fill)},${q2(st.flash)},${q2(st.vis)},${q2(st.lod)}|` }
   for (const f of fs) s += `${f.kind},${q2(f.cx)},${q2(f.cy)},${q2(f.h)},${q2(f.hw)},${q2(f.sigma)},${q2(f.s)},${q2(f.y1)},${q2(f.y2)},${q2(f.falloff)},${q2(f.lip)};`
   // The flat renderer draws none of the physics — no displacement, no development, no memory — so none of it may
@@ -1856,7 +1877,24 @@ function frame(now) {
   if (LINEFIELD && LF) A.lfp = LF.drive.step(A.lfp, et)
   if (REDUCED) canonical()
   IDX[STOP.work] = WORKS[clamp(Math.round(A.wt), 0, N - 1)]
-  if (LINEFIELD && LF) IDX[LFS] = LF.at(A.lfp)
+  /*
+   * THE CORRIDOR MAPS WHERE THE VISITOR IS, AND NOWHERE ELSE.
+   *
+   * The passage's program is bound for the whole of any travel into, out of or across the place, because swapping
+   * programs mid-movement is visible. That is only safe while its map is the IDENTITY, which it is at either end of
+   * the passage and nowhere in between — and the passage's own progress is not where the spine is. Left at 50% by an
+   * earlier visit, a hard flick from Full-Stack drew FULL-STACK'S OWN CONTENT through a corridor at full depth: the
+   * warped Istanbul capture, the cream ground and the rust band in the review, all three of them this one thing.
+   *
+   * So what is DRAWN is the passage's progress only while the visitor is actually on it. Travelling anywhere else it
+   * is the end nearest the approach — flat, identity, another place's content untouched. The drive keeps its own
+   * position throughout; this decides only what the frame is built from, which is why no arrival path can miss it.
+   */
+  if (LINEFIELD && LF) {
+    const onIt = A.base === LFS && Math.abs(A.p - LFS) < 0.04
+    lfDrawn = onIt ? A.lfp : (A.p > LFS ? 1 : 0)
+    IDX[LFS] = LF.at(lfDrawn)
+  }
 
   let from, to, front, overlay = 0
   if (A.mode === 'index') {
@@ -1888,11 +1926,11 @@ function frame(now) {
   if (LINEFIELD && LF && A.mode === 'index') {
     const here = from === LF.back || from === LF.front || to === LF.back || to === LF.front
     if (here && REDUCED) {
-      if (A.base === LFS) { const r = LF.reducedPair(A.lfp); from = r.from; to = r.to; front = r.front }
+      if (A.base === LFS) { const r = LF.reducedPair(lfDrawn); from = r.from; to = r.to; front = r.front }
     } else if (here) {
       lfOn = true
       // settled on the passage, the passage decides what is on screen — which at the crossing is both halves
-      if (from === to && from === IDX[LFS]) { const r = LF.pair(A.lfp); from = r.from; to = r.to; front = r.front }
+      if (from === to && from === IDX[LFS]) { const r = LF.pair(lfDrawn); from = r.from; to = r.to; front = r.front }
     }
   }
   /*
@@ -1901,8 +1939,26 @@ function frame(now) {
    * every frame of the published build, which took the DOM layers down with it.
    */
   if (LINEFIELD && LF) {
+    /*
+     * AND THE WORDS BELONG TO THE PLACE, NOT TO THE SWEEP. Travelling into or out of the passage, both scenes are
+     * interleaved by row order — which is the site's transition and stays — but the passage's eight words must not
+     * be forming while the place being left still has its own type up, nor still be up as the next place's content
+     * arrives. So they thicken out of the rows only as the passage lands, and thin back into them as it is left.
+     * Settled on the passage, or crossing between its halves, they are simply its content.
+     */
+    const isLF = (st) => st === LF.back || st === LF.front
+    const toLF = isLF(to)
+    /*
+     * PASSING THROUGH IS NOT LEAVING. Leaving begins with the words fully up and thins them out; but a spine merely
+     * crossing the passage on its way elsewhere read as "leaving" from its first frame, so the words flashed on at
+     * 0.85 in the middle of a header jump. A.lfLeg is the difference: the passage is an end of this leg, or it is
+     * scenery on the way past, and scenery has no words. Note that A.base is NOT the test — leaving sets it to the
+     * next place at once, which would cut the words instead of thinning them back into the field.
+     */
+    const words = A.lfWordsAt ?? (A.lfLeg ? (isLF(from) && toLF ? 1 : LF.wordsGate(front, toLF)) : 0)
+    A.lfWords = words   // what was actually drawn with, so a harness reads the decision instead of recomputing it
     surface.use?.(lfOn ? 'corridor' : null)
-    surface.onBeforeDraw = lfOn ? () => LF.apply(surface, A.lfp) : null
+    surface.onBeforeDraw = lfOn ? () => LF.apply(surface, lfDrawn, words) : null
   }
 
   registration(now, et)
@@ -2177,7 +2233,11 @@ window.__lab = { CONTACT_STOP, A, V, ptr, phys, surface, works, STOP, SPINE,
     lf: () => LF,
     lfSet: (v) => { if (!LF) return; LF.drive.set(v); A.lfp = clamp(v, 0, 1); lastSig = '' },
     lfState: () => ({ p: A.lfp, target: LF.drive.target, seq: LF.sequence(A.lfp), rowKeep: LF.rowKeep, stop: LFS }),
-    lfProbe: () => LF.probe(A.lfp),
+    // the frame as DRAWN, which away from the passage is its near end and not wherever the drive is left
+    lfProbe: () => LF.probe(lfDrawn),
+    // pin the words on (1) or off (0) at any point of a crossing, or null for what the site itself does. It is
+    // how lfseam.cjs measures the words' own footprint independently of whatever else is on screen.
+    lfWords: (v) => { A.lfWordsAt = v == null ? null : clamp(v, 0, 1); lastSig = '' },
   } : {}),
   configure, routeChanged, setLocale, locale: () => TXT,  previewOf, go, forcedPress, navigate, exit, expandAbout, collapseAbout, startBridge, openLab, arriveAt, replayIntro: playIntro, IDX: () => IDX, WORKS: () => WORKS, WORLD: () => WORLD, frames: framesOf, touches, sig: () => lastSig, redraw: () => { lastSig = '' } }
 let rt = 0, booted = false

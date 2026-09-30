@@ -21,6 +21,7 @@ import { LF_KEY_STEP, LF_TOUCH_SPAN, LF_WHEEL_SPAN, createDrive, wheelPixels } f
 
 const RUST = [0.722, 0.384, 0.184]   // #b8622f, the site's accent, as the surface wants it
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v)
+const smoothstep = (e0, e1, x) => { const t = clamp01((x - e0) / (e1 - e0)); return t * t * (3 - 2 * t) }
 
 /**
  * How far past either end of the passage a gesture may push before it is taken as "and now the next place".
@@ -34,6 +35,21 @@ export const LF_EXIT_MARGIN = 0.16
  * is a short aperture a few per cent of the screen high instead of a singularity.
  */
 export const LF_MOUTH = 0.055
+/*
+ * WHEN THE WORDS ARE THERE, crossing into and out of the place.
+ *
+ * The spine's travel between two places is a sweep over row order, and `front` is how far through it the visitor is.
+ * The words of this place may not be forming while the place being left still has its own type up, and they may not
+ * still be up when the next place's content arrives — so they are absent for almost all of the sweep and thicken
+ * into being over its last stretch, and on the way out they thin back into the field over its first.
+ *
+ * The two numbers are not symmetric on purpose. ARRIVING, the target is damped, so `front` crawls through its last
+ * few per cent and that long tail is exactly where the thickening wants to be — it reads as the words forming out of
+ * the material rather than being switched on. LEAVING, the same damping means the first per cent goes quickly, so
+ * the window has to be wider to be seen at all.
+ */
+export const LF_WORDS_IN = 0.86
+export const LF_WORDS_OUT = 0.14
 
 
 /*
@@ -131,6 +147,13 @@ export function createLinefield() {
      * Everything a harness needs to judge a frame without guessing any of it: where the corridor's image ends,
      * what "ground only" and "full ink" are exactly, and where each word's band is.
      */
+    /** how much the type is type, at `front` through a sweep that is arriving at this place or leaving it */
+    wordsGate(front, arriving) {
+      return arriving
+        ? smoothstep(LF_WORDS_IN, 0.999, front)
+        : 1 - smoothstep(0, LF_WORDS_OUT, front)
+    },
+
     probe(p) {
       const q = sequence(p, V.W)
       const st = q.back ? back : front
@@ -152,7 +175,7 @@ export function createLinefield() {
      * Everything the corridor's program needs for one frame. Called with the program already bound and every
      * base uniform in place, so it is still one draw.
      */
-    apply(surface, p) {
+    apply(surface, p, words = 1) {
       const q = sequence(p, V.W)
       const st = q.back ? back : front
       const U = corridorUniforms(V.W, V.H, q.depth, q.side)
@@ -161,7 +184,7 @@ export function createLinefield() {
       surface.vec4('uLFfade', 0.22, 0.85, 0.12, Math.max(8, V.W * 0.012))
       surface.vec4('uLFflow', q.flow[0], q.flow[1], q.flow[2], q.flow[3])
       surface.vec4('uLFband', st.layout.bands[0], st.layout.bands[1], st.layout.bands[2], st.layout.bands[3])
-      surface.vec4('uLFmode', 1, LF_MOUTH, 0, 0)
+      surface.vec4('uLFmode', 1, LF_MOUTH, clamp01(words), 0)
       const lab = (q.back ? labels.back : labels.front) || { x: -1e5, y: -1e5, w: 0, h: 0 }
       surface.vec4('uLFlabel', lab.x - 10, lab.x + lab.w + 10, lab.y - 6, lab.y + lab.h + 6)
       // the `dense` break sends the field down the corridor at the density the words need, unthinned

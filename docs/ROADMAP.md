@@ -22,7 +22,7 @@ belgedeyse (AUDIT-01, LINEFIELD.md, DEPLOYMENT.md…) burada ona bağlantı veri
 - **Karar bekliyor:** neyin beklendiği yazılı.
 - **Önce inceleme:** mevcut davranış ölçülmeden tasarlanmayacak.
 
-Son güncelleme: 2026-10-01, `fix/audit-01-batch2` (düzeltme turu 2 sonrası).
+Son güncelleme: 2026-10-01, `fix/audit-01-batch2` (kullanıcı düzeltmeleri: R9, R12, R14, R17; R19–R23 eklendi).
 
 ---
 
@@ -38,16 +38,21 @@ Son güncelleme: 2026-10-01, `fix/audit-01-batch2` (düzeltme turu 2 sonrası).
 | R6 | Lab bench girişleri: okunur boyut, üzerine gelince ön gösterim | P2 | Kısmen: ön gösterimin biçimi bekliyor | — |
 | R7 | Lab'de kaydırma çalışmalar arasında, tıklama içeri | P2 | Önce inceleme | R6 |
 | R8 | Case study: kendi URL'leri, okunur "sonraki iş", başlık arkası | P1 | Karar bekliyor (URL biçimi) | — |
-| R9 | Koyu zeminlerde satır titreşimi | **P0** | Önce ölçüm (prototip) | — |
-| R10 | Safari'de adın ince kesimle çizilmesi | P1 | Önce gerçek iPhone | — |
+| R9 | Koyu zeminlerde satır titreşimi | **P0** (R18 için) | Neden açık; önce ölçüm | — |
+| R10 | Safari'de adın ince kesimle çizilmesi | P1 | Önce gerçek iPhone | R22 |
 | R11 | Yavaş ağda ilk kare (8,9 sn) | P2 | Önce değerlendirme | — |
-| R12 | Sert fırlatmada coast/tail aşımı | P1 | Linefield oturumunun | — |
+| R12 | Sert fırlatmada coast/tail aşımı | **P0** | Karar verildi; sürüyor (audit oturumu) | — |
 | R13 | Gövde metni ve tipografik hiyerarşi | P1 | Karar bekliyor (ölçek) | — |
-| R14 | Cross Section (İşler → Lab köprüsünün yerine) | P1 | Karar verildi (yön) | R2, R15 |
+| R14 | Cross Section (İşler → Lab köprüsünün yerine) | P1 | Karar verildi (yön; kesit anında bekleme) | R2, R15 |
 | R15 | Tempo, ilerleme göstergesi, performans bütçesi | P2 | Karar bekliyor | R14 |
 | R16 | Tam kapının paralel çalışabilmesi | P1 | Karar verildi | — |
-| R17 | Yayın (DEPLOYMENT.md, CSP, canlı yedeği) | P0 | Karar bekliyor (tarih) | R1, R9 |
-| R18 | Awwwards başvurusu (Developer Award) | P0 | Karar bekliyor (tarih) | R17 ve bütün P0'lar |
+| R17 | Yayın (DEPLOYMENT.md, CSP, canlı yedeği) | P0 | Karar bekliyor (tarih) | R1 |
+| R18 | Awwwards başvurusu (Developer Award) | P0 | Karar bekliyor (tarih) | R17, R9, R22, R23 |
+| R19 | Full-Stack'in siyah kapsüllerinin çevresindeki hale | P1 | Karar bekliyor (varyant ya da kural) | — |
+| R20 | Arka belleğe piksel sayısı tavanı (önerilen 8,3 Mpx) | P1 | Karar bekliyor (değer) | R9 ile birlikte ölçülür |
+| R21 | Büyük ekranlarda büyük harf başına satır sayısına üst sınır | P2 | Karar bekliyor (sanat yönetimi) | — |
+| R22 | Gerçek cihaz testi (iPad, Mac'te Safari, Android telefon) | P0 | Karar verildi | — |
+| R23 | Awwwards başvuru malzemesi (ekran görüntüleri, kısa video, başlık, açıklama) | P0 | Karar bekliyor (içerik) | R9 |
 
 ---
 
@@ -199,16 +204,22 @@ Son güncelleme: 2026-10-01, `fix/audit-01-batch2` (düzeltme turu 2 sonrası).
 - **Öncelik:** P1.
 
 ### R9. Koyu zeminlerde satır titreşimi
-- **Açıklama:** Çizim oranı tamsayı değil. MacBook'ta DPR 2 iken `V.dpr` 1,5 oluyor (`main.js:148`, masaüstü
-  tavanı 1,5), bu yüzden satırlar piksel ızgarasına oturmuyor ve koyu zeminlerde titreşiyor. İki adımda
-  yapılacak:
-  1. Tamsayı oran prototipi: DPR 2'de 2 ve 1 ile ölçülecek; kare süresi ve görüntü karşılaştırılacak.
-  2. Gamma-doğru karıştırma ayrı bir adım olarak ele alınacak.
-- **Karar:** Önce ölçüm. **Awwwards başvurusundan önce şart.**
+- **Açıklama:** Koyu zeminlerde satırlar titreşiyor (shimmer). Canlı sitede de var. **Nedeni henüz bilinmiyor.**
+- **Ölçülmüş olgular (Linefield oturumu):**
+  - Masaüstünde `V.dpr` tavanı 1,5 (`main.js:148`); MacBook'ta DPR 2 iken çizim oranı 1,5. **Ama neden bu
+    gösterilemedi:** DPR 2'de her cihaz aralığı zaten tam sayıya oturuyor, yayılım yine de 73 seviye farklı.
+  - Şimdiye kadarki en güçlü ilişki: çizim anında satır aralığının arka bellek pikseli cinsinden değeri.
+    Linefield'ın inceltilmiş aralığı 10,50 px iken yayılım 73,5; 7,00 px iken 0,0. Mekanizma açık.
+- **Aday düzeltmeler (hiçbiri doğrulanmadı):**
+  - satır aralığını arka bellek pikselinde tamsayıya kilitlemek
+  - tamsayı çizim oranı (DPR 2'de 2 ile 1 karşılaştırması: kare süresi ve görüntü)
+  - gamma-doğru karıştırma (ayrı bir adım)
+- **Karar:** Önce mekanizma ölçülecek, sonra düzeltme seçilecek. Yayını (R17) engellemez, çünkü canlıda da var.
+  **Awwwards başvurusundan (R18) önce şart.**
 - **Dosyalar:** `engine/c2/main.js` (`V.dpr`, `measure`), `engine/c2/surface.js` (shader, `resize`),
-  `engine/c2/linefield/` (kendi `V.dpr`'ı).
-- **Bağımlılık:** yok. Gerçek MacBook ekranında görsel onay gerekiyor.
-- **Öncelik:** P0.
+  `engine/c2/linefield/` (kendi aralık hesabı), `docs/LINEFIELD.md` (ölçümler).
+- **Bağımlılık:** yok. Gerçek MacBook ekranında görsel onay gerekiyor (R22). R20 ile birlikte ölçülmeli.
+- **Öncelik:** P0 (R18 için; R17 için değil).
 
 ### R10. Safari'de adın ince kesimle çizilmesi
 - **Açıklama:** Playwright WebKit, kanvastaki "EMRAH YÜCEL"i 900 yerine ince kesimle çiziyor. Gerçek Safari'de
@@ -235,16 +246,18 @@ Son güncelleme: 2026-10-01, `fix/audit-01-batch2` (düzeltme turu 2 sonrası).
 - **Öncelik:** P2.
 
 ### R12. Sert fırlatmada coast/tail aşımı
-- **Açıklama:** Tek bir fiziksel jest en fazla bir durak ilerletmeli. Sert bir trackpad fırlatmasının kuyruğu
-  bazen ikinci bir durak açıyor. Aşım febd93f'te de var: bir A/B denemesinde febd93f'te 10 atışın 5'i, batch 2'de
-  2'si kaldı.
-- **Karar:** Linefield oturumunun işi.
+- **Açıklama:** Tek bir fiziksel jest en fazla bir durak ilerletmeli. Sert bir trackpad fırlatmasının momentum
+  kuyruğu bazen ikinci bir durak açıyor. Aşım febd93f'te de var: bir A/B denemesinde febd93f'te 10 atışın 5'i,
+  batch 2'de 2'si kaldı.
+- **Karar (2026-10-01):** P0. Bu oturumun işi (audit, `fix/audit-01-batch2`): `engine/c2/main.js` şu an bu
+  oturumda, Linefield oturumu ona dokunmayacak. Önce gerçekçi trackpad akışlarıyla yeniden üretilecek ve neden
+  raporlanacak, sonra düzeltilecek. origin/main'e sabitlenmiş üç ritim korunacak. **Durum: sürüyor.**
 - **Dosyalar:**
   - `engine/c2/main.js`: `opensGesture`, `landGesture`, `GEST_*`
   - `engine/c2/linefield/input.js`
-  - Harness'lar: `tools/diag/gesture2.cjs` (WebKit, `--wk` portu; ~67 dk, önce sor)
+  - Harness'lar: `tools/diag/gesture2.cjs` (WebKit, `--wk` portu; tam takım ~67 dk, önce sor)
 - **Bağımlılık:** yok.
-- **Öncelik:** P1.
+- **Öncelik:** P0.
 
 ### R13. Gövde metni ve tipografik hiyerarşi
 - **Açıklama:** Bugün metin rolleri dağınık. Runtime, düz kabuk, Lab ve Contact farklı aile, boyut ve opaklık
@@ -263,8 +276,10 @@ Son güncelleme: 2026-10-01, `fix/audit-01-batch2` (düzeltme turu 2 sonrası).
   - Mobil sürümü var.
   - Bakır vurgulu.
 
-  Öneri (AUDIT-01 §5): SURFACE → EDGE → DEPTH, toplam ≤ 2 sn ya da ≤ 1–1,5 ekran boyu.
-- **Karar:** Yön verildi. Ayrıntılar, Linefield'daki gibi bir faz planıyla kendi belgesinde tutulacak.
+  Sıra: SURFACE → EDGE → DEPTH.
+- **Karar (2026-10-01):** Kesit anında bilinçli bir bekleme var: EDGE, bakır çizginin çevresinde adım adım
+  döner, onaylı demo `cross-section-v2.html`'deki gibi. Öncesindeki ve sonrasındaki geçişler çevik kalır. Süre
+  ya da ekran boyu hedefi yok. Ayrıntılar, Linefield'daki gibi bir faz planıyla kendi belgesinde tutulacak.
 - **Dosyalar:**
   - `engine/c2/main.js`: `startBridge`, `A.mode === 'bridge'`
   - `engine/c2/states.js`
@@ -302,7 +317,7 @@ Son güncelleme: 2026-10-01, `fix/audit-01-batch2` (düzeltme turu 2 sonrası).
   - Yayından önce canlı sitenin yedeği.
 - **Karar:** Bekleyen: tarih.
 - **Dosyalar:** `docs/DEPLOYMENT.md`, `modules/production-files` (.htaccess ve CSP hash'leri), `tools/diag/cspboot.cjs`.
-- **Bağımlılık:** R1, ve bütün P0'lar (R9).
+- **Bağımlılık:** R1. R9'a bağlı değil: titreşim canlıda da var ve yayını engellemiyor.
 - **Öncelik:** P0.
 
 ### R18. Awwwards başvurusu
@@ -316,7 +331,53 @@ Son güncelleme: 2026-10-01, `fix/audit-01-batch2` (düzeltme turu 2 sonrası).
   Başvuru metni ve görselleri hazırlanacak.
 - **Karar:** Bekleyen: tarih ve kategori metni.
 - **Dosyalar:** yeni `docs/AWWWARDS.md` (taslak).
-- **Bağımlılık:** R17, R9 ve bütün P0'lar.
+- **Bağımlılık:** R17, R9, R22 ve R23.
+- **Öncelik:** P0.
+
+### R19. Full-Stack'in siyah kapsüllerinin çevresindeki hale
+- **Açıklama:** Satırlar kapsülün kenarında yığılıyor; siyah kapsüllerin çevresinde bir hale oluşuyor.
+- **Durum:** Atılabilir A/B/C varyantları `builds/var-A`, `var-B` ve `var-C`'de. Olası düzeltme koridorun mürekkep
+  korunumu kuralı.
+- **Karar:** Bekleyen: varyant ya da korunum kuralı.
+- **Dosyalar:** `engine/c2/states.js` (Full-Stack yüzü), `engine/c2/surface.js`, `engine/c2/linefield/corridor.js`
+  (korunum kuralı).
+- **Bağımlılık:** yok.
+- **Öncelik:** P1.
+
+### R20. Arka belleğe piksel sayısı tavanı
+- **Açıklama:** Büyük ve yüksek DPR'lı ekranlarda kanvasın arka belleği sınırsız büyüyor. Önerilen tavan 8,3 Mpx
+  (3840×2160). Tavanı aşan ekranda çizim oranı düşürülür.
+- **Karar:** Bekleyen: değer.
+- **Dosyalar:** `engine/c2/main.js` (`V.dpr`, `V.u`, `measure`), `engine/c2/surface.js` (`resize`),
+  `engine/c2/linefield/`.
+- **Bağımlılık:** çizim oranını değiştirdiği için R9 ile birlikte ölçülmeli.
+- **Öncelik:** P1.
+
+### R21. Büyük ekranlarda büyük harf başına satır sayısına üst sınır
+- **Açıklama:** Büyük harf başına düşen satır sayısı telefonda 12, 4K'da 37. Bir üst sınır konup konmayacağı ve
+  değeri sanat yönetimi kararı.
+- **Karar:** Bekleyen: kullanıcının sanat yönetimi kararı.
+- **Dosyalar:** `engine/c2/linefield/state.js` (satır aralığı), `engine/c2/states.js`, `docs/LINEFIELD.md`.
+- **Bağımlılık:** yok.
+- **Öncelik:** P2.
+
+### R22. Gerçek cihaz testi
+- **Açıklama:** Otomatik tarayıcı sonuçları cihaz doğrulaması sayılmaz. Test edilecekler:
+  - iPad
+  - Mac'te Safari
+  - bir Android telefon
+
+  iPhone kontrol listesi AUDIT-01 §6'da. R10 (Safari'de ince ad) ve R9 (MacBook'ta titreşim) bu teste bağlı.
+- **Karar:** Karar verildi (2026-10-01).
+- **Dosyalar:** `docs/audit/AUDIT-01.md` §6, `docs/contact-finale/DEVICE-TEST.md`.
+- **Bağımlılık:** yerel ağa açık bir sunucu (`sv.cjs --lan`).
+- **Öncelik:** P0.
+
+### R23. Awwwards başvuru malzemesi
+- **Açıklama:** ekran görüntüleri, kısa bir video, başlık ve açıklama.
+- **Karar:** Bekleyen: içerik ve ton.
+- **Dosyalar:** yeni `docs/AWWWARDS.md`.
+- **Bağımlılık:** R18'in parçası. Görüntüler R9 düzeldikten sonra çekilmeli.
 - **Öncelik:** P0.
 
 ---

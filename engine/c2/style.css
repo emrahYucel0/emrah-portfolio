@@ -13,8 +13,11 @@ html[data-c2='on'] {
 html[data-c2='on'], html[data-c2='on'] body {
   margin: 0; height: 100%; overflow: hidden; background: #efeee9; color: var(--fg);
   font-family: var(--sans); -webkit-font-smoothing: antialiased; font-feature-settings: 'ss01' on;
-  overscroll-behavior: none; touch-action: none; -webkit-user-select: none; user-select: none;
+  overscroll-behavior: none; touch-action: pinch-zoom; -webkit-user-select: none; user-select: none;
 }
+/* AUDIT-01, WCAG 1.4.4: the page can always be pinch-zoomed (two fingers are the browser's, a pan is still the site's);
+   once it is zoomed the reader moves around it, so the pan is the browser's too (main.js marks html.c2-zoomed) */
+html.c2-zoomed[data-c2='on'], html.c2-zoomed[data-c2='on'] body { touch-action: auto; }
 :where(html[data-c2='on']) body[data-tone=dark] { --fg: var(--paper); }
 :where(html[data-c2='on']) body[data-tone=media] { --fg: var(--paper); }
 :where(#ui) .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

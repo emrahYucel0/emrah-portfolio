@@ -188,7 +188,7 @@ export const en = {
   },
   hints: {
     quietSeparator: ' · ',
-    face: 'hold', faceTouch: 'squeeze with two fingers',
+    face: 'hold',
     work: 'scroll · hold the image', workTouch: 'slide sideways · tap the image',
     world: 'scroll',
   },

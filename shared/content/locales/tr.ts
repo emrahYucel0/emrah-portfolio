@@ -193,7 +193,7 @@ export const tr = {
   },
   hints: {
     quietSeparator: ' · ',
-    face: 'basılı tut', faceTouch: 'iki parmakla sıkıştır',
+    face: 'basılı tut',
     work: 'kaydır · görseli basılı tut', workTouch: 'yana kaydır · görsele dokun',
     world: 'kaydır',
   },

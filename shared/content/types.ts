@@ -211,7 +211,6 @@ export interface LocaleCopy {
   hints: {
     quietSeparator: string
     face: string
-    faceTouch: string
     work: string
     workTouch: string
     world: string

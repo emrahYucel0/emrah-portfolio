@@ -12,7 +12,7 @@ import '@fontsource-variable/geist'
 import '@fontsource/geist-mono/400.css'
 import './style.css'
 import gsap from 'gsap'
-import { createSurface, feature, gather, squeeze } from './surface.js'
+import { createSurface, feature, gather } from './surface.js'
 import { createFlat, paintFlat } from './flat.js'
 import { createPhysics } from './physics.js'
 import * as ST from './states.js'
@@ -215,14 +215,14 @@ const A = {
   mode: 'intro', busy: false,
   p: 0, pT: 0, base: 0, prevBase: 0, wp: 0, wpT: 0, wbase: 0, gesture: false, lastInput: -1e9, exitAccum: 0,
   from: null, to: null, front: 1, k: 0,
-  features: new Set(), press: null, about: null, aboutOpen: false, aboutDetail: false, detailPushed: false, squeeze: null, introF: null,
+  features: new Set(), press: null, about: null, aboutOpen: false, aboutDetail: false, detailPushed: false, pinch: false, introF: null,
   world: gather(), worldOn: false, faceF: feature({ kind: 1 }),
   constrained: false, timeHeld: 0,   // POST-M5 PERF: render capacity (see noteFrame)
   staticHero: false,                 // POST-M5 PERF: software renderer, WebGL not yet drawn (see startStaticHero)
   introReg: 1, nameAmp: 1, nextReg: 1, nextArmed: false, regDrag: 0, regDragT: 0, quality: {}, shiver: 0,
   wt: 0, wT: 0, wLocked: -1, visited: new Set(), visitOrder: [], releaseK: null,
   yieldMarks: [], seeded: 0, aboutMark: null,
-  learned: { open: false, face: false, work: false, pinch: false, lab: false, world: false, next: false }, arrivedAt: 0,
+  learned: { open: false, face: false, work: false, lab: false, world: false, next: false }, arrivedAt: 0,
   pending: null, lastIdx: 0, lastTo: null, cleared: false,
   // the Lab stop hands over to the bench when travel settles on it, never when a state is restored onto it
   labArmed: false, hush: 0,
@@ -288,7 +288,7 @@ function rebuild() {
   works.forEach((w, i) => { if (i < 12) surface.inks.set(hexArr(w.ink), i * 3) })
   gsap.killTweensOf(A)
   A.features.forEach((f) => gsap.killTweensOf(f)); A.features.clear()
-  A.press = null; A.squeeze = null; A.busy = false; A.shiver = 0; A.introF = null; A.nameAmp = REDUCED ? 0 : 1
+  A.press = null; A.pinch = false; A.busy = false; A.shiver = 0; A.introF = null; A.nameAmp = REDUCED ? 0 : 1
   if (A.aboutOpen) { A.about = aboutFeature(1); A.features.add(A.about) }
   if (BRIDGE) { BRIDGE.dead = true; surface.release(BRIDGE); BRIDGE = null }
   if (A.mode === 'bridge') { A.mode = 'index'; A.p = A.pT = A.base = A.prevBase = STOP.lab; A.bridgeF = null; A.bridgePK = 1 }
@@ -460,7 +460,7 @@ function scrollBy(d, touch = false) {
   // runtime takes the screen back mid-gesture: what arrives here first is a tail with no gesture behind it. It is
   // spent, not obeyed — the hush re-arms for as long as the tail keeps coming and ends at the first real gap.
   if (A.hush) { if (now < A.hush) { A.hush = now + 140; return } A.hush = 0 }
-  if (A.busy || A.squeeze || A.mode === 'intro') return
+  if (A.busy || A.pinch || A.mode === 'intro') return
   // in the long About the wheel reads; it never throws the reader out of the room
   if (A.aboutOpen) { if (!A.aboutDetail && A.aboutDetailK < 0.01 && now - A.lastInput > 120) closeAbout(); A.lastInput = now; return }
   // Only a wheel is read for its boundaries: a finger's are the pointer stream's own, and pointerdown has already
@@ -557,7 +557,9 @@ function go(i) {
 }
 const canScroll = (el, dy) => (dy > 0 ? el.scrollTop + el.clientHeight < el.scrollHeight - 1 : el.scrollTop > 0)
 addEventListener('wheel', (e) => {
-  if (!owns()) return
+  // ZOOM IS THE BROWSER'S (AUDIT-01, WCAG 1.4.4): Ctrl + wheel — also what a trackpad's pinch sends — and moving
+  // around a zoomed page are never travel, and are passed on untouched
+  if (!owns() || e.ctrlKey || zoomed()) return
   const sc = e.target.closest?.('.scroll')
   if (sc && canScroll(sc, e.deltaY)) return   // reading text scrolls the text, not the surface
   e.preventDefault()
@@ -575,17 +577,27 @@ addEventListener('wheel', (e) => {
  * the same flag the shell uses to show the surface at all, so the two can never disagree.
  */
 const owns = () => document.documentElement.dataset.c2 === 'on'
+/*
+ * TWO FINGERS ARE THE BROWSER'S (AUDIT-01, WCAG 1.4.4 — user decision 2026-10-01). The page can always be pinch-
+ * zoomed: style.css gives the browser `pinch-zoom` and keeps the pan, so one finger is still the site's. The two-
+ * finger squeeze that used to push a face through is gone; a held finger does the same, as a held pointer does.
+ * While the page is zoomed the reader is moving around it: html.c2-zoomed hands the pan to the browser as well,
+ * and the material answers no gesture until the page is back at its own size.
+ */
+const zoomed = () => (window.visualViewport?.scale ?? 1) > 1.01
+const onZoom = () => { const z = zoomed(); document.documentElement.classList.toggle('c2-zoomed', z); if (z) endGesture() }
+window.visualViewport?.addEventListener('resize', onZoom)
 
 function endGesture() {
   touches.clear()
-  if (A.squeeze) endSqueeze()
+  A.pinch = false
   ptr.down = false; ptr.axis = null; ptr.ui = false; ptr.rub = 0
   if (ptr.touch) ptr.hover = false
   // an interruption is not an arrival: whatever this gesture had travelled is left for snap to settle as before
   resetGesture(); forgetStream()
 }
 addEventListener('pointerdown', (e) => {
-  if (!owns()) return
+  if (!owns() || zoomed()) return
   A.kbd = false   // M4 A11Y: a pointer is in use — nothing moves focus on its behalf
   // the first finger of a gesture: nothing else is on the glass, whatever an interrupted gesture left behind
   if (e.pointerType === 'touch' && e.isPrimary && (touches.size || ptr.down)) endGesture()
@@ -600,8 +612,11 @@ addEventListener('pointerdown', (e) => {
   if (on && !on.hasAttribute('data-through')) { ptr.ui = true; return }
   if (e.pointerType === 'touch') {
     touches.set(e.pointerId, { x: e.clientX / V.u, y: e.clientY / V.u })
-    if (touches.size === 2) { startSqueeze(); return }
-    if (touches.size > 2) return
+    // a second finger makes the touch a pinch — the browser's zoom — until every finger has lifted
+    if (touches.size > 1) {
+      if (!A.pinch) { A.pinch = true; if (A.press && !A.press.forced) cancelPress(A.press); ptr.down = false; ptr.axis = null; resetGesture(); forgetStream() }
+      return
+    }
   }
   Object.assign(ptr, { down: true, downT: performance.now(), sx: e.clientX / V.u, sy: e.clientY / V.u, x: e.clientX / V.u, y: e.clientY / V.u, moved: 0, axis: null, rub: 0, ui: !!on, swiped: false, touch: e.pointerType !== 'mouse' })
   // a finger on the glass is the beginning of one gesture, whatever it turns into, and it carries one stop
@@ -611,7 +626,7 @@ addEventListener('pointermove', (e) => {
   if (!owns()) return
   const now = performance.now(), dts = Math.max(8, now - ptr.t) / 1000
   if (e.pointerType === 'touch' && touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX / V.u, y: e.clientY / V.u })
-  if (A.squeeze) return
+  if (A.pinch) return
   const cx = e.clientX / V.u, cy = e.clientY / V.u
   const dx = cx - ptr.x, dy = cy - ptr.y
   if (ptr.t) { ptr.vx = lerp(ptr.vx, dx / dts, 0.5); ptr.vy = lerp(ptr.vy, dy / dts, 0.5) }
@@ -659,7 +674,7 @@ const up = (e) => {
   const now = performance.now()
   if (e?.pointerType === 'touch') {
     touches.delete(e.pointerId)
-    if (A.squeeze) { if (touches.size < 2) endSqueeze(); return }
+    if (A.pinch) { if (!touches.size) A.pinch = false; return }
   }
   // a cancelled gesture was not a tap
   if (e?.type !== 'pointercancel' && ptr.down && !ptr.ui && now - ptr.downT < 200 && ptr.moved < 8) tap(ptr.x, ptr.y)
@@ -743,7 +758,7 @@ function current() {
   return s === STOP.work ? WORKS[clamp(Math.round(A.wt), 0, N - 1)] : IDX[s]
 }
 function pressable(st, x, y) {
-  if (A.busy || A.aboutOpen || A.squeeze) return false
+  if (A.busy || A.aboutOpen || A.pinch) return false
   if (A.mode === 'index') {
     if (Math.abs(A.p - A.base) > 0.06) return false
     if (st.beneath === 'work') return registeredWork() === st.workIndex && inRect(x, y, st.layout.frame, 30)
@@ -1056,56 +1071,6 @@ function exit() {
       if (back || A.focusNext) { A.focusNext = 0; wantFocus(() => D.work.querySelector(`[data-work="${k}"]`)) } else announce(TXT.work.heading) })
 }
 
-// MOBILE ONLY → two fingers take hold of two rows; what is between them can only compress, and it resists
-function startSqueeze() {
-  if (A.mode !== 'index' || A.busy || A.aboutOpen || Math.abs(A.p - A.base) > 0.06) return
-  const st = current()
-  if (!['about', 'state', 'work'].includes(st.beneath)) return
-  if (st.beneath === 'work' && registeredWork() < 0) return
-  const [a, b] = [...touches.values()].sort((p, q) => p.y - q.y)
-  if (!a || !b || b.y - a.y < 70) return
-  if (A.press) cancelPress(A.press)
-  ptr.down = false; ptr.axis = 'pinch'
-  A.squeeze = { st, sat: 0, step: 1, f: squeeze({ cx: (a.x + b.x) / 2, y1: a.y, y2: b.y, Y1: a.y, Y2: b.y, hw: V.W * 0.85 }) }
-  A.features.add(A.squeeze.f)
-}
-function updateSqueeze(dt) {
-  const q = A.squeeze
-  if (!q) return
-  const [a, b] = [...touches.values()].sort((p, r) => p.y - r.y)
-  const span = q.f.Y2 - q.f.Y1
-  if (a && b) {
-    // the rows under the fingers stay under them; between, the material follows the fingers less the more it is
-    // compressed: every further step of compression costs more travel
-    const kf = span / Math.max(3, b.y - a.y)
-    const km = kf <= 1 ? Math.max(kf, 1 / 1.5) : Math.pow(kf, 0.8)
-    q.f.y1 = a.y; q.f.y2 = a.y + span / km; q.f.cx = (a.x + b.x) / 2
-  }
-  const k = span / Math.max(1, q.f.y2 - q.f.y1)
-  // a faint tick each time the rows between the fingers close another whole step
-  const step = Math.floor(k)
-  if (step > q.step && step < 5) { haptic(4); q.step = step } else if (step < q.step) q.step = step
-  A.shiver = clamp((k - 2.6) / 2, 0, 1) * 0.45
-  if (k > 4) q.sat += dt; else q.sat = Math.max(0, q.sat - dt * 2)
-  if (q.sat > 0.12) {
-    // saturated between the fingers: the band gives way exactly where it was squeezed
-    const cy = (q.f.y1 + q.f.y2) / 2
-    const f = feature({ cx: q.f.cx, cy, h: (q.f.y2 - q.f.y1) / 2, hw: V.W * 0.8, falloff: 30, kind: q.st.beneath === 'state' ? 1 : 0 })
-    A.features.add(f)
-    const sf = q.f
-    gsap.to(sf, { s: 0, duration: 0.3, onComplete: () => A.features.delete(sf) })
-    A.squeeze = null; A.learned.pinch = true; A.shiver = 0
-    yieldPress({ st: q.st, f, x: q.f.cx, y: cy, L: 1 })
-  }
-}
-function endSqueeze() {
-  const q = A.squeeze
-  if (!q) return
-  A.squeeze = null; A.shiver = 0
-  const f = q.f
-  gsap.to(f, { y1: f.Y1, y2: f.Y2, duration: 0.8, ease: 'elastic.out(1, 0.45)', onComplete: () => A.features.delete(f) })
-  ptr.axis = null
-}
 
 // ─── project world geometry ──────────────────────────────────────────────────
 function worldGeom(wp, k = A.k) {
@@ -1569,7 +1534,7 @@ function hintFor(stop) {
   // The hero taught the hold that opened About, and the Lab stop taught the hold that made a room. Neither is true
   // any more: About is a control on the hero, and the Lab is a route that opens on arrival. A place teaches only
   // what it still asks for — the two faces and the work field do; the hero and the Lab stop stay quiet.
-  if (stop === STOP.creative || stop === STOP.system) return !A.learned.face && since > 2500 ? (TOUCH ? H.faceTouch : H.face) : quiet
+  if (stop === STOP.creative || stop === STOP.system) return !A.learned.face && since > 2500 ? H.face : quiet
   if (stop === STOP.work) return !A.learned.work && since > 2500 ? (TOUCH ? H.workTouch : H.work) : quiet
   return quiet
 }
@@ -1595,7 +1560,7 @@ function domUpdate(from, to, front) {
   const face = faceT == null ? null : A.base === STOP.system && faceT >= FACE_WHOLE[1] ? IDX[STOP.system] : A.base === STOP.creative && faceT <= FACE_WHOLE[0] ? IDX[STOP.creative] : null
   const dom = face || (front < 0.5 ? from : to)
   const idleIdx = A.mode === 'index' && !A.busy
-  const loaded = (A.press && A.press.L > 0.1 && A.press.st.beneath !== 'pin') || !!A.squeeze
+  const loaded = A.press && A.press.L > 0.1 && A.press.st.beneath !== 'pin'
   const at = (i) => (Math.abs(A.p - i) < 0.03 && Math.abs(A.p - A.base) < 0.2) || face === IDX[i]
   if (REDUCED) {
     // the destination owns its text. In normal motion a layer arrives with the picture, so it is asked for from
@@ -1649,7 +1614,7 @@ function domUpdate(from, to, front) {
   const [tt, tb] = stripTones(dom)
   if (tt !== lastTT) { D.top.dataset.tone = tt; D.world.querySelector('.wnav').dataset.tone = tt; lastTT = tt }
   if (tb !== lastTB) { D.bottom.dataset.tone = tb; lastTB = tb }
-  const parting = A.mode === 'index' && ((from === IDX[STOP.creative] && to === IDX[STOP.system] && A.p > STOP.creative + 0.001) || A.press?.st.beneath === 'state' || A.squeeze?.st.beneath === 'state')
+  const parting = A.mode === 'index' && ((from === IDX[STOP.creative] && to === IDX[STOP.system] && A.p > STOP.creative + 0.001) || A.press?.st.beneath === 'state')
   const bg = inWorld || A.mode === 'exit' ? '#0b0c0e' : (parting && A.beneathSt ? A.beneathSt.bg : dom.bg)
   if (bg !== lastBg) { document.body.style.backgroundColor = bg; lastBg = bg }
 
@@ -1862,7 +1827,7 @@ function frame(now) {
   // POST-M5 PERF: two clocks. `et` is the real time since the last frame (up to a stall) and drives the closed-form
   // convergences: place and frame position, work tuning, registration drag, imprint visibility, pointer velocity decay,
   // and the material physics, which integrates it in steps of at most 50 ms (at 60 fps: one step, as before).
-  // `dt` keeps its 50 ms cap for hold load, squeeze and the Lab rooms.
+  // `dt` keeps its 50 ms cap for hold load and the Lab rooms.
   const et = Math.min(STALL, Math.max(0, (now - last) / 1000))
   const dt = Math.min(0.05, et)
   last = now
@@ -1974,7 +1939,6 @@ function frame(now) {
 
   registration(now, et)
   updatePress(now, dt)
-  updateSqueeze(dt)
   runPending()
   // THE FIFTH DESTINATION. Travel that settles on the Lab stop hands over to the bench, the way the Work → Lab
   // bridge already ends: reached from Work it is the bridge, reached from Contact it is this. Only travel arms it,

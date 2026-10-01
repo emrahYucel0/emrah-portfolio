@@ -78,6 +78,9 @@ against a stop, a stop used as a distance, which every search for `=== 3` walked
 
 ## Standing rules
 
+- **`docs/ROADMAP.md` is the project's one to-do list.** Read it at the start of every session. Update it as you
+  work: mark what you start, record each user decision there with its date, and move what you finish into the
+  "Tamamlananlar" table. The procedure is at the top of the file.
 - Do not commit, push or deploy without being asked.
 - The research sources at `C:\Users\monster\Desktop\emrah-yucel-porfolio\` are read-only.
 - No mail, cPanel, SMTP or API credentials belong in this repository.

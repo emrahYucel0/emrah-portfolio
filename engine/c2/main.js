@@ -1634,7 +1634,7 @@ function domUpdate(from, to, front) {
   const key = `${k}:${[...A.visited].join('')}`
   if (key !== lastWork) {
     lastWork = key
-    if (k >= 0) { D.wtitle.textContent = works[k].name; D.wmeta.textContent = works[k].strength; D.current.querySelector('.open').setAttribute('aria-label', `${TXT.work.open} — ${TXT.a11y.openProject}: ${works[k].name}`) }
+    if (k >= 0) { D.wtitle.textContent = works[k].name; D.wmeta.textContent = works[k].strength; D.current.querySelector('.open').setAttribute('aria-label', `${OPEN_WORK()} — ${TXT.a11y.openProject}: ${works[k].name}`) }
     D.current.classList.toggle('on', k >= 0)
     D.work.querySelectorAll('[data-work]').forEach((b, i) => { b.classList.toggle('active', i === k); b.classList.toggle('visited', A.visited.has(i)); if (i === k) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current') })
   }

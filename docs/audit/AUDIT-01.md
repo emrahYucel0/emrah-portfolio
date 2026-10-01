@@ -649,3 +649,26 @@ Bu maddeler Linefield'ın ortak dosyalarına (`LINEFIELD-MERGE.md`) ya da runtim
 - **#12:** `labKeys`.
 
 **Birleştirme planı:** Linefield oturumu durduğunda önce tam kapı koşulacak. Kapı temizse `fix/audit-01-batch1` `--no-ff` ile `main`'e birleştirilip push edilecek. Bu adım kullanıcının haberiyle yapılacak.
+
+---
+
+## 10. Düzeltme turu 2: yapılanlar
+
+Dal `fix/audit-01-batch2`, febd93f'ten açıldı (batch 1 ve Linefield ile birleşmiş `main`). §9'un maddeleri sırayla yapıldı.
+
+| Commit | §9 maddesi | Not |
+|---|---|---|
+| b4054e7 | 1, metin | Durum satırı "Seçili projelere açığım" / "Available for selected projects"; EN'de Istanbul; `labKeys` kaldırıldı; "Bir projeniz mi var? Yazın →" eylem çağrısı Hakkımda'nın sonunda ve her projenin son karesinde; İstanbul Şehir İçi'nin açılışında "Ege Kent Nakliyat'ın İstanbul şehir içi markası". "production sitesi", "Best Practices" ve Ege PSI kararla olduğu gibi kaldı. |
+| 63b3f20 | 2, düz katman #1, #2, #4, #6 | Çalışma bağlantıları kendi sayfasına gidiyor; sıra facts.ts'ten geliyor; "03" sayılıyor; belge rotalarındaki skip bağlantısı "İçeriğe geç" diyor. #10 ve #12 madde 1'de yapıldı. #11 case study URL'lerini bekliyor. |
+| 22d429d | 3, C2 yakınlaştırma | Kullanıcı kararı: iki parmak ve Ctrl+tekerlek tarayıcının. Sıkıştırma jesti kaldırıldı; yüzden yüze geçiş basılı tutarak yapılıyor. Yakınlaşmış sayfada site jest okumuyor. |
+| — | 4, HAKKIMDA odası | Kullanıcı kararıyla atlandı. Kâğıt bant (1. tur) kalıyor. |
+| 205e1d5 | 5, yavaş ağda ilk kare | Fontlar head'den önceden yükleniyor ve birlikte iniyor; önizlemeler fontları beklemiyor; ilk kare önizlemeleri beklemiyor. Fast 3G + 4× CPU'da 11,2 → 8,9 sn. |
+| 25987e8 | 6, ad → CREATIVE boş karesi | Creative'in metni odasıyla birlikte geliyor (0,75): 0,6–0,7 sn daha erken. |
+| 13756b4 | 7, OPEN_WORK aria-label | Dokunmatikte ad, görünen talimatla aynı. |
+
+**Kontroller:** her maddeden sonra hızlı kontroller koşuldu: Linefield giriş, çıkış ve hareketi azaltılmış; `workopen`; `journey`; `herotouch`; `touch`; `spine`. Tam kapı koşulmadı.
+
+**Açık kalanlar:**
+- Sert fırlatmada coast/tail aşımı febd93f'te de var: ortak bir karşılaştırmada febd93f'te 10 denemenin 5'i, bu dalda 2'si kaldı. Linefield oturumunun konusu.
+- `spine`'ın momentum kuyruğu kontrolü makine yüklüyken febd93f'te de kalıyor; yük kalkınca geçiyor.
+- Düz katman #11, case study URL'lerini bekliyor.

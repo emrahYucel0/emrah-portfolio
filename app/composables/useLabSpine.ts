@@ -47,9 +47,17 @@ export function useLabSpine() {
     void leave(to)
   }
 
+  /*
+   * ZOOM IS THE BROWSER'S (AUDIT-01, WCAG 1.4.4). Two fingers, Ctrl + wheel (which is also what a trackpad's pinch
+   * sends) and moving around a zoomed page are never a destination: they are passed to the browser untouched. The
+   * page is "zoomed" while the visual viewport is scaled; lab.css then hands panning back to the browser too.
+   */
+  const zoomed = () => (window.visualViewport?.scale ?? 1) > 1.01
+  const onZoom = () => document.documentElement.classList.toggle('lab-zoomed', zoomed())
+
   let acc = 0, accAt = 0
   const onWheel = (e: WheelEvent) => {
-    if (spent) return
+    if (spent || e.ctrlKey || zoomed()) return
     // nothing on the bench scrolls, so the gesture is the site's: it is taken, not passed to the document
     e.preventDefault()
     const now = performance.now()
@@ -62,18 +70,28 @@ export function useLabSpine() {
   }
 
   // the finger: downward travel is the sheet coming back up the index (Work), upward travel carries it on (Contact)
+  // a second finger makes the whole touch a pinch: no finger of it is read again until every one has lifted
   let id = -1, sx = 0, sy = 0
+  const fingers = new Set<number>()
+  let pinch = false
   const onDown = (e: PointerEvent) => {
-    if (e.pointerType === 'mouse' || !e.isPrimary) return
+    if (e.pointerType === 'mouse') return
+    fingers.add(e.pointerId)
+    if (fingers.size > 1) { pinch = true; id = -1; return }
+    if (!e.isPrimary || pinch || zoomed()) return
     id = e.pointerId; sx = e.clientX; sy = e.clientY
   }
   const onMove = (e: PointerEvent) => {
-    if (spent || e.pointerId !== id) return
+    if (spent || pinch || e.pointerId !== id) return
     const dx = e.clientX - sx, dy = e.clientY - sy
     if (Math.abs(dy) < SWIPE || Math.abs(dy) < Math.abs(dx) * 1.3) return
     go(dy < 0 ? 'contact' : 'work')
   }
-  const end = () => { id = -1 }
+  const end = (e: PointerEvent) => {
+    fingers.delete(e.pointerId)
+    if (e.pointerId === id) id = -1
+    if (!fingers.size) pinch = false
+  }
 
   onMounted(() => {
     // the finale's engine is fetched while the bench is on screen, so the way down never waits for it
@@ -84,6 +102,8 @@ export function useLabSpine() {
     addEventListener('pointermove', onMove, { passive: true })
     addEventListener('pointerup', end, { passive: true })
     addEventListener('pointercancel', end, { passive: true })
+    window.visualViewport?.addEventListener('resize', onZoom)
+    onZoom()
   })
   onBeforeUnmount(() => {
     removeEventListener('wheel', onWheel)
@@ -91,6 +111,8 @@ export function useLabSpine() {
     removeEventListener('pointermove', onMove)
     removeEventListener('pointerup', end)
     removeEventListener('pointercancel', end)
+    window.visualViewport?.removeEventListener('resize', onZoom)
+    document.documentElement.classList.remove('lab-zoomed')
     document.removeEventListener('click', swallow, { capture: true })
   })
 }

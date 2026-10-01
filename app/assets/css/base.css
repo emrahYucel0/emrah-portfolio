@@ -175,6 +175,16 @@ html[data-c2='on'] #__nuxt { display: none; }
   background-image: repeating-linear-gradient(to bottom, var(--p-ink) 0 var(--p-thick), transparent var(--p-thick) var(--p-space));
 }
 html[data-c2='on'] #c2-plate { display: none; }
+/*
+  AUDIT-01: A PLATE THAT NEVER LIFTS. If the runtime never takes the screen — its bundle blocked or failed, a browser
+  below the site's floor — the plate stood over the semantic shell for good: an empty field of rows, forever. It now
+  steps aside, and the shell is the page, exactly as without script. At once when a build script is known to have
+  failed (app.vue marks html.c2-failed on its load error); otherwise after 20 s, which no working visit reaches: the
+  slowest measured first frame was 13.8 s (Fast 3G, 4x CPU).
+*/
+#c2-plate { animation: c2-plate-yield 0s linear 20s forwards; }
+@keyframes c2-plate-yield { to { visibility: hidden; } }
+html.c2-failed #c2-plate { display: none; }
 
 /* the runtime's own DOM only exists while the runtime has the screen (the x-default entry keeps the shell) */
 html:not([data-c2='on']) #surface,

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { studies, type StudyId } from '~~/shared/content'
+import { studies, studyNo, type StudyId } from '~~/shared/content'
 
 /**
  * LAB — THE REGISTERED BENCH, EMBEDDED REGISTER, DATUM. (Accepted reference: research lab-reopen/bench-v2-refined.)
@@ -488,11 +488,24 @@ onBeforeUnmount(() => { if (benchSeam.exit === exitToBare) benchSeam.exit = null
       <!-- on the research site the bench was a section of the home page and this was its h2; here the bench IS the
            route, so the same words are its h1. Nothing is shown either way: the sheet says it, this says it aloud. -->
       <h1 id="lab-h" class="u-sr">{{ copy.lab.title }} — {{ copy.lab.line }}</h1>
+      <!-- without script the bench cannot compose itself (everything below is placed by it) and its parts pile up in
+           a corner: this plain list is the Lab then — shown by CSS alone, so a visit with script never sees it flash
+           (AUDIT-01). Also when the build failed to load (html.c2-failed, app.vue). -->
+      <nav class="lab-bench-nojs" :aria-label="copy.lab.heading">
+        <p class="u-label">{{ copy.lab.title }}</p>
+        <p>{{ copy.lab.line }}</p>
+        <ol>
+          <li v-for="id in studies" :key="id">
+            <a :href="href(id)"><span class="u-label">{{ studyNo(id) }}</span> <span lang="en">{{ copy.lab.studies[id].name }}</span></a>
+            <span> — {{ copy.lab.studies[id].note }}</span>
+          </li>
+        </ol>
+      </nav>
       <p ref="markEl" class="mark" aria-hidden="true">{{ copy.lab.count }}</p>
       <ul class="spine" :aria-label="copy.lab.heading" @keydown="onKey">
         <li v-for="(id, i) in studies" :key="id" :ref="(el) => { if (el) recEls[i] = el as HTMLElement }" class="rec-wrap">
           <button class="rec" type="button" :aria-current="i === sel ? 'true' : undefined" @click="select(i, 'press')" @pointerenter="S.hover = i" @pointerleave="S.hover = -1">
-            <span class="no">0{{ i + 1 }}<span class="co" /></span>
+            <span class="no">{{ studyNo(id) }}<span class="co" /></span>
             <span class="nm" :data-nm="copy.lab.studies[id].name" lang="en">{{ copy.lab.studies[id].name }}<i class="bl" /></span>
             <span class="pr">{{ copy.lab.studies[id].prim }}</span>
           </button>
@@ -500,12 +513,12 @@ onBeforeUnmount(() => { if (benchSeam.exit === exitToBare) benchSeam.exit = null
       </ul>
       <div ref="openEl" class="open">
         <NuxtLink :to="href(current)" class="open-link" :aria-label="`${copy.lab.open}: ${copy.lab.studies[current].name}`">
-          <span class="t1" lang="en">0{{ sel + 1 }} · {{ copy.lab.studies[current].name.toLowerCase() }}</span><span class="t2">{{ copy.lab.open }}<span class="a">→</span></span>
+          <span class="t1" lang="en">{{ studyNo(current) }} · {{ copy.lab.studies[current].name.toLowerCase() }}</span><span class="t2">{{ copy.lab.open }}<span class="a">→</span></span>
         </NuxtLink>
       </div>
       <p ref="noteEl" class="note">{{ copy.lab.studies[current].note }}</p>
       <div class="foot" aria-hidden="true">
-        <span>{{ copy.lab.title }} — 0{{ sel + 1 }} / 03</span>
+        <span>{{ copy.lab.title }} — {{ studyNo(current) }} / {{ String(studies.length).padStart(2, '0') }}</span>
         <span>{{ registering ? copy.lab.registering : copy.lab.registered }}</span>
       </div>
       <p class="u-sr" role="status">{{ status }}</p>
@@ -522,6 +535,12 @@ onBeforeUnmount(() => { if (benchSeam.exit === exitToBare) benchSeam.exit = null
 /* the seam to Contact: what is not the bare field fades with the veil */
 .lab-stage .spine, .lab-stage .open, .lab-stage .note, .lab-stage .mark, .lab-stage .foot span { opacity: calc(1 - var(--veil, 0)); }
 .lab-sheet { position: absolute; inset: 0; width: 100%; height: 100%; }
+.lab-bench-nojs { display: none; position: absolute; inset: 0; z-index: 5; overflow: auto; background: var(--ground); padding: calc(var(--strip) + 40px) var(--pad) 40px; }
+@media (scripting: none) { .lab-bench-nojs { display: block; } }
+html.c2-failed .lab-bench-nojs { display: block; }
+.lab-bench-nojs > * { max-width: 40rem; }
+.lab-bench-nojs ol { list-style: none; margin: 24px 0 0; padding: 0; display: grid; gap: 14px; }
+.lab-bench-nojs a { color: inherit; }
 .lab-stage .spine { position: absolute; inset: 0; pointer-events: none; }
 .lab-stage .rec-wrap { position: absolute; }
 .lab-stage .rec {

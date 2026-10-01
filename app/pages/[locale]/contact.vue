@@ -65,8 +65,9 @@ let gone = false
 /*
  * ARRIVING (F2, useContactSeam). Carried here by a gesture — down out of the Lab, or through the runtime's Contact
  * stop — the drawing plays from p = 0, and the tail of that gesture is spent before the document can scroll with it.
- * Asked for by name — the menu, a #contact link — the finale opens settled, at p = 1. Coming back to this entry
- * (Back / Forward), it is where the visitor left it.
+ * Asked for by name — the menu, a #contact link, or the address itself, typed or shared — the finale opens settled,
+ * at p = 1: a visitor who opens /contact came for the facts, not for a sheet that draws them later (AUDIT-01).
+ * Coming back to this entry (Back / Forward), it is where the visitor left it.
  */
 const arrival = import.meta.client ? takeHistoryFlag(FINALE_ARRIVE) : null
 if (arrival === 'start') hushTail()
@@ -77,7 +78,9 @@ const place = () => {
   if (arrival === 'end') finale.arrive()
   else if (arrival?.startsWith('at:')) finale.goTo(Number(arrival.slice(3)) || 0)
   else if (arrival !== 'start' && finaleScroll.has(entry)) scrollTo({ top: finaleScroll.get(entry)!, behavior: 'instant' })
-  else scrollTo({ top: 0, behavior: 'instant' })
+  else if (arrival === 'start') scrollTo({ top: 0, behavior: 'instant' })
+  // no arrival on the entry: the address was opened directly (or the page reloaded) — asked for by name
+  else finale.arrive()
 }
 const remember = () => { if (entry >= 0) finaleScroll.set(entry, scrollY) }
 // the strip's own Contact, pressed while already here: the finale settles

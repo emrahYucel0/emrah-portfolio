@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { HTML_LANG, LOCALES, OG_LOCALE, messages, profile } from '~~/shared/content'
 import { SOCIAL_IMAGE } from '~~/shared/site'
+import { personJsonLd } from '~/composables/useLocaleSeo'
 
 // x-default entry. It resolves a language; it is not a third version of the portfolio.
 definePageMeta({ layout: false })
@@ -16,6 +17,8 @@ useHead({
     { rel: 'alternate', hreflang: 'en', href: `${site}/en` },
     { rel: 'alternate', hreflang: 'x-default', href: `${site}/` },
   ],
+  // the same Person as every locale page: the x-default address is the one most often shared
+  script: [{ type: 'application/ld+json', key: 'person', innerHTML: JSON.stringify(personJsonLd(site)) }],
 })
 useSeoMeta({
   title: copy.entry.title,

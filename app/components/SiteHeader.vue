@@ -22,9 +22,10 @@ const toContact = (e: MouseEvent) => {
 
       <nav class="nav" :aria-label="copy.nav.label">
         <ul class="nav-list">
-          <li><NuxtLink :to="`${path('/')}#work`">{{ copy.nav.work }}</NuxtLink></li>
+          <!-- plain anchors: a place on this page is not the page itself, and a RouterLink marked both aria-current -->
+          <li><a :href="`${path('/')}#work`">{{ copy.nav.work }}</a></li>
           <li><NuxtLink :to="path('/about')">{{ copy.nav.about }}</NuxtLink></li>
-          <li><NuxtLink :to="`${path('/')}#lab`">{{ copy.nav.lab }}</NuxtLink></li>
+          <li><a :href="`${path('/')}#lab`">{{ copy.nav.lab }}</a></li>
           <li>
             <!-- a plain link: the router is asked with the arrival on the history entry (RouterLink would navigate first) -->
             <a :href="contactTo" @click="toContact">{{ copy.nav.contact }}</a>

@@ -26,6 +26,17 @@ useHead({ bodyAttrs: { class: 'lab-route lab-route--study' } })
 
 const { visit } = useVisit()
 
+// arriving from the other language (LabChrome): back to where the reader was — after the router's own scroll to the
+// top on page:finish, and once the study has its height
+const at = import.meta.client ? takeHistoryFlag(STUDY_AT) : null
+if (at != null) {
+  useNuxtApp().hooks.hookOnce('page:finish', () => {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      scrollTo({ top: Number(at) * Math.max(0, document.documentElement.scrollHeight - innerHeight), behavior: 'instant' })
+    }))
+  })
+}
+
 // without script the study cannot run; the page still says what it asks. It steps aside once the study is live.
 const live = ref(false)
 onMounted(() => {

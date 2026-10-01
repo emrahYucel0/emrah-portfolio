@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { studyNo } from '~~/shared/content'
 import { createLineStudy, LINE_STATES } from '../../../engine/lab/line-study.js'
 
 /**
@@ -55,7 +56,7 @@ onMounted(() => {
          It is read where it stands; the live region below still says when it changes. -->
     <div class="state"><b>{{ copy.lab.line_states[stateIdx] }}</b><span>{{ String(stateIdx + 1).padStart(2, '0') }} / {{ String(LINE_STATES).padStart(2, '0') }}</span></div>
     <div class="id">
-      <span class="no">02</span>
+      <span class="no">{{ studyNo('line') }}</span>
       <span class="nm" aria-hidden="true" lang="en">{{ copy.lab.studies.line.name }}</span>
       <p>{{ copy.lab.studies.line.prim }}</p>
     </div>

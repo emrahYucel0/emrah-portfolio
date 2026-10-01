@@ -31,6 +31,21 @@ export default defineNuxtPlugin({
       onNuxtReady(() => { void router.replace({ path: `/${m[1]}/contact`, state: { [FINALE_ARRIVE]: 'end' } }) })
       return
     }
+    /*
+     * #lab and #work are the semantic shell's own places (SiteHeader, the no-script page), and a link to them may be
+     * followed with script on (AUDIT-01: the runtime ignored both). The Lab is its own route; Work is a place on the
+     * index, arrived at the way the Lab's way back arrives there — C2_ARRIVE on the history entry, read by the runtime
+     * when it starts or, if it has already started, on the route change this makes.
+     */
+    if (m && location.hash === '#lab') {
+      const router = useRouter()
+      onNuxtReady(() => { void router.replace({ path: `/${m[1]}/lab` }) })
+      return
+    }
+    if (m && location.hash === '#work') {
+      const router = useRouter()
+      onNuxtReady(() => { void router.replace({ path: `/${m[1]}`, state: { [C2_ARRIVE]: 'work' } }) })
+    }
     const { start } = useC2Engine()
     void start()
   },

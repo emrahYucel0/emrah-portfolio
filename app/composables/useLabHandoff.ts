@@ -4,6 +4,10 @@ import { C2_ARRIVE } from './useC2Engine'
  *  below it, is a route of its own: useContactSeam) */
 export type LabExit = 'name' | 'work'
 
+/** on a study's entry in the other language: where the reader was in the study, as a fraction of its scroll —
+ *  a language change is not a new visit to the study (AUDIT-01) */
+export const STUDY_AT = 'studyAt'
+
 /**
  * LEAVING THE LAB FOR THE RUNTIME. The Lab is the fifth destination. Work, above it, belongs to the C2 runtime, which
  * lives on the locale route (Contact, below it, is a route of its own — useContactSeam). So leaving the Lab upwards

@@ -1,6 +1,6 @@
 import type { ResolvableLink } from '@unhead/vue'
 import { HTML_LANG, LOCALES, OG_LOCALE, profile } from '~~/shared/content'
-import { SOCIAL_IMAGE } from '~~/shared/site'
+import { socialImage } from '~~/shared/site'
 
 type Page = 'home' | 'about' | 'lab' | 'contact'
 
@@ -16,7 +16,10 @@ export function useLocaleSeo(page: Page, override?: { title?: string; descriptio
   // a study names itself; everything else takes the page's own metadata as written
   const meta = computed(() => ({ ...copy.value.meta[page], ...override }))
   const canonical = computed(() => `${site}/${locale.value}${pathWithoutLocale.value}`)
-  const image = `${site}${SOCIAL_IMAGE.path}`
+  const plate = socialImage(page)
+  const image = `${site}${plate.path}`
+  // the Lab's and Contact's plates carry the page's name in their top strip: the alt text says so first
+  const imageAlt = computed(() => (page === 'lab' || page === 'contact' ? `${copy.value.meta[page].title}. ${copy.value.meta.imageAlt}` : copy.value.meta.imageAlt))
 
   const links = computed<ResolvableLink[]>(() => [
     { rel: 'canonical', href: canonical.value },
@@ -46,15 +49,15 @@ export function useLocaleSeo(page: Page, override?: { title?: string; descriptio
     ogLocaleAlternate: () => LOCALES.filter((l) => l !== locale.value).map((l) => OG_LOCALE[l]),
     ogImage: image,
     ogImageSecureUrl: image,
-    ogImageType: SOCIAL_IMAGE.type,
-    ogImageWidth: SOCIAL_IMAGE.width,
-    ogImageHeight: SOCIAL_IMAGE.height,
-    ogImageAlt: () => copy.value.meta.imageAlt,
+    ogImageType: plate.type,
+    ogImageWidth: plate.width,
+    ogImageHeight: plate.height,
+    ogImageAlt: () => imageAlt.value,
     twitterCard: 'summary_large_image',
     twitterTitle: () => meta.value.title,
     twitterDescription: () => meta.value.description,
     twitterImage: image,
-    twitterImageAlt: () => copy.value.meta.imageAlt,
+    twitterImageAlt: () => imageAlt.value,
   })
 }
 

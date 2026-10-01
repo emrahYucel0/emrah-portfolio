@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { studyNo } from '~~/shared/content'
 /**
  * 03 · TONE. (Accepted reference: research lab-reopen/focused-final/tone.)
  *
@@ -123,7 +124,7 @@ onMounted(() => {
     <canvas ref="cv" class="field" aria-hidden="true" />
     <NuxtLink class="back" :to="path('/lab')">← {{ copy.lab.back }}</NuxtLink>
     <div class="head">
-      <span class="no">03</span><span class="nm" aria-hidden="true" lang="en">{{ copy.lab.studies.tone.name }}</span>
+      <span class="no">{{ studyNo('tone') }}</span><span class="nm" aria-hidden="true" lang="en">{{ copy.lab.studies.tone.name }}</span>
       <p>{{ copy.lab.studies.tone.prim }}</p>
     </div>
     <div class="src" role="group" :aria-label="copy.lab.studies.tone.name">

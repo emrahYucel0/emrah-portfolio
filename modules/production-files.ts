@@ -64,9 +64,13 @@ function notFound() {
 <style>
   :root { color-scheme: light; }
   * { box-sizing: border-box; }
-  body { margin: 0; min-height: 100vh; min-height: 100svh; display: grid; align-content: center; gap: 18px;
-    padding: 48px max(18px, 6vw); background: #efeee9; color: #121212;
+  /* the site's own material, without script: the first-paint plate's rows (its spacing and ink), and the message
+     in a room of paper opened in them (AUDIT-01) */
+  body { margin: 0; min-height: 100vh; min-height: 100svh; display: grid; align-content: center; justify-items: start; gap: 18px;
+    padding: 48px max(18px, 6vw); color: #121212;
+    background: #efeee9 repeating-linear-gradient(to bottom, #121212 0 0.85px, transparent 0.85px 7px);
     font: 400 17px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  main { background: #efeee9; padding: 28px 32px; margin: -28px -32px; border-radius: 28px; }
   .id { font: 400 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .08em; text-transform: uppercase; }
   h1 { margin: 12px 0 0; font-size: clamp(56px, 12vw, 120px); line-height: .9; letter-spacing: -.04em; font-weight: 700; }
   p { margin: 0; max-width: 40ch; }
@@ -176,7 +180,8 @@ ErrorDocument 404 /404.html
   AddType font/woff .woff
   AddType video/mp4 .mp4
   AddType image/x-icon .ico
-  AddCharset utf-8 .html .css .js .mjs .json .txt .xml .svg
+  AddType application/manifest+json .webmanifest
+  AddCharset utf-8 .html .css .js .mjs .json .txt .xml .svg .webmanifest
 </IfModule>
 
 # text only: images, fonts and video are already compressed
@@ -200,8 +205,8 @@ ErrorDocument 404 /404.html
   <FilesMatch "\\.(html|json)$">
     Header set Cache-Control "public, max-age=0, must-revalidate"
   </FilesMatch>
-  # crawl files, icons and the share image: a day
-  <FilesMatch "\\.(txt|xml|ico|svg|png|jpg)$">
+  # crawl files, icons, the manifest and the share images: a day
+  <FilesMatch "\\.(txt|xml|ico|svg|png|jpg|webmanifest)$">
     Header set Cache-Control "public, max-age=86400"
   </FilesMatch>
 </IfModule>
@@ -232,6 +237,9 @@ export default defineNuxtModule({
       nitro.hooks.hook('close', () => {
         const site = String(nuxt.options.runtimeConfig.public.siteUrl)
         const out = nitro.options.output.publicDir
+        // nitro also closes after `nuxt prepare` (the postinstall), when there is no build to write into: a fresh
+        // checkout has no .output yet, and writing robots.txt there failed the install
+        if (!existsSync(out)) return
         writeFileSync(join(out, 'robots.txt'), robots(site))
         writeFileSync(join(out, 'sitemap.xml'), sitemap(site))
         writeFileSync(join(out, '404.html'), notFound())

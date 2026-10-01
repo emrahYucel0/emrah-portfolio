@@ -38,8 +38,18 @@ export const isDocumentRoute = (path: string): boolean => /^\/(tr|en)\/(lab(\/|$
 /** every public, indexable route: the x-default entry and each page in each language */
 export const PUBLIC_ROUTES: string[] = ['/', ...LOCALES.flatMap((l) => PUBLIC_PAGES.map((p) => `/${l}${p}`))]
 
-/** the one social share image (a still of the C2 name plate; see docs/DEPLOYMENT.md) */
-export const SOCIAL_IMAGE = { path: '/og/emrah-yucel-portfolio.jpg', width: 1200, height: 630, type: 'image/jpeg' } as const
+/** the social share images: one still of the C2 name plate, its strips naming the page (tools/brand-assets.cjs; see
+ *  docs/DEPLOYMENT.md). The Lab (bench and studies) and Contact have their own; every other page shares the plate. */
+const PLATE = { width: 1200, height: 630, type: 'image/jpeg' } as const
+export const SOCIAL_IMAGE = { path: '/og/emrah-yucel-portfolio.jpg', ...PLATE } as const
+export const SOCIAL_IMAGES = {
+  lab: { path: '/og/emrah-yucel-portfolio-lab.jpg', ...PLATE },
+  contact: { path: '/og/emrah-yucel-portfolio-contact.jpg', ...PLATE },
+} as const
+export const socialImage = (page: string) => SOCIAL_IMAGES[page as keyof typeof SOCIAL_IMAGES] ?? SOCIAL_IMAGE
+
+/** the web app manifest (public/site.webmanifest), linked from app.vue */
+export const MANIFEST = '/site.webmanifest'
 
 /** icons wired in the document head */
 export const ICONS = {

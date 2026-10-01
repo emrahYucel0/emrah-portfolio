@@ -137,10 +137,12 @@ export function paintFlat(ctx, st, o) {
   const rowsN = Math.ceil(Hd / s) + 2
   const Ys = new Float32Array(XN * rowsN).fill(-1e4)
   const Gs = new Float32Array(XN * rowsN).fill(1)
-  const voidTop = new Float32Array(XN).fill(Infinity), voidBot = new Float32Array(XN).fill(-Infinity)
+  // every run of void down each column: a column can cross more than one opening (two rooms stacked on a phone),
+  // and the material between them is still there
+  const voids = Array.from({ length: XN }, () => [])
   for (let ix = 0; ix < XN; ix++) {
     const px = XN === 1 ? Wd / 2 : (ix / (XN - 1)) * Wd
-    let prevM = null, prevY = 0
+    let prevM = null, prevY = 0, runTop = null
     for (let y = -s * 2; y <= Hd + s * 2; y += step) {
       const stt = { m: y, g: 1, ground: 1 }
       let inV = 0
@@ -148,7 +150,9 @@ export function paintFlat(ctx, st, o) {
         if (f.kind === 2) applyGather(px, f, stt)
         else { const v = applyOpening(px, f, stt); if ((f.kind ?? 0) < 0.5) { stt.ground *= 1 - v; inV = Math.max(inV, v) } }
       }
-      if (inV > 0.5) { if (y < voidTop[ix]) voidTop[ix] = y; if (y > voidBot[ix]) voidBot[ix] = y }
+      // no surface here: inside an opening, or where a gather has drawn the material away (a seam's two halves)
+      if (inV > 0.5 || stt.ground <= 0.5) { if (runTop == null) runTop = y }
+      else if (runTop != null) { voids[ix].push(runTop, y - step); runTop = null }
       // inside an opening the surface is not there: the rows whose material the map carries across the void
       // are not seen (the shader's inkVis), and recording them here would take the place of the crowded rows
       // that really hold them, just outside the rim
@@ -164,14 +168,22 @@ export function paintFlat(ctx, st, o) {
       }
       prevM = stt.m; prevY = y
     }
+    if (runTop != null) voids[ix].push(runTop, Hd + s * 2)
   }
-  // where the ground has gone the state's paper is not there: the page shows through it
-  if (fill && voidBot[0] > -Infinity) {
+  // where the ground has gone the state's paper is not there: the page shows through it — the page's own colour
+  // on the index (fill), and on a project whatever lies under the surface, the work itself (the shader's
+  // `bgc * (1 - al) * uFill`: with fill 0 an opening is transparent)
+  if (fs.length) {
     ctx.fillStyle = st.bg
     for (let ix = 0; ix < XN; ix++) {
-      if (voidBot[ix] <= -Infinity) continue
+      const runs = voids[ix]
+      if (!runs.length) continue
       const x0 = XN === 1 ? 0 : ((ix - 0.5) / (XN - 1)) * Wd, x1 = XN === 1 ? Wd : ((ix + 0.5) / (XN - 1)) * Wd
-      ctx.fillRect(Math.max(0, x0), voidTop[ix], Math.min(Wd, x1) - Math.max(0, x0), voidBot[ix] - voidTop[ix])
+      const L = Math.max(0, x0), w = Math.min(Wd, x1) - L
+      for (let i = 0; i < runs.length; i += 2) {
+        if (fill) ctx.fillRect(L, runs[i], w, runs[i + 1] - runs[i])
+        else ctx.clearRect(L, runs[i], w, runs[i + 1] - runs[i])
+      }
     }
   }
 

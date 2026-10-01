@@ -47,14 +47,19 @@
   failure exactly; it simply did not know about a route that is neither the runtime's nor an ordinary document.
 
   Lab Home is one destination and owns its vertical gesture. The studies are documents and keep the unlock.
+
+  It owns the one-finger gesture only. `pinch-zoom`, not `none`: the page can always be zoomed (WCAG 1.4.4 — AUDIT-01);
+  a pan is still not the browser's, so the swipe stays the site's. Once the page IS zoomed, the reader needs to move
+  around it: useLabSpine marks html.lab-zoomed, the bench stops reading gestures, and panning is the browser's again.
 */
 html:not([data-c2='on']) body.lab-route--home,
 html body.lab-route--home {
   height: 100svh;
   overflow: hidden;
   overscroll-behavior: none;
-  touch-action: none;
+  touch-action: pinch-zoom;
 }
+html.lab-zoomed body.lab-route--home, html.lab-zoomed .lab-route--home .lab-stage { touch-action: auto; }
 /*
   touch-action does not inherit, but the browser intersects it up the ancestor chain — the sheet states it too.
 
@@ -63,7 +68,7 @@ html body.lab-route--home {
   so the floor is lifted and the bench composes in the height it actually has. Nothing about the bench changes to
   suit this; its own short-screen rules, which it already carries, are what it composes by.
 */
-.lab-route--home .lab-stage { touch-action: none; min-height: 0; }
+.lab-route--home .lab-stage { touch-action: pinch-zoom; min-height: 0; }
 
 /*
   ONE RETURN, AND IT IS THE STUDY'S OWN. A visitor inside WEIGHT, LINE or TONE needs the way back to the bench

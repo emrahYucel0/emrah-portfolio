@@ -84,6 +84,7 @@ export function useC2Engine() {
     homeUrl: path('/'),
     aboutUrl: path('/about'),
     labUrl: path('/lab'),
+    contactUrl: path('/contact'),
     isAboutPath: () => /\/about\/?$/.test(route.path),
     arrival: takeArrival,
     push: (url) => { void router.push(url) },

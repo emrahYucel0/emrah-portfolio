@@ -34,7 +34,7 @@ export const tr = {
   identity: {
     city: 'İstanbul',
     location: 'İstanbul, Türkiye',
-    status: 'Seçili freelance projelere açığım',
+    status: 'Seçili projelere açığım',
     positioning: ['Dokunduğun yüzeyi kuruyorum', 've altındaki sistemi'],
   },
   home: {
@@ -55,7 +55,7 @@ export const tr = {
       'Bu yaklaşım, yazılıma geçtiğimde de benimle kaldı. Hâlâ aynı şekilde çalışıyorum: önce sistemi anlarım, kısıtlarıyla çalışırım, sonra görsel ve teknik taraf tek bir şeymiş gibi hissedene kadar sonucu rafine ederim.',
     current:
       'Bugün; creative development, frontend, full-stack sistemler, CMS/admin mimarisi, performans ve teknik SEO üzerinde çalışıyorum.',
-    status: 'Seçili freelance projelere açığım.',
+    status: 'Seçili projelere açığım.',
     capabilitiesHeading: 'Yetkinlikler',
     capabilities: [
       { text: 'Creative Development', lang: 'en' }, { text: 'Motion & Interaction', lang: 'en' },
@@ -110,6 +110,7 @@ export const tr = {
     projects: {
       istanbul: {
         strength: 'Özgün dijital yön',
+        client: 'Ege Kent Nakliyat’ın İstanbul şehir içi markası',
         line: 'Alışılmış bir hizmet kategorisi, özgün bir dijital deneyim olarak ele alındı — kendi görsel dili, teknik illüstrasyonu ve çok yalın bir SSR yapısı.',
         role: 'Özgün görsel yön, yaratıcı frontend mühendisliği ve yüksek performanslı production.',
         facts: ['Özgün görsel dil ve teknik illüstrasyon', '39 ilçelik içerik yaklaşımı', 'Sınırlandırılmış fiyat hesaplayıcı', 'Admin / CMS'],
@@ -179,7 +180,7 @@ export const tr = {
     tone_rows: 'satır',
     weight_holds: 'sayfayı tutuyor',
   },
-  contact: { heading: 'İletişim', emailLabel: 'E-posta', phoneLabel: 'Telefon' },
+  contact: { heading: 'İletişim', emailLabel: 'E-posta', phoneLabel: 'Telefon', cta: 'Bir projeniz mi var? Yazın' },
   finale: {
     copy: 'kopyala', copied: 'kopyalandı', copyEmail: 'E-postayı kopyala', locationRole: 'Konum',
     revision: 'Revizyon', githubAria: 'GitHub profili', linkedinAria: 'LinkedIn profili',
@@ -203,7 +204,6 @@ export const tr = {
     keys: 'Portfolyoda ilerlemek için ok tuşlarını ya da Page Up ve Page Down tuşlarını kullan.',
     workKeys: 'Sol ve sağ ok tuşları proje seçer; Enter projeyi açar.',
     worldKeys: 'Ok tuşları proje içinde ilerler; Escape tüm işlere döner.',
-    labKeys: 'Oda açmak için Enter’a bas; her oda sıradaki çalışmayı gösterir.',
     newTab: '(yeni sekmede açılır)',
     openProject: 'Projeyi aç',
     openHint: 'Klavye veya ekran okuyucuyla etkinleştirin.',

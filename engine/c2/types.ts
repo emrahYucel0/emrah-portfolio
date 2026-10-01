@@ -30,6 +30,8 @@ export interface C2MountOptions {
   aboutUrl?: string
   /** where the Lab bench lives, in the reading language */
   labUrl?: string
+  /** the Contact finale's address, in the reading language (the href of the runtime's links to it) */
+  contactUrl?: string
   /** does the current URL mean "About is open"? */
   isAboutPath?: () => boolean
   /**

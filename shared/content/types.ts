@@ -80,6 +80,8 @@ export interface CapabilityItem {
 export interface ProjectCopy {
   /** the one line the work index shows under the name */
   strength: string
+  /** whose work it is, when the work's own screens carry another name (İstanbul Şehir İçi is Ege Kent's brand) */
+  client?: string
   /** what the work is, in one sentence */
   line: string
   /** what Emrah did on it */
@@ -192,7 +194,8 @@ export interface LocaleCopy {
     tone_rows: string
     weight_holds: string
   }
-  contact: { heading: string; emailLabel: string; phoneLabel: string }
+  /** cta: the one line that asks for a project — the end of the About story and of every project (AUDIT-01) */
+  contact: { heading: string; emailLabel: string; phoneLabel: string; cta: string }
   /** the Contact finale's own words (engine/lab/finale): the copy control, the revision record, and the three
    *  instructions its foot band shows once (the way in, the cursor's attention, the phone's attention by scroll) */
   finale: {
@@ -214,7 +217,7 @@ export interface LocaleCopy {
   a11y: {
     plainNav: string; selectedWork: string; labStudies: string; aboutRegion: string; aboutDetail: string; capabilities: string; projectImages: string
     /** M4: keyboard instructions read by assistive technology, and the new-tab note on external links */
-    keys: string; workKeys: string; worldKeys: string; labKeys: string; newTab: string
+    keys: string; workKeys: string; worldKeys: string; newTab: string
     /** M4: the name of the control that opens the registered project (its visible text is a pointer instruction) */
     openProject: string
     /** M4: description of that control — no hold is needed from a keyboard or a screen reader */

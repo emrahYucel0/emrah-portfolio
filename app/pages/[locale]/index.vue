@@ -26,6 +26,7 @@ useLocaleSeo('home')
       <ul class="works">
         <li v-for="project in projects" :key="project.id" class="work">
           <h3 class="work-name">{{ project.name }}</h3>
+          <p v-if="copy.work.projects[project.id].client" class="work-client">{{ copy.work.projects[project.id].client }}</p>
           <p class="work-line">{{ copy.work.projects[project.id].strength }}</p>
           <ul class="work-facts">
             <li v-for="fact in copy.work.projects[project.id].facts" :key="fact">{{ fact }}</li>
@@ -66,6 +67,7 @@ useLocaleSeo('home')
 .works { display: grid; gap: var(--space-l); }
 .work { display: grid; gap: var(--space-2xs); border-block-start: 1px solid var(--rule); padding-block-start: var(--space-s); }
 .work-name { font-size: var(--step-2); letter-spacing: -0.02em; font-weight: 600; }
+.work-client { color: var(--ink-muted); }
 .work-line { font-size: var(--step-1); }
 .work-facts { color: var(--ink-muted); font-size: var(--step--1); }
 .work-facts { display: grid; gap: 2px; margin-block-start: var(--space-2xs); }

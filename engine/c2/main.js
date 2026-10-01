@@ -47,6 +47,7 @@ const idle = typeof requestIdleCallback === 'function' ? (f) => requestIdleCallb
 // semantic checkpoints. The defaults below reproduce the standalone prototype exactly.
 const ROOT = location.pathname.replace(/about\/?$/, '') || '/'
 let HOME_URL = ROOT + location.search, ABOUT_URL = `${ROOT}about${location.search}`, LAB_URL = `${ROOT}lab${location.search}`
+let CONTACT_URL = `${ROOT}contact${location.search}`
 let isAboutPath = () => /\/about\/?$/.test(location.pathname)
 /**
  * The place the visitor asked for on their way back from the Lab. The bench is a route of its own, so leaving it
@@ -71,6 +72,7 @@ export function configure(o = {}) {
   if (o.homeUrl) HOME_URL = o.homeUrl
   if (o.aboutUrl) ABOUT_URL = o.aboutUrl
   if (o.labUrl) LAB_URL = o.labUrl
+  if (o.contactUrl) CONTACT_URL = o.contactUrl
   if (o.isAboutPath) isAboutPath = o.isAboutPath
   if (o.arrival) takeArrival = o.arrival
   if (o.push) HOST.push = o.push
@@ -1312,6 +1314,7 @@ function buildDOM() {
       <div class="ab ab-now"><p>${d.current}</p><ul class="ad-caps" aria-label="${TXT.a11y.capabilities}">${d.capabilities.map((c) => `<li>${termHtml(c)}</li>`).join('')}</ul></div>
       <div class="ab ab-meta">
         <p class="ad-status">${d.status}</p>
+        <a class="ad-cta" href="${CONTACT_URL}" data-go="rest">${TXT.contact.cta} →</a>
         <address class="ad-contact"><span>${identity.location}</span>${mail}${phone}</address>
         <p class="ad-links">${exits()}</p>
         <button class="ad-back" data-back>← ${TXT.about.back}</button>
@@ -1415,7 +1418,9 @@ const px = (r) => `left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px`
 function fillWorldDOM(k) {
   const w = works[k], frs = framesOf(k), full = worldFor(k)[frs.length - 1], L = full.layout, next = works[L.next]
   D.wlink.href = w.url; D.wname.textContent = w.name; D.whost.textContent = w.host
+  // the end of a project asks for the next one: the site's one Contact, asked for by name (AUDIT-01)
   const close = `<h2 class="wb-name">${w.name}</h2><p class="wb-line">${w.line}</p><p class="wb-role">${w.role}</p>
+    <p class="wb-cta"><a href="${CONTACT_URL}" data-go="rest">${TXT.contact.cta} →</a></p>
     <p class="wb-links"><a href="${w.url}" target="_blank" rel="noopener noreferrer">${TXT.work.visit} <span lang="en">${w.host}</span> ↗</a><button data-world="all">${TXT.work.allWork}</button></p>`
   const alts = [...new Set(frs.flatMap((fr) => (fr.media || []).map((mm) => mm.item.alt)))]
   D.wblocks.innerHTML = frs.map((fr, i) => {

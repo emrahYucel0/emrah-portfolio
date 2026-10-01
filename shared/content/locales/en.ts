@@ -22,7 +22,7 @@ export const en = {
     },
     contact: {
       title: 'Contact — Emrah Yücel',
-      description: 'Contact Emrah Yücel: email, phone, GitHub, LinkedIn. İstanbul, Türkiye.',
+      description: 'Contact Emrah Yücel: email, phone, GitHub, LinkedIn. Istanbul, Türkiye.',
     },
     imageAlt: 'Emrah Yücel — Creative Developer and Full-Stack Developer. The name set in horizontal rows of ink on paper.',
   },
@@ -31,7 +31,7 @@ export const en = {
   identity: {
     city: 'Istanbul',
     location: 'Istanbul, Türkiye',
-    status: 'Available for selected freelance work',
+    status: 'Available for selected projects',
     positioning: ['I build the surface you touch', 'and the system underneath it.'],
   },
   home: {
@@ -52,7 +52,7 @@ export const en = {
       'That mindset stayed with me when I moved into software. I still work the same way: understand the system, work with its constraints, then refine the result until the visual and technical parts feel like one thing.',
     current:
       'Today I work across creative development, frontend, full-stack systems, CMS/admin architecture, performance and technical SEO.',
-    status: 'Available for selected freelance projects.',
+    status: 'Available for selected projects.',
     capabilitiesHeading: 'Capabilities',
     capabilities: [
       'Creative Development', 'Motion & Interaction', 'Frontend Engineering',
@@ -106,6 +106,7 @@ export const en = {
     projects: {
       istanbul: {
         strength: 'Original digital direction',
+        client: 'Ege Kent Nakliyat’s Istanbul in-city brand',
         line: 'A conventional service category treated as an authored digital experience — custom visual language, technical illustration and a very lean SSR build.',
         role: 'Original visual direction, creative frontend engineering and high-performance production.',
         facts: ['Custom visual language and technical illustration', '39-district content approach', 'Bounded price calculator', 'Admin / CMS'],
@@ -174,7 +175,7 @@ export const en = {
     tone_rows: 'rows',
     weight_holds: 'holds the page',
   },
-  contact: { heading: 'Contact', emailLabel: 'Email', phoneLabel: 'Phone' },
+  contact: { heading: 'Contact', emailLabel: 'Email', phoneLabel: 'Phone', cta: 'Have a project? Write' },
   finale: {
     copy: 'copy', copied: 'copied', copyEmail: 'Copy the email address', locationRole: 'Location',
     revision: 'Revision', githubAria: 'GitHub profile', linkedinAria: 'LinkedIn profile',
@@ -198,7 +199,6 @@ export const en = {
     keys: 'Use the arrow keys, or Page Up and Page Down, to move through the portfolio.',
     workKeys: 'Left and right arrow keys choose a project; Enter opens it.',
     worldKeys: 'Arrow keys move through the project; Escape returns to all work.',
-    labKeys: 'Press Enter to make a room; each room shows the next study.',
     newTab: '(opens in a new tab)',
     openProject: 'Open project',
     openHint: 'Activate with keyboard or screen reader.',

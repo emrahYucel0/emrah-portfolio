@@ -41,7 +41,7 @@ export function framesFor(V, w) {
   const between = { x: 0, y: strip, w: W, h: H - strip * 2 }
   const R = (x, y, ww, hh) => ({ x: Math.round(x), y: Math.round(y), w: Math.round(ww), h: Math.round(hh) })
   const title = `<h2 class="wb-name">${w.name}</h2><p class="wb-line">${w.line}</p>`
-  const stripTitle = { rect: R(pad, H - strip, W - pad * 2, strip), cls: 'wb-strip', html: `<span class="wb-sname">${w.name}</span><span class="wb-str">${w.strength}</span>` }
+  const stripTitle = { rect: R(pad, H - strip, W - pad * 2, strip), cls: 'wb-strip', html: `<span class="wb-sname">${w.name}</span>${w.client ? `<span class="wb-client">${w.client}</span>` : ''}<span class="wb-str">${w.strength}</span>` }
   const close = { full: true, g: 'full' }
   const F = []
   // a room reaches past its media (see states.room): text is laid out against the room, not the image

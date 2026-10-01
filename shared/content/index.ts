@@ -41,7 +41,7 @@ export function c2Content(locale: Locale, options: C2ContentOptions) {
     return {
       id: p.id, name: p.name, url: p.url, host: p.host, ink: p.ink, rhythm: p.rhythm,
       stack: pc.stack ?? p.stack, stackLang: pc.stack ? locale : 'en',
-      strength: pc.strength, line: pc.line, role: pc.role, facts: [...pc.facts], captions: Object.fromEntries(Object.entries(pc.captions ?? {}).map(([k, v]) => [k, termHtml(v)])),
+      strength: pc.strength, client: pc.client ?? '', line: pc.line, role: pc.role, facts: [...pc.facts], captions: Object.fromEntries(Object.entries(pc.captions ?? {}).map(([k, v]) => [k, termHtml(v)])),
       psi: {
         mobile: p.psi.mobile, desktop: p.psi.desktop,
         labels: copy.psi.labels, short: copy.psi.short,

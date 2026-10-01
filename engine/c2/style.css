@@ -128,6 +128,7 @@ body.in-world :where(#ui) .bottom .roles { opacity: 0; }
 :where(#ui) .about-detail .ad-caps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 24px; margin-top: 18px; padding-top: 14px; border-top: 1px solid color-mix(in srgb, currentColor 22%, transparent); font: 400 10.5px/1.4 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
 :where(#ui) .about-detail .ab-meta { display: flex; flex-direction: column; gap: 6px; }
 :where(#ui) .about-detail .ad-status { font: 380 15px/1.45 var(--sans); margin-bottom: 8px; }
+:where(#ui) .about-detail .ad-cta { align-self: flex-start; margin: -2px 0 10px; font: 400 15px/1.45 var(--sans); }
 :where(#ui) .about-detail .ad-contact { display: flex; flex-direction: column; gap: 3px; font: 380 15px/1.45 var(--sans); }
 :where(#ui) .about-detail .ad-contact span { opacity: .78; }
 :where(#ui) .about-detail .ad-links { display: flex; gap: 22px; margin-top: 8px; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
@@ -182,6 +183,9 @@ body.in-world :where(#ui) .bottom .roles { opacity: 0; }
 :where(#ui) .wb-strip { display: flex; align-items: center; gap: 18px; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
 :where(#ui) .wb-strip .wb-sname { font: 460 13px/1 var(--sans); letter-spacing: 0; text-transform: none; white-space: nowrap; }
 :where(#ui) .wb-strip .wb-str { opacity: .88; }
+/* whose work it is, beside the name, when the work's own screens carry another name (AUDIT-01): .9 keeps it at
+   5.2:1 on the darkest project ink */
+:where(#ui) .wb-strip .wb-client { font: 380 12.5px/1.2 var(--sans); letter-spacing: 0; text-transform: none; opacity: .9; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 :where(#ui) .wb-band { color: var(--ink); display: flex; flex-direction: column; justify-content: center; gap: 8px; }
 :where(#ui) .wb-band.wb-at-top { justify-content: flex-end; padding-bottom: 6px; }
 :where(#ui) .wb-band.wb-proof { justify-content: center; gap: 10px; }
@@ -202,6 +206,9 @@ body.in-world :where(#ui) .bottom .roles { opacity: 0; }
 :where(#ui) .wb-list li { font: 380 15px/1.35 var(--sans); padding: 7px 0; border-top: 1px solid color-mix(in srgb, currentColor 20%, transparent); }
 :where(#ui) .wb-stack { font: 400 10.5px/1.5 var(--mono); letter-spacing: .03em; text-transform: uppercase; opacity: .88; }
 :where(#ui) .wb-role { font: 380 14px/1.4 var(--sans); opacity: .88; }
+/* the one line that asks for a project (AUDIT-01): body type, underlined like a link in prose — an invitation, not chrome */
+:where(#ui) .wb-cta { margin-top: 12px; font: 400 15px/1.4 var(--sans); }
+:where(#ui) .wb-cta a, :where(#ui) .about-detail .ad-cta { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
 :where(#ui) .psi { display: flex; flex-direction: column; gap: 5px; font: 400 10px/1.2 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
 :where(#ui) .psi-head { opacity: .88; }
 :where(#ui) .psi-rows { display: flex; flex-direction: column; gap: inherit; }
@@ -278,7 +285,7 @@ body.in-world :where(#ui) .bottom .roles { opacity: 0; }
   :where(#ui) .lab .lab-now .d { display: none; }
   /* a thumb needs at least 24px of target (WCAG 2.2 AA); the type stays the size it is */
   :where(#ui) .about-detail .ad-contact a, :where(#ui) .about-detail .ad-links a,
-  :where(#ui) .about .more, :where(#ui) .about-detail .ad-back, :where(#ui) .wb-links a, :where(#ui) .wb-links button, :where(#ui) .world .wlink { padding-top: 7px; padding-bottom: 7px; }
+  :where(#ui) .about .more, :where(#ui) .about-detail .ad-back, :where(#ui) .about-detail .ad-cta, :where(#ui) .wb-cta a, :where(#ui) .wb-links a, :where(#ui) .wb-links button, :where(#ui) .world .wlink { padding-top: 7px; padding-bottom: 7px; }
   :where(#ui) .about-detail .ad-contact { gap: 0; }
   :where(#ui) .about-detail .ab { position: static; }
   :where(#ui) .about-detail .ab + .ab { margin-top: 62px; }
@@ -315,6 +322,14 @@ body.in-world :where(#ui) .bottom .roles { opacity: 0; }
   :where(#ui) .work .wrole { display: none; }
   :where(#ui) .work .open { display: none; }
   :where(#ui) .world .wlink .whost { display: none; }
+  /* a strip that also says whose work it is sets the two on two short lines, clear of the strip's hint */
+  :where(#ui) .wb-strip:has(.wb-client) { flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; padding-right: 76px; }
+  /* a project's last frame on a phone: its box is a fixed share of the screen, so the ask costs no extra line — the
+     visit link drops the host (the name is right above it, as the strip's own link drops it) and stays on one line */
+  :where(#ui) .wb-close .wb-cta { margin-top: 0; }
+  :where(#ui) .wb-close .wb-links a > span[lang] { display: none; }
+  :where(#ui) .wb-strip:has(.wb-client) .wb-str { display: none; }
+  :where(#ui) .wb-strip .wb-client { max-width: 100%; }
   :where(#ui) .wb-name { font-size: 24px; }
   :where(#ui) .wb-line { font-size: 14.5px; }
   :where(#ui) .wb-big { font-size: 24px; }

@@ -98,5 +98,6 @@ that: a command that looks local is not.
 - **Never touch the other folder** — its branch, its files, its index, tracked or untracked — or assume its state
   is what you last saw it as. It moves while you work.
 - **Never run `tools/diag/serve.sh` with its default ports from a second worktree.** It force-kills whatever
-  holds 4500-4700, which is the other session's servers. Pass a port override and build into your own
-  `builds/<feature>` folder, and do not change the script's defaults for the other session.
+  holds 4500-4700, which is the other session's servers. Name your own three ports instead — under test, LAN,
+  baseline — and only those are stopped: `SERVE_PORTS="4910 4911 4914" sh tools/diag/serve.sh`, then
+  `sh tools/diag/run6.sh 4910 4914`. `BUILD_DIR` overrides the snapshot folder. Do not change the defaults.

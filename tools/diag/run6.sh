@@ -4,6 +4,9 @@
 #   sh run6.sh                 current build on 4500, baseline build on 4600
 #   sh run6.sh 4500 4600       ...or name both ports
 #
+# Two gates can run at once from two worktrees (ROADMAP R16): each passes its own ports (serve.sh's SERVE_PORTS)
+# and writes into its own worktree's out/. GATE_LOG names the log, for a second gate in the SAME worktree.
+#
 # The CURRENT server must already be running and must have been restarted since the last build — the CSP in
 # .htaccess carries a hash of the HTML, so a server started before a rebuild will block the inline script, the
 # runtime never boots, and every test fails in the same confusing way.
@@ -19,7 +22,7 @@ CUR=${1:-4500}
 BASE=${2:-4600}
 BASELINE_TAG=${BASELINE_TAG:-baseline/pre-site-polish}
 BASELINE_DIR=${BASELINE_DIR:-../../../baselines/pre-site-polish}
-L=out/final6.log
+L=${GATE_LOG:-out/final6.log}
 mkdir -p out
 
 code_of(){ curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$1/tr"; }

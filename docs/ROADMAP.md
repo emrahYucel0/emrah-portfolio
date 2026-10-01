@@ -22,7 +22,7 @@ belgedeyse (AUDIT-01, LINEFIELD.md, DEPLOYMENT.md…) burada ona bağlantı veri
 - **Karar bekliyor:** neyin beklendiği yazılı.
 - **Önce inceleme:** mevcut davranış ölçülmeden tasarlanmayacak.
 
-Son güncelleme: 2026-10-01, `fix/audit-01-batch2` (R12 tamamlandı).
+Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16 tamamlandı).
 
 ---
 
@@ -30,7 +30,7 @@ Son güncelleme: 2026-10-01, `fix/audit-01-batch2` (R12 tamamlandı).
 
 | # | Madde | Öncelik | Karar | Bağımlılık |
 |---|---|---|---|---|
-| R1 | Birleştirme: düzeltme turu 2 → `main`, yayın dalı | P0 | Karar bekliyor (ne zaman) | R16 kolaylaştırır |
+| R1 | Birleştirme: düzeltme turu 2 → `main`, yayın dalı | P0 | Karar bekliyor (ne zaman) | tam kapı (R16 sayesinde paralel koşulabilir) |
 | R2 | Bakır = eylem rengi | P1 | Kısmen: menünün aktif öğesi bekliyor | — |
 | R3 | Tek ipucu sistemi | P1 | Karar verildi | R2 (renk yok, ama aynı şerit) |
 | R4 | Özel imleç | P2 | Karar verildi (biçim) | R2 |
@@ -44,7 +44,6 @@ Son güncelleme: 2026-10-01, `fix/audit-01-batch2` (R12 tamamlandı).
 | R13 | Gövde metni ve tipografik hiyerarşi | P1 | Karar bekliyor (ölçek) | — |
 | R14 | Cross Section (İşler → Lab köprüsünün yerine) | P1 | Karar verildi (yön; kesit anında bekleme) | R2, R15 |
 | R15 | Tempo, ilerleme göstergesi, performans bütçesi | P2 | Karar bekliyor | R14 |
-| R16 | Tam kapının paralel çalışabilmesi | P1 | Karar verildi | — |
 | R17 | Yayın (DEPLOYMENT.md, CSP, canlı yedeği) | P0 | Karar bekliyor (tarih) | R1 |
 | R18 | Awwwards başvurusu (Developer Award) | P0 | Karar bekliyor (tarih) | R17, R9, R22, R23 |
 | R19 | Full-Stack'in siyah kapsüllerinin çevresindeki hale | P1 | Karar bekliyor (varyant ya da kural) | — |
@@ -64,7 +63,7 @@ Son güncelleme: 2026-10-01, `fix/audit-01-batch2` (R12 tamamlandı).
 - **Karar:** Birleştirmeyi ve push'u kullanıcı söyler. Dal 2026-10-01'de yedek olarak origin'e push edildi;
   `main`'e dokunulmadı.
 - **Dosyalar:** `tools/diag/run6.sh`, `docs/contact-finale/LINEFIELD-MERGE.md`, `docs/audit/AUDIT-01.md` §10.
-- **Bağımlılık:** tam kapı. R16 yapılırsa başka bir oturum durmadan da koşulabilir.
+- **Bağımlılık:** tam kapı. R16 yapıldı: başka bir oturum durmadan, kendi portlarıyla koşulabilir.
 - **Öncelik:** P0.
 
 ### R2. Bakır = eylem rengi
@@ -284,17 +283,6 @@ Son güncelleme: 2026-10-01, `fix/audit-01-batch2` (R12 tamamlandı).
 - **Bağımlılık:** R14.
 - **Öncelik:** P2.
 
-### R16. Tam kapının paralel çalışabilmesi
-- **Açıklama:** `run6.sh`, `serve.sh` ve `baseline.sh` portları ve build klasörlerini sabit kullanıyor
-  (4500–4700). `serve.sh` bu portlardaki her süreci öldürüyor. Bu yüzden iki oturum aynı anda kapı koşamıyor.
-  Port tabanı ve build klasörü parametre ya da ortam değişkeniyle ayarlanabilir olsun. Varsayılanlar
-  değişmesin.
-- **Karar:** Karar verildi (2026-10-01).
-- **Dosyalar:** `tools/diag/run6.sh`, `tools/diag/serve.sh`, `tools/diag/baseline.sh`, ve bu scriptlerin
-  çağırdığı harness'ların port argümanları.
-- **Bağımlılık:** yok. R1'i kolaylaştırır.
-- **Öncelik:** P1.
-
 ### R17. Yayın
 - **Açıklama:**
   - `docs/DEPLOYMENT.md`'ye göre yayın.
@@ -376,7 +364,8 @@ Son güncelleme: 2026-10-01, `fix/audit-01-batch2` (R12 tamamlandı).
 | 2026-09-30 | Düzeltme turu 1 (12 commit; kullanıcı onaylı). Linefield ile birlikte yerel `main`'de febd93f. | `fix/audit-01-batch1` d6bf6fd..8eadef7, etiket `audit-01-batch1-rc` | AUDIT-01 §8 |
 | 2026-10-01 | Linefield (bayrak arkasında) | yerel `main` febd93f | `docs/LINEFIELD.md` |
 | 2026-10-01 | Düzeltme turu 2. Ayrıntılar aşağıda. | `fix/audit-01-batch2` b4054e7..c64d995 | AUDIT-01 §9–§10 |
-| 2026-10-01 | R12: sert trackpad fırlatmasının kuyruğu ikinci durağı açmıyor | `fix/audit-01-batch2` (bu commit) | aşağıda |
+| 2026-10-01 | R12: sert trackpad fırlatmasının kuyruğu ikinci durağı açmıyor | `fix/audit-01-batch2` a2967db | aşağıda |
+| 2026-10-02 | R16: tam kapı başka bir oturumla aynı anda koşulabiliyor | `fix/audit-01-batch2` (bu commit) | aşağıda |
 
 **Düzeltme turu 2'nin maddeleri:**
 - metinler ve eylem çağrısı
@@ -411,6 +400,20 @@ Son güncelleme: 2026-10-01, `fix/audit-01-batch2` (R12 tamamlandı).
     flag-on ve flag-off PASS.
   - Linefield giriş, çıkış ve hareketi azaltılmış; `workopen` (on/off); `touch`; `herotouch`; `spine`: PASS.
   - Tam gesture2 takımı koşulmadı.
+
+**R16'nın ayrıntısı (2026-10-02):**
+- `run6.sh` ve harness'lar portu zaten argüman olarak alıyordu; engel `serve.sh`'tı. 4500–4700'ü durduruyor ve
+  sabit portlarda (4500, 4501, 4650) sunuyordu.
+- **Değişiklik:**
+  - `SERVE_PORTS="<test> <LAN> <baseline>"` ile `serve.sh` yalnız o üç portu durdurup onlarda sunar.
+  - `BUILD_DIR` snapshot klasörünü değiştirir.
+  - `run6.sh`'ta `GATE_LOG` log dosyasını değiştirir.
+  - Değişken verilmezse davranış aynı.
+  - `serve.sh`'ın sunucu alt kabukları çıktıyı tutmuyor; `sh serve.sh | tail` artık bitiyor.
+- **Kullanım:** `SERVE_PORTS="4910 4911 4914" sh tools/diag/serve.sh`, sonra `sh tools/diag/run6.sh 4910 4914`.
+  CLAUDE.md'ye yazıldı.
+- **Kontrol:** 4921/4922/4923 ile koşuldu. Üç sunucu da cspboot PASS verdi; 4500–4799 dinleyicileri aynı PID'lerle
+  kaldı. Hatalı argüman (iki port) açık bir mesajla durdu. Tam kapı koşulmadı.
 
 **Kullanıcı kararıyla kapatılanlar:**
 - HAKKIMDA odası (AUDIT-01 §9 madde 4): atlandı; 1. turdaki kâğıt bant kalıyor.

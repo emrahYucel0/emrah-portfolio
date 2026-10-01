@@ -830,7 +830,10 @@ function yieldPress(pr) {
 
 // ─── LAB: the entry ──────────────────────────────────────────────────────────
 /** the three studies, named for a reader who never sees the canvas */
-const STUDY_LIST = () => Object.values(TXT.lab.studies)
+// the studies in facts.ts's order, each with its id (content.js lab.studies), not the copy's key order (AUDIT-01)
+const STUDY_LIST = () => lab.studies
+// a study's own page, under the bench's address (before any query the address carries)
+const studyUrl = (id) => { const [path, query] = LAB_URL.split('?'); return `${path.replace(/\/$/, '')}/${id}${query ? `?${query}` : ''}` }
 /*
  * WHAT OPENS A PROJECT, SAID TO THE DEVICE THAT IS READING IT. A pointer holds the image and the material gives
  * way under it; a finger taps it, and has been able to since the tap was added — the instruction simply went on
@@ -1241,6 +1244,9 @@ ui.addEventListener('click', (e) => {
   // altogether; the destination survives either way, because changing language never moves the index.)
   if (e.target.closest('[data-locale]')) { e.preventDefault(); if (HOST.localeHref) HOST.push(HOST.localeHref, { c2: 'locale' }); return }
   if (e.target.closest('[data-lab]')) { e.preventDefault(); openLab(); return }
+  // a study named in the plain navigation is its own page (AUDIT-01: every study used to link to the bench)
+  const study = e.target.closest('[data-study]')
+  if (study) { e.preventDefault(); HOST.push(study.getAttribute('href')); return }
   const b = e.target.closest('[data-go], [data-work], [data-open], [data-world], [data-detail], [data-back]')
   if (!b) return
   if (b.dataset.go || b.hasAttribute('data-detail')) e.preventDefault()
@@ -1365,7 +1371,7 @@ function buildDOM() {
   D.a11y = h('nav', 'a11y', `<ul class="a11y-places"><li><button data-go="creative" lang="en">${capabilities.surface.role}</button></li><li><button data-go="system" lang="en">${capabilities.system.role}</button></li></ul>
     <p class="lbl">${TXT.a11y.selectedWork}</p>
     <ul>${works.slice(0, 3).map((w) => `<li><a href="${w.url}" target="_blank" rel="noopener noreferrer">${w.name} — ${w.strength} ↗<span class="sr"> ${TXT.a11y.newTab}</span></a></li>`).join('')}</ul>
-    <p class="lbl">${TXT.a11y.labStudies}</p><ul>${STUDY_LIST().map((e) => `<li><a href="${LAB_URL}" data-lab>${e.name} — ${e.note}</a></li>`).join('')}</ul>
+    <p class="lbl">${TXT.a11y.labStudies}</p><ul>${STUDY_LIST().map((e) => `<li><a href="${studyUrl(e.id)}" data-study>${e.name} — ${e.note}</a></li>`).join('')}</ul>
     <p>${mail} · ${phone}</p><p class="a11y-links">${exits()}</p>
     <a href="${ABOUT_URL}" data-detail>${about.home.more}</a>`)
   D.a11y.id = 'plain'; D.a11y.tabIndex = -1

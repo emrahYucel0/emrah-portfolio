@@ -26,7 +26,7 @@ export const en = {
     },
     imageAlt: 'Emrah Yücel — Creative Developer and Full-Stack Developer. The name set in horizontal rows of ink on paper.',
   },
-  nav: { skip: 'Skip to plain navigation', label: 'Portfolio', work: 'Work', about: 'About', lab: 'Lab', contact: 'Contact' },
+  nav: { skip: 'Skip to plain navigation', skipContent: 'Skip to content', label: 'Portfolio', work: 'Work', about: 'About', lab: 'Lab', contact: 'Contact' },
   roles: { creative: 'Creative Developer', fullStack: 'Full-Stack Developer', and: 'and' },
   identity: {
     city: 'Istanbul',
@@ -138,7 +138,7 @@ export const en = {
     registered: 'registered',
     registering: 're-registering',
     open: 'open',
-    count: 'Lab · 03 studies',
+    count: 'Lab · {n} studies',
     back: 'Lab',
     studies: {
       weight: {

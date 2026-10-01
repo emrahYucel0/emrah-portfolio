@@ -29,7 +29,7 @@ export const tr = {
     },
     imageAlt: 'Emrah Yücel — Creative Developer ve Full-Stack Developer. Kâğıt üzerinde yatay mürekkep satırlarıyla dizilmiş isim.',
   },
-  nav: { skip: 'Düz gezinmeye geç', label: 'Portfolyo', work: 'İşler', about: 'Hakkımda', lab: 'Lab', contact: 'İletişim' },
+  nav: { skip: 'Düz gezinmeye geç', skipContent: 'İçeriğe geç', label: 'Portfolyo', work: 'İşler', about: 'Hakkımda', lab: 'Lab', contact: 'İletişim' },
   roles: { creative: 'Creative Developer', fullStack: 'Full-Stack Developer', and: 've' },
   identity: {
     city: 'İstanbul',
@@ -143,7 +143,7 @@ export const tr = {
     registered: 'kayıtlı',
     registering: 'yeniden kaydediliyor',
     open: 'aç',
-    count: 'Lab · 03 çalışma',
+    count: 'Lab · {n} çalışma',
     back: 'Lab',
     studies: {
       weight: {

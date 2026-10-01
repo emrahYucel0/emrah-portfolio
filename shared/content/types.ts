@@ -106,7 +106,8 @@ export interface LocaleCopy {
     /** M5: text alternative of the social share image */
     imageAlt: string
   }
-  nav: { skip: string; label: string; work: string; about: string; lab: string; contact: string }
+  /** skip: the runtime's link to its plain navigation (#plain); skipContent: the document's link to its content (#main) */
+  nav: { skip: string; skipContent: string; label: string; work: string; about: string; lab: string; contact: string }
   /** professional positioning terms — English in both locales, by decision */
   roles: { creative: string; fullStack: string; and: string }
   identity: {
@@ -182,6 +183,7 @@ export interface LocaleCopy {
     registered: string
     registering: string
     open: string
+    /** {n} is the number of studies, written by labCount() from facts.ts — never typed here */
     count: string
     back: string
     studies: Record<StudyId, StudyCopy>

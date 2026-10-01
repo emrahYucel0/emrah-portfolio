@@ -35,7 +35,8 @@ watch(inLab, (on) => { if (on) warmLater() })
 
 <template>
   <div class="u-shell">
-    <a class="u-skip" href="#main">{{ copy.nav.skip }}</a>
+    <!-- it goes to the content, and says so (AUDIT-01: it said "plain navigation"; the runtime's own skip link is the one that goes there) -->
+    <a class="u-skip" href="#main">{{ copy.nav.skipContent }}</a>
     <SiteHeader v-if="!inLab" />
     <LazyLabChrome v-if="inLab" />
     <main id="main" tabindex="-1">

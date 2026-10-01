@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { studies, studyNo, type StudyId } from '~~/shared/content'
+import { labCount, studies, studyNo, type StudyId } from '~~/shared/content'
 
 /**
  * LAB — THE REGISTERED BENCH, EMBEDDED REGISTER, DATUM. (Accepted reference: research lab-reopen/bench-v2-refined.)
@@ -501,7 +501,7 @@ onBeforeUnmount(() => { if (benchSeam.exit === exitToBare) benchSeam.exit = null
           </li>
         </ol>
       </nav>
-      <p ref="markEl" class="mark" aria-hidden="true">{{ copy.lab.count }}</p>
+      <p ref="markEl" class="mark" aria-hidden="true">{{ labCount(copy) }}</p>
       <ul class="spine" :aria-label="copy.lab.heading" @keydown="onKey">
         <li v-for="(id, i) in studies" :key="id" :ref="(el) => { if (el) recEls[i] = el as HTMLElement }" class="rec-wrap">
           <button class="rec" type="button" :aria-current="i === sel ? 'true' : undefined" @click="select(i, 'press')" @pointerenter="S.hover = i" @pointerleave="S.hover = -1">

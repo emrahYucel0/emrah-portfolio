@@ -63,6 +63,7 @@ export const tr = {
       ['CMS / ', { text: 'Admin', lang: 'en' }, ' Sistemleri'], 'Performans & Teknik SEO',
     ],
     back: 'Geri',
+    close: 'Kapat',
   },
   faces: {
     surface: {

@@ -581,7 +581,7 @@ html.c2-failed .lab-bench-nojs { display: block; }
 .lab-stage .open { position: absolute; z-index: 2; }
 .lab-stage .open-link { display: block; padding: 11px 0 11px 16px; text-decoration: none; color: var(--ink); font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap; }
 .lab-stage .open .t1 { display: block; color: var(--ink-muted); }
-.lab-stage .open .t2 { display: block; margin-top: 11px; }
+.lab-stage .open .t2 { display: block; margin-top: 11px; color: var(--act); }
 /* one row of notation where two will not fit between the record and the next one down (see place()) */
 .lab-stage .open.tight .t1, .lab-stage .open.tight .t2 { display: inline; }
 .lab-stage .open.tight .t2 { margin: 0 0 0 14px; }

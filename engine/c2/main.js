@@ -1245,6 +1245,12 @@ ui.addEventListener('click', (e) => {
   // a study named in the plain navigation is its own page (AUDIT-01: every study used to link to the bench)
   const study = e.target.closest('[data-study]')
   if (study) { e.preventDefault(); HOST.push(study.getAttribute('href')); return }
+  /*
+   * THE ROOM THE NAME OPENED CLOSES FROM INSIDE IT (R2). It was left by scrolling or Escape, neither of which the room
+   * says; a visible Close does — and it is a close, not a Back, because opening it navigated nowhere. Focus goes back
+   * to the hero's About, the control that opened it, once the hero is showing again.
+   */
+  if (e.target.closest('[data-close-about]')) { closeAbout(); wantFocus(() => D.heroAct.querySelector('.hero-about')); return }
   const b = e.target.closest('[data-go], [data-work], [data-open], [data-world], [data-detail], [data-back]')
   if (!b) return
   if (b.dataset.go || b.hasAttribute('data-detail')) e.preventDefault()
@@ -1252,7 +1258,7 @@ ui.addEventListener('click', (e) => {
   if (b.dataset.go === 'rest') { HOST.contact('end'); return }
   if (b.dataset.go) {
     A.focusNext = performance.now()   // M4 A11Y
-    const stop = { name: 0, creative: 1, system: 2, work: 3, lab: 4, rest: CONTACT_STOP }[b.dataset.go]
+    const stop = b.dataset.go === 'rest' ? CONTACT_STOP : STOP[b.dataset.go]
     // already there: nothing arrives, so focus goes now
     if (stop != null && A.mode === 'index' && !A.aboutOpen && A.base === stop && Math.abs(A.p - stop) < 0.05) { A.focusNext = 0; wantFocus(PLACE_HEADING[stop]) }
     navigate(b.dataset.go)
@@ -1307,7 +1313,7 @@ function buildDOM() {
     <p class="intro">${about.home.intro}</p>
     <p class="statement">${about.home.positioning}</p>
     <p class="avail lbl">${identity.city} · ${identity.status}</p>
-    <a class="more" href="${ABOUT_URL}" data-detail>${about.home.more} →</a></div>`)
+    <p class="about-acts"><a class="more" href="${ABOUT_URL}" data-detail>${about.home.more} →</a><button class="about-close" data-close-about>${TXT.about.close}</button></p></div>`)
   // M4 A11Y: named by its own heading; a region label would read "About" twice
 
   const d = about.detail
@@ -1495,10 +1501,10 @@ function arrived(heading, name) {
 // the same control after the DOM is rebuilt in another language
 function focusKey(el) {
   if (!el || !ui.contains(el)) return null
-  const c = el.closest('[data-locale], [data-go], [data-work], [data-world], [data-detail], [data-back], [data-open]')
+  const c = el.closest('[data-locale], [data-go], [data-work], [data-world], [data-detail], [data-back], [data-open], [data-close-about]')
   // the hero's About and the strip's are the same action, so they answer to the same key: this one says which
   if (c?.classList.contains('hero-about')) return '.hero-about'
-  if (c) for (const a of ['data-locale', 'data-go', 'data-work', 'data-world', 'data-detail', 'data-back', 'data-open']) if (c.hasAttribute(a)) return c.getAttribute(a) ? `[${a}="${c.getAttribute(a)}"]` : `[${a}]`
+  if (c) for (const a of ['data-locale', 'data-go', 'data-work', 'data-world', 'data-detail', 'data-back', 'data-open', 'data-close-about']) if (c.hasAttribute(a)) return c.getAttribute(a) ? `[${a}="${c.getAttribute(a)}"]` : `[${a}]`
   if (el === D.h1) return 'main > h1'
   const layer = el.closest('.layer')
   if (layer && el.matches('h2')) return `.${[...layer.classList].filter((x) => x !== 'on').join('.')} h2`

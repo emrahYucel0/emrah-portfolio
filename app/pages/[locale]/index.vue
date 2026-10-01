@@ -62,7 +62,7 @@ useLocaleSeo('home')
 .name { font-size: var(--step-3); line-height: 1.02; letter-spacing: -0.03em; font-weight: 600; }
 .roles { font-size: var(--step-1); color: var(--ink-muted); }
 .lead { font-size: var(--step-1); }
-.more { display: inline-block; padding-block: var(--space-2xs); }
+.more { display: inline-block; padding-block: var(--space-2xs); color: var(--act); }
 .block { display: grid; gap: var(--space-m); }
 .works { display: grid; gap: var(--space-l); }
 .work { display: grid; gap: var(--space-2xs); border-block-start: 1px solid var(--rule); padding-block-start: var(--space-s); }

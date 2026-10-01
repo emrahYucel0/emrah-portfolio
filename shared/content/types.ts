@@ -128,6 +128,8 @@ export interface LocaleCopy {
     capabilitiesHeading: string
     capabilities: Term[]
     back: string
+    /** closes the About the name opened on the home surface (it is not a way back: nothing was navigated to) */
+    close: string
   }
   faces: {
     surface: { word: string; role: string; items: CapabilityItem[] }

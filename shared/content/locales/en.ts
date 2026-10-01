@@ -59,6 +59,7 @@ export const en = {
       'Full-Stack Development', 'CMS / Admin Systems', 'Performance & Technical SEO',
     ],
     back: 'Back',
+    close: 'Close',
   },
   faces: {
     surface: {

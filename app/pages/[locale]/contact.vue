@@ -207,13 +207,13 @@ onBeforeUnmount(() => {
   position: absolute; left: 0; top: 0; padding: 8px 10px; margin: 0;
   background: none; border: 0; cursor: pointer; touch-action: manipulation;
   font: 400 9.5px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase;
-  color: var(--ink-muted);
+  color: var(--act);
   text-shadow: 0 0 3px var(--ground), 0 0 3px var(--ground), 0 0 5px var(--ground), 0 0 6px var(--ground);
 }
 .copy[hidden] { display: none; }
 /* no clear corner beside the email's lettering: the control steps back until focus brings the email (and room) */
 .copy.is-tucked:not(:focus-visible) { opacity: 0; pointer-events: none; }
-.copy:hover, .copy:focus-visible { color: var(--ink); text-decoration: underline; }
+.copy:hover, .copy:focus-visible { text-decoration: underline; }
 .copy:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 /* the bench's foot band (LabBench .foot, verbatim measures) */
 .is-finale .foot {

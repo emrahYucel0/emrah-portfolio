@@ -31,8 +31,8 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16 tamamlandı).
 | # | Madde | Öncelik | Karar | Bağımlılık |
 |---|---|---|---|---|
 | R1 | Birleştirme: düzeltme turu 2 → `main`, yayın dalı | P0 | Karar bekliyor (ne zaman) | tam kapı (R16 sayesinde paralel koşulabilir) |
-| R2 | Bakır = eylem rengi | P1 | Kısmen: menünün aktif öğesi bekliyor | — |
-| R3 | Tek ipucu sistemi | P1 | Karar verildi | R2 (renk yok, ama aynı şerit) |
+| R2 | Bakır = eylem rengi | P1 | Karar verildi (2026-10-02); sürüyor | — |
+| R3 | Tek ipucu sistemi | P1 | Karar verildi (2026-10-02) | — |
 | R4 | Özel imleç | P2 | Karar verildi (biçim) | R2 |
 | R5 | İşler: "İNCELE →" ve mobilde okunur durgun önizleme | P1 | Karar verildi | R2 |
 | R6 | Lab bench girişleri: okunur boyut, üzerine gelince ön gösterim | P2 | Kısmen: ön gösterimin biçimi bekliyor | — |
@@ -89,8 +89,23 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16 tamamlandı).
   - case study eylemleri
   - iletişim finalinin eylemleri
   - menünün aktif öğesi
-- **Karar:** Rol ve yerler belli (2026-10-01). **Bekleyen:** menüde hangi öğelerin bakır olacağı, ve token
-  değerleri (yukarıdaki adaylardan seçilecek; gerçek zeminler üzerinde ölçülerek).
+- **Karar:** Rol ve yerler belli (2026-10-01).
+  - **Tokenlar (2026-10-02):** yazı `#9a4f22` (kremde 5,14:1), işaret `#b8622f` (kremde 3,75:1), siyah zemin
+    `#d4875a` (6,91:1).
+  - **Menü (2026-10-02):** menüde bakır yok. Menü gezinmedir, eylem değil; bakır içerikte kalır. Listedeki
+    "menünün aktif öğesi" yeri bu yüzden düştü.
+  - **Durum:** sürüyor (`fix/audit-01-batch2`, audit oturumu).
+  - **Yapılan (2026-10-02, birinci kısım):**
+    - Tokenlar: `engine/c2/style.css` (`--act`, tonla değişir) ve `app/assets/css/base.css`.
+    - Bakır olanlar: hero'daki Hakkımda, "Hakkımda daha fazla", yeni **Kapat**, uzun Hakkımda'nın eylem
+      çağrısı ve "Geri", bench'teki "aç →", `/about` sayfasındaki "Geri", düz katmanın bağlantıları, finalin
+      "kopyala" düğmesi.
+    - Kapat, Hakkımda bölümünü kapatır ve odağı hero'daki Hakkımda'ya geri verir.
+    - Ölçüm: hepsi 4,77–5,14:1, gerçek zemin piksellerine karşı. axe: bütün rotalarda ve Hakkımda açıkken 0 ihlal.
+  - **Bekleyen (kullanıcı kararı):**
+    - Case study eylemleri proje mürekkebi üzerinde duruyor. Hiçbir bakır orada 4,5:1'e ulaşmıyor (en iyisi
+      `#d4875a`, 2,68–4,06:1). İstanbul'un mürekkebi `#8e3a17` zaten bakıra yakın.
+    - Finalin bağlantıları kalemle, kopan satırın kendi mürekkebiyle çiziliyor (mürekkep korunumu).
 - **Dosyalar:**
   - Tokenlar: `engine/c2/style.css`, `app/assets/css/base.css`, `app/assets/css/lab.css`
   - Hero butonu ve Hakkımda bölümü: `engine/c2/main.js`; hero `.hero-about`, bölüm `.more` (~1280), detay
@@ -118,7 +133,11 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16 tamamlandı).
   - `hintFor` her durakta kendi zamanlamasını kullanıyor: yüzlerde ve İşler'de 2,5 sn, dünyada 3,5 sn.
   - "Öğrenildi" bayrakları sayfa ömrü boyunca tutuluyor, oturum boyunca değil.
   - Final, kendi beckon'unu ayrı bir mekanizmayla gösteriyor.
-- **Karar:** Karar verildi (2026-10-01).
+- **Karar:** Karar verildi (2026-10-01). Ayrıntılar (2026-10-02):
+  - "Ekranın bitmiş göründüğü yer" olarak yalnız **Linefield geçidinin sonu** seçildi. "Kaydır" ipucu bu yüzden
+    üç yerde çıkar: hero'nun ilk durağı, Linefield geçidinin sonu ve iletişim varışı.
+  - **Bir kez kuralı:** "kaydır" site genelinde oturumda bir kez, ilk uygun yerde gösterilir. İletişim varışının
+    kendi bir kezi var, çünkü orada kaydırmak duraklar arasında gezdirmiyor, çizimi sürüyor.
 - **Dosyalar:**
   - `engine/c2/main.js`: `hintFor` (~1531), `A.learned`
   - `engine/c2/style.css`: `#hint`

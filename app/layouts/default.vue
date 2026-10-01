@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { isDocumentRoute } from '~~/shared/site'
+import bigShoulders from '@fontsource-variable/big-shoulders-display/files/big-shoulders-display-latin-wght-normal.woff2?url'
+import geist from '@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url'
 const { copy } = useLocale()
 useReducedMotion()
 
@@ -18,6 +20,18 @@ const route = useRoute()
 // the Contact finale (/[locale]/contact) is the same kind of place: a document route that reads its own scroll,
 // without the runtime, in the runtime's strip. It carries the Contact itself, so no footer Contact under it.
 const inLab = computed(() => isDocumentRoute(route.path))
+
+/*
+ * THE TWO FACES THE FIRST FRAME WAITS FOR (AUDIT-01, round 2). The runtime's chunk brings its stylesheet, and the
+ * stylesheet names its fonts, so on a cold visit the fonts were not even asked for until the runtime ran — on a slow
+ * link, seven seconds in. Preloaded from the head they arrive alongside the scripts. Only on the runtime's routes,
+ * and only the Latin files the name and the first lines are set in (the same files the stylesheets name, so the
+ * preload is used, not fetched twice).
+ */
+const firstFaces = [bigShoulders, geist]
+useHead(() => ({
+  link: inLab.value ? [] : firstFaces.map((href) => ({ rel: 'preload', as: 'font', type: 'font/woff2', href, crossorigin: 'anonymous' })),
+}))
 
 // on those routes, once the page has settled, the runtime is warmed in idle time (useC2Engine.warm): going up to Work
 // from the Lab or the finale is then a handover, not a cold boot. requestIdleCallback where it exists (not in Safari);

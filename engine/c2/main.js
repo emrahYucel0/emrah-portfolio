@@ -255,10 +255,13 @@ function prepareWorld(k) {
 // previews load before the surface starts; their tone is prepared in a worker in the background, and nothing that
 // needs it is built until it is ready — the opening never shares the main thread with image processing
 let tonesReady = Promise.resolve()
-const ensurePreviews = async () => {
+// resolves when the images are here; tonesReady covers the images AND their tone from the moment they are asked for,
+// so whatever waits on the tone (the Work textures' warm-up) can never run ahead of an image still on its way
+const ensurePreviews = () => {
   const items = [...new Set(works.map((w) => previewOf(w, V.P, V.T)))]
-  await Promise.all(items.map(loadItem))
-  tonesReady = Promise.all(items.map((it) => prepareTone(it.im)))
+  const loaded = Promise.all(items.map(loadItem))
+  tonesReady = loaded.then(() => Promise.all(items.map((it) => prepareTone(it.im))))
+  return loaded
 }
 
 function rebuild() {
@@ -2233,12 +2236,32 @@ let prepared = null
 function prepare(pace) {
   const step = async (name) => { performance.mark?.(`c2:prep:${name}`); if (pace) await pace() }
   return (prepared ??= (async () => {
-  try { await document.fonts.load(`900 100px ${ST.FAMILY}`, 'EMRAHYÜCEL') } catch {}
-  try { await document.fonts.load('400 20px "Geist Variable"') } catch {}
+  /*
+   * AUDIT-01 (round 2): what does not need what no longer waits for it. On a slow link the two faces were fetched
+   * one after the other, and the previews only after both — they need the screen's shape, not the fonts. Now the
+   * shape is measured first, the previews start, and the two faces load together (the layout also preloads them
+   * from the document's head, so on a cold visit they are usually here already).
+   */
+  measure()
+  const previews = ensurePreviews()
+  await Promise.all([
+    document.fonts.load(`900 100px ${ST.FAMILY}`, 'EMRAHYÜCEL').catch(() => {}),
+    document.fonts.load('400 20px "Geist Variable"').catch(() => {}),
+  ])
   await document.fonts.ready
   await step('fonts')
   measure()
-  await Promise.all([surface.ready, ensurePreviews()])
+  /*
+   * The first frame is the name, and the name needs no preview: it no longer waits for them (on a slow link they
+   * were the last 1.6 s of it). Nothing that draws a preview is warmed before tonesReady; if anything drew one
+   * before its image was here — a visitor already standing on Work, a project's last frame — it is released when
+   * the images land and draws again, with them. A preview that fails to load leaves its frame bare, not the site.
+   */
+  await surface.ready
+  previews.then(() => {
+    for (const st of [...WORKS, ...Object.values(WORLD).flat()]) if (st && !st.dead) surface.release(st)
+    lastSig = ''
+  }, () => {})
   /*
    * LINEFIELD is loaded here and nowhere else: one dynamic import inside a branch the bundler can prove is dead
    * when the flag is off, so a published build has no chunk to load and no text to strip. It is part of PREPARE

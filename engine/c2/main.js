@@ -1557,10 +1557,18 @@ function stripTones(dom) {
 // the way); going back, once it has closed (0.1). A push-through lands exactly on the face, navigation damps onto it:
 // either way the face's text and tone arrive with the picture, not with the last hundredths of the position.
 const FACE_WHOLE = [0.1, 0.7]
+// AUDIT-01 (round 2): the same rule on the way in from the name. Creative's word is written and the room its text
+// stands in is open from ~0.76 of the way (measured, 390 and 1440), but the text waited for the last 0.03 — so for
+// ~0.8 s the visitor saw the word and an empty room, which where the word is drawn thin reads as rows and nothing
+// else. The text now arrives with its room, only while Creative is where the visitor is going.
+const NAME_TO_CREATIVE_WHOLE = 0.75
 function domUpdate(from, to, front) {
   focusStep()
   const faceT = A.mode === 'index' && from === IDX[STOP.creative] && to === IDX[STOP.system] ? A.p - STOP.creative : null
-  const face = faceT == null ? null : A.base === STOP.system && faceT >= FACE_WHOLE[1] ? IDX[STOP.system] : A.base === STOP.creative && faceT <= FACE_WHOLE[0] ? IDX[STOP.creative] : null
+  const inT = A.mode === 'index' && from === IDX[STOP.name] && to === IDX[STOP.creative] ? A.p - STOP.name : null
+  const face = faceT != null
+    ? (A.base === STOP.system && faceT >= FACE_WHOLE[1] ? IDX[STOP.system] : A.base === STOP.creative && faceT <= FACE_WHOLE[0] ? IDX[STOP.creative] : null)
+    : inT != null && A.base === STOP.creative && inT >= NAME_TO_CREATIVE_WHOLE ? IDX[STOP.creative] : null
   const dom = face || (front < 0.5 ? from : to)
   const idleIdx = A.mode === 'index' && !A.busy
   const loaded = A.press && A.press.L > 0.1 && A.press.st.beneath !== 'pin'

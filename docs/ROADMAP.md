@@ -22,7 +22,7 @@ belgedeyse (AUDIT-01, LINEFIELD.md, DEPLOYMENT.md…) burada ona bağlantı veri
 - **Karar bekliyor:** neyin beklendiği yazılı.
 - **Önce inceleme:** mevcut davranış ölçülmeden tasarlanmayacak.
 
-Son güncelleme: 2026-10-01, `fix/audit-01-batch2` (kullanıcı düzeltmeleri: R9, R12, R14, R17; R19–R23 eklendi).
+Son güncelleme: 2026-10-01, `fix/audit-01-batch2` (R12 tamamlandı).
 
 ---
 
@@ -41,7 +41,6 @@ Son güncelleme: 2026-10-01, `fix/audit-01-batch2` (kullanıcı düzeltmeleri: R
 | R9 | Koyu zeminlerde satır titreşimi | **P0** (R18 için) | Neden açık; önce ölçüm | — |
 | R10 | Safari'de adın ince kesimle çizilmesi | P1 | Önce gerçek iPhone | R22 |
 | R11 | Yavaş ağda ilk kare (8,9 sn) | P2 | Önce değerlendirme | — |
-| R12 | Sert fırlatmada coast/tail aşımı | **P0** | Karar verildi; sürüyor (audit oturumu) | — |
 | R13 | Gövde metni ve tipografik hiyerarşi | P1 | Karar bekliyor (ölçek) | — |
 | R14 | Cross Section (İşler → Lab köprüsünün yerine) | P1 | Karar verildi (yön; kesit anında bekleme) | R2, R15 |
 | R15 | Tempo, ilerleme göstergesi, performans bütçesi | P2 | Karar bekliyor | R14 |
@@ -245,20 +244,6 @@ Son güncelleme: 2026-10-01, `fix/audit-01-batch2` (kullanıcı düzeltmeleri: R
 - **Bağımlılık:** yok.
 - **Öncelik:** P2.
 
-### R12. Sert fırlatmada coast/tail aşımı
-- **Açıklama:** Tek bir fiziksel jest en fazla bir durak ilerletmeli. Sert bir trackpad fırlatmasının momentum
-  kuyruğu bazen ikinci bir durak açıyor. Aşım febd93f'te de var: bir A/B denemesinde febd93f'te 10 atışın 5'i,
-  batch 2'de 2'si kaldı.
-- **Karar (2026-10-01):** P0. Bu oturumun işi (audit, `fix/audit-01-batch2`): `engine/c2/main.js` şu an bu
-  oturumda, Linefield oturumu ona dokunmayacak. Önce gerçekçi trackpad akışlarıyla yeniden üretilecek ve neden
-  raporlanacak, sonra düzeltilecek. origin/main'e sabitlenmiş üç ritim korunacak. **Durum: sürüyor.**
-- **Dosyalar:**
-  - `engine/c2/main.js`: `opensGesture`, `landGesture`, `GEST_*`
-  - `engine/c2/linefield/input.js`
-  - Harness'lar: `tools/diag/gesture2.cjs` (WebKit, `--wk` portu; tam takım ~67 dk, önce sor)
-- **Bağımlılık:** yok.
-- **Öncelik:** P0.
-
 ### R13. Gövde metni ve tipografik hiyerarşi
 - **Açıklama:** Bugün metin rolleri dağınık. Runtime, düz kabuk, Lab ve Contact farklı aile, boyut ve opaklık
   kullanıyor (AUDIT-01 A6). Tek bir tip ölçeği ve gövde metni kuralı çıkarılacak, dört katmana uygulanacak.
@@ -391,6 +376,7 @@ Son güncelleme: 2026-10-01, `fix/audit-01-batch2` (kullanıcı düzeltmeleri: R
 | 2026-09-30 | Düzeltme turu 1 (12 commit; kullanıcı onaylı). Linefield ile birlikte yerel `main`'de febd93f. | `fix/audit-01-batch1` d6bf6fd..8eadef7, etiket `audit-01-batch1-rc` | AUDIT-01 §8 |
 | 2026-10-01 | Linefield (bayrak arkasında) | yerel `main` febd93f | `docs/LINEFIELD.md` |
 | 2026-10-01 | Düzeltme turu 2. Ayrıntılar aşağıda. | `fix/audit-01-batch2` b4054e7..c64d995 | AUDIT-01 §9–§10 |
+| 2026-10-01 | R12: sert trackpad fırlatmasının kuyruğu ikinci durağı açmıyor | `fix/audit-01-batch2` (bu commit) | aşağıda |
 
 **Düzeltme turu 2'nin maddeleri:**
 - metinler ve eylem çağrısı
@@ -400,6 +386,31 @@ Son güncelleme: 2026-10-01, `fix/audit-01-batch2` (kullanıcı düzeltmeleri: R
 - yavaş ağda ilk kare 11,2 → 8,9 sn
 - ad → CREATIVE boş karesi
 - OPEN_WORK etiketi
+
+**R12'nin ayrıntısı (2026-10-01):**
+- **Neden.** Kural yerindeydi; aşımı iki durum açıyordu. Sayfa bir varışı çizerken meşgul olduğundan, tarayıcı
+  tekerlek olaylarını birleştirip (coalesce) tek olay olarak veriyor.
+  - Birleşmiş bir olay 2–3 karenin toplamını taşıyor. Zarf olay başına sönümlendiği için bu olay "yeni atış" (RISE)
+    sayılıyor ve aynı kuyruğa ikinci bir durak bütçesi veriliyordu.
+  - Sert bir atışın kendi açılış rampası da (120 Hz, çift olaylar: 40 · 100 · 280 px) RISE sayılıyordu. pT o anda
+    eşiği çoktan geçmiş olduğundan atış bir durak indiriliyor, kalanı ikinci durağa gidiyordu.
+  - gesture2'nin yük altında bazen kalıp bazen geçmesinin sebebi de bu: olaylar Playwright'tan tek tek gidiyor,
+    aralıkları makinenin yüküyle büyüyor.
+- **Düzeltme** (`engine/c2/main.js`, `opensGesture`):
+  - RISE, her olayı taşıdığı kare başına okur: boyut ÷ (aralık / 16,7 ms), 1 ile 8 kare arasında. Taban (floor)
+    ham boyutta kalır.
+  - RISE yalnız akış kendi tepesinin yarısının altına düştükten sonra okunur (`GEST_FALLEN` 0,5). Rampa ve sabit
+    akış hiçbir zaman yeni atış sayılmaz; bilinçli ikinci atış her zaman sönen bir kuyruktan sonra gelir.
+- **Yeni harness:** `tools/diag/trackpad.cjs`. Akışlar sayfanın içinden sabit zaman çizelgesiyle gönderilir:
+  macOS 60/120 Hz momentum, Windows precision touchpad, gesture2'nin coast ve tail'i; birleşik ve sıralı teslim.
+- **Ölçüm** (her durak, iki yön; flag-on build):
+  - Önce: WebKit 62 atışta 11 aşım, Chrome 70'te 1.
+  - Sonra: WebKit 115'te 0, Chrome 140'ta 0.
+- **Kontroller:**
+  - gesture2 alt kümesi (burst ve tail her duraktan ve bench'ten; ikinci atış 150/300/500 ms; üç ritim 3/2/1):
+    flag-on ve flag-off PASS.
+  - Linefield giriş, çıkış ve hareketi azaltılmış; `workopen` (on/off); `touch`; `herotouch`; `spine`: PASS.
+  - Tam gesture2 takımı koşulmadı.
 
 **Kullanıcı kararıyla kapatılanlar:**
 - HAKKIMDA odası (AUDIT-01 §9 madde 4): atlandı; 1. turdaki kâğıt bant kalıyor.

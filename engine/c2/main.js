@@ -228,7 +228,7 @@ const A = {
   labArmed: false, hush: 0,
   // the gesture being metered: where it began, whether it has spent its stop, how far it has carried a place's own
   // axis, and the stream it is being read out of (see opensGesture)
-  gFrom: 0, gSpent: false, gInner: 0, gAt: -1e9, gEnv: 0, gMinGap: Infinity,
+  gFrom: 0, gSpent: false, gInner: 0, gAt: -1e9, gEnv: 0, gPeak: 0, gMinGap: Infinity,
   // a harness may pin how much the type is type, to difference the words out of a frame (see lfWords below)
   lfWordsAt: null, lfWords: 1, lfLeg: false,
   aboutDetailK: 0, bridgeF: null, bridgePK: 0,
@@ -407,6 +407,30 @@ const GEST_RISE = 2.6      // an event this many times the envelope is a new thr
 const GEST_FLOOR = 0.12    // and a real one: about one notch of travel, which is a stop's own threshold
 const GEST_ENV_KEEP = 0.75 // what the envelope keeps from one event to the next
 /*
+ * AN EVENT IS NOT ALWAYS ONE FRAME (R12). A browser whose page is busy does not queue a wheel stream, it COALESCES
+ * it: everything that arrived while the page was drawing is handed over as one event carrying the sum. This page is
+ * busy exactly when a flick lands — an arrival is the most expensive thing it draws — so a hard trackpad throw
+ * reaches it as single frames and doubles and triples, 400 · 380 · 1095 px. Judged per event, the triple is 2.7 times
+ * the envelope its neighbours set, a RISE, and the rest of the same physical tail was handed a fresh stop (measured,
+ * WebKit, coalesced delivery: 11 throws in 62 moved two places, Chrome 1 in 70, this or the ramp below in each).
+ * So the rise reads each event per FRAME it stands for: its size over how many frames its gap spans, never fewer
+ * than one and never more than GEST_COALESCED. A stream of single frames reads exactly as before; a second throw is still a rise,
+ * because a new throw is a jump in what each frame carries, and coalescing never is. The floor stays on the raw size.
+ */
+const GEST_FRAME = 16.7    // ms of input one event normally carries
+const GEST_COALESCED = 8   // and at most this many frames' worth is read as having arrived together
+/*
+ * AND A STREAM DOES NOT RISE OUT OF ITSELF (R12). The floor was what kept a swipe's own ramp from reading as new
+ * throws, and a hard throw outgrows the floor within its first few events: on a 120 Hz trackpad, delivered in
+ * coalesced pairs, it ramps 40 · 100 · 280 px, and the 280 — 2.8 times the envelope, well past one notch — was a rise.
+ * By then the throw had already travelled more than a stop's threshold, so the rise landed it one place along and
+ * handed the rest of the same throw a second (measured, WebKit: every 120 Hz overshoot was this event, 36–48 ms in).
+ * A second throw is a jump out of a stream that has DIED DOWN — the tail of the first, or nothing at all — so a rise
+ * is only read once the envelope has fallen below this share of the stream's own peak. A ramp never has; a steady
+ * stream never has; a tail always has, which is where every deliberate second throw this page must obey arrives.
+ */
+const GEST_FALLEN = 0.5
+/*
  * AND A PLACE WITH AN AXIS OF ITS OWN IS LEFT BY ITS OWN GESTURE. A flick that ran the work field or the passage is
  * spent on it: it may reach the end and stop there, and the next place waits. This is how much of that axis counts
  * as having travelled it — half a project, half the passage. Below it nothing changes, which is what keeps the two
@@ -418,7 +442,7 @@ const gestureBase = () => (A.mode === 'world' ? A.wbase : A.base)
 /** measure the next gesture from here, with nothing spent */
 function resetGesture() { A.gFrom = gestureBase(); A.gSpent = false; A.gInner = 0; A.gMinGap = Infinity }
 /** and forget the stream, so that whatever comes next opens a gesture of its own */
-function forgetStream() { A.gAt = -1e9; A.gEnv = 0 }
+function forgetStream() { A.gAt = -1e9; A.gEnv = 0; A.gPeak = 0 }
 /*
  * A NEW GESTURE LANDS THE ONE BEFORE IT. A second throw can arrive before snap's silence has committed the first —
  * 150 ms is a comfortable repeat for a hand and snap waits 240 — and the place the new gesture is measured from
@@ -440,10 +464,13 @@ function beginGesture() { landGesture(); resetGesture() }
 /** does this wheel event open a new gesture — and fold it into the envelope either way */
 function opensGesture(d, now) {
   const mag = Math.abs(d)
-  const rise = mag > GEST_FLOOR && mag > A.gEnv * GEST_RISE
-  A.gEnv = Math.max(A.gEnv * GEST_ENV_KEEP, mag)
   const gap = now - A.gAt
   A.gAt = now
+  const perFrame = mag / clamp(gap / GEST_FRAME, 1, GEST_COALESCED)
+  // a new throw is a jump out of a stream that has died down — never the stream's own ramp (see GEST_FALLEN)
+  const rise = mag > GEST_FLOOR && perFrame > A.gEnv * GEST_RISE && A.gEnv < A.gPeak * GEST_FALLEN
+  A.gEnv = Math.max(A.gEnv * GEST_ENV_KEEP, perFrame)
+  A.gPeak = Math.max(A.gPeak, perFrame)
   /*
    * ALWAYS, and not only while nothing has landed. Guarded by !A.gSpent this stopped learning at the one moment the
    * answer is wanted: a flick whose FIRST event lands a stop — leaving the work field does exactly that — reached its
@@ -454,7 +481,10 @@ function opensGesture(d, now) {
   // a landed STREAM holds the door until the input has gone quiet; a landed single input holds nothing, and a
   // gesture still in the air is only interrupted by a real silence or a new throw
   const rest = A.gMinGap < GEST_STREAM ? GEST_REST : 0
-  return A.gSpent ? rise || gap > rest : rise || gap > GEST_GAP
+  const opens = A.gSpent ? rise || gap > rest : rise || gap > GEST_GAP
+  // whatever opens a gesture starts a stream of its own, and that stream's peak is the one a next throw is read against
+  if (opens) A.gPeak = perFrame
+  return opens
 }
 function scrollBy(d, touch = false) {
   const now = performance.now()

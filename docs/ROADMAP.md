@@ -44,6 +44,7 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
 | R17 | Yayın (DEPLOYMENT.md, CSP, canlı yedeği) | P0 | Karar bekliyor (tarih) | R1 |
 | R18 | Awwwards başvurusu (Developer Award) | P0 | Karar bekliyor (tarih) | R17, R9, R22, R23 |
 | R19 | Full-Stack'in siyah kapsüllerinin çevresindeki hale | P1 | Karar bekliyor (varyant ya da kural) | — |
+| R26 | Harness'lar izlenen `docs/` yollarına yazıyor | P2 | Karar verildi (yön) | — |
 | R20 | Arka belleğe piksel sayısı tavanı (önerilen 8,3 Mpx) | P1 | Karar bekliyor (değer) | R9 ile birlikte ölçülür |
 | R21 | Büyük ekranlarda büyük harf başına satır sayısına üst sınır | P2 | Karar bekliyor (sanat yönetimi) | — |
 | R22 | Gerçek cihaz testi (iPad, Mac'te Safari, Android telefon) | P0 | Karar verildi | — |
@@ -323,6 +324,28 @@ axe 0.
   - Linefield giriş, çıkış ve hareketi azaltılmış; `workopen` (on/off); `touch`; `herotouch`; `spine`: PASS.
   - Tam gesture2 takımı koşulmadı.
 
+**R26 — harness'lar izlenen yollara yazıyor (2026-10-02'de bulundu):**
+
+`responsive.cjs` bir kez koştuğunda `docs/contact-finale/responsive/` altındaki 20 boyutun karesini,
+`contact-sheet.png`'i ve `responsive.json`'u yeniden yazıyor. Yayın kapısında iki kez koştu ve finalin F3
+turundan kalan **işlenmiş kanıtı** sessizce değiştirdi: commit öncesi 31 izlenen dosya değişmiş görünüyordu,
+hiçbirine elle dokunulmamıştı. Bu yayın için `git checkout -- docs/contact-finale/` ile geri alındı.
+
+Sorun yalnız `responsive.cjs` değil. İzlenen `docs/` yollarına yazan altı harness var:
+
+| harness | yazdığı yer |
+|---|---|
+| `beckon.cjs` | `docs/contact-finale/f3b/` |
+| `finale-a11y.cjs` | `docs/contact-finale/f3/` |
+| `responsive.cjs` | `docs/contact-finale/responsive/` |
+| `seam.cjs` | `docs/contact-finale/f2/` |
+| `lfpair.cjs`, `lfsheet.cjs` | `docs/reference/linefield-v2.html` (yalnız **okuyor**; referans demo) |
+
+**Yön:** ölçüm çıktısı yok sayılan `tools/diag/out/` altına yazılır; finalin inceleme kanıtı bulunduğu yerde
+**donmuş** kalır. Bir kontrolün çıktısı, başka bir turun kanıtının üstüne yazılmamalı.
+
+**O zamana kadar:** bu harness'lardan biri koştuktan sonra, commit'ten önce `git checkout -- docs/contact-finale/`.
+`seam.cjs record` da buna dahildir — hale/dikiş araştırması onu kullanıyor.
 **R16'nın ayrıntısı (2026-10-02):**
 - `run6.sh` ve harness'lar portu zaten argüman olarak alıyordu; engel `serve.sh`'tı. 4500–4700'ü durduruyor ve
   sabit portlarda (4500, 4501, 4650) sunuyordu.

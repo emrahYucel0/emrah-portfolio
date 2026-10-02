@@ -1363,6 +1363,9 @@ ui.addEventListener('click', (e) => {
   // a study named in the plain navigation is its own page (AUDIT-01: every study used to link to the bench)
   const study = e.target.closest('[data-study]')
   if (study) { e.preventDefault(); HOST.push(study.getAttribute('href')); return }
+  // a work named there opens as from the field: its address is a step, and Back returns (AUDIT-01 §9, plain layer #11)
+  const page = e.target.closest('[data-workpage]')
+  if (page) { e.preventDefault(); openWorkAt(+page.dataset.workpage); return }
   /*
    * THE ROOM THE NAME OPENED CLOSES FROM INSIDE IT (R2). It was left by scrolling or Escape, neither of which the room
    * says; a visible Close does — and it is a close, not a Back, because opening it navigated nowhere. Focus goes back
@@ -1492,7 +1495,7 @@ function buildDOM() {
   // everything essential stays reachable without the surface: keyboard and assistive technology get a plain list
   D.a11y = h('nav', 'a11y', `<ul class="a11y-places"><li><button data-go="creative" lang="en">${capabilities.surface.role}</button></li><li><button data-go="system" lang="en">${capabilities.system.role}</button></li></ul>
     <p class="lbl">${TXT.a11y.selectedWork}</p>
-    <ul>${works.slice(0, 3).map((w) => `<li><a href="${w.url}" target="_blank" rel="noopener noreferrer">${w.name} — ${w.strength} ↗<span class="sr"> ${TXT.a11y.newTab}</span></a></li>`).join('')}</ul>
+    <ul>${works.slice(0, 3).map((w, i) => `<li><a href="${WORK_URL(w.id)}" data-workpage="${i}">${w.name} — ${w.strength}</a> · <a href="${w.url}" target="_blank" rel="noopener noreferrer"><span lang="en">${w.host}</span> ↗<span class="sr"> ${TXT.a11y.newTab}</span></a></li>`).join('')}</ul>
     <p class="lbl">${TXT.a11y.labStudies}</p><ul>${STUDY_LIST().map((e) => `<li><a href="${studyUrl(e.id)}" data-study>${e.name} — ${e.note}</a></li>`).join('')}</ul>
     <p>${mail} · ${phone}</p><p class="a11y-links">${exits()}</p>
     <a href="${ABOUT_URL}" data-detail>${about.home.more}</a>`)

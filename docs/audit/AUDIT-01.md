@@ -665,10 +665,11 @@ Dal `fix/audit-01-batch2`, febd93f'ten açıldı (batch 1 ve Linefield ile birle
 | 205e1d5 | 5, yavaş ağda ilk kare | Fontlar head'den önceden yükleniyor ve birlikte iniyor; önizlemeler fontları beklemiyor; ilk kare önizlemeleri beklemiyor. Fast 3G + 4× CPU'da 11,2 → 8,9 sn. |
 | 25987e8 | 6, ad → CREATIVE boş karesi | Creative'in metni odasıyla birlikte geliyor (0,75): 0,6–0,7 sn daha erken. |
 | 13756b4 | 7, OPEN_WORK aria-label | Dokunmatikte ad, görünen talimatla aynı. |
+| bu commit | 2, düz katman #11 | R8'in adresleri geldi: runtime'ın düz listesinde her iş kendi adresine (`/{locale}/work/{id}`) gidiyor, işi alandan açılmış gibi açıyor, Geri İşler'e dönüyor; işin sitesi yanında ayrı bağlantı. Script'siz ana sayfa da böyleydi. |
 
 **Kontroller:** her maddeden sonra hızlı kontroller koşuldu: Linefield giriş, çıkış ve hareketi azaltılmış; `workopen`; `journey`; `herotouch`; `touch`; `spine`. Tam kapı koşulmadı.
 
 **Açık kalanlar:**
-- Sert fırlatmada coast/tail aşımı febd93f'te de var: ortak bir karşılaştırmada febd93f'te 10 denemenin 5'i, bu dalda 2'si kaldı. Linefield oturumunun konusu.
+- ~~Sert fırlatmada coast/tail aşımı febd93f'te de var.~~ R12 (a2967db) kapattı: `trackpad.cjs`'te WebKit 115 ve Chrome 140 atışta 0 aşım. Ayrıntı ROADMAP'te.
 - `spine`'ın momentum kuyruğu kontrolü makine yüklüyken febd93f'te de kalıyor; yük kalkınca geçiyor.
-- Düz katman #11, case study URL'lerini bekliyor.
+- ~~Düz katman #11, case study URL'lerini bekliyor.~~ Yapıldı (R8'den sonra).

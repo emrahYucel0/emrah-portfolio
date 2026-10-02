@@ -22,8 +22,9 @@ belgedeyse (AUDIT-01, LINEFIELD.md, DEPLOYMENT.md…) burada ona bağlantı veri
 - **Karar bekliyor:** neyin beklendiği yazılı.
 - **Önce inceleme:** mevcut davranış ölçülmeden tasarlanmayacak.
 
-Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24, R8, R7 tamamlandı; R26 kararla kapandı;
-R25 bekliyor).
+Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24, R8, R7 ve AUDIT-01 §9'un son satırı
+tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya da yayın bekliyor. Dalın ucu
+`audit-01-batch2-rc` etiketiyle işaretli; birleştirmeyi Linefield oturumu yapacak.
 
 ---
 
@@ -32,7 +33,7 @@ R25 bekliyor).
 | # | Madde | Öncelik | Karar | Bağımlılık |
 |---|---|---|---|---|
 | R1 | Birleştirme: düzeltme turu 2 → `main`, yayın dalı | P0 | Karar bekliyor (ne zaman) | tam kapı (R16 sayesinde paralel koşulabilir) |
-| R4 | Özel imleç | P2 | Karar verildi (biçim) | R2 |
+| R4 | Özel imleç | P2 | Kısmen: halkanın boyutu ve rengi bekliyor | — (R2 bitti) |
 | R6 | Lab bench girişleri: okunur boyut, üzerine gelince ön gösterim | P2 | Kısmen: ön gösterimin biçimi bekliyor | — |
 | R9 | Koyu zeminlerde satır titreşimi | **P0** (R18 için) | Neden açık; önce ölçüm | — |
 | R10 | Safari'de adın ince kesimle çizilmesi | P1 | Önce gerçek iPhone | R22 |
@@ -54,11 +55,19 @@ R25 bekliyor).
 ## Yapılacaklar
 
 ### R1. Birleştirme: düzeltme turu 2 → `main`
-- **Açıklama:** `fix/audit-01-batch2` (febd93f + 7 commit, b4054e7..c64d995 ve bu dosya) henüz `main`'e
-  birleşmedi. Birleşmeden önce tam kapı koşulacak. `origin/main` hâlâ b04e1ed'de; Linefield ve düzeltme turu 1'i
-  taşıyan yerel `main` (febd93f) push edilmedi.
-- **Karar:** Birleştirmeyi ve push'u kullanıcı söyler. Dal 2026-10-01'de yedek olarak origin'e push edildi;
-  `main`'e dokunulmadı.
+- **Açıklama:** `fix/audit-01-batch2`, febd93f'ten açıldı (yerel `main`: Linefield ve düzeltme turu 1); ucu
+  `audit-01-batch2-rc` etiketiyle işaretli (b4054e7'den etiketlenen commit'e kadar). Henüz `main`'e birleşmedi.
+  Birleşmeden önce tam kapı koşulacak. `origin/main` hâlâ b04e1ed'de.
+- **Karar (2026-10-02):** Birleştirmeyi ve kapıyı Linefield oturumu yapar (`main` o worktree'de açık). Bu oturum
+  birleştirmez ve push etmez. Dal yedek olarak origin'de (74d1757'ye kadar); etiket push edilmedi.
+- **Yayının kaydetmesi gereken bilinen sorunlar:**
+  - R9: koyu zeminlerde satır titreşimi (canlıda da var; nedeni açık).
+  - R10: Playwright WebKit'te ad ince kesimle çiziliyor; gerçek Safari'de doğrulanmadı.
+  - R7 telefonda: otomatik koşular (WebKit ve Chrome, dokunmatik, yerel ağ) geçti, gerçek iPhone'da yeniden
+    bakılmadı (R22). Finalden parmakla yukarı çıkış WebKit'te sınanamıyor, yalnız Chrome'da sınandı.
+  - Tam gesture2 takımı (yaklaşık 67 dk) bu dalda koşulmadı; alt kümesi koşuldu.
+  - Hareketi azaltılmış modda bench ↔ final dikişi anında bir kesme (tasarım gereği, bench'te perde yok).
+  - `spine`'ın momentum kuyruğu kontrolü makine yüklüyken kalabiliyor (febd93f'te de; yük kalkınca geçiyor).
 - **Dosyalar:** `tools/diag/run6.sh`, `docs/contact-finale/LINEFIELD-MERGE.md`, `docs/audit/AUDIT-01.md` §10.
 - **Bağımlılık:** tam kapı. R16 yapıldı: başka bir oturum durmadan, kendi portlarıyla koşulabilir.
 - **Öncelik:** P0.
@@ -66,10 +75,11 @@ R25 bekliyor).
 ### R4. Özel imleç
 - **Açıklama:** Çizgilerin üzerinde bir halka, bir işin görselinin üzerinde "AÇ". Yalnız ince işaretçide
   (`pointer: fine`). Dokunmatikte ve hareketi azaltılmış modda yok. Klavye odağını etkilemez.
-- **Karar:** Biçim belli. Halkanın boyutu ve rengi R2 ile birlikte belirlenecek.
+- **Karar:** Biçim belli. **Bekleyen:** halkanın boyutu ve rengi. R2 bitti (bakır yalnız DOM eylemlerinde); halkanın
+  bakır mı mürekkep mi olacağı kullanıcının kararı.
 - **Dosyalar:** `engine/c2/main.js` (işaretçi işleyicileri, `pressable`), `engine/c2/style.css`,
   `shared/content/locales/*.ts` ("AÇ").
-- **Bağımlılık:** R2.
+- **Bağımlılık:** yok (R2 tamamlandı).
 - **Öncelik:** P2.
 
 ### R6. Lab bench girişleri
@@ -270,7 +280,14 @@ R25 bekliyor).
 | 2026-10-02 | R5: İşler'de "İNCELE →" ve telefonda okunur durgun önizleme | `fix/audit-01-batch2` dfbcc0b | aşağıda |
 | 2026-10-02 | R24: İşler alanının ucundan tek çentik çıkıyor | `fix/audit-01-batch2` 40d54f1 | aşağıda |
 | 2026-10-02 | R8: case study'lerin adresi, okunur "sonraki iş", satırları aralayan cep | `fix/audit-01-batch2` 526bc8e, c5e9b2a, 2e0f9a4 | aşağıda |
-| 2026-10-02 | R7: Lab'de kaydırmak gezdirir, tıklamak açar; bench'in alt şeridi site şeridi; etiketlerdeki ikilenme (kullanıcı onaylı) | `fix/audit-01-batch2` 6954a14; telefon kontrolü bu commit | aşağıda |
+| 2026-10-02 | R7: Lab'de kaydırmak gezdirir, tıklamak açar; bench'in alt şeridi site şeridi; etiketlerdeki ikilenme (kullanıcı onaylı) | `fix/audit-01-batch2` 6954a14; telefon kontrolü 74d1757 | aşağıda |
+| 2026-10-02 | AUDIT-01 §9, düz katman #11: runtime'ın düz listesinde her iş kendi adresine gidiyor | `fix/audit-01-batch2` (bu commit) | AUDIT-01 §10 |
+
+**AUDIT-01 §9 #11'in ayrıntısı (2026-10-02):** R8'in adresleri gelince yapıldı. Runtime'ın düz listesinde
+(`#plain`) her iş artık dış siteye değil kendi adresine gidiyor: `openWorkAt`, işi alandan açılmış gibi açıyor (adres
+bir adım, Geri İşler'e döner, odak işin özetinde). İşin sitesi yanında ayrı bir bağlantı (yeni sekme). Script'siz ana
+sayfa zaten böyleydi. Kontroller: kendi denetimi TR ve EN, flag-on ve flag-off, Chrome ve WebKit; `workopen` (on/off);
+axe 0.
 
 **Düzeltme turu 2'nin maddeleri:**
 - metinler ve eylem çağrısı

@@ -22,7 +22,7 @@ belgedeyse (AUDIT-01, LINEFIELD.md, DEPLOYMENT.md…) burada ona bağlantı veri
 - **Karar bekliyor:** neyin beklendiği yazılı.
 - **Önce inceleme:** mevcut davranış ölçülmeden tasarlanmayacak.
 
-Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5 tamamlandı; R24 eklendi).
+Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24 tamamlandı).
 
 ---
 
@@ -48,7 +48,6 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5 tamamla
 | R21 | Büyük ekranlarda büyük harf başına satır sayısına üst sınır | P2 | Karar bekliyor (sanat yönetimi) | — |
 | R22 | Gerçek cihaz testi (iPad, Mac'te Safari, Android telefon) | P0 | Karar verildi | — |
 | R23 | Awwwards başvuru malzemesi (ekran görüntüleri, kısa video, başlık, açıklama) | P0 | Karar bekliyor (içerik) | R9 |
-| R24 | İşler alanının uçlarından yavaş tekerlek çentikleriyle çıkılamıyor | P1 | Karar bekliyor (tek çentik çıkarsın mı) | — |
 
 ---
 
@@ -275,22 +274,6 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5 tamamla
 - **Bağımlılık:** R18'in parçası. Görüntüler R9 düzeldikten sonra çekilmeli.
 - **Öncelik:** P0.
 
-### R24. İşler alanının uçlarından yavaş tekerlek çentikleriyle çıkılamıyor
-- **Bulgu (2026-10-02; febd93f'te de var):**
-  - İşler'in ilk projesinden geri (Linefield açıkken geçide, kapalıyken FULL-STACK'e) ya da son projesinden ileri
-    (Lab köprüsüne) çıkmak için alan `wT` ±0,45'i geçmeli.
-  - 120 px'lik bir çentik `wT`'yi 0,34 oynatıyor.
-  - Girdi 180 ms durunca alan kayıttaki işe geri yaylanıyor (`tuneWork`; ölçüm: −0,34 → −0,13).
-  - Sonuç: çentikler arasında 180 ms'den uzun ara varsa alandan hiç çıkılmıyor. Hızlı bir fırlatma (180 ms içinde
-    iki çentik) çıkıyor.
-  - `linefield.cjs`'in "back from Work" kontrolü bu yüzden zamanlamaya göre kalıp geçiyor (330 ms aralık; hem yeni
-    hem eski build'de 4 koşuda 2 kalma).
-- **Karar:** Bekleyen. Tek çentik alanın ucundan çıkarsın mı? Omurganın geri kalanında bir çentik bir durak
-  ilerletiyor. Alternatif: yaylanma bilinçli bir "elastik kenar" olarak kalsın, harness hızlı çentikle sınansın.
-- **Dosyalar:** `engine/c2/main.js` (`scrollBy` İşler dalı, `tuneWork`), `tools/diag/linefield.cjs`.
-- **Bağımlılık:** yok. R12'nin jest kuralıyla birlikte ölçülmeli (`trackpad.cjs`, gesture2 alt kümesi).
-- **Öncelik:** P1.
-
 ---
 
 ## Tamamlananlar
@@ -306,7 +289,8 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5 tamamla
 | 2026-10-02 | R16: tam kapı başka bir oturumla aynı anda koşulabiliyor | `fix/audit-01-batch2` 4d8d833 | aşağıda |
 | 2026-10-02 | R3: tek ipucu sistemi | `fix/audit-01-batch2` bc03881 | aşağıda |
 | 2026-10-02 | R2: bakır = eylem rengi | `fix/audit-01-batch2` a21a96c | aşağıda |
-| 2026-10-02 | R5: İşler'de "İNCELE →" ve telefonda okunur durgun önizleme | `fix/audit-01-batch2` (bu commit) | aşağıda |
+| 2026-10-02 | R5: İşler'de "İNCELE →" ve telefonda okunur durgun önizleme | `fix/audit-01-batch2` dfbcc0b | aşağıda |
+| 2026-10-02 | R24: İşler alanının ucundan tek çentik çıkıyor | `fix/audit-01-batch2` (bu commit) | aşağıda |
 
 **Düzeltme turu 2'nin maddeleri:**
 - metinler ve eylem çağrısı
@@ -356,6 +340,21 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5 tamamla
 - **Kontrol:** 4921/4922/4923 ile koşuldu. Üç sunucu da cspboot PASS verdi; 4500–4799 dinleyicileri aynı PID'lerle
   kaldı. Hatalı argüman (iki port) açık bir mesajla durdu. Tam kapı koşulmadı.
 
+**R24'ün ayrıntısı (2026-10-02):**
+- **Bulgu (febd93f'te de var):**
+  - İşler alanının ucundan çıkmak için alan ±0,45 yol almalıydı; bir çentik 0,34 taşıyor.
+  - 180 ms sessizlikten sonra alan kayda geri yaylanıyor. Bu yüzden 180 ms'den seyrek çentiklerle alandan hiç
+    çıkılamıyordu: 330 ms arayla altı çentikte `wT` −0,18'i geçmedi.
+  - `linefield.cjs`'in "back from Work" kontrolü zamanlamaya göre kalıyordu: eski ve yeni build'de 4 koşuda 2.
+- **Karar (2026-10-02):** tek çentik alanın ucundan çıkar. Omurganın geri kalanında da bir çentik bir durak.
+- **Değişiklik:** `GEST_EDGE` 0,25. Firefox'un çentiği (üç satır) 0,27 taşıyor. Alanı koşmuş bir jest hâlâ uçta
+  duruyor (`GEST_INNER`, R12 kuralı aynı).
+- **Kontroller:**
+  - Yavaş çentikle Work'ten geri: 4/4 koşuda tek çentikte geçide.
+  - Linefield girişi 3/3; Linefield çıkış ve hareketi azaltılmış.
+  - gesture2 alt kümesi (flag-on ve flag-off) ve `trackpad.cjs` (24 atış; work, system, linefield).
+  - `workopen` (on/off); `worktap`; `touch`; `journey` TR; `spine`; typecheck: PASS.
+
 **R5'in ayrıntısı (2026-10-02):**
 - **"İNCELE →" / "VIEW →":** her işin adının altında, her cihazda. İşler sütunu sitenin kendi gecesi (`#121212`),
   projenin mürekkebi değil; bu yüzden bakırın koyu zemin tonu (`#d4875a`, 6,6:1).
@@ -373,7 +372,7 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5 tamamla
   - R5 denetimi 10/10.
   - Linefield çıkış ve hareketi azaltılmış; `workopen` (on/off); `worktap`; `touch`; `journey` (TR ve EN
     hareketi azaltılmış); `herotouch`; `spine`; axe 0; typecheck: PASS.
-  - Linefield girişindeki "back from Work" zamanlamaya bağlı kalıyor; R24'e bakın. Eski build'de de aynı.
+  - Linefield girişindeki "back from Work" zamanlamaya bağlı kalıyordu; R24 düzeltti.
 
 **R2'nin ayrıntısı (2026-10-02):**
 - **Tokenlar:** yazı `#9a4f22`, işaret `#b8622f`, siyah zemin `#d4875a`.

@@ -438,6 +438,15 @@ const GEST_FALLEN = 0.5
  * notches that have always left the far end of the field leaving it.
  */
 const GEST_INNER = 0.5
+/*
+ * ONE NOTCH LEAVES THE WORK FIELD'S END (R24, user decision 2026-10-02). Out past either end the field had to travel
+ * 0.45 of a work, and a notch carries it 0.34 — then, after 180 ms of quiet, tuneWork springs it back into register.
+ * So a hand notching deliberately, more than 180 ms apart, could never leave Work at all, back to the place before it
+ * or on to the Lab, while one notch moves one stop everywhere else on the spine (measured: six notches 330 ms apart,
+ * wT never past −0.18). The way out is now one notch's travel: a Firefox notch (three lines) carries 0.27. What has
+ * run the field is still pinned at the end by GEST_INNER, so a flick that crossed the works does not also leave.
+ */
+const GEST_EDGE = 0.25
 /** the place a gesture is measured from: the stop on the index, the frame inside a project */
 const gestureBase = () => (A.mode === 'world' ? A.wbase : A.base)
 /** measure the next gesture from here, with nothing spent */
@@ -550,10 +559,10 @@ function scrollBy(d, touch = false) {
       const ran = A.gInner > GEST_INNER
       // back off the near end of the work field is back to whatever place comes before it — which is Full-Stack
       // on a published build and the passage on a Linefield one. Named, so inserting a place cannot skip it.
-      if (A.wT < -0.45) {
+      if (A.wT < -GEST_EDGE) {
         if (ran) { A.wT = 0; return }
         A.wT = 0; A.base = STOP.work - 1; A.pT = A.base + 0.35; A.gesture = false; A.gSpent = true; A.leftWork = now
-      } else if (A.wT > N - 1 + 0.45) {
+      } else if (A.wT > N - 1 + GEST_EDGE) {
         if (ran) { A.wT = N - 1; return }
         A.wT = N - 1; A.gesture = false; A.gSpent = true; startBridge()
       }

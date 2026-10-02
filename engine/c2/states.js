@@ -75,9 +75,10 @@ function weather(ctx, V, blobs, a) {
     ctx.fillStyle = g; ctx.fillRect(0, 0, V.W, V.H)
   }
 }
-// a void with feathered edges: the rows thin out towards the text instead of stopping at a box
-function softRect(ctx, r, feather) {
-  ctx.save()
+// a void with feathered edges: the rows thin out towards the text instead of stopping at a box. `depth` is how much
+// of the rows it takes: 1 clears them, less thins them (the shader scales a row's width by 1 - void)
+function softRect(ctx, r, feather, depth = 1) {
+  ctx.save(); ctx.globalAlpha = depth
   ctx.shadowColor = '#fff'; ctx.shadowBlur = feather * ctx.sx; ctx.shadowOffsetX = 20000
   ctx.fillStyle = '#fff'
   ctx.fillRect(r.x - 20000 / ctx.sx, r.y, r.w, r.h)
@@ -313,15 +314,31 @@ export function worldOpen(V, w, k) {
   const img = build(V, V.H, () => {})
   return mk(V, { id: `w${k}-open`, ...worldRows(V, false), amp: 0, inkHex: PAPER, paperHex: w.ink, negative: true, bg: BG_DARK, ...img })
 }
+/*
+ * A WORK'S READING POCKET PARTS THE ROWS AND CLEARS ONLY THE LINES (R8, user decision 2026-10-02). Behind a frame's
+ * words the rows used to be cleared outright, and in a work the ground beneath is the work's ink: every frame
+ * carried a soft-edged dark block the size of its text box (AUDIT-01 item 20). The pocket now only thins the rows,
+ * to two fifths of their width — and thinned rows behind the type cost it AA (panelfit: 106 lines, worst 1.97:1),
+ * so the ground right behind each line of text is still cleared whole. Those lines are the type's own boxes, measured
+ * in the DOM once the words are set (main.js, pocketLines) and handed to the frame in `lines`; until then, and
+ * wherever there is no type, the rows only part.
+ */
+const POCKET = 0.6
+const LINE_PAD = 4   // around a line's box, so the glyphs' own overhang and the texture's sampling stay clear
+function clearLines(voids, lines) {
+  for (const r of lines) softRect(voids, { x: r.x - LINE_PAD, y: r.y - LINE_PAD, w: r.w + LINE_PAD * 2, h: r.h + LINE_PAD * 2 }, 6)
+}
 // the whole surface returned: text voids, rooms holding media, or the public interface carried as tone
 export function worldSurface(V, w, k, fr, i) {
+  const lines = []
   const img = build(V, V.H, ({ tone, voids }) => {
-    for (const r of fr.voids || []) softRect(voids, r, 24)
+    for (const r of fr.voids || []) softRect(voids, r, 24, POCKET)
+    clearLines(voids, lines)
     if (fr.tone) { const tc = toneOf(fr.tone.item.im); if (tc) drawCover(tone, tc, fr.tone.rect) }
   }, null, false)
   return mk(V, {
     id: `w${k}-${i}`, ...worldRows(V, fr.dense), amp: 0, toneThick: 2.4, inkHex: PAPER, paperHex: w.ink, negative: true, bg: BG_DARK,
-    ...img, features: (fr.rooms || []).map(room), layout: { rooms: fr.rooms || [] },
+    ...img, lines, features: (fr.rooms || []).map(room), layout: { rooms: fr.rooms || [] },
   })
 }
 // the last frame: what it added up to, and the next work arriving out of register
@@ -335,9 +352,11 @@ export function worldFull(V, w, k) {
     : { x: Math.round(W * 0.44), y: strip + 70, w: Math.round(W * 0.56 - pad), h: H - strip * 2 - 140 }
   const frame = P && !V.T ? area : fitRect(item.aspect, area, 'center')
   const [fa, fb] = fragments(frame, next + 3)
+  const lines = []
   const img = build(V, H, ({ tone, solid, voids }) => {
     strips(voids, V)
-    softRect(voids, text, 26)
+    softRect(voids, text, 26, POCKET)
+    clearLines(voids, lines)
     const tc = toneOf(item.im)
     if (tc) { drawFragments(tone, fa, tc, frame); drawFragments(solid, fb, tc, frame) }
   }, ({ lat, id, flash }) => {
@@ -348,7 +367,7 @@ export function worldFull(V, w, k) {
   }, true)
   return mk(V, {
     id: `w${k}-full`, ...worldRows(V, false), thick: P ? 0.66 : 0.78, amp: 0, toneThick: 2.5, split: true, lod: LOD_OFF,
-    inkHex: PAPER, paperHex: w.ink, negative: true, bg: BG_DARK, ...img,
+    inkHex: PAPER, paperHex: w.ink, negative: true, bg: BG_DARK, ...img, lines,
     layout: { text, frame, next }, beneath: 'next', capacity: 1.1, weak: () => frame.y + frame.h / 2,
   })
 }

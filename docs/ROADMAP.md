@@ -22,7 +22,7 @@ belgedeyse (AUDIT-01, LINEFIELD.md, DEPLOYMENT.md…) burada ona bağlantı veri
 - **Karar bekliyor:** neyin beklendiği yazılı.
 - **Önce inceleme:** mevcut davranış ölçülmeden tasarlanmayacak.
 
-Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24 tamamlandı; R8 iki kısmı yapıldı, cep kararı bekliyor).
+Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24, R8 tamamlandı).
 
 ---
 
@@ -34,7 +34,6 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24 ta
 | R4 | Özel imleç | P2 | Karar verildi (biçim) | R2 |
 | R6 | Lab bench girişleri: okunur boyut, üzerine gelince ön gösterim | P2 | Kısmen: ön gösterimin biçimi bekliyor | — |
 | R7 | Lab'de kaydırma çalışmalar arasında, tıklama içeri | P2 | Önce inceleme | R6 |
-| R8 | Case study: kendi URL'leri, okunur "sonraki iş", başlık arkası | P1 | Kısmen: cep için yeni karar bekliyor (B AA'dan kaldı) | — |
 | R9 | Koyu zeminlerde satır titreşimi | **P0** (R18 için) | Neden açık; önce ölçüm | — |
 | R10 | Safari'de adın ince kesimle çizilmesi | P1 | Önce gerçek iPhone | R22 |
 | R11 | Yavaş ağda ilk kare (8,9 sn) | P2 | Önce değerlendirme | — |
@@ -97,63 +96,6 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24 ta
   - Harness'lar: `tools/diag/spine.cjs`, `journey.cjs`
 - **Bağımlılık:** R6 (aynı bileşen).
 - **Öncelik:** P2.
-
-### R8. Case study
-- **Açıklama:**
-  - **Kendi URL'leri.** Bugün case study'lerin URL'si yok; paylaşılamıyor, taranamıyor. Düz katmanın son satırı
-    #11 (case study içeriği düz gezinmede) buna bağlı.
-  - **"Sonraki iş" görseli okunur olsun.**
-  - **Başlığın arkasındaki koyu dikdörtgen.** `softRect` boşluğu (AUDIT-01 madde 20) incelenip kaldırılacak ya
-    da gerekçelendirilecek.
-- **Karar:** Üçü de yapılacak. **URL (2026-10-02):**
-  - Biçim `/{locale}/work/{id}`: `istanbul`, `ege`, `evden`.
-  - Doğrudan açılınca case study runtime'da, ilk karesinde yerleşik açılır; Geri İşler'e döner.
-  - Script yoksa aynı içeriğin düz HTML'i gösterilir.
-- **Yapılan (2026-10-02, birinci kısım: URL'ler):**
-  - `app/pages/[locale]/work/[id].vue`: düz sayfa, SEO, canonical ve hreflang.
-  - `shared/site.ts`: sitemap ve prerender'a 6 yeni URL.
-  - Runtime'da `openWorkAt`, `WORK_URL`, `workAt` ve `routeChanged`:
-    - İşler'den açmak bir adım; Geri İşler'e döner.
-    - "Sonraki" adresi değiştirir; Geri yine İşler'e döner.
-    - Doğrudan adres işi ilk karesinde açar; "← Tüm işler" alanın adresine gider.
-  - Dil kontrolü işi korur. Bilinmeyen bir iş 404 verir.
-  - Düz ana sayfada iş adları kendi sayfasına bağlanıyor. Bu, düz katman #11'in yarısı.
-  - Kontroller: R8a denetimi 19/19 (Chrome; WebKit CSP build'i; flag-on), Linefield, `workopen`, `proj`,
-    `journey`, `herotouch`, `spine`, `seam`, axe 0 (iş sayfaları dahil), typecheck.
-- **Yapılan (2026-10-02, ikinci kısım: okunur "sonraki iş"):**
-  - Son karede sonraki iş kayda oturup kare 0,4 sn durunca, sonraki işin gerçek görüntüsü bu karenin
-    satırları arasından okunuyor. R5'teki deyimin aynısı; her ekranda, hareketi azaltılmış modda da.
-  - Basınca sonraki iş açılıyor.
-  - Kontroller: R8b denetimi 12/12 (1440, 390, hareketi azaltılmış), R5 ve R8a yeniden; Linefield, `workopen`,
-    `proj`, `journey`, `spine`, axe 0, typecheck.
-  - **Kalan:** başlığın arkasındaki cep.
-- **Cep (2026-10-02): karar B kontrastta kaldı, uygulanmadı.**
-  - Üç prototip yapıldı (stiller scratchpad'de):
-    - A: bugünkü, satırlar cepte tamamen siliniyor.
-    - B: satırlar %40'a inceliyor.
-    - C: satırlar %65'e inceliyor.
-  - Kullanıcı B'yi seçti. Ama `panelfit.cjs` (kapının kontrolü; her satırı arkasındaki her piksele karşı
-    ölçer) B ile 106 hata verdi: her satırda arka plan piksellerinin %7–14'ü AA'nın altında, en kötüsü 1,97:1.
-    Bugünkü build PASS.
-  - Değişiklik geri alındı; yaması saklandı.
-  - **Seçenekler:**
-    1. A kalsın (AA geçiyor).
-    2. Karma: metnin kendi satır kutularının hemen arkası tamamen boş, cebin geri kalanı B gibi ince satırlı.
-       Satır kutuları DOM'dan ölçülüp karenin boşluk haritasına verilmeli. Orta büyüklükte bir motor işi; AA
-       korunur.
-    3. B ve metnin arkasına proje mürekkebinde yumuşak bir hale (CSS). Ucuz ama ölçülmeli.
-- **Dosyalar:**
-  - `engine/c2/main.js`: dünya modu, `nextReg`, `worldFull`, `HOST`
-  - `engine/c2/world.js`
-  - `engine/c2/states.js`: `softRect`
-  - `app/composables/useC2Engine.ts`
-  - `app/pages/[locale]/`: yeni rota
-  - `nuxt.config.ts`: prerender
-  - `shared/content/`
-  - `modules/production-files` (sitemap)
-  - Düz katman: `app/pages/[locale]/index.vue`
-- **Bağımlılık:** yok. Düz katman #11 buna bağlı.
-- **Öncelik:** P1.
 
 ### R9. Koyu zeminlerde satır titreşimi
 - **Açıklama:** Koyu zeminlerde satırlar titreşiyor (shimmer). Canlı sitede de var. **Nedeni henüz bilinmiyor.**
@@ -323,7 +265,8 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24 ta
 | 2026-10-02 | R3: tek ipucu sistemi | `fix/audit-01-batch2` bc03881 | aşağıda |
 | 2026-10-02 | R2: bakır = eylem rengi | `fix/audit-01-batch2` a21a96c | aşağıda |
 | 2026-10-02 | R5: İşler'de "İNCELE →" ve telefonda okunur durgun önizleme | `fix/audit-01-batch2` dfbcc0b | aşağıda |
-| 2026-10-02 | R24: İşler alanının ucundan tek çentik çıkıyor | `fix/audit-01-batch2` (bu commit) | aşağıda |
+| 2026-10-02 | R24: İşler alanının ucundan tek çentik çıkıyor | `fix/audit-01-batch2` 40d54f1 | aşağıda |
+| 2026-10-02 | R8: case study'lerin adresi, okunur "sonraki iş", satırları aralayan cep | `fix/audit-01-batch2` 526bc8e, c5e9b2a, (bu commit) | aşağıda |
 
 **Düzeltme turu 2'nin maddeleri:**
 - metinler ve eylem çağrısı
@@ -372,6 +315,24 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24 ta
   CLAUDE.md'ye yazıldı.
 - **Kontrol:** 4921/4922/4923 ile koşuldu. Üç sunucu da cspboot PASS verdi; 4500–4799 dinleyicileri aynı PID'lerle
   kaldı. Hatalı argüman (iki port) açık bir mesajla durdu. Tam kapı koşulmadı.
+
+**R8'in ayrıntısı (2026-10-02):**
+- **Adresler** (526bc8e):
+  - `/{locale}/work/{istanbul|ege|evden}`.
+  - İşler'den açmak bir adım, "Sonraki" adresi değiştirir, Geri İşler'e döner.
+  - Doğrudan adres işi ilk karesinde açar.
+  - Düz sayfa, SEO, sitemap ve prerender; bilinmeyen bir iş 404 verir.
+- **Okunur "sonraki iş"** (c5e9b2a): son karede sonraki işin görüntüsü satırların arasından okunuyor.
+- **Cep (kullanıcı kararı "karma"):**
+  - Cep satırları %40'a inceltiyor.
+  - Metnin her satır kutusunun arkası tamamen boş. Kutular DOM'da ölçülüyor (`pocketLines`) ve karenin boşluk
+    haritasına veriliyor (`states.js`, `clearLines`).
+  - Ölçüm, sözcükler yerleşince çerçeve döngüsünde alınıyor. Doğrudan adresle açılan işte DOM henüz gösterilmeden
+    kurulduğu için ilk denemede her şey 0 ölçüyordu; bu yüzden döngüde alınıyor.
+  - **AA korundu:** `panelfit.cjs` kapının argümanlarıyla (Ege, Evden; 1920, 1440, 1280; TR, EN) 0 hatayla geçti,
+    en kötü piksel 7,52:1 (eski cep 2,34:1). İstanbul 1440 ve 390'da 6,07:1.
+- **Kontroller:** R8a, R8b ve R5 denetimleri; Linefield giriş, çıkış ve hareketi azaltılmış; `workopen` (on/off);
+  `proj`; `journey` (TR ve EN hareketi azaltılmış); `spine`; axe 0; typecheck.
 
 **R24'ün ayrıntısı (2026-10-02):**
 - **Bulgu (febd93f'te de var):**

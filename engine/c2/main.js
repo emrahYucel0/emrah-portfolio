@@ -1559,6 +1559,7 @@ function fillWorldDOM(k) {
   }).join('')
   D.wbs = [...D.wblocks.querySelectorAll('.wb')]
   D.wbs.forEach((el) => { el.inert = true })
+  linesDue = k
   // M4 A11Y: the frames stage the same project content over time. Assistive technology gets it once, in order, from
   // the same fields; the staged blocks leave the tree, and their links (duplicated by the project nav) leave the tab order.
   D.wblocks.setAttribute('aria-hidden', 'true')
@@ -1567,6 +1568,38 @@ function fillWorldDOM(k) {
     <p>${w.strength}</p><ul>${w.facts.map((x) => `<li>${x}</li>`).join('')}</ul>${w.stack ? `<p lang="${w.stackLang}">${w.stack}</p>` : ''}
     ${psiHTML(w)}<p>${TXT.a11y.projectImages} ${alts.join(' ')}</p><p>${TXT.a11y.worldKeys}</p>`
   lastWB = ''
+}
+/*
+ * THE LINES A POCKET MUST CLEAR (R8; states.js, clearLines). Each frame's words are measured where they are set —
+ * one box per line of type, from a Range over every text node, as panelfit measures them — and handed to that
+ * frame's state in composition units; its void map is drawn again with those lines cleared whole. Due whenever a
+ * work's words are set — entering it, a language change (the words move), a rebuild (the frames are new) — and
+ * taken by the frame loop once the words are laid out: a work opened by its address is set before the runtime's
+ * DOM is shown, when every block still measures nothing.
+ */
+let linesDue = null
+function pocketLines(k) {
+  const frames = worldFor(k), range = document.createRange()
+  const per = new Map()
+  for (const el of D.wbs || []) {
+    const st = frames[+el.dataset.f]
+    if (!st?.lines) continue
+    const box = el.getBoundingClientRect()
+    if (!box.width) return false   // not laid out yet: try again next frame
+    const left = parseFloat(el.style.left) || 0, top = parseFloat(el.style.top) || 0
+    const s = (parseFloat(el.style.width) || box.width) / box.width   // client pixels → composition units
+    const out = per.get(st) || []
+    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+      if (!n.textContent.trim()) continue
+      range.selectNodeContents(n)
+      for (const r of range.getClientRects()) if (r.width > 0 && r.height > 0) out.push({ x: left + (r.left - box.left) * s, y: top + (r.top - box.top) * s, w: r.width * s, h: r.height * s })
+    }
+    per.set(st, out)
+  }
+  for (const [st, out] of per) { st.lines.length = 0; st.lines.push(...out); surface.release(st) }
+  lastSig = ''
+  return true
 }
 // ─── M4 ACCESSIBILITY: where focus goes, and what is said ─────────────────────
 // A place reached from the keyboard moves focus to its own heading — the reader lands where the content is, and the
@@ -1820,6 +1853,7 @@ function domUpdate(from, to, front) {
   const hint = hintFor()
   if (hint !== lastHint) { D.hint.textContent = hint; lastHint = hint }
   stillUpdate(performance.now())
+  if (linesDue != null && (A.mode === 'world' || A.mode === 'exit') && pocketLines(linesDue)) linesDue = null
   const cue = cueFor(Math.round(A.p))
   if (cue !== lastCue) {
     // hiding keeps the words, so they fade rather than vanish

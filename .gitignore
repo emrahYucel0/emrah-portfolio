@@ -30,6 +30,12 @@ tools/diag/node_modules
 tools/diag/out
 tools/diag/*.log
 
+# R27 belt-and-braces. The four harnesses that used to write here now write to tools/diag/out/, which is ignored
+# above; this one precise path is kept so a stray run of an older copy cannot stage 26 MB of per-run screenshots.
+# Deliberately NOT broader: 58 files under docs/contact-finale/ are committed documentation, and an ignore rule
+# must never be able to hide source.
+docs/contact-finale/responsive/findings/
+
 # production artifacts packaged for upload
 deploy/
 docs/reference/*.mp4

@@ -13,7 +13,7 @@
 //  5. by name → p = 1: the runtime's strip Contact, the Lab strip's Contact, /tr#contact.
 //  6. the runtime's Contact stop, reached by travel → the finale at p = 0.
 //  7. Back / Forward: the finale is found where it was left.
-// With `record`, desktop and phone videos of the Lab ⇄ finale crossing go to docs/contact-finale/f2/.
+// With `record`, desktop and phone videos of the Lab ⇄ finale crossing go to tools/diag/out/seam/ (R27).
 // node seam.cjs <port> [record|reduced]
 const fs = require('fs')
 const path = require('path')
@@ -22,7 +22,14 @@ const [port, mode] = process.argv.slice(2)
 const RECORD = mode === 'record'
 const REDUCED = mode === 'reduced' // the same crossings with prefers-reduced-motion
 const BASE = `http://127.0.0.1:${port}`
-const OUT = path.resolve(__dirname, '../../docs/contact-finale/f2')
+/*
+ * R27: A HARNESS WRITES INTO tools/diag/out/, WHICH IS IGNORED — NEVER INTO docs/, WHICH IS TRACKED.
+ * This used to write straight into docs/contact-finale/, where 58 files are committed documentation. One run of
+ * responsive.cjs rewrote 21 of them — contact-sheet.png and the whole p1/ set — and left 144 new PNGs (26 MB)
+ * beside them, so a routine measurement arrived as a pile of pending changes that had to be told apart from real
+ * work by hand. out/ is already in .gitignore, so evidence from a run stays per-run, which is what it is.
+ */
+const OUT = path.resolve(__dirname, 'out', 'seam')
 fs.mkdirSync(OUT, { recursive: true })
 fs.mkdirSync(path.join(__dirname, 'out'), { recursive: true })
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -154,6 +161,7 @@ async function diff(pg, a, b) {
   await sleep(1200)
   await cast.send('Page.stopScreencast').catch(() => {}); await cast.detach().catch(() => {})
   const veils = await p.evaluate(() => window.__veils)
+  const before = frames.filter((f) => f.t < navT)
   const after = frames.filter((f) => f.t >= navT)
   const fb = after.length ? Buffer.from(after[0].data, 'base64') : null
   s = await p.evaluate(state)
@@ -198,7 +206,24 @@ async function diff(pg, a, b) {
      * deliver a frame close to the handover this CANNOT say what the bench painted first, and says so rather than
      * report a failure it never measured.
      */
-    const ROW_TOLERANCE = ds.length ? ds[0].w : 1440   // one pixel row
+    /*
+     * THE TOLERANCE IS THE PAGE'S OWN MOTION, MEASURED — not a fixed number of pixels.
+     *
+     * A fixed "at most one pixel row" assumed the finale at p = 0 holds still. It does not always: measured on
+     * two builds, two frames of the MOTIONLESS page differ from each other by 3756 and 4014 pixels over 8 levels
+     * — two and a half rows' worth — so the check failed on a page that had done nothing but breathe, and failed
+     * on the commit under test and on its parent alike. The noise floor is therefore measured here, from the last
+     * two frames before the crossing, and the crossing is judged against THAT.
+     *
+     * The reference is also taken from the screencast rather than from the earlier screenshot, so both sides of
+     * the comparison come off the same capture path at the same moment. The pre-R7 flash this check exists to
+     * catch was mean 12.8 with 166k pixels over 8 — two orders of magnitude above any noise floor seen here, so
+     * nothing is given away by measuring the floor rather than guessing it.
+     */
+    let noise = null
+    if (before.length >= 2) noise = await diff(p, Buffer.from(before[before.length - 2].data, 'base64'), Buffer.from(before[before.length - 1].data, 'base64'))
+    const ROW_TOLERANCE = Math.max(ds.length ? ds[0].w : 1440, noise ? Math.round(noise.overPx * 1.5) : 0)
+    const MEAN_TOLERANCE = Math.max(0.5, noise ? +(noise.mean * 2).toFixed(3) : 0)
     const FIRST_MS = 60
     const first = ds[0]
     if (!first || first.t > FIRST_MS) {
@@ -206,9 +231,10 @@ async function diff(pg, a, b) {
         + ` arrived at ${first ? `+${first.t}ms` : '(never)'}, past the ${FIRST_MS}ms window, so what the bench`
         + ` painted first was not captured. Re-run this section on an unloaded machine.`)
     } else {
-      ok(first.overPx <= ROW_TOLERANCE && first.mean < 0.5,
+      ok(first.overPx <= ROW_TOLERANCE && first.mean < MEAN_TOLERANCE,
         "the seam, upwards: the bench's first frame IS the finale at p = 0 (sheet and foot band)",
-        `+${first.t}ms mean |Δlum| ${first.mean}, pixels over 8: ${first.overPx} (at most one ${ROW_TOLERANCE}px row allowed — the foot-band hairline)`)
+        `+${first.t}ms mean |Δlum| ${first.mean} (allowed ${MEAN_TOLERANCE}), pixels over 8: ${first.overPx} (allowed ${ROW_TOLERANCE}`
+        + `${noise ? ` — the page's own motion is ${noise.overPx}px at mean ${noise.mean}, measured from the two frames before the crossing` : ', no pre-crossing frames to measure the page\'s motion from'})`)
     }
     /*
      * A JUMP IS PER FRAME INTERVAL, NOT PER SAMPLE. Raw successive differences grow with the gap between the two

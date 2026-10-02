@@ -7,13 +7,20 @@
 //  3. phone: the same walk by scroll-attention, "keep scrolling".
 //  4. the foot's two ends are the home strip's words (TR/EN), fixed for the whole drawing — no ink counter.
 //  5. no scrollbar on /contact, and the keyboard still scrolls it.
-// Stills → docs/contact-finale/f3b/.   node beckon.cjs <port>
+// Stills → tools/diag/out/beckon/ (R27).   node beckon.cjs <port>
 const fs = require('fs')
 const path = require('path')
 const pw = require('playwright')
 const port = process.argv[2] || '4500'
 const BASE = `http://127.0.0.1:${port}`
-const OUT = path.resolve(__dirname, '../../docs/contact-finale/f3b')
+/*
+ * R27: A HARNESS WRITES INTO tools/diag/out/, WHICH IS IGNORED — NEVER INTO docs/, WHICH IS TRACKED.
+ * This used to write straight into docs/contact-finale/, where 58 files are committed documentation. One run of
+ * responsive.cjs rewrote 21 of them — contact-sheet.png and the whole p1/ set — and left 144 new PNGs (26 MB)
+ * beside them, so a routine measurement arrived as a pile of pending changes that had to be told apart from real
+ * work by hand. out/ is already in .gitignore, so evidence from a run stays per-run, which is what it is.
+ */
+const OUT = path.resolve(__dirname, 'out', 'beckon')
 fs.mkdirSync(OUT, { recursive: true })
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 let fails = 0

@@ -5,7 +5,7 @@
 //  - the email soaks (or the reason it does not);
 //  - proportions: the email's cap height against the sheet;
 //  - the Lab → finale seam: the bench's last frame = the finale's first (sheet only).
-// A p = 1 still per size is collected into docs/contact-finale/responsive/contact-sheet.png; sizes with a finding get
+// A p = 1 still per size is collected into tools/diag/out/responsive/contact-sheet.png; sizes with a finding get
 // their own stills. node responsive.cjs <port> [chromium|webkit]
 const fs = require('fs')
 const path = require('path')
@@ -13,7 +13,14 @@ const pw = require('playwright')
 const sharp = require('sharp')
 const [port = '4500', only] = process.argv.slice(2)
 const BASE = `http://127.0.0.1:${port}`
-const OUT = path.resolve(__dirname, '../../docs/contact-finale/responsive')
+/*
+ * R27: A HARNESS WRITES INTO tools/diag/out/, WHICH IS IGNORED — NEVER INTO docs/, WHICH IS TRACKED.
+ * This used to write straight into docs/contact-finale/, where 58 files are committed documentation. One run of
+ * responsive.cjs rewrote 21 of them — contact-sheet.png and the whole p1/ set — and left 144 new PNGs (26 MB)
+ * beside them, so a routine measurement arrived as a pile of pending changes that had to be told apart from real
+ * work by hand. out/ is already in .gitignore, so evidence from a run stays per-run, which is what it is.
+ */
+const OUT = path.resolve(__dirname, 'out', 'responsive')
 fs.mkdirSync(OUT, { recursive: true })
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 /*

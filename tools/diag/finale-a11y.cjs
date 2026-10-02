@@ -6,14 +6,21 @@
 //  3. the language control keeps the reader's place on the drawing (p = 1, and mid-drawing)
 //  4. reduced motion: the drawing takes its four stations only
 //  5. phones and a landscape phone (Chromium and WebKit): settled, nothing overflows, the strip is one row, every
-//     fact lies on the sheet with a ≥ 44 px target; stills go to docs/contact-finale/f3/
+//     fact lies on the sheet with a ≥ 44 px target; stills go to tools/diag/out/finale-a11y/ (R27)
 // node finale-a11y.cjs <port>
 const fs = require('fs')
 const path = require('path')
 const pw = require('playwright')
 const port = process.argv[2] || '4500'
 const BASE = `http://127.0.0.1:${port}`
-const OUT = path.resolve(__dirname, '../../docs/contact-finale/f3')
+/*
+ * R27: A HARNESS WRITES INTO tools/diag/out/, WHICH IS IGNORED — NEVER INTO docs/, WHICH IS TRACKED.
+ * This used to write straight into docs/contact-finale/, where 58 files are committed documentation. One run of
+ * responsive.cjs rewrote 21 of them — contact-sheet.png and the whole p1/ set — and left 144 new PNGs (26 MB)
+ * beside them, so a routine measurement arrived as a pile of pending changes that had to be told apart from real
+ * work by hand. out/ is already in .gitignore, so evidence from a run stays per-run, which is what it is.
+ */
+const OUT = path.resolve(__dirname, 'out', 'finale-a11y')
 fs.mkdirSync(OUT, { recursive: true })
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 let fails = 0

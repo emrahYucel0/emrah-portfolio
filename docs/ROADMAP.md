@@ -44,7 +44,7 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
 | R17 | Yayın (DEPLOYMENT.md, CSP, canlı yedeği) | P0 | **Bitti** (2026-10-03, `b8918dc` canlıda) | — |
 | R18 | Awwwards başvurusu (Developer Award) | P0 | Karar bekliyor (tarih) | R17, R9, R22, R23 |
 | R19 | Full-Stack'in siyah kapsüllerinin çevresindeki hale | P1 | Karar bekliyor (varyant ya da kural) | — |
-| R27 | Harness'lar izlenen `docs/` yollarına yazıyor | P2 | Karar verildi (yön) | — |
+| R27 | Harness'lar izlenen `docs/` yollarına yazıyor | P2 | **Bitti** (2026-10-03) | — |
 | R28 | Mac dokunmatik yüzeyinde ikinci kaydırmanın yutulması (120 Hz) | **P0** (sonraki yayın) | Ölçüldü; düzeltme önerildi | R22 (gerçek MacBook) |
 | R20 | Arka belleğe piksel sayısı tavanı (önerilen 8,3 Mpx) | P1 | Karar bekliyor (değer) | R9 ile birlikte ölçülür |
 | R21 | Büyük ekranlarda büyük harf başına satır sayısına üst sınır | P2 | Karar bekliyor (sanat yönetimi) | — |
@@ -407,6 +407,20 @@ Sorun yalnız `responsive.cjs` değil. İzlenen `docs/` yollarına yazan altı h
 
 **Yön:** ölçüm çıktısı yok sayılan `tools/diag/out/` altına yazılır; finalin inceleme kanıtı bulunduğu yerde
 **donmuş** kalır. Bir kontrolün çıktısı, başka bir turun kanıtının üstüne yazılmamalı.
+
+**BİTTİ (2026-10-03).** Dördü de yeniden yönlendirildi — `responsive.cjs` → `tools/diag/out/responsive/`,
+`beckon.cjs` → `out/beckon/`, `finale-a11y.cjs` → `out/finale-a11y/`, `seam.cjs` → `out/seam/` — ve her birinin
+başlığında nedeni yazıyor. `.gitignore`'a **tek bir kesin satır** eklendi,
+`docs/contact-finale/responsive/findings/`; bilerek daha geniş değil, çünkü `docs/contact-finale/` altında 58
+dosya izlenen belgedir ve bir yok sayma kuralı asla kaynağı gizleyebilecek durumda olmamalıdır. Yeniden
+üretilebilir 144 PNG (26 MB) silindi.
+
+**Doğrulama.** Dördü de birer kez koşturuldu ve `docs/` altındaki her dosyanın md5'i koşulardan **önce ve sonra
+birebir aynı** çıktı (`67fe641f30402672ad8317cb21a89bf6`, 278 dosya, 0 bekleyen değişiklik). Kanıt bu kez
+`tools/diag/out/{responsive,beckon,finale-a11y,seam}/` altına düştü. VS Code'daki 151 bekleyen değişiklik
+11'e indi.
+
+`lfpair.cjs` ve `lfsheet.cjs` dokunulmadı: `docs/reference/linefield-v2.html`'i yalnız **okuyorlar**.
 
 **O zamana kadar:** bu harness'lardan biri koştuktan sonra, commit'ten önce `git checkout -- docs/contact-finale/`.
 `seam.cjs record` da buna dahildir — hale/dikiş araştırması onu kullanıyor.

@@ -41,7 +41,7 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
 | R13 | Gövde metni ve tipografik hiyerarşi | P1 | Karar bekliyor (ölçek) | — |
 | R14 | Cross Section (İşler → Lab köprüsünün yerine) | P1 | Karar verildi (yön; bekleme; sözcükler; tasarım) | R2, R15 |
 | R15 | Tempo, ilerleme göstergesi, performans bütçesi | P2 | Karar bekliyor | R14 |
-| R17 | Yayın (DEPLOYMENT.md, CSP, canlı yedeği) | P0 | Paket hazır; yükleme ve tarih bekliyor | R1 bitti |
+| R17 | Yayın (DEPLOYMENT.md, CSP, canlı yedeği) | P0 | **Bitti** (2026-10-03, `b8918dc` canlıda) | — |
 | R18 | Awwwards başvurusu (Developer Award) | P0 | Karar bekliyor (tarih) | R17, R9, R22, R23 |
 | R19 | Full-Stack'in siyah kapsüllerinin çevresindeki hale | P1 | Karar bekliyor (varyant ya da kural) | — |
 | R27 | Harness'lar izlenen `docs/` yollarına yazıyor | P2 | Karar verildi (yön) | — |
@@ -192,8 +192,14 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
   - `docs/DEPLOYMENT.md`'ye göre yayın.
   - Canlıda CSP doğrulaması: `.htaccess`'teki hash'ler, `cspboot.cjs`.
   - Yayından önce canlı sitenin yedeği.
-- **Karar:** Bekleyen: tarih. Paket 2026-10-02'de kuruldu (SHA-256, dosya sayısı ve boyut `docs/DEPLOY-LOG.md`
-  ile birlikte); yükleme kullanıcıda. Yayından önce son bakış gerçek iPhone'da (R22).
+- **BİTTİ (2026-10-03).** `b8918dc` canlıda. Paket `deploy/yucelemrah-b8918dc.zip` (219 dosya, 8,9 MiB,
+  SHA-256 `08b27a0274508771…`) cPanel'den yüklendi ve kullanıcı tarafından canlıda doğrulandı; `origin/main`
+  yüklemeden önce `b8918dc`'ye ileri sarıldı (fast-forward, force yok). Yüklemeden sonra bu makineden:
+  `cspboot --static https://yucelemrah.com` geçti (/tr, /tr/lab, /en — her satır içi betik politikada adlı),
+  `cspboot https://yucelemrah.com chrome` ve `webkit` geçti (çalışma zamanı ayağa kalkıyor, `data-c2` açık,
+  belge kaydırma çubuğu yok). Canlı omurga: `name · creative · system · linefield · work · lab · rest` —
+  **Linefield yayında** (R25) — `/tr/contact` 200, sayfa hatası yok. Kayıt: `docs/DEPLOY-LOG.md`.
+  Bu, Contact finali, Linefield ve iki düzeltme turunu bir ziyaretçiye ilk kez gösteren yükleme.
 - **Dosyalar:** `docs/DEPLOYMENT.md`, `docs/DEPLOY-LOG.md`, `modules/production-files` (.htaccess ve CSP
   hash'leri), `tools/diag/cspboot.cjs`.
 - **Bağımlılık:** R1. R9'a bağlı değil: titreşim canlıda da var ve yayını engellemiyor.

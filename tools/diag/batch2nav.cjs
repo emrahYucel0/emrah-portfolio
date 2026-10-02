@@ -128,19 +128,36 @@ const st = (p) => p.evaluate(() => ({
   ok(/\/lab\/(weight|line|tone)$/.test(s3.path) && s3.study, 'a click opens the study', s3.path)
 
   // ── the bench <-> finale seam, by wheel ─────────────────────────────────────────────────────────────────
+  /*
+   * R7: THE BENCH BROWSES, SO A CROSSING IS NOT A FIXED NUMBER OF GESTURES.
+   * This section used to fire six notches each way, which was right before R7 and now overshoots in both
+   * directions: six down crossed to the finale and then SCROLLED it (the run recorded scrollY 150), and six back
+   * up crossed to the bench, browsed 03 -> 01 and left again for Work, so `the finale -> bench` was measured at
+   * /tr. The destination is driven to instead, one gesture at a time, and how many it took is reported - which is
+   * also the number worth seeing. `until` is bounded, so a crossing that genuinely never happens still fails.
+   */
+  const until = async (pg, nudge, want, max = 7) => {
+    for (let i = 1; i <= max; i++) {
+      await nudge()
+      await sleep(900)
+      if (await pg.evaluate(want).catch(() => false)) return i
+    }
+    return null
+  }
+  const atFinale = () => /[/]contact$/.test(location.pathname) && !!window.__finale
+  const atBench = () => /[/]lab$/.test(location.pathname) && !!document.querySelector('.lab-stage')
+  const atBenchOf = (q) => /[/]lab$/.test(q.path) && q.bench
   console.log('\n-- the bench and the finale')
   await p.goto(BASE + '/tr/lab', { waitUntil: 'networkidle', timeout: 90000 })
   await sleep(2400)
-  for (let i = 0; i < 6; i++) { await p.mouse.wheel(0, 150); await sleep(260) }
-  await p.waitForFunction(() => /\/contact$/.test(location.pathname), null, { timeout: 25000 }).catch(() => {})
-  await sleep(2200)
+  const downN = await until(p, () => p.mouse.wheel(0, 150), atFinale)
+  await sleep(1600)
   const toFin = await st(p)
-  ok(toFin.path === '/tr/contact' && toFin.finale, 'bench -> the finale, by wheel', 'at ' + toFin.path + ' finale ' + toFin.finale + ' scrollY ' + toFin.scrollY)
-  for (let i = 0; i < 6; i++) { await p.mouse.wheel(0, -150); await sleep(260) }
-  await p.waitForFunction(() => /\/lab$/.test(location.pathname), null, { timeout: 25000 }).catch(() => {})
-  await sleep(2200)
+  ok(toFin.path === '/tr/contact' && toFin.finale, 'bench -> the finale, by wheel', 'at ' + toFin.path + ' finale ' + toFin.finale + ' scrollY ' + toFin.scrollY + ' in ' + downN + ' gestures (01, 02, 03, then across)')
+  const upN = await until(p, () => p.mouse.wheel(0, -150), atBench)
+  await sleep(1600)
   const backFin = await st(p)
-  ok(/\/lab$/.test(backFin.path) && backFin.bench, 'the finale -> bench, by wheel', 'at ' + backFin.path + ' bench ' + backFin.bench)
+  ok(atBenchOf(backFin), 'the finale -> bench, by wheel', 'at ' + backFin.path + ' bench ' + backFin.bench + ' in ' + upN + ' gestures')
 
   // ── R24: one notch leaves the end of the work field, and leaves it once ─────────────────────────────────
   console.log('\n-- R24: one notch off the end of the work field')
@@ -174,12 +191,12 @@ const st = (p) => p.evaluate(() => ({
   }
   await mp.goto(BASE + '/tr/lab', { waitUntil: 'networkidle', timeout: 90000 })
   await sleep(2400)
-  await swipe(-300)
+  const tDown = await until(mp, () => swipe(-300), atFinale)
   let m = await st(mp)
-  ok(m.path === '/tr/contact' && m.finale, 'bench -> the finale, by touch', 'at ' + m.path + ' finale ' + m.finale)
-  await swipe(300)
+  ok(m.path === '/tr/contact' && m.finale, 'bench -> the finale, by touch', 'at ' + m.path + ' finale ' + m.finale + ' in ' + tDown + ' swipes')
+  const tUp = await until(mp, () => swipe(300), atBench)
   m = await st(mp)
-  ok(/\/lab$/.test(m.path) && m.bench, 'the finale -> bench, by touch', 'at ' + m.path + ' bench ' + m.bench)
+  ok(atBenchOf(m), 'the finale -> bench, by touch', 'at ' + m.path + ' bench ' + m.bench + ' in ' + tUp + ' swipes')
 
   ok(errs.length === 0, 'no page errors through any of it', errs.slice(0, 3).join(' | '))
   if (lanHost) {

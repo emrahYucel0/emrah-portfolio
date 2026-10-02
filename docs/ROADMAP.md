@@ -32,24 +32,25 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
 
 | # | Madde | Öncelik | Karar | Bağımlılık |
 |---|---|---|---|---|
-| R1 | Birleştirme: düzeltme turu 2 → `main`, yayın dalı | P0 | Karar bekliyor (ne zaman) | tam kapı (R16 sayesinde paralel koşulabilir) |
+| R1 | Birleştirme: düzeltme turu 2 → `main`, yayın dalı | P0 | **Bitti** (2026-10-02, `4d64ac8`) | — |
 | R4 | Özel imleç | P2 | Kısmen: halkanın boyutu ve rengi bekliyor | — (R2 bitti) |
 | R6 | Lab bench girişleri: okunur boyut, üzerine gelince ön gösterim | P2 | Kısmen: ön gösterimin biçimi bekliyor | — |
 | R9 | Koyu zeminlerde satır titreşimi | **P0** (R18 için) | Neden açık; önce ölçüm | — |
 | R10 | Safari'de adın ince kesimle çizilmesi | P1 | Önce gerçek iPhone | R22 |
 | R11 | Yavaş ağda ilk kare (8,9 sn) | P2 | Önce değerlendirme | — |
 | R13 | Gövde metni ve tipografik hiyerarşi | P1 | Karar bekliyor (ölçek) | — |
-| R14 | Cross Section (İşler → Lab köprüsünün yerine) | P1 | Karar verildi (yön; kesit anında bekleme) | R2, R15 |
+| R14 | Cross Section (İşler → Lab köprüsünün yerine) | P1 | Karar verildi (yön; bekleme; sözcükler; tasarım) | R2, R15 |
 | R15 | Tempo, ilerleme göstergesi, performans bütçesi | P2 | Karar bekliyor | R14 |
-| R17 | Yayın (DEPLOYMENT.md, CSP, canlı yedeği) | P0 | Karar bekliyor (tarih) | R1 |
+| R17 | Yayın (DEPLOYMENT.md, CSP, canlı yedeği) | P0 | Paket hazır; yükleme ve tarih bekliyor | R1 bitti |
 | R18 | Awwwards başvurusu (Developer Award) | P0 | Karar bekliyor (tarih) | R17, R9, R22, R23 |
 | R19 | Full-Stack'in siyah kapsüllerinin çevresindeki hale | P1 | Karar bekliyor (varyant ya da kural) | — |
 | R27 | Harness'lar izlenen `docs/` yollarına yazıyor | P2 | Karar verildi (yön) | — |
+| R28 | Mac dokunmatik yüzeyinde ikinci kaydırmanın yutulması (120 Hz) | **P0** (sonraki yayın) | Ölçüldü; düzeltme önerildi | R22 (gerçek MacBook) |
 | R20 | Arka belleğe piksel sayısı tavanı (önerilen 8,3 Mpx) | P1 | Karar bekliyor (değer) | R9 ile birlikte ölçülür |
 | R21 | Büyük ekranlarda büyük harf başına satır sayısına üst sınır | P2 | Karar bekliyor (sanat yönetimi) | — |
 | R22 | Gerçek cihaz testi (iPad, Mac'te Safari, Android telefon) | P0 | Karar verildi | — |
 | R23 | Awwwards başvuru malzemesi (ekran görüntüleri, kısa video, başlık, açıklama) | P0 | Karar bekliyor (içerik) | R9 |
-| R25 | Linefield yayında açılsın mı | P0 | Karar bekliyor | R1, R17 |
+| R25 | Linefield yayında açılsın mı | P0 | **Karar verildi: açık. Bitti** (`fb01609`) | — |
 
 ---
 
@@ -61,6 +62,9 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
   Birleşmeden önce tam kapı koşulacak. `origin/main` hâlâ b04e1ed'de.
 - **Karar (2026-10-02):** Birleştirmeyi ve kapıyı Linefield oturumu yapar (`main` o worktree'de açık). Bu oturum
   birleştirmez ve push etmez. Dal yedek olarak origin'de (74d1757'ye kadar); etiket push edilmedi.
+- **BİTTİ (2026-10-02).** Düzeltme turu 1 `febd93f` ile, turu 2 `4d64ac8` ile `main`'e birleşti (rebase değil,
+  merge). `pre-audit-merge` ve `pre-batch2-merge` etiketleri birleşmelerden önceki uçları işaretliyor. Hiçbiri
+  push edilmedi.
 - **Yayının kaydetmesi gereken bilinen sorunlar:**
   - R9: koyu zeminlerde satır titreşimi (canlıda da var; nedeni açık).
   - R10: Playwright WebKit'te ad ince kesimle çiziliyor; gerçek Safari'de doğrulanmadı.
@@ -155,6 +159,15 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
 - **Karar (2026-10-01):** Kesit anında bilinçli bir bekleme var: EDGE, bakır çizginin çevresinde adım adım
   döner, onaylı demo `cross-section-v2.html`'deki gibi. Öncesindeki ve sonrasındaki geçişler çevik kalır. Süre
   ya da ekran boyu hedefi yok. Ayrıntılar, Linefield'daki gibi bir faz planıyla kendi belgesinde tutulacak.
+- **Karar (2026-10-02, 1 — sözcükler):** SURFACE / EDGE / DEPTH **İngilizce kalır**, iki dilde de. Çevrilmez:
+  bunlar malzemenin adı, sayfanın metni değil (Linefield'ın iki dilli sözcüklerinden ayrılan yer burası).
+- **Karar (2026-10-02, 2 — tasarım):** Onaylanan `cross-section-v2.html` düzeni:
+  - Yüzeyler lamel (slat) olarak durur; **ön yüzlerinde SURFACE, arka yüzlerinde DEPTH**.
+  - Kesit anında lameller **tam profilden** (edge-on) tutulur — kesit tam o an görülür.
+  - **EDGE bakır çizginin çevresinde duraklarla döner**; varsayılan **iki durak**, bir sabit olarak tutulur.
+  - **Yörünge halkası yok.**
+  - **Sert bir fiske o anı asla atlamaz**: kesit anı tek bir hareketle geçilemez (R24 ve bir-hareket-bir-durak
+    kuralıyla aynı aile; Cross Section'ın kendi kapısında ayrıca sınanır).
 - **Dosyalar:**
   - `engine/c2/main.js`: `startBridge`, `A.mode === 'bridge'`
   - `engine/c2/states.js`
@@ -179,8 +192,10 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
   - `docs/DEPLOYMENT.md`'ye göre yayın.
   - Canlıda CSP doğrulaması: `.htaccess`'teki hash'ler, `cspboot.cjs`.
   - Yayından önce canlı sitenin yedeği.
-- **Karar:** Bekleyen: tarih.
-- **Dosyalar:** `docs/DEPLOYMENT.md`, `modules/production-files` (.htaccess ve CSP hash'leri), `tools/diag/cspboot.cjs`.
+- **Karar:** Bekleyen: tarih. Paket 2026-10-02'de kuruldu (SHA-256, dosya sayısı ve boyut `docs/DEPLOY-LOG.md`
+  ile birlikte); yükleme kullanıcıda. Yayından önce son bakış gerçek iPhone'da (R22).
+- **Dosyalar:** `docs/DEPLOYMENT.md`, `docs/DEPLOY-LOG.md`, `modules/production-files` (.htaccess ve CSP
+  hash'leri), `tools/diag/cspboot.cjs`.
 - **Bağımlılık:** R1. R9'a bağlı değil: titreşim canlıda da var ve yayını engellemiyor.
 - **Öncelik:** P0.
 
@@ -258,10 +273,53 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
   3. İleride bayrak tümüyle kaldırılabilir (kod her zaman açık); ayrı bir karar.
 - **Önizleme:** 2026-10-02'de güncel dalın bayrak açık build'i 4921'de (yerel ağ, `--wk`), bayrak kapalısı
   4910'da.
-- **Karar:** Bekleyen.
+- **Karar (2026-10-02): AÇIK. BİTTİ (`fb01609`).** Linefield yayın build'inde varsayılan olarak açıktır; bir
+  yayın, adını taşıdığı özelliği unutamaz. `nuxt.config.ts` bayrağı tersine çevrildi: yalnız
+  `NUXT_PUBLIC_LINEFIELD=0` (ya da `false` / `off` / `no`) kapatır — tek satırlık bir kapatma anahtarı olarak
+  duruyor. `DEPLOYMENT.md`'nin yayın komutu ve kontrol listesi güncellendi (pakette Linefield var mı diye bir
+  grep dahil). Tam kapı hem bayrak açık hem bayrak kapalı build'e karşı koşuldu.
 - **Dosyalar:** `nuxt.config.ts`, `docs/DEPLOYMENT.md`, `docs/LINEFIELD.md`, `tools/diag/run6.sh`.
 - **Bağımlılık:** R1 (birleştirme) ve R17 (yayın).
 - **Öncelik:** P0 (yayın biçimini belirliyor).
+
+---
+
+### R28. Mac dokunmatik yüzeyinde ikinci kaydırmanın yutulması (özellikle 120 Hz)
+
+- **Açıklama.** Mac'te momentum kaydırması sürerken parmakları yere koymak momentumu anında kesiyor; ardından
+  kısa bir sessizlikten sonra yeni kaydırmanın olayları başlıyor. Bu, jürinin çoğunun kullandığı hareket. Ölçüm
+  (`tools/diag/mactrack.cjs`, 48 yargılanan durum): **ikinci kaydırma, elin gerçekten bıraktığı 80-250 ms'lik
+  sessizliklerde sık sık yutuluyor.** 400 ms sessizlikte her zaman duyuluyor.
+- **Neden — tek bir sabit.** `engine/c2/main.js`:
+
+  ```js
+  rise = mag > GEST_FLOOR && perFrame > A.gEnv * GEST_RISE && A.gEnv < A.gPeak * GEST_FALLEN
+  ```
+
+  `GEST_FLOOR` **0,12 durak**, ve 1 piksel tekerlek = 0,0011 durak; yani eşik **tek bir olayda 109 piksel**.
+  - 60 Hz Mac kaydırması: parmak rampası en çok 44 piksel (eşiğin altında), ama kendi momentumunun ilk olayı
+    190 piksel = 0,21 durak — eşiği **geçiyor**. Bu yüzden 60 Hz genelde duyuluyor, 7. olay civarında.
+  - **120 Hz (ProMotion): en büyük olay, momentumu dahil, 95 piksel = 0,105 durak — eşiğin ALTINDA.** Yani bir
+    120 Hz akışı yükselişle (rise) **hiçbir zaman** yeni bir hareket açamaz; tek girişi 340-400 ms'lik boşluk.
+- **Önerilen düzeltme (sonraki yayın).** Eşiği **olay başına değil kare başına** ifade etmek: `perFrame` zaten
+  olay sıklığına göre normalleştiriyor (`mag / clamp(gap / GEST_FRAME, 1, GEST_COALESCED)`), dolayısıyla
+  `mag > GEST_FLOOR` yerine `perFrame > GEST_FLOOR` benzeri bir ölçüt, 120 Hz'in küçük ama sık olaylarını içeri
+  alırken sönümlenen bir momentum kuyruğunu almaz. Tek satır, ama Step 6'nın (bir hareket = bir durak) koruduğu
+  kuralın tam ortasında.
+- **Doğrulama sırası.** Önce **gerçek bir MacBook'ta** doğrulanır (R22) — bugünkü ölçüm Windows'ta Chrome ile
+  oynatılmış bir yeniden kurgu, gerçek bir Mac değil. Sonra düzeltilir ve **`gesture2`, `trackpad` ve `mactrack`**
+  kapılarından yeniden geçirilir; `mactrack`'in 400 ms satırı zaten 12/12, düzeltmeden sonra 80-250 ms satırları
+  da dolmalı ve `trackpad`'in 140 durumu bir durak kuralını bozmamalı.
+- **Bu yayında değişiklik yok (kullanıcı kararı, 2026-10-02).** Tam tablo ve sayılar
+  `docs/KNOWN-ISSUES.md`'de.
+- **Not — harness'ın kendi hatası, kayıt için.** İlk tam koşuda iki durum "üç durak" göstermişti. Site bunu
+  yapamaz: `A.pT` her harekette `A.gFrom ± 1`'e kıstırılıyor (`main.js:587`), yani üç durak üç hareket açılışı
+  demek, ve gerçek bir 120 Hz akışı eşiği hiç geçemediği için üçüncüyü açamaz. Sebep harness'tı: vadesi gelen
+  olayları **toplayıp tek bir tekerlek olayı** olarak gönderiyordu, ve rampanın beş olayı toplanınca 110 piksel
+  ediyor — eşiğin üstünde. Uzun koşudaki zamanlama sapmasında bu, hiçbir dokunmatik yüzeyin göndermediği bir
+  "süper olay" üretiyordu. Artık her olay **ayrı ayrı** gönderiliyor; aynı iki durum 6/6 yeniden koşuldu, üç
+  durak bir kez bile çıkmadı ve sonuç belirlenimli hâle geldi.
+- **Öncelik:** P0 (sonraki yayın). **Bağımlılık:** R22 (gerçek MacBook).
 
 ---
 
@@ -390,8 +448,27 @@ Sorun yalnız `responsive.cjs` değil. İzlenen `docs/` yollarına yazan altı h
     `ResizeObserver`'ın ilk çağrısı da kanvası silip bir kare boş bırakıyordu. İkisi de düzeldi.
   - İpuçları devirde iki tarafta da solmadan hemen gidiyor.
   - Finalden çıkarken satırın nefesi duruyor ve bir kare çıplak çiziliyor.
-  - Ölçüm: aşağı yönde fark 0 piksel; yukarı yönde bench'in ilk iki karesi finalle 0 piksel farkla aynı, sıçrayan
+  - Ölçüm: aşağı yönde fark 0 piksel; yukarı yönde bench'in ilk karesi finalle 0 piksel farkla aynı, sıçrayan
     kare yok.
+  - **Düzeltme (2026-10-02, yayın kapısından sonra).** Yayın kapısı bu dikişi `FAIL` bildirdi; iki nedenle, ikisi
+    de kontrolün kendisinde:
+    1. Yukarı yöndeki kontrol **bayt eşitliği** istiyordu (`anyPx === 0`); aşağı yöndeki ikizi ise ±8 parlaklık
+       düzeyine izin veriyor (`overPx === 0`). Bench soğuk kurulduğunda alt şeridin üstündeki 1 piksellik tüy
+       çizgi finalinkinden 28 düzey koyu (`rgb(145,144,141)` / `rgb(173,172,169)`) ve bu tek satır bayt eşitliğini
+       kalıcı olarak bozuyordu. Kontrol artık **en çok bir piksel satırına** izin veriyor.
+    2. Kapı paralel koşarken screencast ilk kareleri düşürüyor: kapının gördüğü ilk kare +141 ms'ti, yani bench
+       kendini kaydetmeye başlayalı 220 ms olmuştu. Kontrol artık **yakalanan ilk kareye** bakıyor ve devirden
+       sonraki 60 ms içinde kare gelmediyse `FAIL` değil `NOT MEASURED` yazıyor. Sıçrama ölçüsü de kare aralığı
+       başına normalleştirildi (kapıda 4,53; sakin makinede 1,29 ve 1,74 — eşik 3).
+  - **Bisect (2026-10-02).** Aynı harness beş build'de koşuldu (`seamup.cjs`); yukarı yönde bench'in ilk karesi:
+    `b04e1ed` ortalama 13,05 (170.429 piksel 8 düzeyin üstünde) · `febd93f` 12,85 · `e4c6541` 12,83 (7 piksel
+    aralıklı 127 tam genişlik satır, ortalama 94/255) · **`6954a14` (R7) 0,033 (1.440 piksel)** · **güncel `main`
+    0,033**. Yani R7'den önce yukarı dikiş gerçekten de **bench'in bütün satır alanının bir an görünmesiydi**;
+    R7 onu bir tüy çizgiye indirdi ve `main` R7 ile birebir aynı. Gerileme yok; bu yayın dikişin düzelmiş hâlini
+    ilk kez yayına çıkarıyor. Ziyaretçinin olağan yolunda (bench'ten aşağı, sonra yukarı) fark **0 piksel**.
+  - **Kapı artık hareketi azaltılmış modda da koşuyor.** Daha önce `seam.cjs` kapıda mod argümanı almıyordu, bu
+    yüzden yalnız normal modda koşuyordu ve `if (REDUCED)` ile korunan kontrolleri hiç çalışmamıştı (`87ab3d6`).
+    Bu yayında bir kez tek başına koşuldu: **geçti**.
 - **Harness'lar:**
   - Yeni `bench.cjs` (Chrome ve WebKit).
   - Yeni kurala göre yazılanlar: `seam.cjs` (yukarı yön screencast'le, alt şerit dahil), `spine.cjs`,

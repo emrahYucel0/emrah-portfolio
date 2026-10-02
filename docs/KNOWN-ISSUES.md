@@ -272,6 +272,198 @@ Reproduce: `node tools/diag/touch.cjs <port>` (section 10).
 
 ---
 
+## The gate's timing-sensitive sections fail under parallel load, and pass alone — measured both ways
+
+**Where** `GESTURE` (`gesture2.cjs`), `LAB A11Y` (`labaxe.cjs`), the `SEAM` arrival test (`seam.cjs`) and the
+`stalls` column of `trackpad.cjs`, in the Linefield release gate (2026-10-02) when groups ran in parallel.
+
+**What the gate reported, and what the same checks say run alone on a quiet machine.**
+
+| check | under parallel load | alone |
+|---|---|---|
+| `GESTURE` | FAIL (5), incl. `coast down from name 0 → 2` | **PASS** — 5 places x 2 directions x 4 shapes, full suite |
+| `LAB A11Y` | FAIL (1) | **PASS** |
+| `SEAM`, largest frame-to-frame change | **4.53** (fails above 3) | **1.74** and **1.29** |
+| `trackpad`, frames over 60 ms | 17 of 101 cases, clusters of 2-3 frames of 60-160 ms | **0 of 140 cases** |
+
+**Why, and the cleanest evidence.** `gesture2.cjs` does one Playwright round trip per wheel event, so the gaps the
+page sees are the harness's own and grow with the machine's load — `trackpad.cjs`'s header says so, which is why
+`trackpad.cjs` plays its streams from inside the page instead. The `trackpad` row is an A/B on one machine: the
+same 140 cases run as **one continuous 1200 s browser session** produced long frames in 17 of them; split into
+**seven fresh sessions of 20 cases**, zero. So those long frames are accumulation inside a long Playwright
+session, not something the site does — `work down` at 2854 ms, the case that first raised this, has no frame over
+50 ms when measured on its own with a long-task observer.
+
+**Read the `stalls` column correctly.** `stalls 2854ms+74` is `<when>ms+<how long>`: at 2854 ms after the throw's
+first event, ONE animation frame lasted 74 ms. It is not a 2.8-second stall.
+
+**What to do.** Run `gesture2`, `labaxe`, `trackpad`, `spine` and `seam` in group B, alone, as the release did.
+A failure in one of them while groups run in parallel is re-run alone before it is treated as real (the standing
+rule for this release). `seam.cjs`'s arrival test is now measured per frame interval rather than per sample, so
+dropped frames no longer inflate it, and it says `NOT MEASURED` rather than FAIL when the screencast delivered no
+frame within 60 ms of the handover.
+
+---
+
+## The bench's foot-band hairline is 28 levels darker than the finale's, on a cold mount
+
+**Where** the Lab bench and the Contact finale, at the upward seam (finale at p = 0, one gesture up). A single
+1-pixel-high, full-width line at y = 746 at 1440x900 — the rule above the foot band.
+
+**Measured.** The finale draws it `rgb(173,172,169)`; a freshly mounted bench draws it `rgb(145,144,141)`, on the
+same cream ground `rgb(239,238,233)`. Same position, same thickness, 28 of 255 levels darker — as alpha over
+cream, 0.28 against 0.39. It is the ONLY thing differing between the finale's last frame and the bench's first:
+mean |Dlum| across the whole sheet and foot band is 0.033.
+
+**When a visitor can meet it.** Only when the bench mounts cold — a visitor who opens `/tr/contact` directly,
+runs the drawing back to its top and travels up. On the ordinary journey (down from the bench, then back up) the
+two frames are **pixel-identical**: 0 pixels differ at all. Before R7 (`6954a14`) this seam was a visible flash of
+the bench's whole row field — 127 full-width rows on a 7 px pitch, differing by an average of 94 of 255 — so this
+hairline is what is left of a fault that R7 fixed, and it has never been deployed in either state.
+
+**Not fixed in this release** because it is sub-perceptual and the fix is a colour token in one of the two
+components, which is not worth re-gating the seam for. `seam.cjs` tolerates exactly one pixel row and still fails
+every pre-R7 build by two orders of magnitude; the tolerance and these numbers are written into the check.
+
+Reproduce: `node seamup.cjs <port> <label> 2` — it measures its own controls first (screencast vs screencast, and
+screenshot vs screencast, on a motionless page) so a capture artefact cannot be mistaken for a seam.
+
+---
+
+## A second gesture made while the first throw's momentum is still alive is absorbed — worst on a 120 Hz Mac trackpad
+
+**Status: measured, reported, and deliberately NOT changed in this release (user decision, 2026-10-02). Next release: ROADMAP R28, P0.**
+This is a direct consequence of the one-gesture-one-stop rule (Step 6, `abc69e1`), so changing it is a trade
+against stop-skipping, not a bug fix. The pre-agreed rule was: absorbed only where the momentum is still strong
+AND the silence is very short (cut 300 ms + silence 80 ms) means the rule is doing its job and the release goes
+ahead; anything absorbed at a cut of 600 ms or later, or a silence of 150 ms or more, stops the package.
+**18 of the 21 absorbed cases are at such a cadence.** Reported 2026-10-02; the decision was **no change in this
+release** — recorded here, and carried to `docs/ROADMAP.md` as **R28, P0 for the next release**, to be fixed and
+then confirmed on a real MacBook (R22) and re-gated through `gesture2`, `trackpad` and `mactrack`.
+
+**Where** `engine/c2/main.js`, `opensGesture()`:
+
+```js
+perFrame = mag / clamp(gap / GEST_FRAME, 1, GEST_COALESCED)
+rise     = mag > GEST_FLOOR && perFrame > A.gEnv * GEST_RISE && A.gEnv < A.gPeak * GEST_FALLEN
+opens    = A.gSpent ? rise || gap > (stream ? GEST_REST : 0) : rise || gap > GEST_GAP
+```
+
+`GEST_FLOOR` is **0.12 stops**, and one pixel of wheel is 0.0011 stops, so the floor is **about 109 px in a single
+event**. That one number decides everything below.
+
+### A Mac trackpad: fingers down kills the momentum, then a new swipe after a short silence
+
+Modelled (`tools/diag/mactrack.cjs`): a hard throw cut off at 300/600/1000 ms, a silence of 80/150/250/400 ms,
+then a normal deliberate swipe. Heard / total. **48 judged cases** — two places (Hero down, Creative down) x two
+refresh rates x three cut-offs x four silences. The 24 `creative up` rows are excluded: two stops up from
+Creative would pass Hero, so they cannot show a second stop either way.
+
+| | cut@300 | cut@600 | cut@1000 | row |
+|---|---|---|---|---|
+| **60 Hz** — silence 80 ms | 1/2 | 2/2 | 2/2 | 5/6 |
+| 150 ms | 1/2 | 1/2 | 2/2 | 4/6 |
+| 250 ms | 2/2 | 2/2 | 2/2 | 6/6 |
+| 400 ms | 2/2 | 2/2 | 2/2 | 6/6 |
+| **120 Hz** — silence 80 ms | **0/2** | **0/2** | **0/2** | **0/6** |
+| 150 ms | **0/2** | **0/2** | **0/2** | **0/6** |
+| 250 ms | **0/2** | **0/2** | **0/2** | **0/6** |
+| 400 ms | 2/2 | 2/2 | 2/2 | 6/6 |
+
+**21 of 48 absorbed. 60 Hz: 3 of 24. 120 Hz: 18 of 24.**
+
+The 120 Hz block is total and deterministic: **every** cadence is absorbed except a 400 ms wait, at every cut-off,
+at both places. That is exactly what the floor predicts, and it is the headline — not the scatter at 60 Hz.
+
+The 21 absorbed cases:
+
+| rate | cut | silence | place | realistic cadence? |
+|---|---|---|---|---|
+| 60 Hz | 300 ms | 80 ms | Creative | no — strong momentum, 80 ms |
+| 60 Hz | 300 ms | 150 ms | Hero | **yes** |
+| 60 Hz | 600 ms | 150 ms | Creative | **yes** |
+| 120 Hz | 300 ms | 80 ms | Hero, Creative | no — strong momentum, 80 ms |
+| 120 Hz | 300 ms | 150 ms | Hero, Creative | **yes** |
+| 120 Hz | 300 ms | 250 ms | Hero, Creative | **yes** |
+| 120 Hz | 600 ms | 80 ms | Hero, Creative | **yes** |
+| 120 Hz | 600 ms | 150 ms | Hero, Creative | **yes** |
+| 120 Hz | 600 ms | 250 ms | Hero, Creative | **yes** |
+| 120 Hz | 1000 ms | 80 ms | Hero, Creative | **yes** |
+| 120 Hz | 1000 ms | 150 ms | Hero, Creative | **yes** |
+| 120 Hz | 1000 ms | 250 ms | Hero, Creative | **yes** |
+
+**18 of the 21 are at a cut of 600 ms or later, or a silence of 150 ms or more** — the cadence a hand actually
+leaves. Only 3 are the "the rule is doing its job" case.
+
+**Why 60 Hz mostly escapes and 120 Hz never does.** A 60 Hz swipe's finger ramp peaks at 44 px, under the 109 px
+floor, so it gets in on its OWN momentum — the first momentum event is 190 px = 0.21 stops, which clears it, and
+the swipe is heard around its seventh event, roughly 100 ms in. A 120 Hz swipe sends half the delta twice as
+often, so its biggest event of all — momentum included — is **95 px = 0.105 stops, below the 0.12 floor**. It can
+therefore never open a gesture by rise, and its only way in is the 340-400 ms gap. Hence a clean 0/6, 0/6, 0/6,
+6/6 column.
+
+**What a visitor feels:** on a ProMotion MacBook, throw, put the fingers down to stop the scroll, swipe again —
+and nothing happens unless about 400 ms have passed since the momentum was cut.
+
+### A correction to an earlier version of this entry
+
+The first full run of this matrix reported 16 of 48 absorbed, with 120 Hz at 2/6 in its short-silence rows. Those
+"heard" results were an artefact of the harness, not of the site, and the numbers above replace them. The harness
+summed every event that had fallen due into ONE wheel event; five summed events of the swipe's ramp come to
+110 px, just over the floor, so under scheduling jitter it manufactured a "super-event" no trackpad ever sends and
+the swipe was heard for the wrong reason. The same bug produced two cases that appeared to move THREE stops,
+which the site cannot do: `A.pT` is clamped to `A.gFrom +/- 1` (`main.js:587`), so three stops needs three gesture
+openings, and a real 120 Hz stream cannot open even a second one by rise. Each event is now dispatched separately;
+the two cases were re-run 6/6 with no three-stop outcome and a deterministic result, and the whole matrix was
+re-measured. The corrected picture is worse, not better.
+
+### A Windows precision touchpad: pushing into a live fling
+
+The fling is not cancelled by touching the pad, so the push arrives on top of it. At 400 ms into a hard throw the
+fling is delivering 89 px per event, and a push is absorbed until its FIRST event alone beats 2.6x the envelope:
+
+| push peak | relative to the fling | result |
+|---|---|---|
+| 73 px | 0.8x | absorbed |
+| 200 px | 2.2x | absorbed |
+| 400 px | 4.5x | absorbed |
+| 800 px | 9.0x | absorbed |
+| 1600 px | 17.9x | heard — two stops |
+
+So about **18x** the fling's per-event delta. A gradual push can never out-rise itself, because each of its own
+events feeds the envelope. **After** the throw lands, however, there is no problem at all: 32 of 32 cases heard
+immediately at +0.5 s, +1 s, +2 s and +4 s, gentle and firm. The fling's last event is at 1679 ms and the stop is
+announced about 250 ms later, so every "after it lands" push arrives in silence with a gap of 750 ms or more.
+
+### The proposed fix, for the next release
+
+Express the floor **per frame** rather than per event. `perFrame` already normalises for event rate:
+
+```js
+perFrame = mag / clamp(gap / GEST_FRAME, 1, GEST_COALESCED)
+rise     = mag > GEST_FLOOR && perFrame > A.gEnv * GEST_RISE && A.gEnv < A.gPeak * GEST_FALLEN
+```
+
+so testing `perFrame` against the floor instead of `mag` would admit a 120 Hz swipe's small, frequent events while
+still excluding a decaying momentum tail, whose perFrame keeps falling. One line — but it sits in the middle of
+the rule Step 6 exists to protect (one hard flick must not skip stops), so it is confirmed on a real MacBook
+first (R22) and then re-gated through `gesture2`, `trackpad` and `mactrack`.
+
+### Two cases moved three stops — resolved: it was the harness
+
+`120Hz cut@1000ms silence 150ms` went 0 to 3, and `120Hz cut@300ms silence 80ms` went 1 to 4. Investigated
+2026-10-02: **the harness, not the site**, for the reason given under the correction above. Ten re-runs of exactly
+those two cases produced no recurrence, and with per-event dispatch both are now deterministic (6/6).
+
+**Honest limit of this evidence.** These are reconstructions of macOS event streams played through Chrome on
+Windows, at the shapes and rates a Mac sends. No real MacBook was measured. Anything decided from this should be
+confirmed on a real Mac trackpad first.
+
+Reproduce: `node mactrack.cjs <port>` and `node ptp2.cjs <port> chrome --only=second`; both are in
+`trackpadall.sh`.
+
+---
+
 ## Release: waiting — goes out together with Linefield
 
 **State (2026-09-29).** The Contact finale integration (`feature/contact-finale`: F0–F4, the design and responsive

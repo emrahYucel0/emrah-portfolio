@@ -195,6 +195,11 @@ export function face(V, which) {
 // The real interface is split into complementary fragments across the two row sets: out of register they are
 // two incompatible, unresolved patchworks; in exact register they meet as one sharp picture and the rows fill with it.
 // The frame takes the capture's own proportions — a wide hero stays wide, a phone capture stays tall.
+const POCKET = 0.6
+const LINE_PAD = 4   // around a line's box, so the glyphs' own overhang and the texture's sampling stay clear
+function clearLines(voids, lines) {
+  for (const r of lines) softRect(voids, { x: r.x - LINE_PAD, y: r.y - LINE_PAD, w: r.w + LINE_PAD * 2, h: r.h + LINE_PAD * 2 }, 6)
+}
 export function workFrame(V, w) {
   const { W, H, P, pad, strip } = V
   const item = previewOf(w, P, V.T)
@@ -210,19 +215,46 @@ export function workFrame(V, w) {
     : { x: Math.round(W * 0.33), y: strip + 40, w: Math.round(W * 0.67 - pad), h: H - strip * 2 - 80 }
   return { col, item, frame: fitRect(item.aspect, box, 'center') }
 }
+/*
+ * THE REGISTERED WORK'S NAME, SUBTITLE AND DOOR GET THE SAME POCKET AS A CASE STUDY (R8).
+ *
+ * On a phone those three sit at the BOTTOM of the index column, and the column's night fades out there. On a tall
+ * viewport they stay on the night and read at 15:1. But a real Safari has toolbars: at the 620-760 px of visible
+ * height an iPhone actually gives, the block falls past the fade onto the cream row field, and the rows run
+ * straight through the words — measured at 390x700: the subtitle 38% of its pixels below AA with three rows
+ * crossing it, the door 57% and 1.01:1. Reported from a real iPhone, 2026-10-02.
+ *
+ * So the rows are cleared behind each line of type here exactly as they are behind a case study's, from boxes
+ * measured in the DOM (main.js, currentPocket) and handed to this state in `lines`. The ink is chosen separately,
+ * by the ground each line actually sits on — that is the DOM's business and lives in main.js.
+ */
 export function workState(V, w, i) {
   const { P } = V
   const { col, item, frame } = workFrame(V, w)
   const [fa, fb] = fragments(frame, i + 3)
+  const lines = []
+  /*
+   * THE COLUMN'S FOOT REACHES THE BLOCK, BECAUSE THE BLOCK CANNOT STRADDLE THE FADE.
+   *
+   * `foot.y` is where the night stops being solid. It starts at the column's own height and is raised by main.js
+   * (currentPocket) to clear the registered work's name, subtitle and door once they have been laid out. Without
+   * it the three fall into the gradient on a short viewport — measured at 390x700, the block sits at y 287-343
+   * while the night is solid only to 282 and fades to 392, so the words sit on a HALF-fused ground: the rows show
+   * through them, and no choice of ink can be right because the ground is a gradient under the line rather than
+   * one colour. Reported from a real iPhone, 2026-10-02.
+   */
+  const foot = { y: col.y + col.h }
   const img = build(V, V.H, ({ tone, solid, voids, fuse }) => {
     strips(voids, V)
     // the index lives in material saturated into one solid mass; its edge tapers row by row
-    const g = P ? fuse.createLinearGradient(0, col.y + col.h - 70, 0, col.y + col.h + 40) : fuse.createLinearGradient(col.x + col.w - 22, 0, col.x + col.w + 8, 0)
+    const g = P ? fuse.createLinearGradient(0, foot.y - 70, 0, foot.y + 40) : fuse.createLinearGradient(col.x + col.w - 22, 0, col.x + col.w + 8, 0)
     g.addColorStop(0, '#fff'); g.addColorStop(1, '#000')
     fuse.fillStyle = g
-    fuse.fillRect(col.x, col.y, col.w + (P ? 0 : 8), col.h + (P ? 40 : 0))
+    fuse.fillRect(col.x, col.y, col.w + (P ? 0 : 8), (P ? foot.y + 40 : col.y + col.h) - col.y)
     const tc = toneOf(item.im)
     if (tc) { drawFragments(tone, fa, tc, frame); drawFragments(solid, fb, tc, frame) }
+    // after the tone, so a line's pocket is not painted over by the preview's fragments
+    clearLines(voids, lines)
   }, ({ lat, id, flash }) => {
     const tc = toneOf(item.im)
     if (tc) drawCover(lat, tc, frame)
@@ -231,7 +263,7 @@ export function workState(V, w, i) {
   }, true)
   return mk(V, {
     id: `work-${i}`, spacing: rowSpacing(V), freq: P ? 0.2 : 0.13, thick: P ? 0.66 : 0.8, amp: 0, toneThick: 2.7, split: true, lod: LOD_OFF,
-    ...img, layout: { col, frame }, beneath: 'work', capacity: 1.15, workIndex: i,
+    ...img, lines, foot, layout: { col, frame }, beneath: 'work', capacity: 1.15, workIndex: i,
     weak: () => frame.y + frame.h / 2,
   })
 }
@@ -323,11 +355,6 @@ export function worldOpen(V, w, k) {
  * in the DOM once the words are set (main.js, pocketLines) and handed to the frame in `lines`; until then, and
  * wherever there is no type, the rows only part.
  */
-const POCKET = 0.6
-const LINE_PAD = 4   // around a line's box, so the glyphs' own overhang and the texture's sampling stay clear
-function clearLines(voids, lines) {
-  for (const r of lines) softRect(voids, { x: r.x - LINE_PAD, y: r.y - LINE_PAD, w: r.w + LINE_PAD * 2, h: r.h + LINE_PAD * 2 }, 6)
-}
 // the whole surface returned: text voids, rooms holding media, or the public interface carried as tone
 export function worldSurface(V, w, k, fr, i) {
   const lines = []

@@ -123,6 +123,15 @@ say "PROJECT TRANSITIONS";      sect proj-CUR 'tail -7' env MSYS_NO_PATHCONV=1 n
 # 1440x900 that is recorded in docs/KNOWN-ISSUES.md and needs an art-direction decision, not a check.
 say "PROJECT IDENTITY PANELS — INSIDE, AND AA AGAINST WHAT IS BEHIND"
 sect panelfit-CUR-gate-1920x1080-1440x900-1280x720-tr 'tail -12' env MSYS_NO_PATHCONV=1 node panelfit.cjs $CUR gate 1920x1080,1440x900,1280x720 tr,en 1,2
+# A REAL PHONE'S HEIGHT, NOT THE DEVICE'S. Every phone check here used 390x844 or the device's full viewport, which
+# is what a phone has with no browser chrome; a real Safari leaves about 620-760 px. The work stop's title block was
+# unreadable at those heights and perfect at 844 (reported from a real iPhone 2026-10-02), so both of these are now
+# part of the gate: worktext measures the registered work's three lines against the pixels behind them, and
+# shortphone sweeps every stop at the short heights for legibility, clipping and strip overlap.
+say "WORK STOP TITLE BLOCK — AA AGAINST WHAT IS BEHIND IT"
+sect worktext-CUR 'tail -4' env MSYS_NO_PATHCONV=1 node worktext.cjs $CUR 360x800,375x667,390x844,430x932,390x700 tr,en
+say "EVERY STOP AT A REAL PHONE'S HEIGHT"
+sect shortphone-CUR 'tail -6' env MSYS_NO_PATHCONV=1 node shortphone.cjs $CUR 390x660,375x560,844x390 tr,en
 say "LAB SHELL / RESPONSIVE";   sect shell-CUR 'tail -10' node shell.cjs $CUR
 say "LAB A11Y";                 sect labaxe-CUR 'tail -3' node labaxe.cjs $CUR
 # the Contact finale's route: a document route (no runtime), its facts as DOM with and without JS, axe, both engines

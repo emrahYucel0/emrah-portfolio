@@ -282,6 +282,8 @@ function rebuild() {
   const old = new Set([...IDX, ...WORKS, ...Object.values(WORLD).flat(), BLANK])
   BLANK = ST.blank(V)
   WORKS = works.map((w, i) => ST.workState(V, w, i))
+  // the new states carry no measured lines, and a resize is exactly when the block may change ground
+  currentDue = true
   // the spine, built from its names: one entry per SPINE name, in SPINE order — the last is IDX[CONTACT_STOP]
   const PLACE = {
     name: () => ST.name(V),
@@ -1580,6 +1582,95 @@ function fillWorldDOM(k) {
  * taken by the frame loop once the words are laid out: a work opened by its address is set before the runtime's
  * DOM is shown, when every block still measures nothing.
  */
+/*
+ * THE REGISTERED WORK'S BLOCK: ITS POCKET, AND WHICH GROUND EACH LINE IS ON.
+ *
+ * The name, the subtitle and the "İncele →" door sit at the bottom of the index column. The column is the site's
+ * night and the whole stop is in dark tone, so they are set in cream with the dark-ground copper — correct while
+ * they are ON the night. On a phone they are not always: `workState` fades the night out over the last 70 px of
+ * the column, and on the 620-760 px of visible height a real Safari leaves once its toolbars are up, the block
+ * falls past that fade onto the cream row field. Then the cream words are cream on cream and the door is #d4875a
+ * on cream — measured at 390x700 as 1:1 and 1.01:1, with three and four rows drawn straight through the words.
+ *
+ * Two things are therefore decided here, per line, every time the block's words or its layout change:
+ *
+ *   THE POCKET — one box per rendered line, in composition units, handed to the work's state as `lines` so the
+ *   rows are cleared behind the type (states.js, clearLines; the same thing R8 does for a case study).
+ *
+ *   THE GROUND — whether that line sits on the night or on the paper, read from the column's own geometry rather
+ *   than from a CSS background: solid night down to `col.y + col.h - FADE`, paper from `col.y + col.h` on. A line
+ *   is judged by its CENTRE, and a line caught inside the fade is called paper, because that is the side it is
+ *   becoming and the readable choice. `.on-paper` then carries the ink: style.css gives it the dark ink and the
+ *   text copper (#9a4f22, 5.14:1 on the cream ground) instead of the night's cream and #d4875a.
+ */
+const CURRENT_FADE = 70   // states.js: the night fades out over this much of the column's foot
+function currentPocket() {
+  if (!D.current || !D.current.classList.contains('on')) return true
+  const k = registeredWork()
+  const st = k >= 0 ? WORKS[k] : null
+  if (!st || !st.lines) return true
+  const colBox = D.work.querySelector('.col')
+  const box = colBox?.getBoundingClientRect()
+  if (!box || !box.width) return false        // not laid out yet: try again next frame
+  const left = parseFloat(colBox.style.left) || 0, top = parseFloat(colBox.style.top) || 0
+  const s = (parseFloat(colBox.style.width) || box.width) / box.width   // client pixels → composition units
+  const col = st.layout?.col
+  const range = document.createRange()
+  const out = []
+  const els = []
+  let deepest = 0
+  for (const el of D.current.querySelectorAll('.wtitle, .wmeta, .open')) {
+    if (!el.textContent.trim()) continue
+    const rects = []
+    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+      if (!n.textContent.trim()) continue
+      range.selectNodeContents(n)
+      for (const r of range.getClientRects()) if (r.width > 0 && r.height > 0) rects.push(r)
+    }
+    if (!rects.length) continue
+    for (const r of rects) {
+      const y = top + (r.top - box.top) * s, h = r.height * s
+      out.push({ x: left + (r.left - box.left) * s, y, w: r.width * s, h })
+      if (y + h > deepest) deepest = y + h
+    }
+    els.push(el)
+  }
+  /*
+   * THE FOOT FIRST, THEN THE INK. On a phone the column's night is carried down past the deepest line so the whole
+   * block stands on solid night rather than in the gradient; every work's state moves together, because the block
+   * is in the same place whichever work is registered and a visitor travelling the field must not see the ground
+   * step. On a wide screen the column is a side panel and its foot is not in play.
+   */
+  let moved = false
+  if (V.P && col && deepest > 0) {
+    // the night must be SOLID through the block, and it is solid only until `foot.y - CURRENT_FADE`; a foot set
+    // just under the deepest line leaves the whole fade inside the words, which is the bug this started as
+    const want = Math.max(col.y + col.h, Math.round(deepest + CURRENT_FADE + 12))
+    for (const ws of WORKS) if (ws.foot && Math.abs(ws.foot.y - want) > 0.5) { ws.foot.y = want; surface.release(ws); moved = true }
+  }
+  /*
+   * And now the ground is unambiguous — but only on a phone. There the column is a band across the top and its
+   * night fades DOWNWARD, so a line's height decides which side of the fade it is on. On a wide screen the column
+   * is a side panel and the same fade runs SIDEWAYS (states.js), so a vertical test means nothing there: it read
+   * the block at the foot of a full-height panel as "paper" and put the text copper on the night, 3.14:1. On a
+   * wide screen the block is always on the panel, so the mark simply comes off.
+   */
+  const footY = st.foot ? st.foot.y : (col ? col.y + col.h : 0)
+  for (const el of els) {
+    let onPaper = false
+    if (V.P && col) {
+      const r = el.getBoundingClientRect()
+      onPaper = top + (r.top + r.height / 2 - box.top) * s > footY - CURRENT_FADE
+    }
+    el.classList.toggle('on-paper', onPaper)
+  }
+  const same = st.lines.length === out.length && st.lines.every((r, i) => Math.abs(r.x - out[i].x) < 0.5 && Math.abs(r.y - out[i].y) < 0.5 && Math.abs(r.w - out[i].w) < 0.5)
+  if (!same) { st.lines.length = 0; st.lines.push(...out); surface.release(st) }
+  if (!same || moved) lastSig = ''
+  return true
+}
+let currentDue = false
 let linesDue = null
 function pocketLines(k) {
   const frames = worldFor(k), range = document.createRange()
@@ -1851,12 +1942,14 @@ function domUpdate(from, to, front) {
     lastWork = key
     if (k >= 0) { D.wtitle.textContent = works[k].name; D.wmeta.textContent = works[k].strength; D.current.querySelector('.open').setAttribute('aria-label', `${TXT.work.view} — ${TXT.a11y.openProject}: ${works[k].name}`) }
     D.current.classList.toggle('on', k >= 0)
+    currentDue = true
     D.work.querySelectorAll('[data-work]').forEach((b, i) => { b.classList.toggle('active', i === k); b.classList.toggle('visited', A.visited.has(i)); if (i === k) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current') })
   }
   const hint = hintFor()
   if (hint !== lastHint) { D.hint.textContent = hint; lastHint = hint }
   stillUpdate(performance.now())
   if (linesDue != null && (A.mode === 'world' || A.mode === 'exit') && pocketLines(linesDue)) linesDue = null
+  if (currentDue && A.mode === 'index' && currentPocket()) currentDue = false
   const cue = cueFor(Math.round(A.p))
   if (cue !== lastCue) {
     // hiding keeps the words, so they fade rather than vanish

@@ -464,6 +464,24 @@ Reproduce: `node mactrack.cjs <port>` and `node ptp2.cjs <port> chrome --only=se
 
 ---
 
+## LAB A11Y: one axe colour-contrast violation on `.state` at `/en/lab`, 390 px, normal motion
+
+**Where** `tools/diag/labaxe.cjs`: `390 normal /en/lab  violations 1 — color-contrast(serious x1: .state)`.
+
+**Not from the short-phone work.** Measured on the fixed build AND on the release build that preceded it
+(`builds/rel-on`, port 4934): the failure is **identical** on both, so it is pre-existing and not a regression
+from the work-stop fix.
+
+**It is also not stable.** Earlier the same day, run alone on the release build, `labaxe` PASSED — which is
+recorded under the gate's load-sensitive sections above. So `.state` either changes while axe samples it or sits
+very close to the line. Worth settling with a static reading of `.state`'s own colour against its ground, the way
+`worktext.cjs` does, rather than by re-running axe until it agrees.
+
+**Not fixed here** because it is outside the reported fault and the release is otherwise closed; it is the Lab
+bench's status line, in English only, at one width.
+
+---
+
 ## Release: waiting — goes out together with Linefield
 
 **State (2026-09-29).** The Contact finale integration (`feature/contact-finale`: F0–F4, the design and responsive

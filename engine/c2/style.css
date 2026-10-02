@@ -187,6 +187,17 @@ body.in-world :where(#ui) .bottom .roles { opacity: 0; }
    The column is the site's own night (#121212), not the work's ink, so it is copper's dark-ground tone (6.6:1). */
 :where(#ui) .work .open { align-self: flex-start; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--act-night); padding: 8px 0; }
 :where(#ui) .work .open:hover { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+/* THE GROUND DECIDES THE INK, NOT THE STOP (reported from a real iPhone, 2026-10-02).
+   The work stop is in dark tone, so everything in it is set in cream with the dark-ground copper — right while
+   these three sit ON the night column. On a phone they do not always: the night fades out over the column's last
+   70 px, and at the 620-760 px of height a Safari with its toolbars up actually leaves, the block falls past the
+   fade onto the cream row field. Cream on cream measured 1:1, and #d4875a on cream 1.01:1, with rows drawn
+   through the words. main.js (currentPocket) marks each line with the ground it is really on; here that ground
+   carries its own ink — the dark ink, and the TEXT copper, which is 5.14:1 on the cream ground where the night
+   tone's #d4875a is 1.01:1. The rows behind the words are cleared separately, by the pocket in states.js. */
+:where(#ui) .work .wtitle.on-paper, :where(#ui) .work .wmeta.on-paper { color: var(--ink); }
+:where(#ui) .work .wmeta.on-paper { opacity: 1; }   /* .82 of the dark ink on cream is 3.9:1; whole it is 15.9:1 */
+:where(#ui) .work .open.on-paper { color: var(--act-text); }
 /* THE STILL, READ (R5, R8; main.js): a capture through the rows of the place it is in — clear bands on the rows, the image between */
 :where(#ui) .wstill { position: absolute; overflow: hidden; opacity: 0; transition: opacity .35s ease; pointer-events: none;
   -webkit-mask-image: repeating-linear-gradient(to bottom, transparent 0 calc(var(--row) * .19), #000 calc(var(--row) * .19) calc(var(--row) * .81), transparent calc(var(--row) * .81) var(--row));

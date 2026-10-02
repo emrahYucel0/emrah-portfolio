@@ -16,8 +16,18 @@ const BASE = `http://127.0.0.1:${port}`
 const OUT = path.resolve(__dirname, '../../docs/contact-finale/responsive')
 fs.mkdirSync(OUT, { recursive: true })
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+/*
+ * THE PHONE HEIGHTS A BROWSER ACTUALLY LEAVES, NOT THE DEVICE'S.
+ * Every phone size here used to be the device's full CSS viewport — 360x780, 430x932 — which is what a phone has
+ * with no browser chrome at all. A real Safari keeps a header and a toolbar and leaves roughly 620-760 px of it,
+ * and that difference hid a reported fault: the work stop's title block fell past the index column's fade onto
+ * the row field and the rows ran through the words, measured at 390x700 and passing at 390x844 (2026-10-02,
+ * reported from a real iPhone). So the short heights are permanent members of this list, and
+ * tools/diag/shortphone.cjs sweeps every stop at them.
+ */
 const SIZES = [
   ['phone', 360, 780, true], ['phone', 430, 932, true],
+  ['phone', 390, 660, true], ['phone', 375, 560, true], ['phone', 844, 390, true],
   ['tablet', 768, 1024, true], ['tablet', 1024, 768, true], ['tablet', 820, 1180, true], ['tablet', 1180, 820, true],
   ['tablet', 1024, 1366, true], ['tablet', 1366, 1024, true],
   ['laptop', 1280, 800], ['laptop', 1366, 768], ['laptop', 1512, 982], ['laptop', 1728, 1117],

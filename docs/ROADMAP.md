@@ -361,6 +361,10 @@ Sorun yalnız `responsive.cjs` değil. İzlenen `docs/` yollarına yazan altı h
   kaldı. Hatalı argüman (iki port) açık bir mesajla durdu. Tam kapı koşulmadı.
 
 **R7'nin ayrıntısı (2026-10-02; kullanıcı kararları aynı gün):**
+
+- **Kapı dikişi yalnız normal harekette koşuyordu.** `run6.sh` `seam.cjs`'i mod argümanı vermeden çağırıyordu,
+  yani `REDUCED` false kalıyordu ve harness'ın `if (REDUCED)` ile korunan kendi azaltılmış-hareket iddiaları
+  **hiç koşmamıştı**. Kapıya azaltılmış hareket satırı eklendi; bu yayında bir kez tek başına koşuluyor.
 - **Kural:** bench'te bir jest bir çalışma ilerletir. 01 → 02 → 03'ten sonraki aşağı jest iletişim finaline gider
   (bugünkü dikiş, p = 0); 01'den yukarı jest İşler'e.
 - **Açma:** tıklama ya da bakır "AÇ →" çalışmayı açar. Başka bir etikete tıklamak onu seçer; bu kısayol olarak

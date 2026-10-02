@@ -129,6 +129,9 @@ say "LAB A11Y";                 sect labaxe-CUR 'tail -3' node labaxe.cjs $CUR
 say "CONTACT ROUTE";            sect contact-CUR 'tail -12' node contact.cjs $CUR
 say "CONTACT FINALE — iOS 15.4";   sect compat-ios15-CUR 'tail -1' node compat-ios15.cjs $CUR
 say "CONTACT SEAM — LAB ⇄ FINALE, ARRIVALS, HISTORY";   sect seam-CUR 'grep -E "FAIL|seam:|SEAM"' node seam.cjs $CUR
+# Reduced motion was never run by this gate: seam.cjs took no mode argument here, so REDUCED was false and its
+# reduced-motion assertions — a different set, guarded by `if (REDUCED)` — had never been exercised at all.
+say "CONTACT SEAM — REDUCED MOTION";   sect seam-CUR-reduced 'grep -E "FAIL|seam:|SEAM"' node seam.cjs $CUR reduced
 say "CONTACT FINALE — A11Y, KEYBOARD, LANGUAGE, REDUCED, PHONES";   sect finale-a11y-CUR 'grep -E "FAIL|FINALE A11Y"' node finale-a11y.cjs $CUR
 say "CONTACT FINALE — THE WAY IN, THE GUIDE, THE FOOT BAND";   sect beckon-CUR 'grep -E "FAIL|BECKON"' node beckon.cjs $CUR
 say "JOURNEY TR NORMAL";        sect journey-CUR-tr 'grep -E "FAIL|errors|JOURNEY"' node journey.cjs $CUR tr

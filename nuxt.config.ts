@@ -5,14 +5,19 @@ import { ICONS, PUBLIC_ROUTES, siteUrl } from './shared/site'
 /**
  * LINEFIELD — the one switch (docs/LINEFIELD.md).
  *
- * Off, `__LINEFIELD__` is replaced with `false` at transform time. Every Linefield module is behind a dynamic
- * import inside a branch that then cannot be taken, so the bundler never emits their chunk: the published build
- * does not contain the corridor's GLSL, its states or its debug entry, and there is nothing to strip out.
+ * IT IS ON BY DEFAULT, and has been since the release that shipped it. Every release build carries the passage
+ * unless it is explicitly turned off, so nobody can publish the site without it by forgetting a variable — which is
+ * the way round it used to be, and the way round a release gets built without the feature it is named for.
  *
- *   NUXT_PUBLIC_LINEFIELD=1 npm run generate    the preview artifact
- *   npm run generate                            the published build
+ *   npm run generate                            the release build, Linefield ON
+ *   NUXT_PUBLIC_LINEFIELD=0 npm run generate    without it, for the flag-off gate
+ *
+ * Off, `__LINEFIELD__` is replaced with `false` at transform time. Every Linefield module is behind a dynamic
+ * import inside a branch that then cannot be taken, so the bundler never emits their chunk: a flag-off build does
+ * not contain the corridor's GLSL, its states or its debug entry, and there is nothing to strip out.
  */
-const LINEFIELD = process.env.NUXT_PUBLIC_LINEFIELD === '1' || process.env.NUXT_PUBLIC_LINEFIELD === 'true'
+const OFF = new Set(['0', 'false', 'off', 'no'])
+const LINEFIELD = !OFF.has(String(process.env.NUXT_PUBLIC_LINEFIELD ?? '').toLowerCase())
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-09-16',

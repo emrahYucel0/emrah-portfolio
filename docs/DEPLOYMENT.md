@@ -16,8 +16,18 @@
 ```bash
 npm ci
 npx nuxt typecheck
-npm run generate          # → .output/public
+npm run generate          # → .output/public   (Linefield ON — see below)
 ```
+
+**Linefield is on by default.** `npm run generate` builds the release *with* the passage; there is no variable to
+remember and no way to publish the site without it by forgetting one. The only way to build without it is to say so:
+
+```bash
+NUXT_PUBLIC_LINEFIELD=0 npm run generate    # a flag-off build, for the gate's flag-off half
+```
+
+A release build must show Linefield's code in the package — `grep -ril uLFmode .output/public/_nuxt/*.js` finds it —
+and a flag-off build must not.
 The build log ends with `production files for https://yucelemrah.com: robots.txt, sitemap.xml, 404.html, .htaccess (CSP with N script hashes)`.
 
 The CSP script hashes are computed from the generated HTML. A new build always ships its own matching `.htaccess`: **never deploy HTML from one build with the `.htaccess` of another.**
@@ -213,6 +223,8 @@ Then check each item below:
 ## Checklist
 - **PRE-BUILD:** clean `git status`; `NUXT_PUBLIC_SITE_URL` unset (or the intended HTTPS origin); `npm ci`
 - **BUILD:** `npx nuxt typecheck` exit 0; `npm run generate` exit 0; log shows the production-files line
+- **BUILD (Linefield):** on by default — confirm it is IN the package (`grep -ril uLFmode .output/public/_nuxt/*.js`
+  returns at least one file) and that Full-Stack → Linefield → Work works in the artifact being shipped
 - **PRE-UPLOAD:** `.output/public` contains `.htaccess`, `_nuxt/.htaccess`, `opt/.htaccess`, `404.html`, `robots.txt`, `sitemap.xml`, `og/`, favicons; no `200.html`
 - **PRE-UPLOAD (CSP):** `node tools/diag/cspboot.cjs --dir .output/public` exit 0 — the policy names every inline script in the artifact it ships with
 - **PRE-UPLOAD (payload):** no `tools/`, no `*.cjs`, no `lab/proof` route in the artifact

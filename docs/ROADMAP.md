@@ -120,7 +120,13 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24 ta
   - Düz ana sayfada iş adları kendi sayfasına bağlanıyor. Bu, düz katman #11'in yarısı.
   - Kontroller: R8a denetimi 19/19 (Chrome; WebKit CSP build'i; flag-on), Linefield, `workopen`, `proj`,
     `journey`, `herotouch`, `spine`, `seam`, axe 0 (iş sayfaları dahil), typecheck.
-  - **Kalan:** okunur "sonraki iş" ve başlık arkasındaki cep.
+- **Yapılan (2026-10-02, ikinci kısım: okunur "sonraki iş"):**
+  - Son karede sonraki iş kayda oturup kare 0,4 sn durunca, sonraki işin gerçek görüntüsü bu karenin
+    satırları arasından okunuyor. R5'teki deyimin aynısı; her ekranda, hareketi azaltılmış modda da.
+  - Basınca sonraki iş açılıyor.
+  - Kontroller: R8b denetimi 12/12 (1440, 390, hareketi azaltılmış), R5 ve R8a yeniden; Linefield, `workopen`,
+    `proj`, `journey`, `spine`, axe 0, typecheck.
+  - **Kalan:** başlığın arkasındaki cep.
 - **Dosyalar:**
   - `engine/c2/main.js`: dünya modu, `nextReg`, `worldFull`, `HOST`
   - `engine/c2/world.js`

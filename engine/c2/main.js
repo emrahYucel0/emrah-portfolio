@@ -818,38 +818,51 @@ const registeredWork = () => (A.wLocked >= 0 && WORKS[A.wLocked]?.fill > 0.5 ? A
  */
 const STILL_AFTER = 400
 const STILLS = {}
-let stillShown = -1
-function placeStill(k) {
-  const me = STILLS[k], st = WORKS[k]
-  if (!me || !st) return
-  const fr = st.layout.frame, s = st.spacing
-  placeMedia(me, fr, 'center top')
-  // the mask's clear bands sit on the rows, which lie on multiples of the spacing from the top of the screen
-  me.el.style.setProperty('--row', `${s}px`)
-  me.el.style.setProperty('--row-y', `${(((-fr.y) % s) + s) % s}px`)
+let stillShown = ''
+/*
+ * AND THE NEXT WORK, READ (R8). A work's last frame registers the next one beside its closing words — as rows, at a
+ * size where the rows could not carry it. Once it is in register and the frame is still, it is read the same way:
+ * the next work's capture through this frame's rows, on every screen. Pressing it is still the way on.
+ */
+function stillWanted(now) {
+  if (now - A.lastInput <= STILL_AFTER || ptr.down || A.press || A.busy) return null
+  if (V.P && settledAt(STOP.work) && !A.aboutOpen) {
+    const k = registeredWork()
+    if (k >= 0 && Math.abs(A.wt - k) < 0.004) return { key: `w${k}`, k, parent: D.work, st: WORKS[k] }
+  }
+  if (A.mode === 'world' && A.worldOn) {
+    const lf = lastFrame(), full = worldFor(A.k)[lf]
+    if (full && Math.abs(A.wp - lf) < 0.01 && A.nextReg < 0.01 && full.fill > 0.95) return { key: `n${A.k}`, k: full.layout.next, parent: D.world, st: full }
+  }
+  return null
 }
-function stillFor(k) {
-  const item = previewOf(works[k], V.P, V.T)
-  // a rebuilt DOM, or a screen turned to another capture (an upright tablet registers its own)
-  if (!STILLS[k] || !STILLS[k].el.isConnected || STILLS[k].item !== item) {
-    STILLS[k]?.el.remove()
-    const me = STILLS[k] = mediaElement(item, 'wstill')
+function stillFor(w) {
+  const item = previewOf(works[w.k], V.P, V.T)
+  let me = STILLS[w.key]
+  // a rebuilt DOM, a new layout (the frames are recomputed), or a screen turned to another capture
+  if (!me || !me.el.isConnected || me.item !== item || me.st !== w.st) {
+    me?.el.remove()
+    me = STILLS[w.key] = mediaElement(item, 'wstill')
+    me.st = w.st
     // the work is named beside it; the picture is the same capture the rows already draw
     me.node.alt = ''; me.el.setAttribute('aria-hidden', 'true')
-    D.work.appendChild(me.el)
+    w.parent.appendChild(me.el)
     me.node.decode?.().catch(() => {})
-    placeStill(k)
+    const fr = w.st.layout.frame, sp = w.st.spacing
+    placeMedia(me, fr, 'center top')
+    // the mask's clear bands sit on the rows, which lie on multiples of the spacing from the top of the screen
+    me.el.style.setProperty('--row', `${sp}px`)
+    me.el.style.setProperty('--row-y', `${(((-fr.y) % sp) + sp) % sp}px`)
   }
-  return STILLS[k]
+  return me
 }
 function stillUpdate(now) {
-  const k = registeredWork()
-  const show = V.P && settledAt(STOP.work) && !A.aboutOpen && !A.busy && !A.press && !ptr.down && k >= 0 &&
-    Math.abs(A.wt - k) < 0.004 && now - A.lastInput > STILL_AFTER ? k : -1
-  if (show === stillShown) return
-  if (show >= 0) stillFor(show)
-  for (const [i, me] of Object.entries(STILLS)) me.el.classList.toggle('on', +i === show)
-  stillShown = show
+  const w = stillWanted(now)
+  const key = w ? `${w.key}:${w.st.id}` : ''
+  if (key === stillShown) return
+  const me = w ? stillFor(w) : null
+  for (const m of Object.values(STILLS)) m.el.classList.toggle('on', m === me)
+  stillShown = key
 }
 function current() {
   if (A.mode === 'world' || A.mode === 'exit') return worldFor(A.k)[clamp(Math.round(A.wp), 0, lastFrame())]
@@ -1651,7 +1664,9 @@ function layoutDOM() {
   const wk = WORKS[0].layout
   // the index column's text stays on its solid part, clear of the tapering edge
   place(D.work.querySelector('.col'), { x: 0, y: wk.col.y, w: wk.col.w - (V.P ? 0 : 24), h: wk.col.h - (V.P ? 60 : 0) })
-  for (const k of Object.keys(STILLS)) placeStill(+k)
+  // new geometry: every still is made again, where and when it is next wanted
+  for (const k of Object.keys(STILLS)) { STILLS[k].el.remove(); delete STILLS[k] }
+  stillShown = ''
   // The Lab stop keeps its place on the index but no longer shows a composition of its own — the Lab is a route,
   // and arriving at the stop opens it. Its retired layer is stood down once, here, rather than every frame: inert,
   // so it is neither drawn nor reachable, and the way to the Lab for a reader is the plain navigation, as before.
@@ -2374,7 +2389,7 @@ export function setLocale(next) {
   const refocus = focusKey(document.activeElement)   // M4 A11Y
   FR = {}                       // frame blocks carry copy; their geometry does not change, so WORLD textures stand
   buildDOM()
-  lastHint = lastCue = lastTone = lastTT = lastTB = lastBg = lastWork = lastWB = ''; stillShown = -1
+  lastHint = lastCue = lastTone = lastTT = lastTB = lastBg = lastWork = lastWB = ''; stillShown = ''
   mediaShown = ''
   onState.clear()
   layoutDOM()

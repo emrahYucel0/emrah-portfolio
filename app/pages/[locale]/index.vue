@@ -25,7 +25,8 @@ useLocaleSeo('home')
       <p class="u-measure">{{ copy.work.intro }}</p>
       <ul class="works">
         <li v-for="project in projects" :key="project.id" class="work">
-          <h3 class="work-name">{{ project.name }}</h3>
+          <!-- each work has its own page now (R8): the name is the way to it -->
+          <h3 class="work-name"><NuxtLink :to="path(`/work/${project.id}`)">{{ project.name }}</NuxtLink></h3>
           <p v-if="copy.work.projects[project.id].client" class="work-client">{{ copy.work.projects[project.id].client }}</p>
           <p class="work-line">{{ copy.work.projects[project.id].strength }}</p>
           <ul class="work-facts">

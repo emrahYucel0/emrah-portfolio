@@ -34,7 +34,7 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24 ta
 | R4 | Özel imleç | P2 | Karar verildi (biçim) | R2 |
 | R6 | Lab bench girişleri: okunur boyut, üzerine gelince ön gösterim | P2 | Kısmen: ön gösterimin biçimi bekliyor | — |
 | R7 | Lab'de kaydırma çalışmalar arasında, tıklama içeri | P2 | Önce inceleme | R6 |
-| R8 | Case study: kendi URL'leri, okunur "sonraki iş", başlık arkası | P1 | Karar verildi (2026-10-02) | — |
+| R8 | Case study: kendi URL'leri, okunur "sonraki iş", başlık arkası | P1 | Karar verildi (2026-10-02); sürüyor (URL'ler yapıldı) | — |
 | R9 | Koyu zeminlerde satır titreşimi | **P0** (R18 için) | Neden açık; önce ölçüm | — |
 | R10 | Safari'de adın ince kesimle çizilmesi | P1 | Önce gerçek iPhone | R22 |
 | R11 | Yavaş ağda ilk kare (8,9 sn) | P2 | Önce değerlendirme | — |
@@ -109,6 +109,18 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24 ta
   - Biçim `/{locale}/work/{id}`: `istanbul`, `ege`, `evden`.
   - Doğrudan açılınca case study runtime'da, ilk karesinde yerleşik açılır; Geri İşler'e döner.
   - Script yoksa aynı içeriğin düz HTML'i gösterilir.
+- **Yapılan (2026-10-02, birinci kısım: URL'ler):**
+  - `app/pages/[locale]/work/[id].vue`: düz sayfa, SEO, canonical ve hreflang.
+  - `shared/site.ts`: sitemap ve prerender'a 6 yeni URL.
+  - Runtime'da `openWorkAt`, `WORK_URL`, `workAt` ve `routeChanged`:
+    - İşler'den açmak bir adım; Geri İşler'e döner.
+    - "Sonraki" adresi değiştirir; Geri yine İşler'e döner.
+    - Doğrudan adres işi ilk karesinde açar; "← Tüm işler" alanın adresine gider.
+  - Dil kontrolü işi korur. Bilinmeyen bir iş 404 verir.
+  - Düz ana sayfada iş adları kendi sayfasına bağlanıyor. Bu, düz katman #11'in yarısı.
+  - Kontroller: R8a denetimi 19/19 (Chrome; WebKit CSP build'i; flag-on), Linefield, `workopen`, `proj`,
+    `journey`, `herotouch`, `spine`, `seam`, axe 0 (iş sayfaları dahil), typecheck.
+  - **Kalan:** okunur "sonraki iş" ve başlık arkasındaki cep.
 - **Dosyalar:**
   - `engine/c2/main.js`: dünya modu, `nextReg`, `worldFull`, `HOST`
   - `engine/c2/world.js`

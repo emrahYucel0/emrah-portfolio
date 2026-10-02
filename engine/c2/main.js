@@ -46,10 +46,17 @@ const idle = typeof requestIdleCallback === 'function' ? (f) => requestIdleCallb
 // routes: /about is a state of the same surface, so this visit's history survives going there and coming back
 // M1 TRANSPLANT: the host application owns routing (its routes are locale-prefixed) and receives the
 // semantic checkpoints. The defaults below reproduce the standalone prototype exactly.
-const ROOT = location.pathname.replace(/about\/?$/, '') || '/'
+const ROOT = location.pathname.replace(/(about|work\/[^/]+)\/?$/, '') || '/'
 let HOME_URL = ROOT + location.search, ABOUT_URL = `${ROOT}about${location.search}`, LAB_URL = `${ROOT}lab${location.search}`
 let CONTACT_URL = `${ROOT}contact${location.search}`
 let isAboutPath = () => /\/about\/?$/.test(location.pathname)
+/*
+ * A WORK HAS AN ADDRESS (R8, user decision 2026-10-02): /{locale}/work/{id}. Opening a work from the field takes
+ * the visitor to it, so Back returns to Work; the next work replaces it, so Back still does; and the address opened
+ * directly lands in the work, settled on its first frame. The host supplies both halves in its own locale.
+ */
+let WORK_URL = (id) => `${ROOT}work/${id}${location.search}`
+let workAt = () => (location.pathname.match(/\/work\/([^/]+)\/?$/) || [])[1] || null
 /**
  * The place the visitor asked for on their way back from the Lab. The bench is a route of its own, so leaving it
  * is a route change and the runtime is mounted again already owing the visitor a destination. The host keeps that
@@ -75,6 +82,8 @@ export function configure(o = {}) {
   if (o.labUrl) LAB_URL = o.labUrl
   if (o.contactUrl) CONTACT_URL = o.contactUrl
   if (o.isAboutPath) isAboutPath = o.isAboutPath
+  if (o.workUrl) WORK_URL = o.workUrl
+  if (o.workAt) workAt = o.workAt
   if (o.arrival) takeArrival = o.arrival
   if (o.push) HOST.push = o.push
   if (o.replace) HOST.replace = o.replace
@@ -85,6 +94,10 @@ export function configure(o = {}) {
 }
 // document titles follow the active language; the host sets them on its own route changes too
 const TITLE = () => TXT.meta.home.title, TITLE_ABOUT = () => TXT.meta.about.title
+// a work's own title, as its page sets it: the work, the place, the person (the About title's last part)
+const TITLE_WORK = (k) => `${works[k].name} — ${TXT.work.heading} — ${TXT.meta.about.title.split(' — ').pop()}`
+const workIndex = (id) => (id == null ? -1 : works.findIndex((w) => w.id === id))
+const pageTitle = () => (A.mode === 'world' || A.mode === 'exit' ? TITLE_WORK(A.k) : isAboutPath() ? TITLE_ABOUT() : TITLE())
 
 const canvas = $('#surface')
 // POST-M5 PERF — SOFTWARE RENDERER PROBE. Before the full-size surface exists, a 1×1 canvas asks the graphics stack one
@@ -1099,6 +1112,10 @@ function leaveDetail() { if (A.detailPushed) HOST.back(); else collapseAbout(tru
 export function routeChanged() {
   endGesture()   // M3 MOBILE BUG FIX
   if (isAboutPath()) { if (A.mode === 'world') { exit(); A.pending = 'detail' } else expandAbout(false); return }
+  // a work's address: the work, settled, unless it is the one already open; any other address closes an open work
+  const k = workIndex(workAt())
+  if (k >= 0) { if (!(A.mode === 'world' && A.k === k)) openWorkAt(k); return }
+  if (A.mode === 'world') { A.workPushed = false; exit(); return }
   // the visitor gestured out of the Lab: this entry carries the place they gestured towards
   if (arriveAt(takeArrival())) return
   if (A.aboutDetail) collapseAbout(false)
@@ -1127,6 +1144,33 @@ function releaseInto(f, k, tl) {
   tl.to(f, { h: V.H * 1.7, hw: 22000, reach: V.W * 2, falloff: 420, lip: 18, lipW: 8, duration: 0.8, ease: 'power4.in' }, 0.05)
     .add(() => { if (scarAt.from === 'index') phys.scar(scarAt.x, scarAt.y, V.P ? V.W * 0.4 : V.W * 0.26, 13); enterWorld(k, f) })
 }
+/*
+ * THE WORK, OPENED BY ITS ADDRESS. A visitor who lands on /work/{id} — a shared link, a search result, Forward — asked
+ * for the work, not for the field or the opening: it is composed as if it had just been released, on its first
+ * frame, and the field it returns to has it in register.
+ */
+function openWorkAt(k) {
+  if (k < 0 || k >= N) return false
+  endGesture()
+  gsap.killTweensOf(A)
+  if (A.press) cancelPress(A.press)
+  if (A.introF) { A.features.delete(A.introF); A.introF = null }
+  if (A.bridgeF) { gsap.killTweensOf(A.bridgeF); A.features.delete(A.bridgeF); A.bridgeF = null }
+  if (A.about) { gsap.killTweensOf(A.about); A.features.delete(A.about); A.about = null }
+  A.aboutOpen = false; A.aboutDetail = false; A.detailPushed = false; A.aboutDetailK = 0; A.pending = null
+  A.introReg = 0; A.nameAmp = REDUCED ? 0 : 1; A.shiver = 0; A.bridgePK = 1
+  A.mode = 'index'; A.p = A.pT = A.base = A.prevBase = STOP.work
+  A.wT = A.wt = k; A.wLocked = k; WORKS[k].fill = 1; WORKS[k].lod = 0
+  if (!A.visited.has(k)) A.visitOrder.push(k)
+  A.visited.add(k); surface.visited[k] = 1
+  HOST.emit('projectOpened', { index: k, ink: works[k].ink })
+  mediaFor(k); worldFor(k); prepareWorld(k)
+  A.workPushed = false
+  enterWorld(k, null)
+  A.from = A.to = worldFor(k)[0]; A.front = 1
+  resetGesture(); forgetStream()
+  return true
+}
 function enterWorld(k, f) {
   A.features.delete(f)
   A.mode = 'world'; A.k = k; A.wp = A.wpT = A.wbase = 0; A.exitAccum = 0
@@ -1135,6 +1179,10 @@ function enterWorld(k, f) {
   Object.assign(A.world, worldGeom(0)); A.worldOn = true
   fillWorldDOM(k)
   arrived(() => D.world.querySelector('.wsum h2'), works[k].name)
+  // its address: a step from the field, a replacement from the work before it, nothing when the address brought us
+  const id = works[k].id, at = workAt()
+  if (at !== id) { if (at) HOST.replace(WORK_URL(id), { c2: 'work' }); else { HOST.push(WORK_URL(id), { c2: 'work' }); A.workPushed = true } }
+  document.title = TITLE_WORK(k)
   document.body.classList.remove('releasing')
   A.releaseK = null; A.learned.work = true; A.arrivedAt = performance.now()
   A.busy = false
@@ -1144,6 +1192,11 @@ function exit() {
   if (A.mode !== 'world' || A.busy) return
   A.busy = true; A.mode = 'exit'
   const last = lastFrame(), fr = clamp(Math.round(A.wp), 0, last), k = A.k
+  // the work's address goes with it: Back undoes the step that brought the visitor here; an address opened directly
+  // gives way to the field's own
+  if (workAt()) { if (A.workPushed) HOST.back(); else HOST.push(HOME_URL, { c2: 'home' }) }
+  A.workPushed = false
+  document.title = TITLE()
   // M4 A11Y: leaving a project from the keyboard (or from inside it) returns focus to that project in the index
   const back = A.kbd || D.world.contains(document.activeElement)
   A.from = A.to = worldFor(k)[fr]; A.front = 1
@@ -2326,7 +2379,7 @@ export function setLocale(next) {
   onState.clear()
   layoutDOM()
   if (A.mode === 'world' || A.mode === 'exit') { mediaFor(A.k); fillWorldDOM(A.k) }
-  document.title = isAboutPath() ? TITLE_ABOUT() : TITLE()
+  document.title = pageTitle()
   lastSig = ''
   if (refocus) wantFocus(() => ui.querySelector(refocus))
   return true
@@ -2426,6 +2479,8 @@ async function start() {
   A.from = A.to = IDX[STOP.name]; A.front = 1
   if (isAboutPath()) { A.pending = 'detail'; document.title = TITLE_ABOUT() } else document.title = TITLE()
   requestAnimationFrame((t) => { last = t; frame(t) })
+  // a work's address, on a cold start: the work, settled — no opening, no plate (R8)
+  if (!isAboutPath() && openWorkAt(workIndex(workAt()))) return
   // arriving from the Lab on a cold start: the visitor asked for a place, not for the opening — and not for the
   // hero either, so neither the introduction nor the static plate is played over the place they asked for
   if (!isAboutPath() && arriveAt(takeArrival())) return

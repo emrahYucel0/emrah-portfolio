@@ -5,15 +5,21 @@
 // one hint (once, after 2.5 s), the foot band (the home strip's words), and the records (no button face, no second
 // impression, 44 px targets) are checked too.
 //
-//   node bench.cjs <port> [chrome|webkit]      stills to tools/diag/out/r7
+//   node bench.cjs <port> [chrome|webkit] [host] [--phone]      stills to tools/diag/out/r7
+//
+// host: the address to load from (default 127.0.0.1) — the LAN address checks what a phone on the network is served.
+// --phone runs the phone sections only. In WebKit the finger is played from inside the page as touch pointer events
+// (WebKit has no Touch constructor and Playwright no swipe; iOS hands a finger to the page as pointer events too), and
+// a tap is Playwright's own touchscreen tap.
 const pw = require('playwright')
 const path = require('path'), fs = require('fs')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
-const PORT = process.argv[2] || '4500', ENGINE = process.argv[3] || 'chrome'
+const args = process.argv.slice(2).filter((a) => !a.startsWith('--')), PHONE_ONLY = process.argv.includes('--phone')
+const PORT = args[0] || '4500', ENGINE = args[1] || 'chrome', HOST = args[2] || '127.0.0.1'
 const OUT = path.join(__dirname, 'out', 'r7'); fs.mkdirSync(OUT, { recursive: true })
 let fails = 0
 const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'FAIL'} ${l}${x ? ` — ${x}` : ''}`) }
-const base = `http://127.0.0.1:${PORT}`
+const base = `http://${HOST}:${PORT}`
 const at = (p) => p.evaluate(() => ({ path: location.pathname, y: Math.round(scrollY), sel: [...document.querySelectorAll('.lab-stage .rec')].findIndex((b) => b.getAttribute('aria-current') === 'true') + 1, base: window.__lab?.A?.base, mode: window.__lab?.A?.mode }))
 // a stream played from inside the page on a fixed clock (as trackpad.cjs does): macOS momentum, thrown hard
 const throwHard = (p, dir) => p.evaluate((dir) => new Promise((res) => {
@@ -30,14 +36,15 @@ const throwHard = (p, dir) => p.evaluate((dir) => new Promise((res) => {
   setTimeout(tick, 20)
 }), dir)
 ;(async () => {
+  // --phone: only the phone's sections
+  const section = (name, phone = false) => { if (PHONE_ONLY && !phone) return false; console.log(name); return true }
   const b = ENGINE === 'webkit' ? await pw.webkit.launch() : await pw.chromium.launch({ channel: 'chrome' })
   const desk = { viewport: { width: 1440, height: 900 } }
   const mk = async (opts = desk) => { const ctx = await b.newContext(opts); const p = await ctx.newPage(); const errs = []; p.on('pageerror', (e) => errs.push(e.message)); return { ctx, p, errs } }
   const toBench = async (p) => { await p.goto(`${base}/tr/lab`, { waitUntil: 'networkidle' }); await sleep(2200) }
   const notch = async (p, dy) => { await p.mouse.move(720, 450); await p.mouse.wheel(0, dy); await sleep(900) }
 
-  console.log(`== desktop, wheel (${ENGINE} :${PORT})`)
-  {
+  if (section(`== desktop, wheel (${ENGINE} :${PORT})`)) {
     const { ctx, p, errs } = await mk()
     await toBench(p)
     let s = await at(p); ok(s.sel === 1, 'arriving at the Lab: 01 Weight', JSON.stringify(s))
@@ -59,8 +66,7 @@ const throwHard = (p, dir) => p.evaluate((dir) => new Promise((res) => {
     ok(errs.length === 0, 'no page errors', errs.slice(0, 2).join(' | '))
     await ctx.close()
   }
-  console.log('== one gesture is one study: a hard trackpad throw')
-  {
+  if (section('== one gesture is one study: a hard trackpad throw')) {
     const { ctx, p } = await mk()
     await toBench(p)
     await throwHard(p, 1); await sleep(900); let s = await at(p)
@@ -77,8 +83,7 @@ const throwHard = (p, dir) => p.evaluate((dir) => new Promise((res) => {
     await notch(p, -120); s = await at(p); ok(s.sel === 2, 'a deliberate notch after it: 02', JSON.stringify(s))
     await ctx.close()
   }
-  console.log('== the click opens; the labels choose; Back returns to the study')
-  {
+  if (section('== the click opens; the labels choose; Back returns to the study')) {
     const { ctx, p } = await mk()
     await toBench(p)
     await p.click('.lab-stage .rec-wrap:nth-child(3) .rec'); await sleep(900)
@@ -95,8 +100,7 @@ const throwHard = (p, dir) => p.evaluate((dir) => new Promise((res) => {
     s = await at(p); ok(s.sel === 2, 'the study\'s own way back: the bench on Line', JSON.stringify(s))
     await ctx.close()
   }
-  console.log('== the hint, the strip, the records')
-  {
+  if (section('== the hint, the strip, the records')) {
     const { ctx, p } = await mk()
     await p.goto(`${base}/tr`, { waitUntil: 'networkidle' }); await p.waitForFunction(() => window.__lab?.A?.mode === 'index').catch(() => {}); await sleep(1500)
     const home = await p.evaluate(() => ({ roles: document.querySelector('.strip.bottom .roles')?.textContent.trim(), state: document.querySelector('#hint')?.textContent.trim() }))
@@ -113,33 +117,68 @@ const throwHard = (p, dir) => p.evaluate((dir) => new Promise((res) => {
     ok(recs.every((r) => (r.bg === 'rgba(0, 0, 0, 0)' || r.bg === 'transparent') && r.border === '0px' && (r.after === 'none' || r.after === 'normal') && r.h >= 44), 'records: no button face, no second impression, 44px targets', JSON.stringify(recs))
     await ctx.close()
   }
-  console.log('== phone: the finger')
-  {
-    const { ctx, p } = await mk({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: ENGINE !== 'firefox', hasTouch: true })
+  if (section(`== phone: the finger (${ENGINE}, 390 × 844, touch, ${HOST})`, true)) {
+    const phone = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: ENGINE !== 'firefox', hasTouch: true }
+    const { ctx, p, errs } = await mk(phone)
     const cdp = ENGINE === 'chrome' ? await ctx.newCDPSession(p) : null
     await toBench(p)
+    // one long swipe: Chrome's own touch input, or (WebKit) the touch pointer stream iOS hands the page
     const swipe = async (dy) => {
-      if (!cdp) return
-      const T = (type, pts) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts.map(([x, y], i) => ({ x, y, id: i })) })
-      await T('touchStart', [[300, 500]]); for (let i = 1; i <= 10; i++) { await T('touchMove', [[300, 500 + dy * i / 10]]); await sleep(16) } await T('touchEnd', []); await sleep(1000)
+      if (cdp) {
+        const T = (type, pts) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts.map(([x, y], i) => ({ x, y, id: i })) })
+        await T('touchStart', [[300, 500]]); for (let i = 1; i <= 10; i++) { await T('touchMove', [[300, 500 + dy * i / 10]]); await sleep(16) } await T('touchEnd', [])
+      } else await p.evaluate(async (dy) => {
+        const o = { pointerId: 11, pointerType: 'touch', isPrimary: true, bubbles: true, cancelable: true, composed: true }
+        const el = document.elementFromPoint(300, 500) || document.body
+        const fire = (type, y) => el.dispatchEvent(new PointerEvent(type, { ...o, clientX: 300, clientY: y }))
+        fire('pointerdown', 500)
+        for (let i = 1; i <= 10; i++) { await new Promise((r) => setTimeout(r, 16)); fire('pointermove', 500 + dy * i / 10) }
+        fire('pointerup', 500 + dy)
+      }, dy)
+      await sleep(1000)
     }
+    const shot = (n) => p.screenshot({ path: path.join(OUT, `phone-${ENGINE}-${n}.png`) })
+    const foot = () => p.evaluate(() => { const ft = document.querySelector('.lab-stage .foot'), st = ft.querySelector('.state'); return { all: ft.textContent.replace(/\s+/g, ' ').trim(), state: st.textContent.trim(), shown: st.getBoundingClientRect().width > 0 } })
+    let s = await at(p), f = await foot()
+    ok(s.sel === 1, 'arriving at the Lab: 01 Weight', JSON.stringify(s))
+    ok(f.shown && /seçili projelere açığım/i.test(f.state) && !/01 \/ 03|kayıtlı/i.test(f.all), 'the phone\'s foot: the home strip\'s status, no counter, no "KAYITLI"', f.all)
+    await shot('01')
+    await swipe(-220); s = await at(p); ok(s.sel === 2 && s.path === '/tr/lab', 'a swipe up (one long one): 02, once', JSON.stringify(s)); await shot('02')
+    await swipe(-220); s = await at(p); ok(s.sel === 3 && s.path === '/tr/lab', 'again: 03', JSON.stringify(s)); await shot('03')
+    await swipe(220); s = await at(p); ok(s.sel === 2, 'a swipe down: 02', JSON.stringify(s))
+    await swipe(-220); s = await at(p); ok(s.sel === 3, 'up again: 03', JSON.stringify(s))
+    await swipe(-220)
+    await p.waitForFunction(() => /\/contact$/.test(location.pathname) && !!window.__finale, null, { timeout: 15000 }).catch(() => {}); await sleep(1500)
+    s = await at(p); ok(s.path === '/tr/contact' && s.y === 0, 'from 03, one swipe up: the Contact finale at p = 0', JSON.stringify(s)); await shot('contact')
+    // the finale reads the finger as touch events, which only Chrome's input can make here
     if (cdp) {
-      await swipe(-220); let s = await at(p); ok(s.sel === 2 && s.path === '/tr/lab', 'a swipe up (one long one): 02, once', JSON.stringify(s))
-      await swipe(-220); s = await at(p); ok(s.sel === 3, 'again: 03', JSON.stringify(s))
-      await swipe(220); s = await at(p); ok(s.sel === 2, 'a swipe down: 02', JSON.stringify(s))
-      await ctx.close()
-      const c2 = await mk({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true })
-      await c2.p.goto(`${base}/tr/lab`, { waitUntil: 'networkidle' }); await sleep(3500)
-      const h = await c2.p.evaluate(() => { const e = document.querySelector('.lab-stage .foot .hint'); return e.classList.contains('on') ? e.textContent : '' })
-      ok(/dokunarak aç/i.test(h), 'on a phone the hint says tap', h)
-      await c2.p.screenshot({ path: path.join(OUT, 'after-bench-390-hint.png') })
-      const tg = await c2.p.evaluate(() => [...document.querySelectorAll('.lab-stage .rec, .lab-stage .open-link')].map((e) => Math.round(e.getBoundingClientRect().height)))
-      ok(tg.every((h) => h >= 44), 'phone targets ≥ 44px', tg.join(','))
-      await c2.ctx.close()
-    } else await ctx.close()
+      await swipe(220)
+      await p.waitForFunction(() => /\/lab$/.test(location.pathname), null, { timeout: 15000 }).catch(() => {}); await sleep(1500)
+      s = await at(p); ok(s.path === '/tr/lab' && s.sel === 3, 'from the finale\'s top, a swipe down: the bench at 03', JSON.stringify(s))
+    } else console.log('  (skip) up out of the finale by finger: WebKit cannot make touch events here')
+    ok(errs.length === 0, 'no page errors', errs.slice(0, 2).join(' | '))
+    await ctx.close()
+
+    // a tap chooses a label; a tap on the chosen study opens it
+    const c3 = await mk(phone)
+    await toBench(c3.p)
+    const tapRec = async (n) => { const r = await c3.p.evaluate((n) => { const e = document.querySelector(`.lab-stage .rec-wrap:nth-child(${n}) .rec`).getBoundingClientRect(); return { x: e.x + e.width / 2, y: e.y + e.height / 2 } }, n); await c3.p.touchscreen.tap(r.x, r.y) }
+    await tapRec(2); await sleep(900)
+    s = await at(c3.p); ok(s.sel === 2 && s.path === '/tr/lab', 'a tap on a label chooses it', JSON.stringify(s))
+    await tapRec(2); await c3.p.waitForURL(/\/lab\/line$/, { timeout: 10000 }).catch(() => {}); await sleep(800)
+    ok(/\/lab\/line$/.test(c3.p.url()), 'a tap on the chosen study opens it', c3.p.url())
+    await c3.ctx.close()
+
+    const c2 = await mk(phone)
+    await c2.p.goto(`${base}/tr/lab`, { waitUntil: 'networkidle' }); await sleep(3500)
+    const h = await c2.p.evaluate(() => { const e = document.querySelector('.lab-stage .foot .hint'); return e.classList.contains('on') ? e.textContent : '' })
+    ok(/dokunarak aç/i.test(h), 'on a phone the hint says tap', h)
+    await c2.p.screenshot({ path: path.join(OUT, ENGINE === 'chrome' ? 'after-bench-390-hint.png' : `phone-${ENGINE}-hint.png`) })
+    const tg = await c2.p.evaluate(() => [...document.querySelectorAll('.lab-stage .rec, .lab-stage .open-link')].map((e) => Math.round(e.getBoundingClientRect().height)))
+    ok(tg.every((h) => h >= 44), 'phone targets ≥ 44px', tg.join(','))
+    await c2.ctx.close()
   }
-  console.log('== reduced motion')
-  {
+  if (section('== reduced motion')) {
     const { ctx, p } = await mk({ ...desk, reducedMotion: 'reduce' })
     await toBench(p)
     await p.mouse.move(720, 450); await p.mouse.wheel(0, 120); await sleep(200)

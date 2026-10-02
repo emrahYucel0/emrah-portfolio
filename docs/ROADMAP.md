@@ -22,7 +22,8 @@ belgedeyse (AUDIT-01, LINEFIELD.md, DEPLOYMENT.md…) burada ona bağlantı veri
 - **Karar bekliyor:** neyin beklendiği yazılı.
 - **Önce inceleme:** mevcut davranış ölçülmeden tasarlanmayacak.
 
-Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24, R8, R7 tamamlandı; R25, R26 bekliyor).
+Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24, R8, R7 tamamlandı; R26 kararla kapandı;
+R25 bekliyor).
 
 ---
 
@@ -47,7 +48,6 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24, R
 | R22 | Gerçek cihaz testi (iPad, Mac'te Safari, Android telefon) | P0 | Karar verildi | — |
 | R23 | Awwwards başvuru malzemesi (ekran görüntüleri, kısa video, başlık, açıklama) | P0 | Karar bekliyor (içerik) | R9 |
 | R25 | Linefield yayında açılsın mı | P0 | Karar bekliyor | R1, R17 |
-| R26 | Çalışma sayfalarının (Weight/Line/Tone) altı | P2 | Karar bekliyor | — |
 
 ---
 
@@ -252,19 +252,6 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24, R
 - **Bağımlılık:** R1 (birleştirme) ve R17 (yayın).
 - **Öncelik:** P0 (yayın biçimini belirliyor).
 
-### R26. Çalışma sayfalarının (Weight/Line/Tone) altı
-- **Bugünkü durum (2026-10-02):** Çalışma sayfalarında site şeridi yok. Her çalışmanın altta kendi göstergeleri var:
-  - **Weight:** altta bir şey yok; üstte başlık ve bir ölçek çubuğu.
-  - **Line:** solda "02 Line · uzunluk · yapı", sağda canlı ölçüm ("%19 harcandı / %81 hâlâ kenarda"); üstte
-    "EĞRİ 02 / 06".
-  - **Tone:** solda kaynak düğmeleri (fotoğraf / arayüz / malzeme; kontrol), sağda "32 satır".
-- **Öneri:** olduğu gibi kalsın. Line'ın ölçümü ve Tone'un düğmeleri çalışmanın kendi aletleri; site şeridi
-  onların yerini alamaz, yanlarına da sığmaz. Bench'le tutarlılık yalnız "hangi çalışmadayım" bilgisiyle, o da
-  üstte zaten var.
-- **Karar:** Bekleyen.
-- **Dosyalar:** `app/components/lab/Study*.vue`.
-- **Öncelik:** P2.
-
 ---
 
 ## Tamamlananlar
@@ -283,7 +270,7 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24, R
 | 2026-10-02 | R5: İşler'de "İNCELE →" ve telefonda okunur durgun önizleme | `fix/audit-01-batch2` dfbcc0b | aşağıda |
 | 2026-10-02 | R24: İşler alanının ucundan tek çentik çıkıyor | `fix/audit-01-batch2` 40d54f1 | aşağıda |
 | 2026-10-02 | R8: case study'lerin adresi, okunur "sonraki iş", satırları aralayan cep | `fix/audit-01-batch2` 526bc8e, c5e9b2a, 2e0f9a4 | aşağıda |
-| 2026-10-02 | R7: Lab'de kaydırmak gezdirir, tıklamak açar; bench'in alt şeridi site şeridi; etiketlerdeki ikilenme | `fix/audit-01-batch2` (bu commit) | aşağıda |
+| 2026-10-02 | R7: Lab'de kaydırmak gezdirir, tıklamak açar; bench'in alt şeridi site şeridi; etiketlerdeki ikilenme (kullanıcı onaylı) | `fix/audit-01-batch2` 6954a14; telefon kontrolü bu commit | aşağıda |
 
 **Düzeltme turu 2'nin maddeleri:**
 - metinler ve eylem çağrısı
@@ -368,6 +355,17 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24, R
 - **Kontroller:** `bench` (Chrome ve WebKit); `seam` (3 koşu ve hareketi azaltılmış); `spine`; `beckon`;
   `finale-a11y`; gesture2 alt kümesi (flag-on ve flag-off); `trackpad`; `journey` (TR ve EN hareketi azaltılmış);
   `touch`; Linefield giriş ve çıkış; `workopen`; axe 0 (Lab dahil); typecheck: PASS.
+- **Telefon (2026-10-02):** kullanıcının iPhone'u (Safari, gizli sekme, 4921) Lab'i R7 öncesi gibi gösterdi: şeritte
+  "KAYITLI", tek kaydırmada iletişim.
+  - **Sunucu tarafı:** 4910 ve 4921 `0.0.0.0`'da tek süreç. IP'den ve 127.0.0.1'den aynı baytlar geliyor, build
+    kimliği klasördekiyle aynı. Yanıtlar `no-store`. Build HEAD'den sonra değişen kaynak içermiyor. Güncel kodda
+    görünür bir "KAYITLI" yok; yalnız ekran okuyucu durumunda var.
+  - **Bulunan boşluk:** `bench.cjs`'in telefon bölümü parmağı Chrome'un CDP'siyle sürüyordu, WebKit'te hiç
+    koşmuyordu. Artık `node bench.cjs <port> webkit <host> --phone` WebKit'te dokunma pointer olaylarıyla kaydırıyor,
+    Playwright'ın dokunuşuyla açıyor, şeridi denetliyor ve her adımın karesini alıyor.
+  - **Sonuç:** WebKit, 390 px, dokunmatik, `192.168.1.102` üzerinden 4921 ve 4910'da; Chrome dokunmayla 4921'de
+    (finalden parmakla yukarı dahil): PASS.
+  - Gerçek iPhone'da yeniden bakılacak (R22). Otomatik sonuç cihaz doğrulaması sayılmaz.
 
 **R8'in ayrıntısı (2026-10-02):**
 - **Adresler** (526bc8e):
@@ -463,5 +461,8 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24, R
     hareketi azaltılmış); `herotouch`; `spine`; `seam`; typecheck: PASS.
 
 **Kullanıcı kararıyla kapatılanlar:**
+- R26, çalışma sayfalarının (Weight/Line/Tone) altı (2026-10-02): göstergeler kalıyor; site şeridi oraya gelmiyor.
+  Line'ın canlı ölçümü ve Tone'un kaynak düğmeleri çalışmanın kendi aletleri.
+- Durum cümlesi "İSTANBUL · SEÇİLİ PROJELERE AÇIĞIM" (2026-10-02): kullanıcının kararı, olduğu gibi kalıyor.
 - HAKKIMDA odası (AUDIT-01 §9 madde 4): atlandı; 1. turdaki kâğıt bant kalıyor.
 - Ege PSI rakamları: olduğu gibi kalıyor.

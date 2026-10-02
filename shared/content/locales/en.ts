@@ -97,8 +97,7 @@ export const en = {
   work: {
     heading: 'Work',
     intro: 'Three production sites for service businesses — each designed and built end to end.',
-    open: 'Hold the image to open it',
-    openTouch: 'Tap the image to open it',
+    view: 'View',
     visit: 'Visit',
     allWork: 'All work',
     next: 'Next',
@@ -202,7 +201,6 @@ export const en = {
     worldKeys: 'Arrow keys move through the project; Escape returns to all work.',
     newTab: '(opens in a new tab)',
     openProject: 'Open project',
-    openHint: 'Activate with keyboard or screen reader.',
   },
   localeSwitch: { label: 'Language', to: 'Türkçe', short: 'TR', hreflang: 'tr-TR' },
   entry: {

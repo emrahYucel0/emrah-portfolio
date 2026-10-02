@@ -786,6 +786,49 @@ function tap(x, y) {
 // ─── the load law ────────────────────────────────────────────────────────────
 // a work only becomes openable once it is whole: in register, with its rows filled
 const registeredWork = () => (A.wLocked >= 0 && WORKS[A.wLocked]?.fill > 0.5 ? A.wLocked : -1)
+/*
+ * THE STILL, READ (R5, user decision 2026-10-02). On a portrait screen the work registered in the rows was still a
+ * drawing of its capture: the headline legible, the rest a texture. At rest it is the capture itself now, seen
+ * through the field's own rows — the image under a mask of lines at the rows' spacing, the gaps over the rows, laid
+ * on the frame. The rows still carry every work in and out: the capture shows only once a work is in register and
+ * nothing has moved for STILL_AFTER, and it goes at the first touch, so a swipe, a hold and the opening are the
+ * material's as they were. Wide screens keep the rows alone.
+ */
+const STILL_AFTER = 400
+const STILLS = {}
+let stillShown = -1
+function placeStill(k) {
+  const me = STILLS[k], st = WORKS[k]
+  if (!me || !st) return
+  const fr = st.layout.frame, s = st.spacing
+  placeMedia(me, fr, 'center top')
+  // the mask's clear bands sit on the rows, which lie on multiples of the spacing from the top of the screen
+  me.el.style.setProperty('--row', `${s}px`)
+  me.el.style.setProperty('--row-y', `${(((-fr.y) % s) + s) % s}px`)
+}
+function stillFor(k) {
+  const item = previewOf(works[k], V.P, V.T)
+  // a rebuilt DOM, or a screen turned to another capture (an upright tablet registers its own)
+  if (!STILLS[k] || !STILLS[k].el.isConnected || STILLS[k].item !== item) {
+    STILLS[k]?.el.remove()
+    const me = STILLS[k] = mediaElement(item, 'wstill')
+    // the work is named beside it; the picture is the same capture the rows already draw
+    me.node.alt = ''; me.el.setAttribute('aria-hidden', 'true')
+    D.work.appendChild(me.el)
+    me.node.decode?.().catch(() => {})
+    placeStill(k)
+  }
+  return STILLS[k]
+}
+function stillUpdate(now) {
+  const k = registeredWork()
+  const show = V.P && settledAt(STOP.work) && !A.aboutOpen && !A.busy && !A.press && !ptr.down && k >= 0 &&
+    Math.abs(A.wt - k) < 0.004 && now - A.lastInput > STILL_AFTER ? k : -1
+  if (show === stillShown) return
+  if (show >= 0) stillFor(show)
+  for (const [i, me] of Object.entries(STILLS)) me.el.classList.toggle('on', +i === show)
+  stillShown = show
+}
 function current() {
   if (A.mode === 'world' || A.mode === 'exit') return worldFor(A.k)[clamp(Math.round(A.wp), 0, lastFrame())]
   const s = clamp(Math.round(A.p), 0, LAST)
@@ -888,7 +931,6 @@ const studyUrl = (id) => { const [path, query] = LAB_URL.split('?'); return `${p
  * way under it; a finger taps it, and has been able to since the tap was added — the instruction simply went on
  * naming the hold. The material still answers a held finger; nothing about the press changes. Only the sentence.
  */
-const OPEN_WORK = () => (TOUCH ? TXT.work.openTouch : TXT.work.open)
 // The Lab is its own place now: the bench at /lab, with the three studies on their own routes. What used to be
 // here — holding to make a room, rooms relaxing against a budget of free material, the five recorded studies
 // playing inside them — is retired. The material memory those rooms left behind (scars, the visit's order, the
@@ -1348,7 +1390,7 @@ function buildDOM() {
     <div class="col">
       <div class="head"><h2 class="lbl" tabindex="-1">${TXT.work.heading}</h2><p class="wline">${workIntro.line}</p><p class="sr">${TXT.a11y.workKeys}</p></div>
       <ol class="index">${works.map((w, i) => `<li><button data-work="${i}"><span class="swatch"></span><span class="wid">${w.name}</span><span class="wk">${w.strength}</span></button></li>`).join('')}</ol>
-      <div class="current"><p class="wtitle" aria-hidden="true"></p><p class="wmeta" aria-hidden="true"></p><button class="open" data-open aria-label="${OPEN_WORK()} — ${TXT.a11y.openProject}" aria-describedby="c2-open-hint">${OPEN_WORK()}</button><span id="c2-open-hint" class="sr">${TXT.a11y.openHint}</span></div>
+      <div class="current"><p class="wtitle" aria-hidden="true"></p><p class="wmeta" aria-hidden="true"></p><button class="open" data-open aria-label="${TXT.work.view} — ${TXT.a11y.openProject}">${TXT.work.view} →</button></div>
     </div>`)
 
   /*
@@ -1547,6 +1589,7 @@ function layoutDOM() {
   const wk = WORKS[0].layout
   // the index column's text stays on its solid part, clear of the tapering edge
   place(D.work.querySelector('.col'), { x: 0, y: wk.col.y, w: wk.col.w - (V.P ? 0 : 24), h: wk.col.h - (V.P ? 60 : 0) })
+  for (const k of Object.keys(STILLS)) placeStill(+k)
   // The Lab stop keeps its place on the index but no longer shows a composition of its own — the Lab is a route,
   // and arriving at the stop opens it. Its retired layer is stood down once, here, rather than every frame: inert,
   // so it is neither drawn nor reachable, and the way to the Lab for a reader is the plain navigation, as before.
@@ -1693,12 +1736,13 @@ function domUpdate(from, to, front) {
   const key = `${k}:${[...A.visited].join('')}`
   if (key !== lastWork) {
     lastWork = key
-    if (k >= 0) { D.wtitle.textContent = works[k].name; D.wmeta.textContent = works[k].strength; D.current.querySelector('.open').setAttribute('aria-label', `${OPEN_WORK()} — ${TXT.a11y.openProject}: ${works[k].name}`) }
+    if (k >= 0) { D.wtitle.textContent = works[k].name; D.wmeta.textContent = works[k].strength; D.current.querySelector('.open').setAttribute('aria-label', `${TXT.work.view} — ${TXT.a11y.openProject}: ${works[k].name}`) }
     D.current.classList.toggle('on', k >= 0)
     D.work.querySelectorAll('[data-work]').forEach((b, i) => { b.classList.toggle('active', i === k); b.classList.toggle('visited', A.visited.has(i)); if (i === k) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current') })
   }
   const hint = hintFor()
   if (hint !== lastHint) { D.hint.textContent = hint; lastHint = hint }
+  stillUpdate(performance.now())
   const cue = cueFor(Math.round(A.p))
   if (cue !== lastCue) {
     // hiding keeps the words, so they fade rather than vanish
@@ -2268,7 +2312,7 @@ export function setLocale(next) {
   const refocus = focusKey(document.activeElement)   // M4 A11Y
   FR = {}                       // frame blocks carry copy; their geometry does not change, so WORLD textures stand
   buildDOM()
-  lastHint = lastCue = lastTone = lastTT = lastTB = lastBg = lastWork = lastWB = ''
+  lastHint = lastCue = lastTone = lastTT = lastTB = lastBg = lastWork = lastWB = ''; stillShown = -1
   mediaShown = ''
   onState.clear()
   layoutDOM()

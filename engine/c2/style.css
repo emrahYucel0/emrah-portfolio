@@ -183,7 +183,18 @@ body.in-world :where(#ui) .bottom .roles { opacity: 0; }
 :where(#ui) .work .current.on { opacity: 1; transform: none; }
 :where(#ui) .work .wtitle { font: 440 clamp(30px, 2.9vw, 44px)/1 var(--sans); letter-spacing: -.035em; }
 :where(#ui) .work .wmeta { font: 380 14px/1.45 var(--sans); opacity: .82; max-width: 32ch; }
-:where(#ui) .work .open { align-self: flex-start; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; opacity: .78; padding: 8px 0; }
+/* THE DOOR INTO A WORK (R5): under its name, on every device, so a visitor who never holds the image still finds it.
+   The column is the site's own night (#121212), not the work's ink, so it is copper's dark-ground tone (6.6:1). */
+:where(#ui) .work .open { align-self: flex-start; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--act-night); padding: 8px 0; }
+:where(#ui) .work .open:hover { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+/* THE STILL, READ (R5, main.js): the capture through the field's rows — clear bands on the rows, the image between */
+:where(#ui) .work .wstill { position: absolute; overflow: hidden; opacity: 0; transition: opacity .35s ease; pointer-events: none;
+  -webkit-mask-image: repeating-linear-gradient(to bottom, transparent 0 calc(var(--row) * .19), #000 calc(var(--row) * .19) calc(var(--row) * .81), transparent calc(var(--row) * .81) var(--row));
+  mask-image: repeating-linear-gradient(to bottom, transparent 0 calc(var(--row) * .19), #000 calc(var(--row) * .19) calc(var(--row) * .81), transparent calc(var(--row) * .81) var(--row));
+  -webkit-mask-position: 0 var(--row-y); mask-position: 0 var(--row-y); }
+:where(#ui) .work .wstill.on { opacity: 1; }
+:where(#ui) .work .wstill picture, :where(#ui) .work .wstill .media-node { display: block; width: 100%; height: 100%; object-fit: cover; }
+@media (prefers-reduced-motion: reduce) { :where(#ui) .work .wstill { transition: none; } }
 
 /* lab: a small caption; the material is the piece */
 :where(#ui) .lab .cap { display: flex; flex-direction: column; justify-content: center; gap: 8px; }
@@ -343,7 +354,10 @@ body.in-world :where(#ui) .bottom .roles { opacity: 0; }
   :where(#ui) .work .current { gap: 4px; }
   :where(#ui) .work .wmeta { max-width: none; font-size: 13px; }
   :where(#ui) .work .wrole { display: none; }
-  :where(#ui) .work .open { display: none; }
+  /* the column is a fixed share of a phone's height: the door shares the line under the name rather than adding one */
+  :where(#ui) .work .current { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; align-items: baseline; }
+  :where(#ui) .work .wtitle { grid-column: 1 / -1; }
+  :where(#ui) .work .open { grid-column: 2; padding: 7px 0; }
   :where(#ui) .world .wlink .whost { display: none; }
   /* a strip that also says whose work it is sets the two on two short lines, clear of the strip's hint */
   :where(#ui) .wb-strip:has(.wb-client) { flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; padding-right: 76px; }

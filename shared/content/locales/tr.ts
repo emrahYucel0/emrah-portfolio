@@ -101,8 +101,7 @@ export const tr = {
   work: {
     heading: 'İşler',
     intro: 'Hizmet markaları için uçtan uca tasarlanıp geliştirilmiş üç production sitesi.',
-    open: 'Açmak için görseli basılı tut',
-    openTouch: 'Açmak için görsele dokun',
+    view: 'İncele',
     visit: 'Siteyi ziyaret et',
     allWork: 'Tüm işler',
     next: 'Sonraki',
@@ -207,7 +206,6 @@ export const tr = {
     worldKeys: 'Ok tuşları proje içinde ilerler; Escape tüm işlere döner.',
     newTab: '(yeni sekmede açılır)',
     openProject: 'Projeyi aç',
-    openHint: 'Klavye veya ekran okuyucuyla etkinleştirin.',
   },
   localeSwitch: { label: 'Dil', to: 'English', short: 'EN', hreflang: 'en' },
   entry: {

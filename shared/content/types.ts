@@ -166,10 +166,9 @@ export interface LocaleCopy {
   work: {
     heading: string
     intro: string
-    /** the visible label of the control that opens the registered project (a pointer instruction) */
-    open: string
-    /** the same thing said to a finger: the phone has no such control, and no holding either */
-    openTouch: string
+    /** the visible door into the registered project, under its name, on every device (R5); the pointer's own
+     *  gesture — hold the image, or tap it — is the one hint (hints.work / workTouch) */
+    view: string
     visit: string
     allWork: string
     next: string
@@ -221,10 +220,8 @@ export interface LocaleCopy {
     plainNav: string; selectedWork: string; labStudies: string; aboutRegion: string; aboutDetail: string; capabilities: string; projectImages: string
     /** M4: keyboard instructions read by assistive technology, and the new-tab note on external links */
     keys: string; workKeys: string; worldKeys: string; newTab: string
-    /** M4: the name of the control that opens the registered project (its visible text is a pointer instruction) */
+    /** M4: what the control that opens the registered project does, after its visible word (R5: "İncele") */
     openProject: string
-    /** M4: description of that control — no hold is needed from a keyboard or a screen reader */
-    openHint: string
   }
   localeSwitch: { label: string; to: string; short: string; hreflang: string }
   entry: { title: string; description: string; choose: string }

@@ -2,8 +2,12 @@
 //
 //  1. Lab → finale: a trackpad gesture down on the bench (push + a long coasting tail) lands on /contact at p = 0,
 //     and the tail does not scroll the finale (hush). The bench's last frame (veil = 1) and the finale's first frame
-//     are compared pixel for pixel over the sheet (strip and foot excluded).
-//  2. finale → Lab: at p = 0 a gesture up returns to the bench; its tail does not carry on to Work.
+//     are compared pixel for pixel over the sheet AND the foot band — since R7 the bench's foot carries the finale's
+//     own words, so nothing in it may change across the seam (only the strip at the top, which is the Lab strip on
+//     both, is left out).
+//     R7: the bench browses its studies first — the crossing is the gesture down from 03.
+//  2. finale → Lab: at p = 0 a gesture up returns to the bench, on 03; its tail does not carry on to Work; and the
+//     finale's frame at p = 0 and the bench's first frame (veil = 1) are compared the same way.
 //  3. a scroll that runs the drawing back to the top does NOT also leave it (one gesture, one destination).
 //  4. the finger: the same two crossings with real touch input (Chromium, CDP touch events).
 //  5. by name → p = 1: the runtime's strip Contact, the Lab strip's Contact, /tr#contact.
@@ -56,11 +60,13 @@ const momentum = async (pg, dir) => {
   await cdp.detach().catch(() => {})
 }
 
-// the sheet between the strip and the foot band, as luminance
+// the sheet and the foot band — everything under the strip — as luminance
 const sheetOf = async (pg) => pg.evaluate(async () => {
   const strip = document.querySelector('[data-strip]')?.getBoundingClientRect().height ?? 50
-  return { top: Math.ceil(strip) + 2, bottom: innerHeight - 50 }
+  return { top: Math.ceil(strip) + 2, bottom: innerHeight }
 })
+// the bench's registered study, read from its records (R7)
+const studyAt = (pg) => pg.evaluate(() => [...document.querySelectorAll('.lab-stage .rec')].findIndex((b) => b.getAttribute('aria-current') === 'true') + 1)
 let scratch = null // a blank page does the comparing: two full-screen PNGs are too heavy for the finale's own page
 async function diff(pg, a, b) {
   const box = await sheetOf(pg)
@@ -72,13 +78,13 @@ async function diff(pg, a, b) {
     const w = ia.width, h = box.bottom - box.top
     const px = (img) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.drawImage(img, 0, -box.top); return x.getImageData(0, 0, w, h).data }
     const da = px(ia), db = px(ib)
-    let sum = 0, over = 0, n = 0
+    let sum = 0, over = 0, any = 0, n = 0
     for (let i = 0; i < da.length; i += 4) {
       const la = da[i] * 0.299 + da[i + 1] * 0.587 + da[i + 2] * 0.114
       const lb = db[i] * 0.299 + db[i + 1] * 0.587 + db[i + 2] * 0.114
-      const d = Math.abs(la - lb); sum += d; if (d > 8) over++; n++
+      const d = Math.abs(la - lb); sum += d; if (d > 8) over++; if (d > 0) any++; n++
     }
-    return { mean: +(sum / n).toFixed(3), over: +((over / n) * 100).toFixed(3) }
+    return { mean: +(sum / n).toFixed(3), over: +((over / n) * 100).toFixed(3), overPx: over, anyPx: any }
   }, { a, b, box })
 }
 
@@ -97,6 +103,9 @@ async function diff(pg, a, b) {
 
   console.log('== 1. Lab → finale (trackpad, desktop)')
   await p.goto(`${BASE}/tr/lab`, { waitUntil: 'networkidle' }); await sleep(2200)
+  // the bench browses first (R7): one notch to 02, one to 03, each its own gesture
+  for (let i = 0; i < 2; i++) { await p.mouse.move(700, 450); await p.mouse.wheel(0, 110); await sleep(800) }
+  ok((await studyAt(p)) === 3 && (await p.evaluate(state)).path === '/tr/lab', 'the bench browses to 03 before it leaves', `study ${await studyAt(p)}`)
   const benchShot = await p.screenshot()
   // the bench's last frame is taken the moment it has cleared itself to the bare field
   const lastBench = p.waitForFunction(() => getComputedStyle(document.querySelector('.lab-stage')).getPropertyValue('--veil').trim() === '1', null, { timeout: 6000, polling: 'raf' })
@@ -111,7 +120,7 @@ async function diff(pg, a, b) {
   ok(s.y === 0 && s.p === 0, 'the drawing starts at p = 0 and the gesture\'s tail did not scroll it', `scrollY ${s.y}, p ${s.p}`)
   if (bare) {
     const d = await diff(p, bare, firstFinale)
-    ok(d.over < 0.5, "the seam: the bench's last frame IS the finale's first frame (sheet, strip and foot excluded)", `mean |Δlum| ${d.mean}, pixels over 8: ${d.over}%`)
+    ok(d.overPx === 0, "the seam: the bench's last frame IS the finale's first frame (sheet and foot band)", `mean |Δlum| ${d.mean}, pixels over 8: ${d.overPx}, pixels differing at all: ${d.anyPx}`)
     if (RECORD) fs.writeFileSync(path.join(OUT, 'seam-1-bench.png'), benchShot)
     if (RECORD) fs.writeFileSync(path.join(OUT, 'seam-2-bench-bare.png'), bare)
     if (RECORD) fs.writeFileSync(path.join(OUT, 'seam-3-finale-first.png'), firstFinale)
@@ -121,11 +130,55 @@ async function diff(pg, a, b) {
 
   console.log('\n== 2. finale → Lab (trackpad)')
   await sleep(700)
+  const lastFinale = await p.screenshot()
+  /*
+   * The bench's first frame cannot be taken with a screenshot: one takes ~100 ms, and by then the bench has begun to
+   * register itself out of the bare field. So the crossing is recorded frame by frame (a CDP screencast, at the
+   * compositor's own cadence), the moment the route changes is noted, and the first frame after it is compared with
+   * the finale's last. The page also logs the bench's first veil: it must arrive bare (1), not registered.
+   */
+  await p.evaluate(() => {
+    window.__veils = []
+    const mo = new MutationObserver(() => { const st = document.querySelector('.lab-stage'); if (st) { const v = st.style.getPropertyValue('--veil'); if (v && window.__veils.at(-1) !== v) window.__veils.push(v) } })
+    mo.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['style'] })
+  })
+  const cast = await p.context().newCDPSession(p)
+  const frames = []
+  cast.on('Page.screencastFrame', (f) => { frames.push({ t: f.metadata.timestamp * 1000, data: f.data }); cast.send('Page.screencastFrameAck', { sessionId: f.sessionId }).catch(() => {}) })
+  await cast.send('Page.startScreencast', { format: 'png', everyNthFrame: 1 })
+  let navT = 0
+  const watchNav = p.waitForFunction(() => location.pathname === '/tr/lab', null, { timeout: 20000, polling: 'raf' }).then(() => { navT = Date.now() }).catch(() => {})
   await momentum(p, -1)
   const back = await atBench(p)
+  await watchNav
   await sleep(1200)
+  await cast.send('Page.stopScreencast').catch(() => {}); await cast.detach().catch(() => {})
+  const veils = await p.evaluate(() => window.__veils)
+  const after = frames.filter((f) => f.t >= navT)
+  const fb = after.length ? Buffer.from(after[0].data, 'base64') : null
   s = await p.evaluate(state)
-  ok(back && s.bench, 'at p = 0 a gesture up returns to the bench', s.path)
+  ok(back && s.bench && (await studyAt(p)) === 3, 'at p = 0 a gesture up returns to the bench, on 03', `${s.path}, study ${await studyAt(p)}`)
+  if (REDUCED) {
+    // reduced motion is at the end of either crossing: no veil, the bench simply registered, at once
+    const st = await p.evaluate(() => ({ veil: getComputedStyle(document.querySelector('.lab-stage')).getPropertyValue('--veil').trim(), rec: !!document.querySelector('.lab-stage .rec[aria-current]') }))
+    ok((st.veil === '' || st.veil === '0') && st.rec && !veils.includes('1'), 'reduced motion: the bench arrives registered at once (no veil)', JSON.stringify({ ...st, veils: veils.slice(0, 3) }))
+  } else ok(veils[0] === '1', 'the bench arrives bare (its first veil is 1) and registers itself from there', `veils ${veils.slice(0, 4).join(' → ')}…`)
+  if (fb && !REDUCED) {
+    /*
+     * The screencast may drop frames under load, so which frame is "first" is not exact. What the seam promises is
+     * measured instead: among the first three frames after the route changed there is one that IS the finale's last
+     * (the bench mounted bare and painted bare), and no frame of the first 300 ms jumps from the one before it (a
+     * blank sheet jumped by 12.7; the bench's own registering moves less than 0.5 a frame).
+     */
+    const ds = []
+    for (const f of after.filter((f) => f.t - navT <= 300)) ds.push({ t: Math.round(f.t - navT), ...(await diff(p, lastFinale, Buffer.from(f.data, 'base64'))) })
+    const firstThree = ds.slice(0, 3)
+    const exact = firstThree.find((d) => d.anyPx === 0)
+    ok(!!exact, "the seam, upwards: the bench's first frames ARE the finale at p = 0 (sheet and foot band)", firstThree.map((d) => `+${d.t}ms Δ${d.mean} (${d.anyPx} px)`).join(' · '))
+    const jumps = ds.slice(1).map((d, i) => Math.abs(d.mean - ds[i].mean))
+    ok(jumps.every((j) => j < 3), 'the arrival has no blank or jumping frame in its first 300 ms', `largest frame-to-frame change ${Math.max(0, ...jumps).toFixed(2)} over ${ds.length} frames`)
+    if (scratch) { await scratch.close(); scratch = null; await p.bringToFront() }
+  } else if (!REDUCED) ok(false, 'a frame was recorded after the route changed', `${frames.length} frames in all`)
   ok(s.path === '/tr/lab', "and its tail does not carry on to Work (hush on the bench)", s.path)
   const benchBack = await p.screenshot()
   if (RECORD) fs.writeFileSync(path.join(OUT, 'seam-4-bench-again.png'), benchBack)
@@ -219,6 +272,9 @@ async function diff(pg, a, b) {
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
   }
   await p.goto(`${BASE}/tr/lab`, { waitUntil: 'networkidle' }); await sleep(2500)
+  // R7: two swipes browse to 03, the third carries on
+  for (let i = 0; i < 2; i++) { await swipe(-260); await sleep(900) }
+  ok((await studyAt(p)) === 3, 'two swipes up browse the bench to 03', `study ${await studyAt(p)}`)
   await swipe(-260)
   a = await atFinale(p); await sleep(1400)
   s = await p.evaluate(state)
@@ -233,7 +289,7 @@ async function diff(pg, a, b) {
   await swipe(260)
   a = await atBench(p); await sleep(1400)
   s = await p.evaluate(state)
-  ok(a && s.path === '/tr/lab', 'at the top a swipe down → the bench', s.path)
+  ok(a && s.path === '/tr/lab' && (await studyAt(p)) === 3, 'at the top a swipe down → the bench, on 03', `${s.path}, study ${await studyAt(p)}`)
   if (RECORD) await sleep(1500)
   const phoneVideo = RECORD ? p.video() : null
   await phone.close()

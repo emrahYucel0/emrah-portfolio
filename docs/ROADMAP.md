@@ -22,7 +22,7 @@ belgedeyse (AUDIT-01, LINEFIELD.md, DEPLOYMENT.md…) burada ona bağlantı veri
 - **Karar bekliyor:** neyin beklendiği yazılı.
 - **Önce inceleme:** mevcut davranış ölçülmeden tasarlanmayacak.
 
-Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24, R8 tamamlandı).
+Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24, R8, R7 tamamlandı; R25, R26 bekliyor).
 
 ---
 
@@ -33,7 +33,6 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24, R
 | R1 | Birleştirme: düzeltme turu 2 → `main`, yayın dalı | P0 | Karar bekliyor (ne zaman) | tam kapı (R16 sayesinde paralel koşulabilir) |
 | R4 | Özel imleç | P2 | Karar verildi (biçim) | R2 |
 | R6 | Lab bench girişleri: okunur boyut, üzerine gelince ön gösterim | P2 | Kısmen: ön gösterimin biçimi bekliyor | — |
-| R7 | Lab'de kaydırma çalışmalar arasında, tıklama içeri | P2 | Önce inceleme | R6 |
 | R9 | Koyu zeminlerde satır titreşimi | **P0** (R18 için) | Neden açık; önce ölçüm | — |
 | R10 | Safari'de adın ince kesimle çizilmesi | P1 | Önce gerçek iPhone | R22 |
 | R11 | Yavaş ağda ilk kare (8,9 sn) | P2 | Önce değerlendirme | — |
@@ -48,6 +47,7 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24, R
 | R22 | Gerçek cihaz testi (iPad, Mac'te Safari, Android telefon) | P0 | Karar verildi | — |
 | R23 | Awwwards başvuru malzemesi (ekran görüntüleri, kısa video, başlık, açıklama) | P0 | Karar bekliyor (içerik) | R9 |
 | R25 | Linefield yayında açılsın mı | P0 | Karar bekliyor | R1, R17 |
+| R26 | Çalışma sayfalarının (Weight/Line/Tone) altı | P2 | Karar bekliyor | — |
 
 ---
 
@@ -79,23 +79,6 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24, R
   yok; iki yol var: kısa bir kayıt ya da çalışmanın küçük canlı hâli.
 - **Dosyalar:** `app/components/lab/LabBench.vue`, `app/assets/css/lab.css`, `app/components/lab/Study*.vue`.
 - **Bağımlılık:** yok.
-- **Öncelik:** P2.
-
-### R7. Lab'de kaydırma çalışmalar arasında gezdirsin, tıklama içeri soksun
-- **Açıklama:**
-  - İşler'deki kural Lab'de de geçerli olsun: kaydırma çalışmalar arasında gezdirir, tıklama çalışmanın içine
-    sokar.
-  - Lab ↔ iletişim dikişi korunacak.
-  - **Önce mevcut davranış incelenecek:** bench'te dikey jestin ne yaptığı, `useLabSpine`'ın eşikleri,
-    `useContactSeam`'in devralma noktası.
-- **Karar:** Önce inceleme. Tasarım, ölçümden sonra kullanıcıya sunulacak.
-- **Dosyalar:**
-  - `app/components/lab/LabBench.vue`
-  - `app/composables/useLabSpine.ts`
-  - `app/composables/useContactSeam.ts`
-  - `app/assets/css/lab.css`
-  - Harness'lar: `tools/diag/spine.cjs`, `journey.cjs`
-- **Bağımlılık:** R6 (aynı bileşen).
 - **Öncelik:** P2.
 
 ### R9. Koyu zeminlerde satır titreşimi
@@ -269,6 +252,19 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24, R
 - **Bağımlılık:** R1 (birleştirme) ve R17 (yayın).
 - **Öncelik:** P0 (yayın biçimini belirliyor).
 
+### R26. Çalışma sayfalarının (Weight/Line/Tone) altı
+- **Bugünkü durum (2026-10-02):** Çalışma sayfalarında site şeridi yok. Her çalışmanın altta kendi göstergeleri var:
+  - **Weight:** altta bir şey yok; üstte başlık ve bir ölçek çubuğu.
+  - **Line:** solda "02 Line · uzunluk · yapı", sağda canlı ölçüm ("%19 harcandı / %81 hâlâ kenarda"); üstte
+    "EĞRİ 02 / 06".
+  - **Tone:** solda kaynak düğmeleri (fotoğraf / arayüz / malzeme; kontrol), sağda "32 satır".
+- **Öneri:** olduğu gibi kalsın. Line'ın ölçümü ve Tone'un düğmeleri çalışmanın kendi aletleri; site şeridi
+  onların yerini alamaz, yanlarına da sığmaz. Bench'le tutarlılık yalnız "hangi çalışmadayım" bilgisiyle, o da
+  üstte zaten var.
+- **Karar:** Bekleyen.
+- **Dosyalar:** `app/components/lab/Study*.vue`.
+- **Öncelik:** P2.
+
 ---
 
 ## Tamamlananlar
@@ -286,7 +282,8 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24, R
 | 2026-10-02 | R2: bakır = eylem rengi | `fix/audit-01-batch2` a21a96c | aşağıda |
 | 2026-10-02 | R5: İşler'de "İNCELE →" ve telefonda okunur durgun önizleme | `fix/audit-01-batch2` dfbcc0b | aşağıda |
 | 2026-10-02 | R24: İşler alanının ucundan tek çentik çıkıyor | `fix/audit-01-batch2` 40d54f1 | aşağıda |
-| 2026-10-02 | R8: case study'lerin adresi, okunur "sonraki iş", satırları aralayan cep | `fix/audit-01-batch2` 526bc8e, c5e9b2a, (bu commit) | aşağıda |
+| 2026-10-02 | R8: case study'lerin adresi, okunur "sonraki iş", satırları aralayan cep | `fix/audit-01-batch2` 526bc8e, c5e9b2a, 2e0f9a4 | aşağıda |
+| 2026-10-02 | R7: Lab'de kaydırmak gezdirir, tıklamak açar; bench'in alt şeridi site şeridi; etiketlerdeki ikilenme | `fix/audit-01-batch2` (bu commit) | aşağıda |
 
 **Düzeltme turu 2'nin maddeleri:**
 - metinler ve eylem çağrısı
@@ -335,6 +332,42 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24, R
   CLAUDE.md'ye yazıldı.
 - **Kontrol:** 4921/4922/4923 ile koşuldu. Üç sunucu da cspboot PASS verdi; 4500–4799 dinleyicileri aynı PID'lerle
   kaldı. Hatalı argüman (iki port) açık bir mesajla durdu. Tam kapı koşulmadı.
+
+**R7'nin ayrıntısı (2026-10-02; kullanıcı kararları aynı gün):**
+- **Kural:** bench'te bir jest bir çalışma ilerletir. 01 → 02 → 03'ten sonraki aşağı jest iletişim finaline gider
+  (bugünkü dikiş, p = 0); 01'den yukarı jest İşler'e.
+- **Açma:** tıklama ya da bakır "AÇ →" çalışmayı açar. Başka bir etikete tıklamak onu seçer; bu kısayol olarak
+  kaldı.
+- **Varış:**
+  - Finalden yukarı: 03 Tone.
+  - Bir çalışmadan Geri ile (ya da çalışmanın kendi "← Lab"ı ile): o çalışma.
+  - Diğer her yol: 01 Weight.
+- **Tek jest = tek çalışma:** runtime'ın kuralı (`useLabSpine`). Bir akış 340 ms, tek çentik 240 ms sessizliğe kadar
+  tek jesttir; her olay sessizliği yeniden başlatır. Ters yöne dönüş yeni jesttir. Parmakta bir dokunuş bir jest.
+- **İpucu (R3'ün sistemi):** 2,5 sn girdi yoksa oturumda bir kez, alt şeridin ortasında. Masaüstünde "KAYDIRARAK
+  GEZ · TIKLAYARAK AÇ", dokunmatikte "KAYDIRARAK GEZ · DOKUNARAK AÇ".
+- **Alt şerit:** "LAB — 01 / 03" ve "KAYITLI" kalktı. Solda roller, sağda İstanbul ve durum; ana sayfa şeridiyle aynı
+  kaynaktan. Final şeridiyle aynı ölçüde ve opak; finalin şerit yazılarındaki geçiş animasyonu kalktı. Şerit artık
+  dikişte değişmiyor.
+- **Etiketler:**
+  - İkilenen yazı, seçili olmayan kayıtlara bilinçli eklenen "kayıt dışı ikinci baskı"ydı (`.nm::after`, 2,4 px
+    kayık); kaldırıldı.
+  - Etiket düğmelerinde stil sıfırlaması yoktu; tarayıcının gri düğme kutusu görünüyordu. O da kalktı.
+  - Etiketler artık en az 44 px.
+- **Dikiş (iki yönde piksel farkı 0):**
+  - Yukarı yönde bench ilk karesini boş kanvasla boyuyordu (bir kare, 12 ms): R7'den önce de vardı, ölçülmüyordu.
+    `ResizeObserver`'ın ilk çağrısı da kanvası silip bir kare boş bırakıyordu. İkisi de düzeldi.
+  - İpuçları devirde iki tarafta da solmadan hemen gidiyor.
+  - Finalden çıkarken satırın nefesi duruyor ve bir kare çıplak çiziliyor.
+  - Ölçüm: aşağı yönde fark 0 piksel; yukarı yönde bench'in ilk iki karesi finalle 0 piksel farkla aynı, sıçrayan
+    kare yok.
+- **Harness'lar:**
+  - Yeni `bench.cjs` (Chrome ve WebKit).
+  - Yeni kurala göre yazılanlar: `seam.cjs` (yukarı yön screencast'le, alt şerit dahil), `spine.cjs`,
+    `gesture2.cjs` (bench bölümü), `journey.cjs`, `touch.cjs`, `beckon.cjs`, `finale-a11y.cjs`.
+- **Kontroller:** `bench` (Chrome ve WebKit); `seam` (3 koşu ve hareketi azaltılmış); `spine`; `beckon`;
+  `finale-a11y`; gesture2 alt kümesi (flag-on ve flag-off); `trackpad`; `journey` (TR ve EN hareketi azaltılmış);
+  `touch`; Linefield giriş ve çıkış; `workopen`; axe 0 (Lab dahil); typecheck: PASS.
 
 **R8'in ayrıntısı (2026-10-02):**
 - **Adresler** (526bc8e):

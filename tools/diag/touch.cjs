@@ -35,6 +35,8 @@ const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'F
     base: window.__lab?.A?.base ?? null,
     scrollY: Math.round(scrollY),
     current: document.querySelector('.lab-stage .rec[aria-current]')?.textContent?.trim().slice(0, 10) ?? null,
+    // R7: which study the bench stands on, 1–3
+    study: [...document.querySelectorAll('.lab-stage .rec')].findIndex((b) => b.getAttribute('aria-current') === 'true') + 1,
     finale: !!document.querySelector('.finale, [data-finale], #finale'),
   }))
   /*
@@ -77,12 +79,18 @@ const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'F
    */
   if (!SPINE) console.log(`  !!  window.__lab.SPINE is not exposed on this build — the per-place hard-flick cases CANNOT RUN here (only the bench ones below). Stops fall back to ${JSON.stringify(STOP)}`)
 
-  // 1. swipe up from empty field → Contact
+  // 1. R7: the bench browses — a swipe up from the empty field moves it one study, and only past 03 does the
+  //    finger carry on to the Contact finale
   await bench()
   await swipe(Math.round(+W / 2), Math.round(+H * 0.72), -260)
-  await sleep(6000)
+  await sleep(2000)
   let s = await state()
-  ok(arrivedAtContact(s), 'swipe up (empty field) → the Contact finale', contactSaid(s))
+  ok(s.path === '/tr/lab' && s.study === 2, 'swipe up (empty field) → the next study, 02', `${s.path} study ${s.study}`)
+  await swipe(Math.round(+W / 2), Math.round(+H * 0.72), -260); await sleep(2000)
+  await swipe(Math.round(+W / 2), Math.round(+H * 0.72), -260)
+  await sleep(6000)
+  s = await state()
+  ok(arrivedAtContact(s), 'and from 03, a swipe up → the Contact finale', contactSaid(s))
 
   // 2. swipe down from empty field → Work
   await bench()
@@ -91,15 +99,16 @@ const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'F
   s = await state()
   ok(s.path === '/tr' && s.base === STOP.work, 'swipe down (empty field) → Work', `${s.path} base ${s.base}`)
 
-  // 3–5. a swipe that BEGINS on each record must still navigate, and must not open a study
+  // 3–5. a swipe that BEGINS on each record is still the bench's gesture (one study along, R7), and must not open
+  //      a study or choose the record it began on
   for (const i of [0, 1, 2]) {
     await bench()
     const before = await state()
     const box = await recBox(i)
     await swipe(box.x, box.y, -260)
-    await sleep(6000)
+    await sleep(2500)
     s = await state()
-    ok(arrivedAtContact(s), `swipe beginning on record ${i + 1} → the Contact finale`, `${contactSaid(s)} (was registered: ${before.current})`)
+    ok(s.path === '/tr/lab' && s.study === 2, `swipe beginning on record ${i + 1} → one study along, 02`, `${s.path} study ${s.study} (was ${before.study})`)
     ok(!/\/lab\/(weight|line|tone)/.test(s.path), `record ${i + 1}: no study opened by the swipe`)
   }
 
@@ -259,7 +268,8 @@ const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'F
     await sleep(6000)
     s = await state()
     const where = `${said(cp)}, swept ${swept}px`
-    if (dir > 0) ok(arrivedAtContact(s), 'hard flick down from the bench      → the Contact finale', `${contactSaid(s)}  ·  ${where}`)
+    // R7: a hard flick moves the bench one study, however hard (it opens on 01)
+    if (dir > 0) ok(s.path === '/tr/lab' && s.study === 2, 'hard flick down from the bench      → one study along, 02', `${s.path} study ${s.study}  ·  ${where}`)
     else ok(s.path === '/tr' && s.base === STOP.work, 'hard flick up   from the bench      → Work', `${s.path} base ${s.base}  ·  ${where}`)
   }
 

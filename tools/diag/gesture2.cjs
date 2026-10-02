@@ -153,17 +153,25 @@ const FLICKS = {
       }
     }
 
-    // ── and from the bench, where the runtime is on screen but does not own it ──────────────────────────────
+    /*
+     * ── and from the bench, where the runtime is on screen but does not own it ──────────────────────────────
+     * R7 (user decision 2026-10-02): the bench browses — a gesture moves it one study, and only past either end does
+     * it carry on to the next place. It opens on 01, so a flick down must move it exactly one study (01 → 02,
+     * still the bench) and a flick up must leave it for Work, one stop. One gesture, one study, one stop: the same rule.
+     */
+    const studyOf = (pg) => pg.evaluate(() => [...document.querySelectorAll('.lab-stage .rec')].findIndex((b) => b.getAttribute('aria-current') === 'true') + 1)
     for (const dir of [1, -1]) {
       await p.goto(`http://127.0.0.1:${port}/tr/lab`, { waitUntil: 'networkidle' })
       await sleep(2400)
       await hushClear(p)
-      const before = await posOf(p)
+      const before = await posOf(p), s0 = await studyOf(p)
       await FLICKS[kind](p, dir)
       await sleep(3600)
       const after = await posOf(p)
       const moved = after.pos - before.pos
-      ok(Math.abs(moved) === 1, `${kind} ${dir > 0 ? 'down' : 'up  '} from the bench      ${before.pos} → ${after.pos}`, `${moved > 0 ? '+' : ''}${moved}  ${after.path}`)
+      const s1 = /\/lab$/.test(after.path) ? await studyOf(p) : null
+      const good = dir > 0 ? moved === 0 && s0 === 1 && s1 === 2 : moved === -1
+      ok(good, `${kind} ${dir > 0 ? 'down' : 'up  '} from the bench (01) ${dir > 0 ? `study ${s0} → ${s1}` : `${before.pos} → ${after.pos}`}`, `${dir > 0 ? 'one study' : 'one stop'}  ${after.path}`)
     }
   }
 

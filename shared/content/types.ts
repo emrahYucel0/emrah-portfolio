@@ -215,6 +215,9 @@ export interface LocaleCopy {
     workTouch: string
     /** where the screen looks finished: the hero's first stop and the end of the Linefield passage */
     scroll: string
+    /** the Lab bench's two rules at once (R7): scrolling browses the studies, a click — or a tap — opens one */
+    bench: string
+    benchTouch: string
   }
   a11y: {
     plainNav: string; selectedWork: string; labStudies: string; aboutRegion: string; aboutDetail: string; capabilities: string; projectImages: string

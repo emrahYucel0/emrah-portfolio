@@ -38,6 +38,8 @@ const tag0 = (reduced) => (reduced ? 'reduced' : 'normal')
 const fromBench = async (p) => {
   await p.goto(`${BASE}/tr/lab`, { waitUntil: 'networkidle' }); await sleep(2400)
   await p.mouse.move(700, 450)
+  // the bench browses first (R7): 01 → 02 → 03, each its own notch, and the next one down crosses
+  for (let i = 0; i < 2; i++) { await p.mouse.wheel(0, 110); await sleep(800) }
   // one notch, as spine.cjs crosses: a longer burst's tail could leave the drawing a hair past p = 0
   await p.mouse.wheel(0, 110)
   await p.waitForFunction(() => /\/contact$/.test(location.pathname) && !!window.__finale, null, { timeout: 20000 })

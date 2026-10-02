@@ -107,8 +107,6 @@ html.lab-zoomed body.lab-route--home, html.lab-zoomed .lab-route--home .lab-stag
 .lab-route .lab-stage .rec:hover .nm,
 .lab-route .lab-stage .rec:focus-visible .nm { font-variation-settings: 'wdth' 92, 'wght' 580; }
 /* the second, misregistered impression is what says "not registered"; it comes into register as the record is reached */
-.lab-route .lab-stage .rec:hover .nm::after,
-.lab-route .lab-stage .rec:focus-visible .nm::after { opacity: 0.07; }
 .lab-route .lab-stage .rec[aria-current] { cursor: default; }
 @media (max-width: 760px) { .lab-route .lab-stage .rec .nm { font-size: 17px; } }
 @media (max-height: 470px) { .lab-route .lab-stage .rec .nm { font-size: 16px; } }

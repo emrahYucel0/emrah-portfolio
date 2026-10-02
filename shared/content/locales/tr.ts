@@ -196,6 +196,7 @@ export const tr = {
     face: 'basılı tut',
     work: 'kaydır · görseli basılı tut', workTouch: 'yana kaydır · görsele dokun',
     scroll: 'aşağı kaydır',
+    bench: 'kaydırarak gez · tıklayarak aç', benchTouch: 'kaydırarak gez · dokunarak aç',
   },
   a11y: {
     plainNav: 'Düz gezinme', selectedWork: 'Seçili işler', labStudies: 'Lab çalışmaları',

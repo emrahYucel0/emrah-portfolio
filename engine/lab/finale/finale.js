@@ -326,7 +326,24 @@ export function createFinale(o) {
     const WHEEL = 96, BURST = 240, SWIPE = 56
     const atTop = () => frame.rawProgress() <= 0.001
     let acc = 0, accAt = 0, fromTop = false, spent = false
-    const up = () => { if (spent || dead) return; spent = true; o.onTopUp() }
+    /*
+     * THE SEAM IS ONE SHEET IN BOTH DIRECTIONS (R7). The bench's foot band carries this one's words, and its first
+     * frame is this sheet's bare field. So what only this side shows — the arrival's hint, the tear row's breath — is
+     * gone before the handover, at once rather than faded (a fade would still be half there when the bench takes
+     * over), and one bare frame is drawn before the route changes.
+     */
+    const up = () => {
+      if (spent || dead) return
+      spent = true
+      clearTimeout(beckonTimer); beckon = 'off'
+      const el = o.footHint
+      if (el) {
+        for (const s of el.parentElement?.children ?? []) s.style.transition = 'none'
+        el.classList.remove('on'); el.parentElement?.classList.remove('is-hinting')
+      }
+      frame.request()
+      requestAnimationFrame(() => requestAnimationFrame(() => { if (!dead) o.onTopUp() }))
+    }
     // zooming is the browser's, never a way out: Ctrl + wheel (a trackpad's pinch), or moving around a zoomed page
     const zoomed = () => (window.visualViewport?.scale ?? 1) > 1.01
     addEventListener('wheel', (e) => {

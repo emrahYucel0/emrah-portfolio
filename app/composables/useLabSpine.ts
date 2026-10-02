@@ -2,9 +2,11 @@ import type { LabExit } from './useLabHandoff'
 
 /**
  * LAB HOME IS A SITE DESTINATION, NOT A DOCUMENT. The bench is the fifth stop on the site's index, so a vertical
- * gesture on it means what it means everywhere else on the site: one gesture, one destination — up to Work, down
- * to Contact. The bench itself does not scroll, and the studies are not touched: they are documents, and this
- * ownership is fitted to the Lab landing alone (see useStudy, which reads real scroll on the study routes).
+ * gesture on it means what it means everywhere else on the site — and since R7 (user decision 2026-10-02) it means
+ * what it means in Work, the one other place with things in it: SCROLLING BROWSES, A CLICK OPENS. A gesture moves the
+ * bench one study, 01 → 02 → 03; past the last it carries on down to Contact (the seam, at p = 0), and up past the
+ * first to Work. One gesture is one study: a trackpad's tail, or a coasting wheel, never moves two. The studies
+ * themselves are not touched: they are documents, and this ownership is fitted to the Lab landing alone (see useStudy).
  *
  * The thresholds are the runtime's own, not new ones. There a stop is promoted past 0.12 of the index, which a
  * wheel reaches at about 109 px of delta and a finger at about 6% of the screen's height — so one notch of a mouse
@@ -13,15 +15,24 @@ import type { LabExit } from './useLabHandoff'
 const WHEEL = 96        // px of accumulated delta: one notch, as on the index
 const BURST = 240       // ms: deltas further apart than this are separate gestures, not one long one
 const SWIPE = 56        // px of vertical travel: the index's own swipe distance on a phone
+/*
+ * WHERE ONE GESTURE ENDS — the runtime's rule (engine/c2/main.js, opensGesture), in its plain form. Once a gesture
+ * has moved the bench, everything after it is the same gesture until the input has gone quiet: a stream (events
+ * closer than STREAM) for REST_STREAM, a single notch for BURST. Every event re-arms the quiet, so a trackpad's tail,
+ * which never pauses, and a free-spinning wheel, whose detents slow down but stay under it, cannot move a second
+ * study. A deliberate notch after a real pause is a new gesture; so is a turn the other way.
+ */
+const STREAM = 120
+const REST_STREAM = 340
 
 export function useLabSpine() {
   if (!import.meta.client) return
   const { leave } = useLabHandoff()
   const seam = useContactSeam()
 
-  // one gesture is one destination: once a direction has been read the Lab answers nothing more. The runtime is
-  // hushed for the same reason on the other side of the handover, where the tail of this gesture arrives next.
-  let spent = false
+  // leaving for another place: once the bench has handed over it answers nothing more. The runtime and the finale
+  // are hushed for the same reason on the other side, where the tail of this gesture arrives next.
+  let leaving = false
 
   /*
    * A swipe that began on a record can end inside that record's own box — the records are small, and 56px of
@@ -30,12 +41,24 @@ export function useLabSpine() {
    * already been spent on the spine, so the click it produces is not a second intention: it is swallowed, once.
    */
   const swallow = (e: MouseEvent) => { e.preventDefault(); e.stopPropagation() }
-  const armSwallow = () => document.addEventListener('click', swallow, { capture: true, once: true })
+  let swallowTimer = 0
+  // armed for the click a finger's swipe produces as it lifts, and only for that: a real click later is not taken
+  const armSwallow = () => {
+    document.addEventListener('click', swallow, { capture: true, once: true })
+    clearTimeout(swallowTimer)
+    swallowTimer = window.setTimeout(() => document.removeEventListener('click', swallow, { capture: true }), 600)
+  }
+
+  /** one study along, or — at either end — on to the next place */
+  const move = (d: 1 | -1, finger: boolean) => {
+    if (finger) armSwallow()
+    if (benchSeam.step?.(d)) return
+    go(d > 0 ? 'contact' : 'work')
+  }
 
   const go = (to: LabExit | 'contact') => {
-    if (spent) return
-    spent = true
-    armSwallow()
+    if (leaving) return
+    leaving = true
     // down is the Contact finale: the bench clears itself to the bare field the finale opens on, then hands over
     if (to === 'contact') {
       const exit = benchSeam.exit ? benchSeam.exit() : Promise.resolve()
@@ -55,23 +78,30 @@ export function useLabSpine() {
   const zoomed = () => (window.visualViewport?.scale ?? 1) > 1.01
   const onZoom = () => document.documentElement.classList.toggle('lab-zoomed', zoomed())
 
-  let acc = 0, accAt = 0
+  // the gesture being read: its sum, when its last event came, the narrowest gap it showed, whether it has moved
+  let acc = 0, at = -1e9, minGap = Infinity, spentDir = 0
   const onWheel = (e: WheelEvent) => {
-    if (spent || e.ctrlKey || zoomed()) return
+    if (leaving || e.ctrlKey || zoomed()) return
     // nothing on the bench scrolls, so the gesture is the site's: it is taken, not passed to the document
     e.preventDefault()
     const now = performance.now()
     const dy = e.deltaMode === 1 ? e.deltaY * 32 : e.deltaY
     if (!dy) return
-    if (now - accAt > BURST || (acc !== 0 && Math.sign(dy) !== Math.sign(acc))) acc = 0
-    accAt = now
+    const gap = now - at
+    at = now
+    const quiet = minGap < STREAM ? REST_STREAM : BURST
+    const turned = Math.sign(dy) !== Math.sign(spentDir || acc || dy)
+    if (gap > quiet || turned) { acc = 0; minGap = Infinity; spentDir = 0 } else minGap = Math.min(minGap, gap)
+    // spent: the rest of this gesture is absorbed, and every event of it keeps the quiet from starting
+    if (spentDir) return
     acc += dy
-    if (Math.abs(acc) >= WHEEL) go(acc > 0 ? 'contact' : 'work')
+    if (Math.abs(acc) >= WHEEL) { spentDir = Math.sign(acc); move(acc > 0 ? 1 : -1, false) }
   }
 
-  // the finger: downward travel is the sheet coming back up the index (Work), upward travel carries it on (Contact)
+  // the finger: downward travel is the sheet coming back up (the study before, then Work), upward travel carries it on
+  // (the next study, then Contact). One touch is one gesture: it moves the bench once, however far it travels.
   // a second finger makes the whole touch a pinch: no finger of it is read again until every one has lifted
-  let id = -1, sx = 0, sy = 0
+  let id = -1, sx = 0, sy = 0, moved = false
   const fingers = new Set<number>()
   let pinch = false
   const onDown = (e: PointerEvent) => {
@@ -79,13 +109,14 @@ export function useLabSpine() {
     fingers.add(e.pointerId)
     if (fingers.size > 1) { pinch = true; id = -1; return }
     if (!e.isPrimary || pinch || zoomed()) return
-    id = e.pointerId; sx = e.clientX; sy = e.clientY
+    id = e.pointerId; sx = e.clientX; sy = e.clientY; moved = false
   }
   const onMove = (e: PointerEvent) => {
-    if (spent || pinch || e.pointerId !== id) return
+    if (leaving || pinch || moved || e.pointerId !== id) return
     const dx = e.clientX - sx, dy = e.clientY - sy
     if (Math.abs(dy) < SWIPE || Math.abs(dy) < Math.abs(dx) * 1.3) return
-    go(dy < 0 ? 'contact' : 'work')
+    moved = true
+    move(dy < 0 ? 1 : -1, true)
   }
   const end = (e: PointerEvent) => {
     fingers.delete(e.pointerId)
@@ -114,5 +145,6 @@ export function useLabSpine() {
     window.visualViewport?.removeEventListener('resize', onZoom)
     document.documentElement.classList.remove('lab-zoomed')
     document.removeEventListener('click', swallow, { capture: true })
+    clearTimeout(swallowTimer)
   })
 }

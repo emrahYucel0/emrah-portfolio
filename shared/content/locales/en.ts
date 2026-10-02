@@ -191,6 +191,7 @@ export const en = {
     face: 'hold',
     work: 'scroll · hold the image', workTouch: 'slide sideways · tap the image',
     scroll: 'scroll',
+    bench: 'scroll to browse · click to open', benchTouch: 'scroll to browse · tap to open',
   },
   a11y: {
     plainNav: 'Plain navigation', selectedWork: 'Selected work', labStudies: 'Lab studies',

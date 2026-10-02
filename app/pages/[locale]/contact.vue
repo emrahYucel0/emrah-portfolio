@@ -145,7 +145,7 @@ onBeforeUnmount(() => {
       <!-- the foot band: its two ends are the home strip's own words, from the same source (the roles; the city
            and the status — shared/content identity), fixed for the whole drawing; its middle carries the one
            instruction the sheet may show (engine/lab/finale: the way in, the attention guide) -->
-      <div class="foot" :class="{ 'is-arriving': arrival === 'start' }" aria-hidden="true">
+      <div class="foot" aria-hidden="true">
         <span class="roles" lang="en">{{ copy.roles.creative }} · {{ copy.roles.fullStack }}</span>
         <span ref="footHint" class="hint" />
         <span class="state">{{ copy.identity.city }}{{ copy.hints.quietSeparator }}{{ copy.identity.status }}</span>
@@ -239,12 +239,9 @@ onBeforeUnmount(() => {
 .is-finale .foot { white-space: nowrap; }
 @media (max-width: 700px) { .foot .roles { display: none; } .is-finale .foot { font-size: 10px; letter-spacing: 0.04em; } }
 @media (max-width: 1100px) { .foot.is-hinting .state { opacity: 0; } }
-/* arriving from the bench, whose foot has just faded with its veil, the band's words come in rather than cut */
-.foot.is-arriving span:not(.hint) { animation: foot-in .45s ease both; }
-@keyframes foot-in { from { opacity: 0; } }
+/* the bench's foot carries the same words (R7), so nothing fades in across the seam: the band does not change */
 @media (prefers-reduced-motion: reduce) {
   .foot .hint, .foot .state { transition: none; }
-  .foot.is-arriving span:not(.hint) { animation: none; }
 }
 </style>
 

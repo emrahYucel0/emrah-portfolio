@@ -47,6 +47,7 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24, R
 | R21 | Büyük ekranlarda büyük harf başına satır sayısına üst sınır | P2 | Karar bekliyor (sanat yönetimi) | — |
 | R22 | Gerçek cihaz testi (iPad, Mac'te Safari, Android telefon) | P0 | Karar verildi | — |
 | R23 | Awwwards başvuru malzemesi (ekran görüntüleri, kısa video, başlık, açıklama) | P0 | Karar bekliyor (içerik) | R9 |
+| R25 | Linefield yayında açılsın mı | P0 | Karar bekliyor | R1, R17 |
 
 ---
 
@@ -248,6 +249,25 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24, R
 - **Dosyalar:** yeni `docs/AWWWARDS.md`.
 - **Bağımlılık:** R18'in parçası. Görüntüler R9 düzeldikten sonra çekilmeli.
 - **Öncelik:** P0.
+
+### R25. Linefield yayında açılsın mı
+- **Bugünkü durum:**
+  - Linefield `NUXT_PUBLIC_LINEFIELD` build bayrağının arkasında.
+  - `docs/LINEFIELD.md`: "her yayın build'inde kapalı".
+  - `docs/DEPLOYMENT.md`'nin yayın komutu bayraksız: `npm run generate`.
+  - Yani bugünkü süreçle yayına Linefield'sız bir site çıkar. Bayrak kapalı build'de Linefield'ın tek baytı yok
+    (doğrulanmış).
+- **Açılması için gerekenler (karar verilirse):**
+  1. Yayın komutu `NUXT_PUBLIC_LINEFIELD=1 npm run generate` olur. `DEPLOYMENT.md` ve kontrol listesi güncellenir.
+  2. Tam kapı bayrak açık build'e karşı koşulur. Bugünkü kapı bayrak kapalı build'i bir taban çizgisiyle
+     karşılaştırıyor; açık build için `LINEFIELD.md`'deki faz kontrolleri kapıya eklenir.
+  3. İleride bayrak tümüyle kaldırılabilir (kod her zaman açık); ayrı bir karar.
+- **Önizleme:** 2026-10-02'de güncel dalın bayrak açık build'i 4921'de (yerel ağ, `--wk`), bayrak kapalısı
+  4910'da.
+- **Karar:** Bekleyen.
+- **Dosyalar:** `nuxt.config.ts`, `docs/DEPLOYMENT.md`, `docs/LINEFIELD.md`, `tools/diag/run6.sh`.
+- **Bağımlılık:** R1 (birleştirme) ve R17 (yayın).
+- **Öncelik:** P0 (yayın biçimini belirliyor).
 
 ---
 

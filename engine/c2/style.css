@@ -75,6 +75,9 @@ html.c2-zoomed[data-c2='on'], html.c2-zoomed[data-c2='on'] body { touch-action: 
 :where(#ui) .roles { opacity: .82; }
 /* .9, not quieter: in a project the hint sits on the work's ink, and İstanbul's #8e3a17 took .78 to 4.33:1 (AUDIT-01) */
 :where(#ui) #hint { opacity: .9; overflow: hidden; text-overflow: ellipsis; min-width: 0; margin-left: auto; text-align: right; transition: opacity .4s ease; }   /* M3: it shrinks and keeps the right edge on a phone too */
+/* the clip is for the ellipsis, not for the capitals: at the phone's 10px and the strip's line-height of 1 it cut the
+   dot off İ and the breve off Ğ, so "İSTANBUL · SEÇİLİ … AÇIĞIM" read "ISTANBUL · SEÇILI … AÇIGIM" (measured, 390) */
+:where(#ui) #hint { line-height: 1.6; }
 /* THE ONE HINT (R3, engine/cues.js): centred in the bottom strip, in the strip's own mono, faded in and out. Where the
    strip is too narrow to hold it beside the two ends, it takes the strip alone while it is shown — as the finale's
    foot band does. */

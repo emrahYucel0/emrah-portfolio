@@ -63,8 +63,14 @@ const reachable = () => {
   {
     const ctx = await chromium.newContext({ viewport: { width: 1440, height: 900 } })
     const p = watch(await ctx.newPage())
-    await p.goto(`${BASE}/tr/contact`, { waitUntil: 'networkidle' }); await ready(p); await sleep(1200)
-    ok((await p.evaluate(plotP)) === 0, 'starts at p = 0')
+    // p = 0 is reached from the bench: a direct /contact opens the drawing settled (AUDIT-01, batch 1)
+    await p.goto(`${BASE}/tr/lab`, { waitUntil: 'networkidle' }); await sleep(2400)
+    // the bench browses first (R7): 01 → 02 → 03, and the next notch down crosses
+    await p.mouse.move(700, 450)
+    for (let i = 0; i < 2; i++) { await p.mouse.wheel(0, 110); await sleep(800) }
+    await p.mouse.wheel(0, 110)
+    await p.waitForFunction(() => /\/contact$/.test(location.pathname), null, { timeout: 20000 }); await ready(p); await sleep(1200)
+    ok((await p.evaluate(plotP)) === 0, 'starts at p = 0 (arrived from the bench)')
     const order = []
     for (let i = 0; i < 16 && order.length < 6; i++) {
       await p.keyboard.press('Tab'); await sleep(i === 0 ? 50 : 30)

@@ -12,19 +12,37 @@
 #
 # So: this script stops every port this repo owns, snapshots the build into a directory named after the branch,
 # and serves that. Ports belonging to other projects are left alone.
+#
+# A SECOND SESSION, IN A SECOND WORKTREE, names its own three ports and stops only those (ROADMAP R16):
+#
+#   SERVE_PORTS="4910 4911 4914" sh tools/diag/serve.sh      # under test, the same on the LAN, the baseline
+#   sh tools/diag/run6.sh 4910 4914
+#
+# With SERVE_PORTS set nothing else is stopped — not 4500-4700, which are the first session's. BUILD_DIR overrides
+# the snapshot folder (by default builds/<branch>, already one per branch). Without either, nothing changes.
 set -e
 HERE=$(pwd)
 REPO=$(git rev-parse --show-toplevel)
 BRANCH=$(git -C "$REPO" branch --show-current | tr '/' '-')
-BUILD="$REPO/../builds/$BRANCH"
+BUILD=${BUILD_DIR:-"$REPO/../builds/$BRANCH"}
 BASE_DIR=../../../baselines/pre-site-polish
-OWNED="4500 4501 4502 4550 4600 4650 4700"
+if [ -n "$SERVE_PORTS" ]; then
+  set -- $SERVE_PORTS
+  [ $# -eq 3 ] || { echo "serve.sh: SERVE_PORTS takes three ports — under test, LAN, baseline — not '$SERVE_PORTS'"; exit 1; }
+  P_CUR=$1; P_LAN=$2; P_BASE=$3
+  OWNED="$SERVE_PORTS"
+else
+  P_CUR=4500; P_LAN=4501; P_BASE=4650
+  OWNED="4500 4501 4502 4550 4600 4650 4700"
+fi
 
 stop_port() {
   powershell.exe -NoProfile -Command "Get-NetTCPConnection -LocalPort $1 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id \$_.OwningProcess -Force -ErrorAction SilentlyContinue }" >/dev/null 2>&1 || true
 }
 up() { # port dir extra-flags
-  ( cd "$HERE" && node sv.cjs "$2" "$1" $3 >> "out/server-$1.log" 2>&1 & )
+  # the subshell's own descriptors are closed too: on Git Bash it lingers as the server's parent, and holding this
+  # script's stdout it kept `sh serve.sh | tail` (and anything else reading the output) waiting forever
+  ( cd "$HERE" && node sv.cjs "$2" "$1" $3 >> "out/server-$1.log" 2>&1 & ) </dev/null >/dev/null 2>&1
   i=0
   while [ "$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$1/tr")" != "200" ]; do
     i=$((i + 1)); [ $i -gt 40 ] && { echo "  $1 never answered 200"; return 1; }
@@ -33,7 +51,7 @@ up() { # port dir extra-flags
   echo "  $1 -> $2"
 }
 
-echo "serve.sh: stopping the ports this repo owns ($OWNED); anything else is left running"
+echo "serve.sh: stopping the ports this session owns ($OWNED); anything else is left running"
 for prt in $OWNED; do stop_port $prt; done
 sleep 1
 
@@ -48,15 +66,15 @@ cp -R "$REPO/.output/public/." "$BUILD/"
 [ -f "$BASE_DIR/tr/index.html" ] || sh baseline.sh
 
 echo "serve.sh: starting"
-up 4500 "$BUILD" --wk          # the build under test, for the harnesses
-up 4501 "$BUILD" "--lan --wk"  # the same build, reachable from a phone on this network
-up 4650 "$BASE_DIR" --wk       # the baseline, from the tag
+up $P_CUR "$BUILD" --wk          # the build under test, for the harnesses
+up $P_LAN "$BUILD" "--lan --wk"  # the same build, reachable from a phone on this network
+up $P_BASE "$BASE_DIR" --wk      # the baseline, from the tag
 
 echo "serve.sh: checking that none of them is stale"
 fail=0
-for prt in 4500 4501 4650; do node cspboot.cjs --static $prt | tail -1 | sed "s/^/  $prt /" ; node cspboot.cjs --static $prt >/dev/null 2>&1 || fail=1; done
+for prt in $P_CUR $P_LAN $P_BASE; do node cspboot.cjs --static $prt | tail -1 | sed "s/^/  $prt /" ; node cspboot.cjs --static $prt >/dev/null 2>&1 || fail=1; done
 [ $fail -eq 0 ] || { echo "serve.sh: a server is serving a policy that does not match its own document"; exit 1; }
 echo "serve.sh: ready."
-echo "  4500  the build under test          (harnesses)"
-echo "  4501  the same build, on the LAN     (open http://<this machine's 192.168.x.x>:4501/tr on a phone)"
-echo "  4650  the baseline, from its tag     (nonlab comparisons)"
+echo "  $P_CUR  the build under test          (harnesses)"
+echo "  $P_LAN  the same build, on the LAN     (open http://<this machine's 192.168.x.x>:$P_LAN/tr on a phone)"
+echo "  $P_BASE  the baseline, from its tag     (nonlab comparisons:  sh run6.sh $P_CUR $P_BASE)"

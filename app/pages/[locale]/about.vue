@@ -51,6 +51,7 @@ onMounted(() => markAbout({ visited: true }))
 .status { font-size: var(--step-1); }
 .contact { font-style: normal; display: grid; gap: var(--space-2xs); }
 .contact a, .back { display: inline-block; padding-block: var(--space-2xs); }
+.back { color: var(--act); }
 
 @media (min-width: 48rem) {
   .caps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2xs) var(--space-m); }

@@ -21,7 +21,7 @@ const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'F
     await sleep(70)
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
   }
-  const st = () => p.evaluate(() => ({ mode: window.__lab.A.mode, base: window.__lab.A.base, wt: Math.round(window.__lab.A.wt), locked: window.__lab.A.wLocked, hint: document.querySelector('#hint')?.textContent?.trim() ?? '' }))
+  const st = () => p.evaluate(() => ({ mode: window.__lab.A.mode, base: window.__lab.A.base, wt: Math.round(window.__lab.A.wt), locked: window.__lab.A.wLocked, hint: document.querySelector('#cue')?.textContent?.trim() ?? '' }))   // the one hint, centred in the strip (R3)
   await p.goto(`http://127.0.0.1:${port}/${loc}`, { waitUntil: 'networkidle', timeout: 60000 })
   await p.waitForFunction(() => window.__lab?.A.mode === 'index', null, { timeout: 40000 }).catch(() => {})
   await sleep(3000)

@@ -25,7 +25,9 @@ useLocaleSeo('home')
       <p class="u-measure">{{ copy.work.intro }}</p>
       <ul class="works">
         <li v-for="project in projects" :key="project.id" class="work">
-          <h3 class="work-name">{{ project.name }}</h3>
+          <!-- each work has its own page now (R8): the name is the way to it -->
+          <h3 class="work-name"><NuxtLink :to="path(`/work/${project.id}`)">{{ project.name }}</NuxtLink></h3>
+          <p v-if="copy.work.projects[project.id].client" class="work-client">{{ copy.work.projects[project.id].client }}</p>
           <p class="work-line">{{ copy.work.projects[project.id].strength }}</p>
           <ul class="work-facts">
             <li v-for="fact in copy.work.projects[project.id].facts" :key="fact">{{ fact }}</li>
@@ -61,11 +63,12 @@ useLocaleSeo('home')
 .name { font-size: var(--step-3); line-height: 1.02; letter-spacing: -0.03em; font-weight: 600; }
 .roles { font-size: var(--step-1); color: var(--ink-muted); }
 .lead { font-size: var(--step-1); }
-.more { display: inline-block; padding-block: var(--space-2xs); }
+.more { display: inline-block; padding-block: var(--space-2xs); color: var(--act); }
 .block { display: grid; gap: var(--space-m); }
 .works { display: grid; gap: var(--space-l); }
 .work { display: grid; gap: var(--space-2xs); border-block-start: 1px solid var(--rule); padding-block-start: var(--space-s); }
 .work-name { font-size: var(--step-2); letter-spacing: -0.02em; font-weight: 600; }
+.work-client { color: var(--ink-muted); }
 .work-line { font-size: var(--step-1); }
 .work-facts { color: var(--ink-muted); font-size: var(--step--1); }
 .work-facts { display: grid; gap: 2px; margin-block-start: var(--space-2xs); }

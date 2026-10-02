@@ -12,11 +12,12 @@ import '@fontsource-variable/geist'
 import '@fontsource/geist-mono/400.css'
 import './style.css'
 import gsap from 'gsap'
-import { createSurface, feature, gather, squeeze } from './surface.js'
+import { createSurface, feature, gather } from './surface.js'
 import { createFlat, paintFlat } from './flat.js'
 import { createPhysics } from './physics.js'
 import * as ST from './states.js'
 import { framesFor, GEOM, ABSENT, psiHTML } from './world.js'
+import { CUE_IDLE, cueSeen, cueSpend } from '../cues.js'
 import { identity, about, capabilities, workIntro, works, lab, contact, previewOf, ui as TXT, applyLocale } from './content.js'
 import { termHtml } from '../../shared/content/term'
 import { mediaElement, placeMedia, loadImage, prepareTone, setMediaScale } from './media.js'
@@ -45,9 +46,17 @@ const idle = typeof requestIdleCallback === 'function' ? (f) => requestIdleCallb
 // routes: /about is a state of the same surface, so this visit's history survives going there and coming back
 // M1 TRANSPLANT: the host application owns routing (its routes are locale-prefixed) and receives the
 // semantic checkpoints. The defaults below reproduce the standalone prototype exactly.
-const ROOT = location.pathname.replace(/about\/?$/, '') || '/'
+const ROOT = location.pathname.replace(/(about|work\/[^/]+)\/?$/, '') || '/'
 let HOME_URL = ROOT + location.search, ABOUT_URL = `${ROOT}about${location.search}`, LAB_URL = `${ROOT}lab${location.search}`
+let CONTACT_URL = `${ROOT}contact${location.search}`
 let isAboutPath = () => /\/about\/?$/.test(location.pathname)
+/*
+ * A WORK HAS AN ADDRESS (R8, user decision 2026-10-02): /{locale}/work/{id}. Opening a work from the field takes
+ * the visitor to it, so Back returns to Work; the next work replaces it, so Back still does; and the address opened
+ * directly lands in the work, settled on its first frame. The host supplies both halves in its own locale.
+ */
+let WORK_URL = (id) => `${ROOT}work/${id}${location.search}`
+let workAt = () => (location.pathname.match(/\/work\/([^/]+)\/?$/) || [])[1] || null
 /**
  * The place the visitor asked for on their way back from the Lab. The bench is a route of its own, so leaving it
  * is a route change and the runtime is mounted again already owing the visitor a destination. The host keeps that
@@ -71,7 +80,10 @@ export function configure(o = {}) {
   if (o.homeUrl) HOME_URL = o.homeUrl
   if (o.aboutUrl) ABOUT_URL = o.aboutUrl
   if (o.labUrl) LAB_URL = o.labUrl
+  if (o.contactUrl) CONTACT_URL = o.contactUrl
   if (o.isAboutPath) isAboutPath = o.isAboutPath
+  if (o.workUrl) WORK_URL = o.workUrl
+  if (o.workAt) workAt = o.workAt
   if (o.arrival) takeArrival = o.arrival
   if (o.push) HOST.push = o.push
   if (o.replace) HOST.replace = o.replace
@@ -82,6 +94,10 @@ export function configure(o = {}) {
 }
 // document titles follow the active language; the host sets them on its own route changes too
 const TITLE = () => TXT.meta.home.title, TITLE_ABOUT = () => TXT.meta.about.title
+// a work's own title, as its page sets it: the work, the place, the person (the About title's last part)
+const TITLE_WORK = (k) => `${works[k].name} — ${TXT.work.heading} — ${TXT.meta.about.title.split(' — ').pop()}`
+const workIndex = (id) => (id == null ? -1 : works.findIndex((w) => w.id === id))
+const pageTitle = () => (A.mode === 'world' || A.mode === 'exit' ? TITLE_WORK(A.k) : isAboutPath() ? TITLE_ABOUT() : TITLE())
 
 const canvas = $('#surface')
 // POST-M5 PERF — SOFTWARE RENDERER PROBE. Before the full-size surface exists, a 1×1 canvas asks the graphics stack one
@@ -213,20 +229,20 @@ const A = {
   mode: 'intro', busy: false,
   p: 0, pT: 0, base: 0, prevBase: 0, wp: 0, wpT: 0, wbase: 0, gesture: false, lastInput: -1e9, exitAccum: 0,
   from: null, to: null, front: 1, k: 0,
-  features: new Set(), press: null, about: null, aboutOpen: false, aboutDetail: false, detailPushed: false, squeeze: null, introF: null,
+  features: new Set(), press: null, about: null, aboutOpen: false, aboutDetail: false, detailPushed: false, pinch: false, introF: null,
   world: gather(), worldOn: false, faceF: feature({ kind: 1 }),
   constrained: false, timeHeld: 0,   // POST-M5 PERF: render capacity (see noteFrame)
   staticHero: false,                 // POST-M5 PERF: software renderer, WebGL not yet drawn (see startStaticHero)
   introReg: 1, nameAmp: 1, nextReg: 1, nextArmed: false, regDrag: 0, regDragT: 0, quality: {}, shiver: 0,
   wt: 0, wT: 0, wLocked: -1, visited: new Set(), visitOrder: [], releaseK: null,
   yieldMarks: [], seeded: 0, aboutMark: null,
-  learned: { open: false, face: false, work: false, pinch: false, lab: false, world: false, next: false }, arrivedAt: 0,
+  learned: { open: false, face: false, work: false, lab: false, world: false, next: false }, arrivedAt: 0,
   pending: null, lastIdx: 0, lastTo: null, cleared: false,
   // the Lab stop hands over to the bench when travel settles on it, never when a state is restored onto it
   labArmed: false, hush: 0,
   // the gesture being metered: where it began, whether it has spent its stop, how far it has carried a place's own
   // axis, and the stream it is being read out of (see opensGesture)
-  gFrom: 0, gSpent: false, gInner: 0, gAt: -1e9, gEnv: 0, gMinGap: Infinity,
+  gFrom: 0, gSpent: false, gInner: 0, gAt: -1e9, gEnv: 0, gPeak: 0, gMinGap: Infinity,
   // a harness may pin how much the type is type, to difference the words out of a frame (see lfWords below)
   lfWordsAt: null, lfWords: 1, lfLeg: false,
   aboutDetailK: 0, bridgeF: null, bridgePK: 0,
@@ -253,10 +269,13 @@ function prepareWorld(k) {
 // previews load before the surface starts; their tone is prepared in a worker in the background, and nothing that
 // needs it is built until it is ready — the opening never shares the main thread with image processing
 let tonesReady = Promise.resolve()
-const ensurePreviews = async () => {
+// resolves when the images are here; tonesReady covers the images AND their tone from the moment they are asked for,
+// so whatever waits on the tone (the Work textures' warm-up) can never run ahead of an image still on its way
+const ensurePreviews = () => {
   const items = [...new Set(works.map((w) => previewOf(w, V.P, V.T)))]
-  await Promise.all(items.map(loadItem))
-  tonesReady = Promise.all(items.map((it) => prepareTone(it.im)))
+  const loaded = Promise.all(items.map(loadItem))
+  tonesReady = loaded.then(() => Promise.all(items.map((it) => prepareTone(it.im))))
+  return loaded
 }
 
 function rebuild() {
@@ -286,7 +305,7 @@ function rebuild() {
   works.forEach((w, i) => { if (i < 12) surface.inks.set(hexArr(w.ink), i * 3) })
   gsap.killTweensOf(A)
   A.features.forEach((f) => gsap.killTweensOf(f)); A.features.clear()
-  A.press = null; A.squeeze = null; A.busy = false; A.shiver = 0; A.introF = null; A.nameAmp = REDUCED ? 0 : 1
+  A.press = null; A.pinch = false; A.busy = false; A.shiver = 0; A.introF = null; A.nameAmp = REDUCED ? 0 : 1
   if (A.aboutOpen) { A.about = aboutFeature(1); A.features.add(A.about) }
   if (BRIDGE) { BRIDGE.dead = true; surface.release(BRIDGE); BRIDGE = null }
   if (A.mode === 'bridge') { A.mode = 'index'; A.p = A.pT = A.base = A.prevBase = STOP.lab; A.bridgeF = null; A.bridgePK = 1 }
@@ -402,18 +421,51 @@ const GEST_RISE = 2.6      // an event this many times the envelope is a new thr
 const GEST_FLOOR = 0.12    // and a real one: about one notch of travel, which is a stop's own threshold
 const GEST_ENV_KEEP = 0.75 // what the envelope keeps from one event to the next
 /*
+ * AN EVENT IS NOT ALWAYS ONE FRAME (R12). A browser whose page is busy does not queue a wheel stream, it COALESCES
+ * it: everything that arrived while the page was drawing is handed over as one event carrying the sum. This page is
+ * busy exactly when a flick lands — an arrival is the most expensive thing it draws — so a hard trackpad throw
+ * reaches it as single frames and doubles and triples, 400 · 380 · 1095 px. Judged per event, the triple is 2.7 times
+ * the envelope its neighbours set, a RISE, and the rest of the same physical tail was handed a fresh stop (measured,
+ * WebKit, coalesced delivery: 11 throws in 62 moved two places, Chrome 1 in 70, this or the ramp below in each).
+ * So the rise reads each event per FRAME it stands for: its size over how many frames its gap spans, never fewer
+ * than one and never more than GEST_COALESCED. A stream of single frames reads exactly as before; a second throw is still a rise,
+ * because a new throw is a jump in what each frame carries, and coalescing never is. The floor stays on the raw size.
+ */
+const GEST_FRAME = 16.7    // ms of input one event normally carries
+const GEST_COALESCED = 8   // and at most this many frames' worth is read as having arrived together
+/*
+ * AND A STREAM DOES NOT RISE OUT OF ITSELF (R12). The floor was what kept a swipe's own ramp from reading as new
+ * throws, and a hard throw outgrows the floor within its first few events: on a 120 Hz trackpad, delivered in
+ * coalesced pairs, it ramps 40 · 100 · 280 px, and the 280 — 2.8 times the envelope, well past one notch — was a rise.
+ * By then the throw had already travelled more than a stop's threshold, so the rise landed it one place along and
+ * handed the rest of the same throw a second (measured, WebKit: every 120 Hz overshoot was this event, 36–48 ms in).
+ * A second throw is a jump out of a stream that has DIED DOWN — the tail of the first, or nothing at all — so a rise
+ * is only read once the envelope has fallen below this share of the stream's own peak. A ramp never has; a steady
+ * stream never has; a tail always has, which is where every deliberate second throw this page must obey arrives.
+ */
+const GEST_FALLEN = 0.5
+/*
  * AND A PLACE WITH AN AXIS OF ITS OWN IS LEFT BY ITS OWN GESTURE. A flick that ran the work field or the passage is
  * spent on it: it may reach the end and stop there, and the next place waits. This is how much of that axis counts
  * as having travelled it — half a project, half the passage. Below it nothing changes, which is what keeps the two
  * notches that have always left the far end of the field leaving it.
  */
 const GEST_INNER = 0.5
+/*
+ * ONE NOTCH LEAVES THE WORK FIELD'S END (R24, user decision 2026-10-02). Out past either end the field had to travel
+ * 0.45 of a work, and a notch carries it 0.34 — then, after 180 ms of quiet, tuneWork springs it back into register.
+ * So a hand notching deliberately, more than 180 ms apart, could never leave Work at all, back to the place before it
+ * or on to the Lab, while one notch moves one stop everywhere else on the spine (measured: six notches 330 ms apart,
+ * wT never past −0.18). The way out is now one notch's travel: a Firefox notch (three lines) carries 0.27. What has
+ * run the field is still pinned at the end by GEST_INNER, so a flick that crossed the works does not also leave.
+ */
+const GEST_EDGE = 0.25
 /** the place a gesture is measured from: the stop on the index, the frame inside a project */
 const gestureBase = () => (A.mode === 'world' ? A.wbase : A.base)
 /** measure the next gesture from here, with nothing spent */
 function resetGesture() { A.gFrom = gestureBase(); A.gSpent = false; A.gInner = 0; A.gMinGap = Infinity }
 /** and forget the stream, so that whatever comes next opens a gesture of its own */
-function forgetStream() { A.gAt = -1e9; A.gEnv = 0 }
+function forgetStream() { A.gAt = -1e9; A.gEnv = 0; A.gPeak = 0 }
 /*
  * A NEW GESTURE LANDS THE ONE BEFORE IT. A second throw can arrive before snap's silence has committed the first —
  * 150 ms is a comfortable repeat for a hand and snap waits 240 — and the place the new gesture is measured from
@@ -435,10 +487,13 @@ function beginGesture() { landGesture(); resetGesture() }
 /** does this wheel event open a new gesture — and fold it into the envelope either way */
 function opensGesture(d, now) {
   const mag = Math.abs(d)
-  const rise = mag > GEST_FLOOR && mag > A.gEnv * GEST_RISE
-  A.gEnv = Math.max(A.gEnv * GEST_ENV_KEEP, mag)
   const gap = now - A.gAt
   A.gAt = now
+  const perFrame = mag / clamp(gap / GEST_FRAME, 1, GEST_COALESCED)
+  // a new throw is a jump out of a stream that has died down — never the stream's own ramp (see GEST_FALLEN)
+  const rise = mag > GEST_FLOOR && perFrame > A.gEnv * GEST_RISE && A.gEnv < A.gPeak * GEST_FALLEN
+  A.gEnv = Math.max(A.gEnv * GEST_ENV_KEEP, perFrame)
+  A.gPeak = Math.max(A.gPeak, perFrame)
   /*
    * ALWAYS, and not only while nothing has landed. Guarded by !A.gSpent this stopped learning at the one moment the
    * answer is wanted: a flick whose FIRST event lands a stop — leaving the work field does exactly that — reached its
@@ -449,7 +504,10 @@ function opensGesture(d, now) {
   // a landed STREAM holds the door until the input has gone quiet; a landed single input holds nothing, and a
   // gesture still in the air is only interrupted by a real silence or a new throw
   const rest = A.gMinGap < GEST_STREAM ? GEST_REST : 0
-  return A.gSpent ? rise || gap > rest : rise || gap > GEST_GAP
+  const opens = A.gSpent ? rise || gap > rest : rise || gap > GEST_GAP
+  // whatever opens a gesture starts a stream of its own, and that stream's peak is the one a next throw is read against
+  if (opens) A.gPeak = perFrame
+  return opens
 }
 function scrollBy(d, touch = false) {
   const now = performance.now()
@@ -458,7 +516,7 @@ function scrollBy(d, touch = false) {
   // runtime takes the screen back mid-gesture: what arrives here first is a tail with no gesture behind it. It is
   // spent, not obeyed — the hush re-arms for as long as the tail keeps coming and ends at the first real gap.
   if (A.hush) { if (now < A.hush) { A.hush = now + 140; return } A.hush = 0 }
-  if (A.busy || A.squeeze || A.mode === 'intro') return
+  if (A.busy || A.pinch || A.mode === 'intro') return
   // in the long About the wheel reads; it never throws the reader out of the room
   if (A.aboutOpen) { if (!A.aboutDetail && A.aboutDetailK < 0.01 && now - A.lastInput > 120) closeAbout(); A.lastInput = now; return }
   // Only a wheel is read for its boundaries: a finger's are the pointer stream's own, and pointerdown has already
@@ -514,10 +572,10 @@ function scrollBy(d, touch = false) {
       const ran = A.gInner > GEST_INNER
       // back off the near end of the work field is back to whatever place comes before it — which is Full-Stack
       // on a published build and the passage on a Linefield one. Named, so inserting a place cannot skip it.
-      if (A.wT < -0.45) {
+      if (A.wT < -GEST_EDGE) {
         if (ran) { A.wT = 0; return }
         A.wT = 0; A.base = STOP.work - 1; A.pT = A.base + 0.35; A.gesture = false; A.gSpent = true; A.leftWork = now
-      } else if (A.wT > N - 1 + 0.45) {
+      } else if (A.wT > N - 1 + GEST_EDGE) {
         if (ran) { A.wT = N - 1; return }
         A.wT = N - 1; A.gesture = false; A.gSpent = true; startBridge()
       }
@@ -555,7 +613,9 @@ function go(i) {
 }
 const canScroll = (el, dy) => (dy > 0 ? el.scrollTop + el.clientHeight < el.scrollHeight - 1 : el.scrollTop > 0)
 addEventListener('wheel', (e) => {
-  if (!owns()) return
+  // ZOOM IS THE BROWSER'S (AUDIT-01, WCAG 1.4.4): Ctrl + wheel — also what a trackpad's pinch sends — and moving
+  // around a zoomed page are never travel, and are passed on untouched
+  if (!owns() || e.ctrlKey || zoomed()) return
   const sc = e.target.closest?.('.scroll')
   if (sc && canScroll(sc, e.deltaY)) return   // reading text scrolls the text, not the surface
   e.preventDefault()
@@ -573,17 +633,27 @@ addEventListener('wheel', (e) => {
  * the same flag the shell uses to show the surface at all, so the two can never disagree.
  */
 const owns = () => document.documentElement.dataset.c2 === 'on'
+/*
+ * TWO FINGERS ARE THE BROWSER'S (AUDIT-01, WCAG 1.4.4 — user decision 2026-10-01). The page can always be pinch-
+ * zoomed: style.css gives the browser `pinch-zoom` and keeps the pan, so one finger is still the site's. The two-
+ * finger squeeze that used to push a face through is gone; a held finger does the same, as a held pointer does.
+ * While the page is zoomed the reader is moving around it: html.c2-zoomed hands the pan to the browser as well,
+ * and the material answers no gesture until the page is back at its own size.
+ */
+const zoomed = () => (window.visualViewport?.scale ?? 1) > 1.01
+const onZoom = () => { const z = zoomed(); document.documentElement.classList.toggle('c2-zoomed', z); if (z) endGesture() }
+window.visualViewport?.addEventListener('resize', onZoom)
 
 function endGesture() {
   touches.clear()
-  if (A.squeeze) endSqueeze()
+  A.pinch = false
   ptr.down = false; ptr.axis = null; ptr.ui = false; ptr.rub = 0
   if (ptr.touch) ptr.hover = false
   // an interruption is not an arrival: whatever this gesture had travelled is left for snap to settle as before
   resetGesture(); forgetStream()
 }
 addEventListener('pointerdown', (e) => {
-  if (!owns()) return
+  if (!owns() || zoomed()) return
   A.kbd = false   // M4 A11Y: a pointer is in use — nothing moves focus on its behalf
   // the first finger of a gesture: nothing else is on the glass, whatever an interrupted gesture left behind
   if (e.pointerType === 'touch' && e.isPrimary && (touches.size || ptr.down)) endGesture()
@@ -598,8 +668,11 @@ addEventListener('pointerdown', (e) => {
   if (on && !on.hasAttribute('data-through')) { ptr.ui = true; return }
   if (e.pointerType === 'touch') {
     touches.set(e.pointerId, { x: e.clientX / V.u, y: e.clientY / V.u })
-    if (touches.size === 2) { startSqueeze(); return }
-    if (touches.size > 2) return
+    // a second finger makes the touch a pinch — the browser's zoom — until every finger has lifted
+    if (touches.size > 1) {
+      if (!A.pinch) { A.pinch = true; if (A.press && !A.press.forced) cancelPress(A.press); ptr.down = false; ptr.axis = null; resetGesture(); forgetStream() }
+      return
+    }
   }
   Object.assign(ptr, { down: true, downT: performance.now(), sx: e.clientX / V.u, sy: e.clientY / V.u, x: e.clientX / V.u, y: e.clientY / V.u, moved: 0, axis: null, rub: 0, ui: !!on, swiped: false, touch: e.pointerType !== 'mouse' })
   // a finger on the glass is the beginning of one gesture, whatever it turns into, and it carries one stop
@@ -609,7 +682,7 @@ addEventListener('pointermove', (e) => {
   if (!owns()) return
   const now = performance.now(), dts = Math.max(8, now - ptr.t) / 1000
   if (e.pointerType === 'touch' && touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX / V.u, y: e.clientY / V.u })
-  if (A.squeeze) return
+  if (A.pinch) return
   const cx = e.clientX / V.u, cy = e.clientY / V.u
   const dx = cx - ptr.x, dy = cy - ptr.y
   if (ptr.t) { ptr.vx = lerp(ptr.vx, dx / dts, 0.5); ptr.vy = lerp(ptr.vy, dy / dts, 0.5) }
@@ -657,7 +730,7 @@ const up = (e) => {
   const now = performance.now()
   if (e?.pointerType === 'touch') {
     touches.delete(e.pointerId)
-    if (A.squeeze) { if (touches.size < 2) endSqueeze(); return }
+    if (A.pinch) { if (!touches.size) A.pinch = false; return }
   }
   // a cancelled gesture was not a tap
   if (e?.type !== 'pointercancel' && ptr.down && !ptr.ui && now - ptr.downT < 200 && ptr.moved < 8) tap(ptr.x, ptr.y)
@@ -735,13 +808,69 @@ function tap(x, y) {
 // ─── the load law ────────────────────────────────────────────────────────────
 // a work only becomes openable once it is whole: in register, with its rows filled
 const registeredWork = () => (A.wLocked >= 0 && WORKS[A.wLocked]?.fill > 0.5 ? A.wLocked : -1)
+/*
+ * THE STILL, READ (R5, user decision 2026-10-02). On a portrait screen the work registered in the rows was still a
+ * drawing of its capture: the headline legible, the rest a texture. At rest it is the capture itself now, seen
+ * through the field's own rows — the image under a mask of lines at the rows' spacing, the gaps over the rows, laid
+ * on the frame. The rows still carry every work in and out: the capture shows only once a work is in register and
+ * nothing has moved for STILL_AFTER, and it goes at the first touch, so a swipe, a hold and the opening are the
+ * material's as they were. Wide screens keep the rows alone.
+ */
+const STILL_AFTER = 400
+const STILLS = {}
+let stillShown = ''
+/*
+ * AND THE NEXT WORK, READ (R8). A work's last frame registers the next one beside its closing words — as rows, at a
+ * size where the rows could not carry it. Once it is in register and the frame is still, it is read the same way:
+ * the next work's capture through this frame's rows, on every screen. Pressing it is still the way on.
+ */
+function stillWanted(now) {
+  if (now - A.lastInput <= STILL_AFTER || ptr.down || A.press || A.busy) return null
+  if (V.P && settledAt(STOP.work) && !A.aboutOpen) {
+    const k = registeredWork()
+    if (k >= 0 && Math.abs(A.wt - k) < 0.004) return { key: `w${k}`, k, parent: D.work, st: WORKS[k] }
+  }
+  if (A.mode === 'world' && A.worldOn) {
+    const lf = lastFrame(), full = worldFor(A.k)[lf]
+    if (full && Math.abs(A.wp - lf) < 0.01 && A.nextReg < 0.01 && full.fill > 0.95) return { key: `n${A.k}`, k: full.layout.next, parent: D.world, st: full }
+  }
+  return null
+}
+function stillFor(w) {
+  const item = previewOf(works[w.k], V.P, V.T)
+  let me = STILLS[w.key]
+  // a rebuilt DOM, a new layout (the frames are recomputed), or a screen turned to another capture
+  if (!me || !me.el.isConnected || me.item !== item || me.st !== w.st) {
+    me?.el.remove()
+    me = STILLS[w.key] = mediaElement(item, 'wstill')
+    me.st = w.st
+    // the work is named beside it; the picture is the same capture the rows already draw
+    me.node.alt = ''; me.el.setAttribute('aria-hidden', 'true')
+    w.parent.appendChild(me.el)
+    me.node.decode?.().catch(() => {})
+    const fr = w.st.layout.frame, sp = w.st.spacing
+    placeMedia(me, fr, 'center top')
+    // the mask's clear bands sit on the rows, which lie on multiples of the spacing from the top of the screen
+    me.el.style.setProperty('--row', `${sp}px`)
+    me.el.style.setProperty('--row-y', `${(((-fr.y) % sp) + sp) % sp}px`)
+  }
+  return me
+}
+function stillUpdate(now) {
+  const w = stillWanted(now)
+  const key = w ? `${w.key}:${w.st.id}` : ''
+  if (key === stillShown) return
+  const me = w ? stillFor(w) : null
+  for (const m of Object.values(STILLS)) m.el.classList.toggle('on', m === me)
+  stillShown = key
+}
 function current() {
   if (A.mode === 'world' || A.mode === 'exit') return worldFor(A.k)[clamp(Math.round(A.wp), 0, lastFrame())]
   const s = clamp(Math.round(A.p), 0, LAST)
   return s === STOP.work ? WORKS[clamp(Math.round(A.wt), 0, N - 1)] : IDX[s]
 }
 function pressable(st, x, y) {
-  if (A.busy || A.aboutOpen || A.squeeze) return false
+  if (A.busy || A.aboutOpen || A.pinch) return false
   if (A.mode === 'index') {
     if (Math.abs(A.p - A.base) > 0.06) return false
     if (st.beneath === 'work') return registeredWork() === st.workIndex && inRect(x, y, st.layout.frame, 30)
@@ -828,13 +957,15 @@ function yieldPress(pr) {
 
 // ─── LAB: the entry ──────────────────────────────────────────────────────────
 /** the three studies, named for a reader who never sees the canvas */
-const STUDY_LIST = () => Object.values(TXT.lab.studies)
+// the studies in facts.ts's order, each with its id (content.js lab.studies), not the copy's key order (AUDIT-01)
+const STUDY_LIST = () => lab.studies
+// a study's own page, under the bench's address (before any query the address carries)
+const studyUrl = (id) => { const [path, query] = LAB_URL.split('?'); return `${path.replace(/\/$/, '')}/${id}${query ? `?${query}` : ''}` }
 /*
  * WHAT OPENS A PROJECT, SAID TO THE DEVICE THAT IS READING IT. A pointer holds the image and the material gives
  * way under it; a finger taps it, and has been able to since the tap was added — the instruction simply went on
  * naming the hold. The material still answers a held finger; nothing about the press changes. Only the sentence.
  */
-const OPEN_WORK = () => (TOUCH ? TXT.work.openTouch : TXT.work.open)
 // The Lab is its own place now: the bench at /lab, with the three studies on their own routes. What used to be
 // here — holding to make a room, rooms relaxing against a budget of free material, the five recorded studies
 // playing inside them — is retired. The material memory those rooms left behind (scars, the visit's order, the
@@ -994,6 +1125,10 @@ function leaveDetail() { if (A.detailPushed) HOST.back(); else collapseAbout(tru
 export function routeChanged() {
   endGesture()   // M3 MOBILE BUG FIX
   if (isAboutPath()) { if (A.mode === 'world') { exit(); A.pending = 'detail' } else expandAbout(false); return }
+  // a work's address: the work, settled, unless it is the one already open; any other address closes an open work
+  const k = workIndex(workAt())
+  if (k >= 0) { if (!(A.mode === 'world' && A.k === k)) openWorkAt(k); return }
+  if (A.mode === 'world') { A.workPushed = false; exit(); return }
   // the visitor gestured out of the Lab: this entry carries the place they gestured towards
   if (arriveAt(takeArrival())) return
   if (A.aboutDetail) collapseAbout(false)
@@ -1022,6 +1157,33 @@ function releaseInto(f, k, tl) {
   tl.to(f, { h: V.H * 1.7, hw: 22000, reach: V.W * 2, falloff: 420, lip: 18, lipW: 8, duration: 0.8, ease: 'power4.in' }, 0.05)
     .add(() => { if (scarAt.from === 'index') phys.scar(scarAt.x, scarAt.y, V.P ? V.W * 0.4 : V.W * 0.26, 13); enterWorld(k, f) })
 }
+/*
+ * THE WORK, OPENED BY ITS ADDRESS. A visitor who lands on /work/{id} — a shared link, a search result, Forward — asked
+ * for the work, not for the field or the opening: it is composed as if it had just been released, on its first
+ * frame, and the field it returns to has it in register.
+ */
+function openWorkAt(k) {
+  if (k < 0 || k >= N) return false
+  endGesture()
+  gsap.killTweensOf(A)
+  if (A.press) cancelPress(A.press)
+  if (A.introF) { A.features.delete(A.introF); A.introF = null }
+  if (A.bridgeF) { gsap.killTweensOf(A.bridgeF); A.features.delete(A.bridgeF); A.bridgeF = null }
+  if (A.about) { gsap.killTweensOf(A.about); A.features.delete(A.about); A.about = null }
+  A.aboutOpen = false; A.aboutDetail = false; A.detailPushed = false; A.aboutDetailK = 0; A.pending = null
+  A.introReg = 0; A.nameAmp = REDUCED ? 0 : 1; A.shiver = 0; A.bridgePK = 1
+  A.mode = 'index'; A.p = A.pT = A.base = A.prevBase = STOP.work
+  A.wT = A.wt = k; A.wLocked = k; WORKS[k].fill = 1; WORKS[k].lod = 0
+  if (!A.visited.has(k)) A.visitOrder.push(k)
+  A.visited.add(k); surface.visited[k] = 1
+  HOST.emit('projectOpened', { index: k, ink: works[k].ink })
+  mediaFor(k); worldFor(k); prepareWorld(k)
+  A.workPushed = false
+  enterWorld(k, null)
+  A.from = A.to = worldFor(k)[0]; A.front = 1
+  resetGesture(); forgetStream()
+  return true
+}
 function enterWorld(k, f) {
   A.features.delete(f)
   A.mode = 'world'; A.k = k; A.wp = A.wpT = A.wbase = 0; A.exitAccum = 0
@@ -1030,6 +1192,10 @@ function enterWorld(k, f) {
   Object.assign(A.world, worldGeom(0)); A.worldOn = true
   fillWorldDOM(k)
   arrived(() => D.world.querySelector('.wsum h2'), works[k].name)
+  // its address: a step from the field, a replacement from the work before it, nothing when the address brought us
+  const id = works[k].id, at = workAt()
+  if (at !== id) { if (at) HOST.replace(WORK_URL(id), { c2: 'work' }); else { HOST.push(WORK_URL(id), { c2: 'work' }); A.workPushed = true } }
+  document.title = TITLE_WORK(k)
   document.body.classList.remove('releasing')
   A.releaseK = null; A.learned.work = true; A.arrivedAt = performance.now()
   A.busy = false
@@ -1039,6 +1205,11 @@ function exit() {
   if (A.mode !== 'world' || A.busy) return
   A.busy = true; A.mode = 'exit'
   const last = lastFrame(), fr = clamp(Math.round(A.wp), 0, last), k = A.k
+  // the work's address goes with it: Back undoes the step that brought the visitor here; an address opened directly
+  // gives way to the field's own
+  if (workAt()) { if (A.workPushed) HOST.back(); else HOST.push(HOME_URL, { c2: 'home' }) }
+  A.workPushed = false
+  document.title = TITLE()
   // M4 A11Y: leaving a project from the keyboard (or from inside it) returns focus to that project in the index
   const back = A.kbd || D.world.contains(document.activeElement)
   A.from = A.to = worldFor(k)[fr]; A.front = 1
@@ -1051,56 +1222,6 @@ function exit() {
       if (back || A.focusNext) { A.focusNext = 0; wantFocus(() => D.work.querySelector(`[data-work="${k}"]`)) } else announce(TXT.work.heading) })
 }
 
-// MOBILE ONLY → two fingers take hold of two rows; what is between them can only compress, and it resists
-function startSqueeze() {
-  if (A.mode !== 'index' || A.busy || A.aboutOpen || Math.abs(A.p - A.base) > 0.06) return
-  const st = current()
-  if (!['about', 'state', 'work'].includes(st.beneath)) return
-  if (st.beneath === 'work' && registeredWork() < 0) return
-  const [a, b] = [...touches.values()].sort((p, q) => p.y - q.y)
-  if (!a || !b || b.y - a.y < 70) return
-  if (A.press) cancelPress(A.press)
-  ptr.down = false; ptr.axis = 'pinch'
-  A.squeeze = { st, sat: 0, step: 1, f: squeeze({ cx: (a.x + b.x) / 2, y1: a.y, y2: b.y, Y1: a.y, Y2: b.y, hw: V.W * 0.85 }) }
-  A.features.add(A.squeeze.f)
-}
-function updateSqueeze(dt) {
-  const q = A.squeeze
-  if (!q) return
-  const [a, b] = [...touches.values()].sort((p, r) => p.y - r.y)
-  const span = q.f.Y2 - q.f.Y1
-  if (a && b) {
-    // the rows under the fingers stay under them; between, the material follows the fingers less the more it is
-    // compressed: every further step of compression costs more travel
-    const kf = span / Math.max(3, b.y - a.y)
-    const km = kf <= 1 ? Math.max(kf, 1 / 1.5) : Math.pow(kf, 0.8)
-    q.f.y1 = a.y; q.f.y2 = a.y + span / km; q.f.cx = (a.x + b.x) / 2
-  }
-  const k = span / Math.max(1, q.f.y2 - q.f.y1)
-  // a faint tick each time the rows between the fingers close another whole step
-  const step = Math.floor(k)
-  if (step > q.step && step < 5) { haptic(4); q.step = step } else if (step < q.step) q.step = step
-  A.shiver = clamp((k - 2.6) / 2, 0, 1) * 0.45
-  if (k > 4) q.sat += dt; else q.sat = Math.max(0, q.sat - dt * 2)
-  if (q.sat > 0.12) {
-    // saturated between the fingers: the band gives way exactly where it was squeezed
-    const cy = (q.f.y1 + q.f.y2) / 2
-    const f = feature({ cx: q.f.cx, cy, h: (q.f.y2 - q.f.y1) / 2, hw: V.W * 0.8, falloff: 30, kind: q.st.beneath === 'state' ? 1 : 0 })
-    A.features.add(f)
-    const sf = q.f
-    gsap.to(sf, { s: 0, duration: 0.3, onComplete: () => A.features.delete(sf) })
-    A.squeeze = null; A.learned.pinch = true; A.shiver = 0
-    yieldPress({ st: q.st, f, x: q.f.cx, y: cy, L: 1 })
-  }
-}
-function endSqueeze() {
-  const q = A.squeeze
-  if (!q) return
-  A.squeeze = null; A.shiver = 0
-  const f = q.f
-  gsap.to(f, { y1: f.Y1, y2: f.Y2, duration: 0.8, ease: 'elastic.out(1, 0.45)', onComplete: () => A.features.delete(f) })
-  ptr.axis = null
-}
 
 // ─── project world geometry ──────────────────────────────────────────────────
 function worldGeom(wp, k = A.k) {
@@ -1239,6 +1360,18 @@ ui.addEventListener('click', (e) => {
   // altogether; the destination survives either way, because changing language never moves the index.)
   if (e.target.closest('[data-locale]')) { e.preventDefault(); if (HOST.localeHref) HOST.push(HOST.localeHref, { c2: 'locale' }); return }
   if (e.target.closest('[data-lab]')) { e.preventDefault(); openLab(); return }
+  // a study named in the plain navigation is its own page (AUDIT-01: every study used to link to the bench)
+  const study = e.target.closest('[data-study]')
+  if (study) { e.preventDefault(); HOST.push(study.getAttribute('href')); return }
+  // a work named there opens as from the field: its address is a step, and Back returns (AUDIT-01 §9, plain layer #11)
+  const page = e.target.closest('[data-workpage]')
+  if (page) { e.preventDefault(); openWorkAt(+page.dataset.workpage); return }
+  /*
+   * THE ROOM THE NAME OPENED CLOSES FROM INSIDE IT (R2). It was left by scrolling or Escape, neither of which the room
+   * says; a visible Close does — and it is a close, not a Back, because opening it navigated nowhere. Focus goes back
+   * to the hero's About, the control that opened it, once the hero is showing again.
+   */
+  if (e.target.closest('[data-close-about]')) { closeAbout(); wantFocus(() => D.heroAct.querySelector('.hero-about')); return }
   const b = e.target.closest('[data-go], [data-work], [data-open], [data-world], [data-detail], [data-back]')
   if (!b) return
   if (b.dataset.go || b.hasAttribute('data-detail')) e.preventDefault()
@@ -1246,7 +1379,7 @@ ui.addEventListener('click', (e) => {
   if (b.dataset.go === 'rest') { HOST.contact('end'); return }
   if (b.dataset.go) {
     A.focusNext = performance.now()   // M4 A11Y
-    const stop = { name: 0, creative: 1, system: 2, work: 3, lab: 4, rest: CONTACT_STOP }[b.dataset.go]
+    const stop = b.dataset.go === 'rest' ? CONTACT_STOP : STOP[b.dataset.go]
     // already there: nothing arrives, so focus goes now
     if (stop != null && A.mode === 'index' && !A.aboutOpen && A.base === stop && Math.abs(A.p - stop) < 0.05) { A.focusNext = 0; wantFocus(PLACE_HEADING[stop]) }
     navigate(b.dataset.go)
@@ -1278,7 +1411,7 @@ function buildDOM() {
     <a class="id" href="${HOME_URL}" data-go="name">${identity.name}</a>
     <nav class="nav" aria-label="${TXT.nav.label}"><button data-go="work">${TXT.nav.work}</button><button data-go="about">${TXT.nav.about}</button><button data-go="lab">${TXT.nav.lab}</button><button data-go="rest">${TXT.nav.contact}</button><a class="lang" data-locale href="${HOST.localeHref}" hreflang="${TXT.localeSwitch.hreflang}" lang="${TXT.localeSwitch.hreflang}" aria-label="${TXT.localeSwitch.short} — ${TXT.localeSwitch.to}" title="${TXT.localeSwitch.label}: ${TXT.localeSwitch.to}">${TXT.localeSwitch.short}</a></nav>`)
   // M4 A11Y: the bottom strip repeats the h1's roles and gives pointer instructions — visual only; keyboard instructions are below
-  D.bottom = h('div', 'strip bottom', `<span class="roles" lang="en">${identity.primary} · ${identity.secondary}</span><span id="hint"></span>`)
+  D.bottom = h('div', 'strip bottom', `<span class="roles" lang="en">${identity.primary} · ${identity.secondary}</span><span id="cue" aria-hidden="true"></span><span id="hint"></span>`)
   D.bottom.setAttribute('aria-hidden', 'true')
   D.h1 = h('h1', 'sr', `${identity.name} — ${identity.primary} ${TXT.roles.and} ${identity.secondary}, ${identity.location}`)
   D.h1.tabIndex = -1
@@ -1301,7 +1434,7 @@ function buildDOM() {
     <p class="intro">${about.home.intro}</p>
     <p class="statement">${about.home.positioning}</p>
     <p class="avail lbl">${identity.city} · ${identity.status}</p>
-    <a class="more" href="${ABOUT_URL}" data-detail>${about.home.more} →</a></div>`)
+    <p class="about-acts"><a class="more" href="${ABOUT_URL}" data-detail>${about.home.more} →</a><button class="about-close" data-close-about>${TXT.about.close}</button></p></div>`)
   // M4 A11Y: named by its own heading; a region label would read "About" twice
 
   const d = about.detail
@@ -1312,6 +1445,7 @@ function buildDOM() {
       <div class="ab ab-now"><p>${d.current}</p><ul class="ad-caps" aria-label="${TXT.a11y.capabilities}">${d.capabilities.map((c) => `<li>${termHtml(c)}</li>`).join('')}</ul></div>
       <div class="ab ab-meta">
         <p class="ad-status">${d.status}</p>
+        <a class="ad-cta" href="${CONTACT_URL}" data-go="rest">${TXT.contact.cta} →</a>
         <address class="ad-contact"><span>${identity.location}</span>${mail}${phone}</address>
         <p class="ad-links">${exits()}</p>
         <button class="ad-back" data-back>← ${TXT.about.back}</button>
@@ -1334,7 +1468,7 @@ function buildDOM() {
     <div class="col">
       <div class="head"><h2 class="lbl" tabindex="-1">${TXT.work.heading}</h2><p class="wline">${workIntro.line}</p><p class="sr">${TXT.a11y.workKeys}</p></div>
       <ol class="index">${works.map((w, i) => `<li><button data-work="${i}"><span class="swatch"></span><span class="wid">${w.name}</span><span class="wk">${w.strength}</span></button></li>`).join('')}</ol>
-      <div class="current"><p class="wtitle" aria-hidden="true"></p><p class="wmeta" aria-hidden="true"></p><button class="open" data-open aria-label="${OPEN_WORK()} — ${TXT.a11y.openProject}" aria-describedby="c2-open-hint">${OPEN_WORK()}</button><span id="c2-open-hint" class="sr">${TXT.a11y.openHint}</span></div>
+      <div class="current"><p class="wtitle" aria-hidden="true"></p><p class="wmeta" aria-hidden="true"></p><button class="open" data-open aria-label="${TXT.work.view} — ${TXT.a11y.openProject}">${TXT.work.view} →</button></div>
     </div>`)
 
   /*
@@ -1361,8 +1495,8 @@ function buildDOM() {
   // everything essential stays reachable without the surface: keyboard and assistive technology get a plain list
   D.a11y = h('nav', 'a11y', `<ul class="a11y-places"><li><button data-go="creative" lang="en">${capabilities.surface.role}</button></li><li><button data-go="system" lang="en">${capabilities.system.role}</button></li></ul>
     <p class="lbl">${TXT.a11y.selectedWork}</p>
-    <ul>${works.slice(0, 3).map((w) => `<li><a href="${w.url}" target="_blank" rel="noopener noreferrer">${w.name} — ${w.strength} ↗<span class="sr"> ${TXT.a11y.newTab}</span></a></li>`).join('')}</ul>
-    <p class="lbl">${TXT.a11y.labStudies}</p><ul>${STUDY_LIST().map((e) => `<li><a href="${LAB_URL}" data-lab>${e.name} — ${e.note}</a></li>`).join('')}</ul>
+    <ul>${works.slice(0, 3).map((w, i) => `<li><a href="${WORK_URL(w.id)}" data-workpage="${i}">${w.name} — ${w.strength}</a> · <a href="${w.url}" target="_blank" rel="noopener noreferrer"><span lang="en">${w.host}</span> ↗<span class="sr"> ${TXT.a11y.newTab}</span></a></li>`).join('')}</ul>
+    <p class="lbl">${TXT.a11y.labStudies}</p><ul>${STUDY_LIST().map((e) => `<li><a href="${studyUrl(e.id)}" data-study>${e.name} — ${e.note}</a></li>`).join('')}</ul>
     <p>${mail} · ${phone}</p><p class="a11y-links">${exits()}</p>
     <a href="${ABOUT_URL}" data-detail>${about.home.more}</a>`)
   D.a11y.id = 'plain'; D.a11y.tabIndex = -1
@@ -1379,7 +1513,7 @@ function buildDOM() {
   D.world.prepend(D.world.querySelector('.wsum'))
   ui.append(D.top, D.main, D.bottom, D.a11y)
   D.aboutBlocks = [...D.detail.querySelectorAll('.ab')]
-  D.hint = $('#hint')
+  D.hint = $('#hint'); D.cue = $('#cue')
   D.lang = D.top.querySelector('[data-locale]')
   D.current = D.work.querySelector('.current')
   D.wtitle = D.current.querySelector('.wtitle'); D.wmeta = D.current.querySelector('.wmeta')
@@ -1415,7 +1549,9 @@ const px = (r) => `left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px`
 function fillWorldDOM(k) {
   const w = works[k], frs = framesOf(k), full = worldFor(k)[frs.length - 1], L = full.layout, next = works[L.next]
   D.wlink.href = w.url; D.wname.textContent = w.name; D.whost.textContent = w.host
+  // the end of a project asks for the next one: the site's one Contact, asked for by name (AUDIT-01)
   const close = `<h2 class="wb-name">${w.name}</h2><p class="wb-line">${w.line}</p><p class="wb-role">${w.role}</p>
+    <p class="wb-cta"><a href="${CONTACT_URL}" data-go="rest">${TXT.contact.cta} →</a></p>
     <p class="wb-links"><a href="${w.url}" target="_blank" rel="noopener noreferrer">${TXT.work.visit} <span lang="en">${w.host}</span> ↗</a><button data-world="all">${TXT.work.allWork}</button></p>`
   const alts = [...new Set(frs.flatMap((fr) => (fr.media || []).map((mm) => mm.item.alt)))]
   D.wblocks.innerHTML = frs.map((fr, i) => {
@@ -1426,6 +1562,7 @@ function fillWorldDOM(k) {
   }).join('')
   D.wbs = [...D.wblocks.querySelectorAll('.wb')]
   D.wbs.forEach((el) => { el.inert = true })
+  linesDue = k
   // M4 A11Y: the frames stage the same project content over time. Assistive technology gets it once, in order, from
   // the same fields; the staged blocks leave the tree, and their links (duplicated by the project nav) leave the tab order.
   D.wblocks.setAttribute('aria-hidden', 'true')
@@ -1434,6 +1571,38 @@ function fillWorldDOM(k) {
     <p>${w.strength}</p><ul>${w.facts.map((x) => `<li>${x}</li>`).join('')}</ul>${w.stack ? `<p lang="${w.stackLang}">${w.stack}</p>` : ''}
     ${psiHTML(w)}<p>${TXT.a11y.projectImages} ${alts.join(' ')}</p><p>${TXT.a11y.worldKeys}</p>`
   lastWB = ''
+}
+/*
+ * THE LINES A POCKET MUST CLEAR (R8; states.js, clearLines). Each frame's words are measured where they are set —
+ * one box per line of type, from a Range over every text node, as panelfit measures them — and handed to that
+ * frame's state in composition units; its void map is drawn again with those lines cleared whole. Due whenever a
+ * work's words are set — entering it, a language change (the words move), a rebuild (the frames are new) — and
+ * taken by the frame loop once the words are laid out: a work opened by its address is set before the runtime's
+ * DOM is shown, when every block still measures nothing.
+ */
+let linesDue = null
+function pocketLines(k) {
+  const frames = worldFor(k), range = document.createRange()
+  const per = new Map()
+  for (const el of D.wbs || []) {
+    const st = frames[+el.dataset.f]
+    if (!st?.lines) continue
+    const box = el.getBoundingClientRect()
+    if (!box.width) return false   // not laid out yet: try again next frame
+    const left = parseFloat(el.style.left) || 0, top = parseFloat(el.style.top) || 0
+    const s = (parseFloat(el.style.width) || box.width) / box.width   // client pixels → composition units
+    const out = per.get(st) || []
+    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+      if (!n.textContent.trim()) continue
+      range.selectNodeContents(n)
+      for (const r of range.getClientRects()) if (r.width > 0 && r.height > 0) out.push({ x: left + (r.left - box.left) * s, y: top + (r.top - box.top) * s, w: r.width * s, h: r.height * s })
+    }
+    per.set(st, out)
+  }
+  for (const [st, out] of per) { st.lines.length = 0; st.lines.push(...out); surface.release(st) }
+  lastSig = ''
+  return true
 }
 // ─── M4 ACCESSIBILITY: where focus goes, and what is said ─────────────────────
 // A place reached from the keyboard moves focus to its own heading — the reader lands where the content is, and the
@@ -1486,10 +1655,10 @@ function arrived(heading, name) {
 // the same control after the DOM is rebuilt in another language
 function focusKey(el) {
   if (!el || !ui.contains(el)) return null
-  const c = el.closest('[data-locale], [data-go], [data-work], [data-world], [data-detail], [data-back], [data-open]')
+  const c = el.closest('[data-locale], [data-go], [data-work], [data-world], [data-detail], [data-back], [data-open], [data-close-about]')
   // the hero's About and the strip's are the same action, so they answer to the same key: this one says which
   if (c?.classList.contains('hero-about')) return '.hero-about'
-  if (c) for (const a of ['data-locale', 'data-go', 'data-work', 'data-world', 'data-detail', 'data-back', 'data-open']) if (c.hasAttribute(a)) return c.getAttribute(a) ? `[${a}="${c.getAttribute(a)}"]` : `[${a}]`
+  if (c) for (const a of ['data-locale', 'data-go', 'data-work', 'data-world', 'data-detail', 'data-back', 'data-open', 'data-close-about']) if (c.hasAttribute(a)) return c.getAttribute(a) ? `[${a}="${c.getAttribute(a)}"]` : `[${a}]`
   if (el === D.h1) return 'main > h1'
   const layer = el.closest('.layer')
   if (layer && el.matches('h2')) return `.${[...layer.classList].filter((x) => x !== 'on').join('.')} h2`
@@ -1531,6 +1700,9 @@ function layoutDOM() {
   const wk = WORKS[0].layout
   // the index column's text stays on its solid part, clear of the tapering edge
   place(D.work.querySelector('.col'), { x: 0, y: wk.col.y, w: wk.col.w - (V.P ? 0 : 24), h: wk.col.h - (V.P ? 60 : 0) })
+  // new geometry: every still is made again, where and when it is next wanted
+  for (const k of Object.keys(STILLS)) { STILLS[k].el.remove(); delete STILLS[k] }
+  stillShown = ''
   // The Lab stop keeps its place on the index but no longer shows a composition of its own — the Lab is a route,
   // and arriving at the stop opens it. Its retired layer is stood down once, here, rather than every frame: inert,
   // so it is neither drawn nor reachable, and the way to the Lab for a reader is the plain navigation, as before.
@@ -1548,19 +1720,41 @@ function uiDestination() {
   if (A.mode !== 'index') return 'name'
   return DEST_AT[clamp(A.base, 0, DEST_AT.length - 1)]
 }
-let lastHint = '', lastTone = '', lastTT = '', lastTB = '', lastBg = '', lastWork = '', lastWB = ''
-function hintFor(stop) {
-  const since = performance.now() - A.arrivedAt
-  const H = TXT.hints
-  const quiet = `${identity.city}${H.quietSeparator}${identity.status}`
-  if (A.mode === 'world') return Math.round(A.wp) === 0 && !A.learned.world && since > 3500 ? H.world : ''
+let lastHint = '', lastCue = '', lastTone = '', lastTT = '', lastTB = '', lastBg = '', lastWork = '', lastWB = ''
+// the strip's right end: where the visitor is writing from, and whether he is free — never an instruction now
+function hintFor() {
   if (A.mode !== 'index' || A.aboutOpen) return ''
-  // The hero taught the hold that opened About, and the Lab stop taught the hold that made a room. Neither is true
-  // any more: About is a control on the hero, and the Lab is a route that opens on arrival. A place teaches only
-  // what it still asks for — the two faces and the work field do; the hero and the Lab stop stay quiet.
-  if (stop === STOP.creative || stop === STOP.system) return !A.learned.face && since > 2500 ? (TOUCH ? H.faceTouch : H.face) : quiet
-  if (stop === STOP.work) return !A.learned.work && since > 2500 ? (TOUCH ? H.workTouch : H.work) : quiet
-  return quiet
+  return `${identity.city}${TXT.hints.quietSeparator}${identity.status}`
+}
+/*
+ * THE ONE HINT SYSTEM (R3, engine/cues.js). A place that asks for a gesture names it in the middle of the bottom
+ * strip, once the visitor has been still there for CUE_IDLE, and only the first time in the session that gesture is
+ * asked for. "Scroll" is asked where the screen looks finished — the hero's first stop and the end of the passage —
+ * and once between them; the faces ask for the hold, the work field for its own gesture. Inside a project nothing is
+ * asked any more: its "scroll" was a place that does not look finished. A hint on screen stays until the visitor
+ * does anything or goes anywhere.
+ */
+function cueAsked(stop) {
+  const H = TXT.hints
+  if (stop === STOP.name && settledAt(STOP.name)) return { name: 'scroll', text: H.scroll }
+  if (LINEFIELD && LF && stop === LFS && settledAt(LFS) && LF.drive.target > 0.9995) return { name: 'scroll', text: H.scroll }
+  if ((stop === STOP.creative || stop === STOP.system) && settledAt(stop)) return { name: 'hold', text: H.face }
+  if (stop === STOP.work && settledAt(STOP.work)) return { name: 'work', text: TOUCH ? H.workTouch : H.work }
+  return null
+}
+function cueFor(stop) {
+  const now = performance.now()
+  const ask = A.mode === 'index' && !A.aboutOpen && !A.busy && !ptr.down ? cueAsked(stop) : null
+  const c = A.cue
+  // one on screen: it stays while its place still asks for it and nothing has been done since it appeared
+  if (c) {
+    if (ask && ask.name === c.name && stop === c.stop && A.lastInput < c.at) return ask.text
+    A.cue = null
+  }
+  if (!ask || cueSeen(ask.name) || now - Math.max(A.arrivedAt, A.lastInput) < CUE_IDLE) return ''
+  cueSpend(ask.name)
+  A.cue = { name: ask.name, stop, at: now }
+  return ask.text
 }
 function stripTones(dom) {
   if (A.mode === 'world' || A.mode === 'exit') return ['media', 'media']
@@ -1578,13 +1772,21 @@ function stripTones(dom) {
 // the way); going back, once it has closed (0.1). A push-through lands exactly on the face, navigation damps onto it:
 // either way the face's text and tone arrive with the picture, not with the last hundredths of the position.
 const FACE_WHOLE = [0.1, 0.7]
+// AUDIT-01 (round 2): the same rule on the way in from the name. Creative's word is written and the room its text
+// stands in is open from ~0.76 of the way (measured, 390 and 1440), but the text waited for the last 0.03 — so for
+// ~0.8 s the visitor saw the word and an empty room, which where the word is drawn thin reads as rows and nothing
+// else. The text now arrives with its room, only while Creative is where the visitor is going.
+const NAME_TO_CREATIVE_WHOLE = 0.75
 function domUpdate(from, to, front) {
   focusStep()
   const faceT = A.mode === 'index' && from === IDX[STOP.creative] && to === IDX[STOP.system] ? A.p - STOP.creative : null
-  const face = faceT == null ? null : A.base === STOP.system && faceT >= FACE_WHOLE[1] ? IDX[STOP.system] : A.base === STOP.creative && faceT <= FACE_WHOLE[0] ? IDX[STOP.creative] : null
+  const inT = A.mode === 'index' && from === IDX[STOP.name] && to === IDX[STOP.creative] ? A.p - STOP.name : null
+  const face = faceT != null
+    ? (A.base === STOP.system && faceT >= FACE_WHOLE[1] ? IDX[STOP.system] : A.base === STOP.creative && faceT <= FACE_WHOLE[0] ? IDX[STOP.creative] : null)
+    : inT != null && A.base === STOP.creative && inT >= NAME_TO_CREATIVE_WHOLE ? IDX[STOP.creative] : null
   const dom = face || (front < 0.5 ? from : to)
   const idleIdx = A.mode === 'index' && !A.busy
-  const loaded = (A.press && A.press.L > 0.1 && A.press.st.beneath !== 'pin') || !!A.squeeze
+  const loaded = A.press && A.press.L > 0.1 && A.press.st.beneath !== 'pin'
   const at = (i) => (Math.abs(A.p - i) < 0.03 && Math.abs(A.p - A.base) < 0.2) || face === IDX[i]
   if (REDUCED) {
     // the destination owns its text. In normal motion a layer arrives with the picture, so it is asked for from
@@ -1638,7 +1840,7 @@ function domUpdate(from, to, front) {
   const [tt, tb] = stripTones(dom)
   if (tt !== lastTT) { D.top.dataset.tone = tt; D.world.querySelector('.wnav').dataset.tone = tt; lastTT = tt }
   if (tb !== lastTB) { D.bottom.dataset.tone = tb; lastTB = tb }
-  const parting = A.mode === 'index' && ((from === IDX[STOP.creative] && to === IDX[STOP.system] && A.p > STOP.creative + 0.001) || A.press?.st.beneath === 'state' || A.squeeze?.st.beneath === 'state')
+  const parting = A.mode === 'index' && ((from === IDX[STOP.creative] && to === IDX[STOP.system] && A.p > STOP.creative + 0.001) || A.press?.st.beneath === 'state')
   const bg = inWorld || A.mode === 'exit' ? '#0b0c0e' : (parting && A.beneathSt ? A.beneathSt.bg : dom.bg)
   if (bg !== lastBg) { document.body.style.backgroundColor = bg; lastBg = bg }
 
@@ -1647,12 +1849,21 @@ function domUpdate(from, to, front) {
   const key = `${k}:${[...A.visited].join('')}`
   if (key !== lastWork) {
     lastWork = key
-    if (k >= 0) { D.wtitle.textContent = works[k].name; D.wmeta.textContent = works[k].strength; D.current.querySelector('.open').setAttribute('aria-label', `${TXT.work.open} — ${TXT.a11y.openProject}: ${works[k].name}`) }
+    if (k >= 0) { D.wtitle.textContent = works[k].name; D.wmeta.textContent = works[k].strength; D.current.querySelector('.open').setAttribute('aria-label', `${TXT.work.view} — ${TXT.a11y.openProject}: ${works[k].name}`) }
     D.current.classList.toggle('on', k >= 0)
     D.work.querySelectorAll('[data-work]').forEach((b, i) => { b.classList.toggle('active', i === k); b.classList.toggle('visited', A.visited.has(i)); if (i === k) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current') })
   }
-  const hint = hintFor(Math.round(A.p))
+  const hint = hintFor()
   if (hint !== lastHint) { D.hint.textContent = hint; lastHint = hint }
+  stillUpdate(performance.now())
+  if (linesDue != null && (A.mode === 'world' || A.mode === 'exit') && pocketLines(linesDue)) linesDue = null
+  const cue = cueFor(Math.round(A.p))
+  if (cue !== lastCue) {
+    // hiding keeps the words, so they fade rather than vanish
+    if (cue) D.cue.textContent = cue
+    D.cue.classList.toggle('on', !!cue); D.bottom.classList.toggle('is-cueing', !!cue)
+    lastCue = cue
+  }
 }
 
 // ─── media ───────────────────────────────────────────────────────────────────
@@ -1851,7 +2062,7 @@ function frame(now) {
   // POST-M5 PERF: two clocks. `et` is the real time since the last frame (up to a stall) and drives the closed-form
   // convergences: place and frame position, work tuning, registration drag, imprint visibility, pointer velocity decay,
   // and the material physics, which integrates it in steps of at most 50 ms (at 60 fps: one step, as before).
-  // `dt` keeps its 50 ms cap for hold load, squeeze and the Lab rooms.
+  // `dt` keeps its 50 ms cap for hold load and the Lab rooms.
   const et = Math.min(STALL, Math.max(0, (now - last) / 1000))
   const dt = Math.min(0.05, et)
   last = now
@@ -1963,7 +2174,6 @@ function frame(now) {
 
   registration(now, et)
   updatePress(now, dt)
-  updateSqueeze(dt)
   runPending()
   // THE FIFTH DESTINATION. Travel that settles on the Lab stop hands over to the bench, the way the Work → Lab
   // bridge already ends: reached from Work it is the bridge, reached from Contact it is this. Only travel arms it,
@@ -2216,12 +2426,12 @@ export function setLocale(next) {
   const refocus = focusKey(document.activeElement)   // M4 A11Y
   FR = {}                       // frame blocks carry copy; their geometry does not change, so WORLD textures stand
   buildDOM()
-  lastHint = lastTone = lastTT = lastTB = lastBg = lastWork = lastWB = ''
+  lastHint = lastCue = lastTone = lastTT = lastTB = lastBg = lastWork = lastWB = ''; stillShown = ''
   mediaShown = ''
   onState.clear()
   layoutDOM()
   if (A.mode === 'world' || A.mode === 'exit') { mediaFor(A.k); fillWorldDOM(A.k) }
-  document.title = isAboutPath() ? TITLE_ABOUT() : TITLE()
+  document.title = pageTitle()
   lastSig = ''
   if (refocus) wantFocus(() => ui.querySelector(refocus))
   return true
@@ -2258,12 +2468,32 @@ let prepared = null
 function prepare(pace) {
   const step = async (name) => { performance.mark?.(`c2:prep:${name}`); if (pace) await pace() }
   return (prepared ??= (async () => {
-  try { await document.fonts.load(`900 100px ${ST.FAMILY}`, 'EMRAHYÜCEL') } catch {}
-  try { await document.fonts.load('400 20px "Geist Variable"') } catch {}
+  /*
+   * AUDIT-01 (round 2): what does not need what no longer waits for it. On a slow link the two faces were fetched
+   * one after the other, and the previews only after both — they need the screen's shape, not the fonts. Now the
+   * shape is measured first, the previews start, and the two faces load together (the layout also preloads them
+   * from the document's head, so on a cold visit they are usually here already).
+   */
+  measure()
+  const previews = ensurePreviews()
+  await Promise.all([
+    document.fonts.load(`900 100px ${ST.FAMILY}`, 'EMRAHYÜCEL').catch(() => {}),
+    document.fonts.load('400 20px "Geist Variable"').catch(() => {}),
+  ])
   await document.fonts.ready
   await step('fonts')
   measure()
-  await Promise.all([surface.ready, ensurePreviews()])
+  /*
+   * The first frame is the name, and the name needs no preview: it no longer waits for them (on a slow link they
+   * were the last 1.6 s of it). Nothing that draws a preview is warmed before tonesReady; if anything drew one
+   * before its image was here — a visitor already standing on Work, a project's last frame — it is released when
+   * the images land and draws again, with them. A preview that fails to load leaves its frame bare, not the site.
+   */
+  await surface.ready
+  previews.then(() => {
+    for (const st of [...WORKS, ...Object.values(WORLD).flat()]) if (st && !st.dead) surface.release(st)
+    lastSig = ''
+  }, () => {})
   /*
    * LINEFIELD is loaded here and nowhere else: one dynamic import inside a branch the bundler can prove is dead
    * when the flag is off, so a published build has no chunk to load and no text to strip. It is part of PREPARE
@@ -2301,6 +2531,8 @@ async function start() {
   A.from = A.to = IDX[STOP.name]; A.front = 1
   if (isAboutPath()) { A.pending = 'detail'; document.title = TITLE_ABOUT() } else document.title = TITLE()
   requestAnimationFrame((t) => { last = t; frame(t) })
+  // a work's address, on a cold start: the work, settled — no opening, no plate (R8)
+  if (!isAboutPath() && openWorkAt(workIndex(workAt()))) return
   // arriving from the Lab on a cold start: the visitor asked for a place, not for the opening — and not for the
   // hero either, so neither the introduction nor the static plate is played over the place they asked for
   if (!isAboutPath() && arriveAt(takeArrival())) return

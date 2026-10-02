@@ -38,6 +38,8 @@ const LITERAL = /\b(undefined|null|NaN|\[object Object\])\b/
     finale: !!window.__finale,
     y: Math.round(scrollY),
     text: document.body.innerText,
+    // R7: which study the bench is on (1–3), read from its records
+    benchStudy: [...document.querySelectorAll('.lab-stage .rec')].findIndex((b) => b.getAttribute('aria-current') === 'true') + 1,
   }))
   const click = (sel) => p.evaluate((s) => document.querySelector(s)?.click(), sel)
 
@@ -84,7 +86,10 @@ const LITERAL = /\b(undefined|null|NaN|\[object Object\])\b/
   await step('→ Lab', async () => {
     await p.mouse.wheel(0, -130)
     await p.waitForFunction(() => /\/lab$/.test(location.pathname), null, { timeout: 25000 }).catch(() => {})
-  }, (s) => s.bench)
+  }, (s) => s.bench && s.benchStudy === 3)
+  // R7: the bench browses — up out of the finale it stands on 03, and the way up to Work is 02, 01, then Work
+  await step('Lab: 02', () => p.mouse.wheel(0, -130), (s) => s.bench && s.benchStudy === 2)
+  await step('Lab: 01', () => p.mouse.wheel(0, -130), (s) => s.bench && s.benchStudy === 1)
   await step('→ Work', () => p.mouse.wheel(0, -130), (s) => s.c2 === 'on' && s.base === STOP.work)
   await step('→ About', () => click('#ui [data-go="about"]'), (s) => s.c2 === 'on')
   await step('→ back to Hero', () => click('#ui [data-go="name"]'), (s) => s.base === STOP.name)

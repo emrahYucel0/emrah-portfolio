@@ -12,7 +12,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 async function once(b, from, cpu, waitMs) {
   const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } })
-  await ctx.addInitScript(() => { try { sessionStorage.setItem('finale-guide', '1') } catch {} })
+  await ctx.addInitScript(() => { try { sessionStorage.setItem('cue:finale-guide', '1') } catch {} })
   const p = await ctx.newPage()
   const cdp = await ctx.newCDPSession(p)
   if (cpu > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: cpu })
@@ -50,7 +50,7 @@ async function cost(b, cpu) {
 }
 async function still(b) {
   const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' })
-  await ctx.addInitScript(() => { try { sessionStorage.setItem('finale-guide', '1') } catch {} })
+  await ctx.addInitScript(() => { try { sessionStorage.setItem('cue:finale-guide', '1') } catch {} })
   const p = await ctx.newPage()
   await p.goto(`${BASE}/tr/contact`, { waitUntil: 'networkidle' }); await p.waitForFunction(() => !!window.__finale); await sleep(1200)
   const a = await p.screenshot()

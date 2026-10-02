@@ -41,8 +41,9 @@ export const finaleScroll = new Map<number, number>()
 /** the finale's side: the Contact page registers where the reader is on the track (a language change keeps it) */
 export const finaleSeam: { progress: null | (() => number) } = { progress: null }
 
-/** the bench's side of the seam: LabBench registers how it clears itself to the bare field */
-export const benchSeam: { exit: null | (() => Promise<void>) } = { exit: null }
+/** the bench's side of the seam: LabBench registers how it clears itself to the bare field, and (R7) how it moves
+ *  one study along — `step` answers false at either end, where the gesture carries on to the next place */
+export const benchSeam: { exit: null | (() => Promise<void>); step: null | ((d: 1 | -1) => boolean) } = { exit: null, step: null }
 
 /**
  * The tail of the gesture that carried the visitor across. Captured on the window before anything on the new page

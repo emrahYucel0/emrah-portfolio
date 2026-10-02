@@ -15,6 +15,9 @@ export const isLocale = (value: unknown): value is Locale =>
 /** What the Nuxt shell reads. */
 export const messages = (locale: Locale): LocaleCopy => copies[locale]
 
+/** the Lab's count, '{n}' filled from the studies that exist (AUDIT-01: it was a typed '03') */
+export const labCount = (copy: LocaleCopy): string => copy.lab.count.replace('{n}', String(studies.length).padStart(2, '0'))
+
 /** a study's number, as every place that shows one writes it: from the one order in facts.ts ('01', '02', …) */
 export const studyNo = (id: (typeof studies)[number]): string => String(studies.indexOf(id) + 1).padStart(2, '0')
 
@@ -41,7 +44,7 @@ export function c2Content(locale: Locale, options: C2ContentOptions) {
     return {
       id: p.id, name: p.name, url: p.url, host: p.host, ink: p.ink, rhythm: p.rhythm,
       stack: pc.stack ?? p.stack, stackLang: pc.stack ? locale : 'en',
-      strength: pc.strength, line: pc.line, role: pc.role, facts: [...pc.facts], captions: Object.fromEntries(Object.entries(pc.captions ?? {}).map(([k, v]) => [k, termHtml(v)])),
+      strength: pc.strength, client: pc.client ?? '', line: pc.line, role: pc.role, facts: [...pc.facts], captions: Object.fromEntries(Object.entries(pc.captions ?? {}).map(([k, v]) => [k, termHtml(v)])),
       psi: {
         mobile: p.psi.mobile, desktop: p.psi.desktop,
         labels: copy.psi.labels, short: copy.psi.short,
@@ -87,7 +90,9 @@ export function c2Content(locale: Locale, options: C2ContentOptions) {
       title: copy.lab.title,
       line: copy.lab.line,
       open: copy.lab.open,
-      count: copy.lab.count,
+      count: labCount(copy),
+      // the studies in the one order facts.ts gives, each with its id (the runtime links each to its own page)
+      studies: studies.map((id) => ({ id, ...copy.lab.studies[id] })),
     },
     /** every label, hint and aria name the runtime paints, in the active language */
     ui: copy,

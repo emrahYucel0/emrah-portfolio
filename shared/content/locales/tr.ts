@@ -29,12 +29,12 @@ export const tr = {
     },
     imageAlt: 'Emrah Yücel — Creative Developer ve Full-Stack Developer. Kâğıt üzerinde yatay mürekkep satırlarıyla dizilmiş isim.',
   },
-  nav: { skip: 'Düz gezinmeye geç', label: 'Portfolyo', work: 'İşler', about: 'Hakkımda', lab: 'Lab', contact: 'İletişim' },
+  nav: { skip: 'Düz gezinmeye geç', skipContent: 'İçeriğe geç', label: 'Portfolyo', work: 'İşler', about: 'Hakkımda', lab: 'Lab', contact: 'İletişim' },
   roles: { creative: 'Creative Developer', fullStack: 'Full-Stack Developer', and: 've' },
   identity: {
     city: 'İstanbul',
     location: 'İstanbul, Türkiye',
-    status: 'Seçili freelance projelere açığım',
+    status: 'Seçili projelere açığım',
     positioning: ['Dokunduğun yüzeyi kuruyorum', 've altındaki sistemi'],
   },
   home: {
@@ -55,7 +55,7 @@ export const tr = {
       'Bu yaklaşım, yazılıma geçtiğimde de benimle kaldı. Hâlâ aynı şekilde çalışıyorum: önce sistemi anlarım, kısıtlarıyla çalışırım, sonra görsel ve teknik taraf tek bir şeymiş gibi hissedene kadar sonucu rafine ederim.',
     current:
       'Bugün; creative development, frontend, full-stack sistemler, CMS/admin mimarisi, performans ve teknik SEO üzerinde çalışıyorum.',
-    status: 'Seçili freelance projelere açığım.',
+    status: 'Seçili projelere açığım.',
     capabilitiesHeading: 'Yetkinlikler',
     capabilities: [
       { text: 'Creative Development', lang: 'en' }, { text: 'Motion & Interaction', lang: 'en' },
@@ -63,6 +63,7 @@ export const tr = {
       ['CMS / ', { text: 'Admin', lang: 'en' }, ' Sistemleri'], 'Performans & Teknik SEO',
     ],
     back: 'Geri',
+    close: 'Kapat',
   },
   faces: {
     surface: {
@@ -100,8 +101,7 @@ export const tr = {
   work: {
     heading: 'İşler',
     intro: 'Hizmet markaları için uçtan uca tasarlanıp geliştirilmiş üç production sitesi.',
-    open: 'Açmak için görseli basılı tut',
-    openTouch: 'Açmak için görsele dokun',
+    view: 'İncele',
     visit: 'Siteyi ziyaret et',
     allWork: 'Tüm işler',
     next: 'Sonraki',
@@ -110,6 +110,7 @@ export const tr = {
     projects: {
       istanbul: {
         strength: 'Özgün dijital yön',
+        client: 'Ege Kent Nakliyat’ın İstanbul şehir içi markası',
         line: 'Alışılmış bir hizmet kategorisi, özgün bir dijital deneyim olarak ele alındı — kendi görsel dili, teknik illüstrasyonu ve çok yalın bir SSR yapısı.',
         role: 'Özgün görsel yön, yaratıcı frontend mühendisliği ve yüksek performanslı production.',
         facts: ['Özgün görsel dil ve teknik illüstrasyon', '39 ilçelik içerik yaklaşımı', 'Sınırlandırılmış fiyat hesaplayıcı', 'Admin / CMS'],
@@ -142,7 +143,7 @@ export const tr = {
     registered: 'kayıtlı',
     registering: 'yeniden kaydediliyor',
     open: 'aç',
-    count: 'Lab · 03 çalışma',
+    count: 'Lab · {n} çalışma',
     back: 'Lab',
     studies: {
       weight: {
@@ -179,7 +180,7 @@ export const tr = {
     tone_rows: 'satır',
     weight_holds: 'sayfayı tutuyor',
   },
-  contact: { heading: 'İletişim', emailLabel: 'E-posta', phoneLabel: 'Telefon' },
+  contact: { heading: 'İletişim', emailLabel: 'E-posta', phoneLabel: 'Telefon', cta: 'Bir projeniz mi var? Yazın' },
   finale: {
     copy: 'kopyala', copied: 'kopyalandı', copyEmail: 'E-postayı kopyala', locationRole: 'Konum',
     revision: 'Revizyon', githubAria: 'GitHub profili', linkedinAria: 'LinkedIn profili',
@@ -192,9 +193,10 @@ export const tr = {
   },
   hints: {
     quietSeparator: ' · ',
-    face: 'basılı tut', faceTouch: 'iki parmakla sıkıştır',
+    face: 'basılı tut',
     work: 'kaydır · görseli basılı tut', workTouch: 'yana kaydır · görsele dokun',
-    world: 'kaydır',
+    scroll: 'aşağı kaydır',
+    bench: 'kaydırarak gez · tıklayarak aç', benchTouch: 'kaydırarak gez · dokunarak aç',
   },
   a11y: {
     plainNav: 'Düz gezinme', selectedWork: 'Seçili işler', labStudies: 'Lab çalışmaları',
@@ -203,10 +205,8 @@ export const tr = {
     keys: 'Portfolyoda ilerlemek için ok tuşlarını ya da Page Up ve Page Down tuşlarını kullan.',
     workKeys: 'Sol ve sağ ok tuşları proje seçer; Enter projeyi açar.',
     worldKeys: 'Ok tuşları proje içinde ilerler; Escape tüm işlere döner.',
-    labKeys: 'Oda açmak için Enter’a bas; her oda sıradaki çalışmayı gösterir.',
     newTab: '(yeni sekmede açılır)',
     openProject: 'Projeyi aç',
-    openHint: 'Klavye veya ekran okuyucuyla etkinleştirin.',
   },
   localeSwitch: { label: 'Dil', to: 'English', short: 'EN', hreflang: 'en' },
   entry: {

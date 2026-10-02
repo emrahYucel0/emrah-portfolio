@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { studies, studyNo, type StudyId } from '~~/shared/content'
+import { labCount, studies, studyNo, type StudyId } from '~~/shared/content'
+import { CUE_IDLE, cueSeen, cueSpend } from '~~/engine/cues.js'
 
 /**
  * LAB — THE REGISTERED BENCH, EMBEDDED REGISTER, DATUM. (Accepted reference: research lab-reopen/bench-v2-refined.)
@@ -53,6 +54,8 @@ const S = { reg: 0, fill: 1, datum: 0, datumT: 0, edges: null as number[] | null
 const VEIL_OUT = 0.28, VEIL_IN = 0.42 // seconds
 let veilDone: (() => void) | null = null
 function exitToBare() {
+  // the foot band is the finale's too: the bench's hint goes at once, not faded, so the handover finds it identical
+  clearTimeout(cueTimer); cueText.value = ''; leavingSeam.value = true
   S.veilT = 1
   if (REDUCED) { S.veil = 1; paintVeilDom(); request(); return Promise.resolve() }
   request()
@@ -80,6 +83,35 @@ function select(i: number, how: string) {
   nextTick(() => { place(); if (REDUCED || how === 'boot') S.datum = S.datumT; request() })
 }
 function enter() { void router.push(href(current.value)) }
+/** one study along (R7, useLabSpine): false at either end, where the gesture is the next place's */
+function step(d: 1 | -1) {
+  const i = sel.value + d
+  if (i < 0 || i >= studies.length) return false
+  select(i, 'step')
+  return true
+}
+
+/*
+ * THE BENCH'S ONE HINT (R3's system, engine/cues.js). The bench asks two things at once — that scrolling browses the
+ * studies and that a click (a tap) opens one — so it says both, in the foot band's middle, after CUE_IDLE of no input
+ * at all, once per session. Any input ends it.
+ */
+const touchSheet = import.meta.client && matchMedia('(hover: none)').matches
+const cueText = ref('')
+const leavingSeam = ref(false)
+let cueTimer = 0
+const CUE = 'bench'
+function armCue() {
+  clearTimeout(cueTimer)
+  if (cueText.value) cueText.value = ''
+  if (cueSeen(CUE)) return
+  cueTimer = window.setTimeout(() => {
+    if (cueSeen(CUE)) return
+    cueSpend(CUE)
+    cueText.value = touchSheet ? copy.value.hints.benchTouch : copy.value.hints.bench
+  }, CUE_IDLE)
+}
+const cueInputs = ['wheel', 'pointerdown', 'keydown'] as const
 function onKey(e: KeyboardEvent) {
   const d = e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? -1 : 0
   if (!d) return
@@ -156,8 +188,15 @@ function place() {
 function resize() {
   const st = stage.value, cv = canvas.value
   if (!st || !cv) return
-  W = st.clientWidth; H = st.clientHeight
-  DPR = Math.min(devicePixelRatio || 1, 2)
+  const w = st.clientWidth, h = st.clientHeight, dpr = Math.min(devicePixelRatio || 1, 2)
+  /*
+   * A canvas whose size is set is cleared, and the browser may paint it before the next frame draws it again: one
+   * frame of bare ground with no rows (measured, R7: the ResizeObserver's first call, which arrives with the size
+   * unchanged, did it right after the bench had mounted). So an unchanged size leaves the canvas alone, and a changed
+   * one is drawn again at once.
+   */
+  if (ctx && w === W && h === H && dpr === DPR) { place(); request(); return }
+  W = w; H = h; DPR = dpr
   cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR)
   ctx = cv.getContext('2d')
   ctx?.setTransform(DPR, 0, 0, DPR, 0, 0)
@@ -166,7 +205,8 @@ function resize() {
   toneField = null
   weight = { w: new Array(5).fill(0.2), phase: 0 }
   place()
-  request()
+  if (raf) { cancelAnimationFrame(raf); raf = 0 }
+  frame(performance.now())
 }
 
 // ── row interruption: whole rows stop and resume around a record ──────────
@@ -459,17 +499,37 @@ function scheduleResize() {
   roRaf = requestAnimationFrame(() => { roRaf = 0; resize() })
 }
 onMounted(() => {
-  const remembered = studies.indexOf((visit.value.lab.activeStudy ?? 'weight') as StudyId)
-  if (remembered > 0) sel.value = remembered
   benchSeam.exit = exitToBare
-  // up out of the finale: the tail of that gesture is spent, and the bench registers itself out of the bare field
+  benchSeam.step = step
+  /*
+   * WHERE THE BENCH OPENS (R7, user decisions 2026-10-02). Up out of the finale: on the last study, 03, the one the way
+   * down left from. Back from a study — the browser's Back, or the study's own way back to the bench — on that study.
+   * Every other way in (Work, the passage, the strip's LAB, the address): on the first, 01.
+   */
+  const h = (history.state ?? {}) as { back?: unknown; forward?: unknown }
+  const from = (p: unknown) => { const m = typeof p === 'string' ? p.match(/\/lab\/([a-z]+)\/?$/) : null; return m ? studies.indexOf(m[1] as StudyId) : -1 }
+  const fromStudy = Math.max(from(h.forward), from(h.back))
   if (takeHistoryFlag(LAB_ARRIVE) === 'contact') {
+    // up out of the finale: the tail of that gesture is spent, and the bench registers itself out of the bare field
+    sel.value = studies.length - 1
     hushTail()
-    if (!REDUCED) { S.veil = 1; S.veilT = 0 }
-  }
+    // the first frames are the finale's last, exactly: bare, and only then does the bench register itself out of it
+    // (damping from the very first tick painted 0.995 — records at half a percent, one level off the finale's sheet)
+    if (!REDUCED) { S.veil = 1; S.veilT = 1; requestAnimationFrame(() => requestAnimationFrame(() => { S.veilT = 0; request() })) }
+  } else sel.value = fromStudy >= 0 ? fromStudy : 0
+  for (const t of cueInputs) addEventListener(t, armCue, { passive: true })
+  armCue()
   paintVeilDom()
   resize()
   select(sel.value, 'boot')
+  /*
+   * THE FIRST FRAME IS PAINTED NOW, NOT ON THE NEXT ANIMATION FRAME. The route's DOM is committed before then, and the
+   * browser painted it once with the sheet still empty: arriving up out of the finale, one frame of bare ground with
+   * no rows at all between the finale's field and the bench's (measured, R7: 165 600 pixels for 12 ms). Drawn here,
+   * inside the mount, the first frame the browser shows is already the sheet.
+   */
+  if (raf) { cancelAnimationFrame(raf); raf = 0 }
+  frame(performance.now())
   io = new IntersectionObserver((es) => {
     visible = es.some((e) => e.isIntersecting)
     if (visible) request(); else { if (raf) cancelAnimationFrame(raf); raf = 0; last = 0 }
@@ -478,7 +538,11 @@ onMounted(() => {
   document.fonts?.ready.then(() => { place(); request() })
   loadTone().catch(() => {})
 })
-onBeforeUnmount(() => { if (benchSeam.exit === exitToBare) benchSeam.exit = null; io?.disconnect(); ro?.disconnect(); if (raf) cancelAnimationFrame(raf); if (roRaf) cancelAnimationFrame(roRaf) })
+onBeforeUnmount(() => {
+  if (benchSeam.step === step) benchSeam.step = null
+  clearTimeout(cueTimer)
+  for (const t of cueInputs) removeEventListener(t, armCue)
+  if (benchSeam.exit === exitToBare) benchSeam.exit = null; io?.disconnect(); ro?.disconnect(); if (raf) cancelAnimationFrame(raf); if (roRaf) cancelAnimationFrame(roRaf) })
 </script>
 
 <template>
@@ -501,7 +565,7 @@ onBeforeUnmount(() => { if (benchSeam.exit === exitToBare) benchSeam.exit = null
           </li>
         </ol>
       </nav>
-      <p ref="markEl" class="mark" aria-hidden="true">{{ copy.lab.count }}</p>
+      <p ref="markEl" class="mark" aria-hidden="true">{{ labCount(copy) }}</p>
       <ul class="spine" :aria-label="copy.lab.heading" @keydown="onKey">
         <li v-for="(id, i) in studies" :key="id" :ref="(el) => { if (el) recEls[i] = el as HTMLElement }" class="rec-wrap">
           <button class="rec" type="button" :aria-current="i === sel ? 'true' : undefined" @click="select(i, 'press')" @pointerenter="S.hover = i" @pointerleave="S.hover = -1">
@@ -517,9 +581,13 @@ onBeforeUnmount(() => { if (benchSeam.exit === exitToBare) benchSeam.exit = null
         </NuxtLink>
       </div>
       <p ref="noteEl" class="note">{{ copy.lab.studies[current].note }}</p>
-      <div class="foot" aria-hidden="true">
-        <span>{{ copy.lab.title }} — {{ studyNo(current) }} / {{ String(studies.length).padStart(2, '0') }}</span>
-        <span>{{ registering ? copy.lab.registering : copy.lab.registered }}</span>
+      <!-- the foot band is the site's own strip (R7): the roles at the left, the city and the status at the right, from
+           the same source as the home strip and the finale's foot, so the seam to Contact changes nothing in it.
+           Its middle carries the bench's one hint. Which study is open is told by the records and the terminal. -->
+      <div class="foot" :class="{ 'is-hinting': !!cueText, 'is-leaving': leavingSeam }" aria-hidden="true">
+        <span class="roles" lang="en">{{ copy.roles.creative }} · {{ copy.roles.fullStack }}</span>
+        <span class="hint" :class="{ on: !!cueText }">{{ cueText }}</span>
+        <span class="state">{{ copy.identity.city }}{{ copy.hints.quietSeparator }}{{ copy.identity.status }}</span>
       </div>
       <p class="u-sr" role="status">{{ status }}</p>
     </div>
@@ -533,7 +601,7 @@ onBeforeUnmount(() => { if (benchSeam.exit === exitToBare) benchSeam.exit = null
    not start scrolling the finale's document when the route changes under it mid-swipe (pinch zoom stays) */
 .lab-stage { touch-action: pinch-zoom; }
 /* the seam to Contact: what is not the bare field fades with the veil */
-.lab-stage .spine, .lab-stage .open, .lab-stage .note, .lab-stage .mark, .lab-stage .foot span { opacity: calc(1 - var(--veil, 0)); }
+.lab-stage .spine, .lab-stage .open, .lab-stage .note, .lab-stage .mark { opacity: calc(1 - var(--veil, 0)); }
 .lab-sheet { position: absolute; inset: 0; width: 100%; height: 100%; }
 .lab-bench-nojs { display: none; position: absolute; inset: 0; z-index: 5; overflow: auto; background: var(--ground); padding: calc(var(--strip) + 40px) var(--pad) 40px; }
 @media (scripting: none) { .lab-bench-nojs { display: block; } }
@@ -546,6 +614,9 @@ html.c2-failed .lab-bench-nojs { display: block; }
 .lab-stage .rec {
   pointer-events: auto; display: block; padding: 9px 14px 9px 18px; text-align: left;
   color: var(--ink-muted); -webkit-tap-highlight-color: transparent;
+  /* a record is an impression in the sheet, not a card: the browser's own button face and border were drawn
+     around every one, because nothing here reset them (R7) */
+  background: none; border: 0; border-radius: 0; font: inherit; min-height: 44px;
 }
 .lab-stage .rec .no { display: inline; margin-right: 9px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; vertical-align: 2px; }
 .lab-stage .rec .co { display: none; }
@@ -554,34 +625,21 @@ html.c2-failed .lab-bench-nojs { display: block; }
   font-variation-settings: 'wdth' 84, 'wght' 430;
   transition: font-size 0.2s cubic-bezier(0.2, 0.7, 0.3, 1), color 0.2s, font-variation-settings 0.2s;
 }
-/* an unregistered record carries a second, misregistered impression — the site's own out-of-register language */
-.lab-stage .rec .nm::after {
-  content: attr(data-nm); position: absolute; left: 0; top: 0; transform: translate(2.4px, 1.6px);
-  color: rgb(18 18 18 / 0.2); pointer-events: none; transition: opacity 0.18s ease;
-}
-/*
-  THE SECOND IMPRESSION IS A STATE, AND ON A PHONE IT NEVER LEAVES IT. Where a record is reached the misregistered
-  impression comes into register — that is the affordance. A touch screen has no reaching, so the offset copy is
-  not a moment but the resting appearance of every unregistered record, and at phone sizes 2.4px on a 17px face
-  reads as a blurred title rather than a second pull. It keeps its meaning at a distance the eye takes as ink.
-*/
-@media (hover: none) {
-  .lab-stage .rec .nm::after { transform: translate(1.2px, 0.8px); color: rgb(18 18 18 / 0.11); }
-}
+/* R7 (user decision 2026-10-02): the unregistered records' second, misregistered impression is gone: it read as a
+   doubled, blurred title, not as a state. Which study is registered is told by its size, its notation and the datum. */
 .lab-stage .rec .bl { display: inline-block; width: 0; height: 0; }
 .lab-stage .rec .pr { display: none; }
 .lab-stage .rec[aria-current] { color: var(--ink); }
 .lab-stage .rec[aria-current] .no { display: block; margin: 0 0 3px; vertical-align: baseline; }
 .lab-stage .rec[aria-current] .co { display: inline; margin-left: 8px; opacity: 0.7; }
 .lab-stage .rec[aria-current] .nm { font-size: 31px; font-variation-settings: 'wdth' 99, 'wght' 620; }
-.lab-stage .rec[aria-current] .nm::after { opacity: 0; }
 .lab-stage .rec[aria-current] .pr { display: block; margin-top: 5px; font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-muted); }
 .lab-stage .rec:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 /* the terminal: the datum ends between two lines of notation, not on a button */
 .lab-stage .open { position: absolute; z-index: 2; }
 .lab-stage .open-link { display: block; padding: 11px 0 11px 16px; text-decoration: none; color: var(--ink); font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap; }
 .lab-stage .open .t1 { display: block; color: var(--ink-muted); }
-.lab-stage .open .t2 { display: block; margin-top: 11px; }
+.lab-stage .open .t2 { display: block; margin-top: 11px; color: var(--act); }
 /* one row of notation where two will not fit between the record and the next one down (see place()) */
 .lab-stage .open.tight .t1, .lab-stage .open.tight .t2 { display: inline; }
 .lab-stage .open.tight .t2 { margin: 0 0 0 14px; }
@@ -595,9 +653,25 @@ html.c2-failed .lab-bench-nojs { display: block; }
 .lab-stage .note { position: absolute; font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.05em; color: var(--ink-muted); max-width: 46ch; line-height: 1.95; }
 .lab-stage .foot {
   position: absolute; left: 0; right: 0; bottom: 0; height: 44px; padding: 0 var(--pad);
-  display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--rule);
+  display: flex; align-items: center; justify-content: space-between; gap: 18px; border-top: 1px solid var(--rule);
   font-family: var(--mono); font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-muted);
+  white-space: nowrap;
+  /* opaque, as the finale's is: text on a transparent band over the canvas was rasterised differently (grey-scale
+     instead of the platform's sub-pixel smoothing), and the same words differed by 1135 pixels across the seam */
+  background: var(--ground);
 }
+/* the finale's foot, measure for measure (contact.vue): the status keeps the right edge and ends in an ellipsis */
+.lab-stage .foot .state { margin-left: auto; overflow: hidden; text-overflow: ellipsis; min-width: 0; transition: opacity .4s ease; }
+.lab-stage .foot .roles { flex: none; }
+.lab-stage .foot .hint {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  color: var(--ink); opacity: 0; transition: opacity .5s ease; white-space: nowrap; pointer-events: none;
+}
+.lab-stage .foot .hint.on { opacity: 1; }
+.lab-stage .foot.is-leaving span { transition: none; }
+@media (max-width: 1100px) { .lab-stage .foot.is-hinting .state, .lab-stage .foot.is-hinting .roles { opacity: 0; } }
+@media (max-width: 700px) { .lab-stage .foot .roles { display: none; } .lab-stage .foot { font-size: 10px; letter-spacing: 0.04em; } }
+@media (prefers-reduced-motion: reduce) { .lab-stage .foot .hint, .lab-stage .foot .state { transition: none; } }
 @media (max-width: 760px) {
   .lab-stage .rec { padding: 14px 12px 14px 15px; }
   .lab-stage .rec .nm { font-size: 16px; }

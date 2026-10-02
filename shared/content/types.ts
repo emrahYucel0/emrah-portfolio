@@ -80,6 +80,8 @@ export interface CapabilityItem {
 export interface ProjectCopy {
   /** the one line the work index shows under the name */
   strength: string
+  /** whose work it is, when the work's own screens carry another name (İstanbul Şehir İçi is Ege Kent's brand) */
+  client?: string
   /** what the work is, in one sentence */
   line: string
   /** what Emrah did on it */
@@ -104,7 +106,8 @@ export interface LocaleCopy {
     /** M5: text alternative of the social share image */
     imageAlt: string
   }
-  nav: { skip: string; label: string; work: string; about: string; lab: string; contact: string }
+  /** skip: the runtime's link to its plain navigation (#plain); skipContent: the document's link to its content (#main) */
+  nav: { skip: string; skipContent: string; label: string; work: string; about: string; lab: string; contact: string }
   /** professional positioning terms — English in both locales, by decision */
   roles: { creative: string; fullStack: string; and: string }
   identity: {
@@ -125,6 +128,8 @@ export interface LocaleCopy {
     capabilitiesHeading: string
     capabilities: Term[]
     back: string
+    /** closes the About the name opened on the home surface (it is not a way back: nothing was navigated to) */
+    close: string
   }
   faces: {
     surface: { word: string; role: string; items: CapabilityItem[] }
@@ -161,10 +166,9 @@ export interface LocaleCopy {
   work: {
     heading: string
     intro: string
-    /** the visible label of the control that opens the registered project (a pointer instruction) */
-    open: string
-    /** the same thing said to a finger: the phone has no such control, and no holding either */
-    openTouch: string
+    /** the visible door into the registered project, under its name, on every device (R5); the pointer's own
+     *  gesture — hold the image, or tap it — is the one hint (hints.work / workTouch) */
+    view: string
     visit: string
     allWork: string
     next: string
@@ -180,6 +184,7 @@ export interface LocaleCopy {
     registered: string
     registering: string
     open: string
+    /** {n} is the number of studies, written by labCount() from facts.ts — never typed here */
     count: string
     back: string
     studies: Record<StudyId, StudyCopy>
@@ -192,7 +197,8 @@ export interface LocaleCopy {
     tone_rows: string
     weight_holds: string
   }
-  contact: { heading: string; emailLabel: string; phoneLabel: string }
+  /** cta: the one line that asks for a project — the end of the About story and of every project (AUDIT-01) */
+  contact: { heading: string; emailLabel: string; phoneLabel: string; cta: string }
   /** the Contact finale's own words (engine/lab/finale): the copy control, the revision record, and the three
    *  instructions its foot band shows once (the way in, the cursor's attention, the phone's attention by scroll) */
   finale: {
@@ -201,24 +207,24 @@ export interface LocaleCopy {
     hintScroll: string; hintCursor: string; hintKeepScrolling: string
   }
   psi: { head: string; mobile: string; desktop: string; labels: [string, string, string, string]; short: [string, string, string, string] }
-  /** the pointer instruction a place shows while it still asks something of the visitor — the hero and the Lab
-   *  stop no longer do (About is a control on the hero; the Lab is a route that opens on arrival) */
+  /** the one instruction a place may show, once per session, in the middle of the bottom strip (engine/cues.js) */
   hints: {
     quietSeparator: string
     face: string
-    faceTouch: string
     work: string
     workTouch: string
-    world: string
+    /** where the screen looks finished: the hero's first stop and the end of the Linefield passage */
+    scroll: string
+    /** the Lab bench's two rules at once (R7): scrolling browses the studies, a click — or a tap — opens one */
+    bench: string
+    benchTouch: string
   }
   a11y: {
     plainNav: string; selectedWork: string; labStudies: string; aboutRegion: string; aboutDetail: string; capabilities: string; projectImages: string
     /** M4: keyboard instructions read by assistive technology, and the new-tab note on external links */
-    keys: string; workKeys: string; worldKeys: string; labKeys: string; newTab: string
-    /** M4: the name of the control that opens the registered project (its visible text is a pointer instruction) */
+    keys: string; workKeys: string; worldKeys: string; newTab: string
+    /** M4: what the control that opens the registered project does, after its visible word (R5: "İncele") */
     openProject: string
-    /** M4: description of that control — no hold is needed from a keyboard or a screen reader */
-    openHint: string
   }
   localeSwitch: { label: string; to: string; short: string; hreflang: string }
   entry: { title: string; description: string; choose: string }

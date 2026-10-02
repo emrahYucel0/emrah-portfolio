@@ -8,15 +8,24 @@ html[data-c2='on'] {
   --fg: var(--ink); --pad: 36px; --strip: 50px;
   --mono: 'Geist Mono', ui-monospace, monospace;
   --sans: 'Geist Variable', 'Geist', system-ui, sans-serif;
+  /* COPPER IS THE ONE COLOUR OF AN ACTION (R2, user decision 2026-10-02): what can be clicked to go somewhere says
+     so in copper, and nothing else is copper. Text #9a4f22 (4.78:1 on the paper, 5.14:1 on the cream ground);
+     marks — rules, arrows — #b8622f (3.48:1 / 3.75:1); on a dark ground one lighter tone #d4875a (6.8:1) for both.
+     Never on a project's own ink, where no copper reaches 4.5:1, and never in the menu, which is navigation. */
+  --act-text: #9a4f22; --act-mark: #b8622f; --act-night: #d4875a;
+  --act: var(--act-text); --act-rule: var(--act-mark);
 }
 * { box-sizing: border-box; }
 html[data-c2='on'], html[data-c2='on'] body {
   margin: 0; height: 100%; overflow: hidden; background: #efeee9; color: var(--fg);
   font-family: var(--sans); -webkit-font-smoothing: antialiased; font-feature-settings: 'ss01' on;
-  overscroll-behavior: none; touch-action: none; -webkit-user-select: none; user-select: none;
+  overscroll-behavior: none; touch-action: pinch-zoom; -webkit-user-select: none; user-select: none;
 }
-:where(html[data-c2='on']) body[data-tone=dark] { --fg: var(--paper); }
-:where(html[data-c2='on']) body[data-tone=media] { --fg: var(--paper); }
+/* AUDIT-01, WCAG 1.4.4: the page can always be pinch-zoomed (two fingers are the browser's, a pan is still the site's);
+   once it is zoomed the reader moves around it, so the pan is the browser's too (main.js marks html.c2-zoomed) */
+html.c2-zoomed[data-c2='on'], html.c2-zoomed[data-c2='on'] body { touch-action: auto; }
+:where(html[data-c2='on']) body[data-tone=dark] { --fg: var(--paper); --act: var(--act-night); --act-rule: var(--act-night); }
+:where(html[data-c2='on']) body[data-tone=media] { --fg: var(--paper); --act: var(--paper); --act-rule: var(--paper); }
 :where(#ui) .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* M3 MOBILE BUG FIX — the media under the surface is seen, never touched. Input is read on the window, so nothing is
@@ -65,7 +74,16 @@ html[data-c2='on'], html[data-c2='on'] body {
 :where(#ui) .strip .nav button { padding-left: 4px; padding-right: 4px; margin: 0 -4px; }
 :where(#ui) .roles { opacity: .82; }
 /* .9, not quieter: in a project the hint sits on the work's ink, and İstanbul's #8e3a17 took .78 to 4.33:1 (AUDIT-01) */
-:where(#ui) #hint { opacity: .9; overflow: hidden; text-overflow: ellipsis; min-width: 0; margin-left: auto; text-align: right; }   /* M3: it shrinks and keeps the right edge on a phone too */
+:where(#ui) #hint { opacity: .9; overflow: hidden; text-overflow: ellipsis; min-width: 0; margin-left: auto; text-align: right; transition: opacity .4s ease; }   /* M3: it shrinks and keeps the right edge on a phone too */
+/* the clip is for the ellipsis, not for the capitals: at the phone's 10px and the strip's line-height of 1 it cut the
+   dot off İ and the breve off Ğ, so "İSTANBUL · SEÇİLİ … AÇIĞIM" read "ISTANBUL · SEÇILI … AÇIGIM" (measured, 390) */
+:where(#ui) #hint { line-height: 1.6; }
+/* THE ONE HINT (R3, engine/cues.js): centred in the bottom strip, in the strip's own mono, faded in and out. Where the
+   strip is too narrow to hold it beside the two ends, it takes the strip alone while it is shown — as the finale's
+   foot band does. */
+:where(#ui) .bottom #cue { position: absolute; left: 50%; top: 0; bottom: var(--safe-b, 0px); display: flex; align-items: center; transform: translateX(-50%); opacity: 0; transition: opacity .5s ease; pointer-events: none; }
+:where(#ui) .bottom #cue.on { opacity: .9; }
+@media (max-width: 1100px) { :where(#ui) .bottom.is-cueing .roles, :where(#ui) .bottom.is-cueing #hint { opacity: 0; } }
 :where(#ui) .strip[data-tone=dark] { color: var(--paper); }
 :where(#ui) .strip[data-tone=light] { color: var(--ink); }
 :where(#ui) .strip[data-tone=media] { color: var(--paper); }
@@ -100,10 +118,12 @@ body.in-world :where(#ui) .bottom .roles { opacity: 0; }
 :where(#ui) .hero-act .ha-line { display: flex; justify-content: flex-end; align-items: center; }
 :where(#ui) .hero-about {
   font: 400 10.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase;
+  /* on its own band of paper, whatever the state's tone, so it is always the paper's copper */
+  color: var(--act-text);
   background: linear-gradient(var(--paper), var(--paper)) center / 100% 26px no-repeat;
   display: inline-flex; align-items: center; min-height: 44px; padding: 0 13px; margin-right: -13px;
   text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px;
-  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-decoration-color: var(--act-mark);
   transition: text-decoration-color .25s ease;
 }
 :where(#ui) .hero-about:hover, :where(#ui) .hero-about:focus-visible { text-decoration-color: currentColor; }
@@ -112,7 +132,9 @@ body.in-world :where(#ui) .bottom .roles { opacity: 0; }
 :where(#ui) .about .intro { font: 380 clamp(15px, 1.2vw, 17px)/1.5 var(--sans); max-width: 46ch; opacity: .88; text-wrap: pretty; }
 :where(#ui) .about .statement { font: 360 clamp(25px, 2.7vw, 38px)/1.12 var(--sans); letter-spacing: -.022em; max-width: 21ch; text-wrap: balance; }
 :where(#ui) .about .avail { opacity: .78; margin-top: 4px; }
-:where(#ui) .about .more { align-self: flex-start; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; padding: 8px 0; opacity: .88; }
+:where(#ui) .about .about-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 28px; }
+:where(#ui) .about .more, :where(#ui) .about .about-close { font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; padding: 8px 0; color: var(--act); }
+:where(#ui) .about .about-close:hover { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
 
 /* about, the grown room: every part of the story sits in a room the material has made for it */
 :where(#ui) .about-detail .ad { top: var(--strip); bottom: var(--strip); left: 0; right: 0; overflow-y: auto;
@@ -128,11 +150,12 @@ body.in-world :where(#ui) .bottom .roles { opacity: 0; }
 :where(#ui) .about-detail .ad-caps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 24px; margin-top: 18px; padding-top: 14px; border-top: 1px solid color-mix(in srgb, currentColor 22%, transparent); font: 400 10.5px/1.4 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
 :where(#ui) .about-detail .ab-meta { display: flex; flex-direction: column; gap: 6px; }
 :where(#ui) .about-detail .ad-status { font: 380 15px/1.45 var(--sans); margin-bottom: 8px; }
+:where(#ui) .about-detail .ad-cta { align-self: flex-start; margin: -2px 0 10px; font: 400 15px/1.45 var(--sans); color: var(--act); }
 :where(#ui) .about-detail .ad-contact { display: flex; flex-direction: column; gap: 3px; font: 380 15px/1.45 var(--sans); }
 :where(#ui) .about-detail .ad-contact span { opacity: .78; }
 :where(#ui) .about-detail .ad-links { display: flex; gap: 22px; margin-top: 8px; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
 :where(#ui) .about-detail .ad-links a { padding: 6px 0; }
-:where(#ui) .about-detail .ad-back { align-self: flex-start; margin-top: 10px; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; opacity: .86; padding: 8px 0; }
+:where(#ui) .about-detail .ad-back { align-self: flex-start; margin-top: 10px; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--act); padding: 8px 0; }
 
 /* faces */
 :where(#ui) .face .pos { display: flex; flex-direction: column; justify-content: center; gap: 18px; }
@@ -160,12 +183,24 @@ body.in-world :where(#ui) .bottom .roles { opacity: 0; }
 :where(#ui) .work .current.on { opacity: 1; transform: none; }
 :where(#ui) .work .wtitle { font: 440 clamp(30px, 2.9vw, 44px)/1 var(--sans); letter-spacing: -.035em; }
 :where(#ui) .work .wmeta { font: 380 14px/1.45 var(--sans); opacity: .82; max-width: 32ch; }
-:where(#ui) .work .open { align-self: flex-start; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; opacity: .78; padding: 8px 0; }
+/* THE DOOR INTO A WORK (R5): under its name, on every device, so a visitor who never holds the image still finds it.
+   The column is the site's own night (#121212), not the work's ink, so it is copper's dark-ground tone (6.6:1). */
+:where(#ui) .work .open { align-self: flex-start; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--act-night); padding: 8px 0; }
+:where(#ui) .work .open:hover { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+/* THE STILL, READ (R5, R8; main.js): a capture through the rows of the place it is in — clear bands on the rows, the image between */
+:where(#ui) .wstill { position: absolute; overflow: hidden; opacity: 0; transition: opacity .35s ease; pointer-events: none;
+  -webkit-mask-image: repeating-linear-gradient(to bottom, transparent 0 calc(var(--row) * .19), #000 calc(var(--row) * .19) calc(var(--row) * .81), transparent calc(var(--row) * .81) var(--row));
+  mask-image: repeating-linear-gradient(to bottom, transparent 0 calc(var(--row) * .19), #000 calc(var(--row) * .19) calc(var(--row) * .81), transparent calc(var(--row) * .81) var(--row));
+  -webkit-mask-position: 0 var(--row-y); mask-position: 0 var(--row-y); }
+:where(#ui) .wstill.on { opacity: 1; }
+:where(#ui) .wstill picture, :where(#ui) .wstill .media-node { display: block; width: 100%; height: 100%; object-fit: cover; }
+@media (prefers-reduced-motion: reduce) { :where(#ui) .wstill { transition: none; } }
 
 /* lab: a small caption; the material is the piece */
 :where(#ui) .lab .cap { display: flex; flex-direction: column; justify-content: center; gap: 8px; }
 :where(#ui) .lab .cap .lbl { opacity: .78; }
 :where(#ui) .lab .ltext { font: 380 15px/1.4 var(--sans); opacity: .88; }
+:where(#ui) .lab .lopen a { color: var(--act); }
 :where(#ui) .lab .lab-now { white-space: nowrap; font: 400 10px/1.3 var(--mono); letter-spacing: .04em; text-transform: uppercase; opacity: 0; transition: opacity .4s ease; color: var(--ink); }
 :where(#ui) .lab .lab-now.on { opacity: .82; }
 
@@ -182,6 +217,9 @@ body.in-world :where(#ui) .bottom .roles { opacity: 0; }
 :where(#ui) .wb-strip { display: flex; align-items: center; gap: 18px; font: 400 10.5px/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
 :where(#ui) .wb-strip .wb-sname { font: 460 13px/1 var(--sans); letter-spacing: 0; text-transform: none; white-space: nowrap; }
 :where(#ui) .wb-strip .wb-str { opacity: .88; }
+/* whose work it is, beside the name, when the work's own screens carry another name (AUDIT-01): .9 keeps it at
+   5.2:1 on the darkest project ink */
+:where(#ui) .wb-strip .wb-client { font: 380 12.5px/1.2 var(--sans); letter-spacing: 0; text-transform: none; opacity: .9; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 :where(#ui) .wb-band { color: var(--ink); display: flex; flex-direction: column; justify-content: center; gap: 8px; }
 :where(#ui) .wb-band.wb-at-top { justify-content: flex-end; padding-bottom: 6px; }
 :where(#ui) .wb-band.wb-proof { justify-content: center; gap: 10px; }
@@ -202,6 +240,9 @@ body.in-world :where(#ui) .bottom .roles { opacity: 0; }
 :where(#ui) .wb-list li { font: 380 15px/1.35 var(--sans); padding: 7px 0; border-top: 1px solid color-mix(in srgb, currentColor 20%, transparent); }
 :where(#ui) .wb-stack { font: 400 10.5px/1.5 var(--mono); letter-spacing: .03em; text-transform: uppercase; opacity: .88; }
 :where(#ui) .wb-role { font: 380 14px/1.4 var(--sans); opacity: .88; }
+/* the one line that asks for a project (AUDIT-01): body type, underlined like a link in prose — an invitation, not chrome */
+:where(#ui) .wb-cta { margin-top: 12px; font: 400 15px/1.4 var(--sans); }
+:where(#ui) .wb-cta a, :where(#ui) .about-detail .ad-cta { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
 :where(#ui) .psi { display: flex; flex-direction: column; gap: 5px; font: 400 10px/1.2 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
 :where(#ui) .psi-head { opacity: .88; }
 :where(#ui) .psi-rows { display: flex; flex-direction: column; gap: inherit; }
@@ -278,7 +319,7 @@ body.in-world :where(#ui) .bottom .roles { opacity: 0; }
   :where(#ui) .lab .lab-now .d { display: none; }
   /* a thumb needs at least 24px of target (WCAG 2.2 AA); the type stays the size it is */
   :where(#ui) .about-detail .ad-contact a, :where(#ui) .about-detail .ad-links a,
-  :where(#ui) .about .more, :where(#ui) .about-detail .ad-back, :where(#ui) .wb-links a, :where(#ui) .wb-links button, :where(#ui) .world .wlink { padding-top: 7px; padding-bottom: 7px; }
+  :where(#ui) .about .more, :where(#ui) .about .about-close, :where(#ui) .about-detail .ad-back, :where(#ui) .about-detail .ad-cta, :where(#ui) .wb-cta a, :where(#ui) .wb-links a, :where(#ui) .wb-links button, :where(#ui) .world .wlink { padding-top: 7px; padding-bottom: 7px; }
   :where(#ui) .about-detail .ad-contact { gap: 0; }
   :where(#ui) .about-detail .ab { position: static; }
   :where(#ui) .about-detail .ab + .ab { margin-top: 62px; }
@@ -313,8 +354,19 @@ body.in-world :where(#ui) .bottom .roles { opacity: 0; }
   :where(#ui) .work .current { gap: 4px; }
   :where(#ui) .work .wmeta { max-width: none; font-size: 13px; }
   :where(#ui) .work .wrole { display: none; }
-  :where(#ui) .work .open { display: none; }
+  /* the column is a fixed share of a phone's height: the door shares the line under the name rather than adding one */
+  :where(#ui) .work .current { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; align-items: baseline; }
+  :where(#ui) .work .wtitle { grid-column: 1 / -1; }
+  :where(#ui) .work .open { grid-column: 2; padding: 7px 0; }
   :where(#ui) .world .wlink .whost { display: none; }
+  /* a strip that also says whose work it is sets the two on two short lines, clear of the strip's hint */
+  :where(#ui) .wb-strip:has(.wb-client) { flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; padding-right: 76px; }
+  /* a project's last frame on a phone: its box is a fixed share of the screen, so the ask costs no extra line — the
+     visit link drops the host (the name is right above it, as the strip's own link drops it) and stays on one line */
+  :where(#ui) .wb-close .wb-cta { margin-top: 0; }
+  :where(#ui) .wb-close .wb-links a > span[lang] { display: none; }
+  :where(#ui) .wb-strip:has(.wb-client) .wb-str { display: none; }
+  :where(#ui) .wb-strip .wb-client { max-width: 100%; }
   :where(#ui) .wb-name { font-size: 24px; }
   :where(#ui) .wb-line { font-size: 14.5px; }
   :where(#ui) .wb-big { font-size: 24px; }

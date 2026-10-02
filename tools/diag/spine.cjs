@@ -60,6 +60,16 @@ const momentum = async (p, dir) => {
   const tail = [34, 27, 21, 16, 12, 9, 7, 5, 4, 3, 2, 2, 1, 1]
   for (const d of [...push, ...tail]) { await p.mouse.wheel(0, d * dir); await sleep(16) }
 }
+/*
+ * THE BENCH BROWSES (R7, user decision 2026-10-02): a gesture on the bench moves one study, 01 → 02 → 03, and only
+ * past the last does it carry on to Contact (past the first, up to Work). Every way down to the finale therefore
+ * starts from 03: the bench is stepped there first, one deliberate gesture at a time, and the crossing is the
+ * gesture that follows. A step is read back from the records themselves.
+ */
+const studyAt = (pg) => pg.evaluate(() => [...document.querySelectorAll('.lab-stage .rec')].findIndex((b) => b.getAttribute('aria-current') === 'true') + 1)
+const toLastStudy = async (pg, finger) => {
+  for (let i = 0; i < 2; i++) { if (finger) await swipe(pg, -220); else await wheelBurst(pg, 110, 1); await sleep(700) }
+}
 const swipe = async (p, dy) => {
   await hushClear(p)
   await p.evaluate(async (d) => {
@@ -157,8 +167,13 @@ const swipe = async (p, dy) => {
   ok(!path1.some((v) => v < 2.5), 'no flash through Name on the way to Work', `p seen: ${Math.min(...path1)}…${Math.max(...path1)}`)
 
   await fresh('/tr/lab')
+  ok((await studyAt(p)) === 1, 'the bench opens on 01')
+  await wheelBurst(p, 110, 1); await sleep(700)
+  ok((await studyAt(p)) === 2 && (await p.evaluate(state)).path === '/tr/lab', 'one notch down browses: 02, still on the bench')
+  await wheelBurst(p, 110, 1); await sleep(700)
+  ok((await studyAt(p)) === 3, 'and again: 03')
   await wheelBurst(p, 110, 1)
-  await settleFinale(p, 'wheel: Lab -> Contact finale')
+  await settleFinale(p, 'wheel: Lab (03) -> Contact finale')
   let f = await p.evaluate(finaleAt)
   ok(f.path === '/tr/contact' && f.running && f.y === 0, 'Lab → Contact: the finale, from its first frame', `at ${f.path} scrollY ${f.y}`)
 
@@ -170,8 +185,11 @@ const swipe = async (p, dy) => {
   s = await p.evaluate(state)
   ok(s.path === '/tr' && s.base === STOP.work, 'Lab → Work (momentum) — one gesture, one stop', `at ${s.path} c2 ${s.c2} base ${s.base} (wanted ${STOP.work})`)
   await fresh('/tr/lab')
+  await momentum(p, 1); await sleep(700)
+  ok((await studyAt(p)) === 2, 'a momentum gesture down from 01 browses one study: 02')
+  await momentum(p, 1); await sleep(700)
   await momentum(p, 1)
-  await settleFinale(p, 'momentum: Lab -> Contact finale')
+  await settleFinale(p, 'momentum: Lab (03) -> Contact finale')
   await sleep(600)
   f = await p.evaluate(finaleAt)
   ok(f.path === '/tr/contact' && f.y === 0, 'Lab → Contact (momentum) — one gesture, one stop: the tail does not scroll the finale', `at ${f.path} scrollY ${f.y}`)
@@ -185,8 +203,10 @@ const swipe = async (p, dy) => {
   s = await p.evaluate(state)
   ok(s.path === '/tr' && s.base === STOP.work, 'Lab → Work (swipe) — one gesture, one stop', `at ${s.path} c2 ${s.c2} base ${s.base} (wanted ${STOP.work})`)
   await fresh('/tr/lab')
+  await toLastStudy(p, true)
+  ok((await studyAt(p)) === 3, 'two swipes up: 03')
   await swipe(p, -220)
-  await settleFinale(p, 'swipe: Lab -> Contact finale')
+  await settleFinale(p, 'swipe: Lab (03) -> Contact finale')
   f = await p.evaluate(finaleAt)
   ok(f.path === '/tr/contact' && f.y === 0, 'Lab → Contact (swipe) — one gesture, one stop', `at ${f.path} scrollY ${f.y}`)
 
@@ -194,6 +214,7 @@ const swipe = async (p, dy) => {
   console.log('\n-- Contact → Lab')
   p = deskPage
   await fresh('/tr/lab')
+  await toLastStudy(p, false)
   await wheelBurst(p, 110, 1)
   await settleFinale(p, 'wheel down to the Contact finale')
   ok((await p.evaluate(finaleAt)).y === 0, 'standing at the top of the finale')
@@ -201,7 +222,7 @@ const swipe = async (p, dy) => {
   await wheelBurst(p, -110, 1)
   await settleBench(p, '/tr/lab', 'Contact -> reverse -> bench')
   s = await p.evaluate(state)
-  ok(s.path === '/tr/lab' && s.bench, 'Contact → reverse gesture → the bench, restored', `at ${s.path}`)
+  ok(s.path === '/tr/lab' && s.bench && (await studyAt(p)) === 3, 'Contact → reverse gesture → the bench, restored on 03', `at ${s.path}, study ${await studyAt(p)}`)
 
   // ── the Work → Lab bridge still ends at the bench ─────────────────────────
   console.log('\n-- Work → Lab bridge')

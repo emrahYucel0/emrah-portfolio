@@ -78,6 +78,9 @@ against a stop, a stop used as a distance, which every search for `=== 3` walked
 
 ## Standing rules
 
+- **`docs/ROADMAP.md` is the project's one to-do list.** Read it at the start of every session. Update it as you
+  work: mark what you start, record each user decision there with its date, and move what you finish into the
+  "Tamamlananlar" table. The procedure is at the top of the file.
 - Do not commit, push or deploy without being asked.
 - The research sources at `C:\Users\monster\Desktop\emrah-yucel-porfolio\` are read-only.
 - No mail, cPanel, SMTP or API credentials belong in this repository.
@@ -95,5 +98,6 @@ that: a command that looks local is not.
 - **Never touch the other folder** — its branch, its files, its index, tracked or untracked — or assume its state
   is what you last saw it as. It moves while you work.
 - **Never run `tools/diag/serve.sh` with its default ports from a second worktree.** It force-kills whatever
-  holds 4500-4700, which is the other session's servers. Pass a port override and build into your own
-  `builds/<feature>` folder, and do not change the script's defaults for the other session.
+  holds 4500-4700, which is the other session's servers. Name your own three ports instead — under test, LAN,
+  baseline — and only those are stopped: `SERVE_PORTS="4910 4911 4914" sh tools/diag/serve.sh`, then
+  `sh tools/diag/run6.sh 4910 4914`. `BUILD_DIR` overrides the snapshot folder. Do not change the defaults.

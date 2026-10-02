@@ -20,7 +20,7 @@ const sweep = (secs) => `new Promise((done) => { const t = document.querySelecto
   const report = []
   for (const [w, h] of SIZES) {
     const ctx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 })
-    await ctx.addInitScript(() => { try { sessionStorage.setItem('finale-guide', '1') } catch {} })
+    await ctx.addInitScript(() => { try { sessionStorage.setItem('cue:finale-guide', '1') } catch {} })
     const p = await ctx.newPage()
     await p.goto(`${BASE}/tr/contact?hud=1`, { waitUntil: 'networkidle' })
     await p.waitForFunction(() => !!window.__finale && !!window.__hudStats, null, { timeout: 20000 })

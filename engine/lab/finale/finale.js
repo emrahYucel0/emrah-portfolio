@@ -20,6 +20,7 @@ import { createOverlay } from './overlay.js'
 import { createSoak } from './soak.js'
 import { createHud } from './hud.js'
 import { note } from './debug.js'
+import { CUE_IDLE, cueSeen, cueSpend } from '../../cues.js'
 
 // ~4.2 viewports of travel (user decision: 4–4.5); the narrow touch sheet adds an ATTENTION
 // stretch after the plot (one field after another, by scroll: ≈ 1.2 screens, user decision)
@@ -149,17 +150,25 @@ export function createFinale(o) {
   // ── 1. THE WAY IN. At p = 0 nothing on the bare sheet says that it moves. Until the first scroll the row that is
   //    about to tear breathes — lifts off its place a little, sags, settles (p untouched) — and the foot asks for
   //    a scroll. The first scroll hands over to the plot; both go, for good. Reduced motion: the words only.
-  //    The breath starts from rest, so the arrival's first frame is still the bench's bare field. ──
+  //    The breath starts from rest, so the arrival's first frame is still the bench's bare field.
+  //    It is the site's one hint now (R3, engine/cues.js): it asks only after CUE_IDLE of stillness at p = 0, and
+  //    once per session — the Contact arrival's own once, since a scroll here draws rather than travels. A visitor
+  //    who scrolls first is never asked, and keeps the ask for a later arrival. ──
   const BREATH = 2.8 // seconds per breath
-  let beckon = 'armed', beckonAt = 0 // 'armed' → 'on' → 'off'
+  const CUE = 'contact-scroll'
+  let beckon = cueSeen(CUE) ? 'off' : 'armed', beckonAt = 0, beckonTimer = 0 // 'armed' → 'waiting' → 'on' → 'off'
   function beckonStep(now) {
     if (beckon === 'off') return 0
-    if (frame.rawProgress() > 0.0005) { beckon = 'off'; hint(''); return 0 }
+    if (frame.rawProgress() > 0.0005) { clearTimeout(beckonTimer); if (beckon === 'on') hint(''); beckon = 'off'; return 0 }
     if (beckon === 'armed') {
-      beckon = 'on'; beckonAt = now + 600
-      setTimeout(() => { if (!dead && beckon === 'on') hint(strings.finale.hintScroll) }, 600)
+      beckon = 'waiting'
+      beckonTimer = setTimeout(() => {
+        if (dead || beckon !== 'waiting' || frame.rawProgress() > 0.0005) return
+        beckon = 'on'; beckonAt = performance.now(); cueSpend(CUE)
+        hint(strings.finale.hintScroll); frame.request()
+      }, CUE_IDLE)
     }
-    if (frame.S.reduced) return 0
+    if (beckon !== 'on' || frame.S.reduced) return 0
     const t = Math.max(0, (now - beckonAt) / 1000)
     return Math.min(1, t / 0.8) * (0.5 - 0.5 * Math.cos((2 * Math.PI * t) / BREATH))
   }
@@ -168,19 +177,19 @@ export function createFinale(o) {
   //    attention glides to GitHub, which grows, holds for a second, and comes back to the email; the foot says to
   //    move the cursor. On the phone's touch sheet attention is the scroll's, so the same walk is played there
   //    (email → phone → GitHub, back to the email) and the foot says to keep scrolling. Any input cancels it at
-  //    once; once per session; reduced motion only shows the words. ──
-  const GUIDE_KEY = 'finale-guide'
-  let guided = false
-  try { guided = sessionStorage.getItem(GUIDE_KEY) === '1' } catch { /* no storage: once per page instead */ }
+  //    once; once per session; reduced motion only shows the words. Its stillness and its once are the site's one
+  //    hint system's (R3, engine/cues.js). ──
+  const GUIDE = 'finale-guide'
+  let guided = cueSeen(GUIDE)
   let idleTimer = 0, guideTimers = [], guiding = false, kbdFocus = false, lastQ = 0, wasLive = false
   let walk = null // the phone's walk: { t0, end } (performance.now ms)
-  const armIdle = () => { clearTimeout(idleTimer); if (!guided && !dead) idleTimer = setTimeout(tryGuide, 2000) }
+  const armIdle = () => { clearTimeout(idleTimer); if (!guided && !dead) idleTimer = setTimeout(tryGuide, CUE_IDLE) }
   function tryGuide() {
     if (dead || guided) return
     const touch = touchSheet(frame.S)
     if (!liveNow || kbdFocus || (touch && lastQ > 0.05)) { armIdle(); return }
     guided = true
-    try { sessionStorage.setItem(GUIDE_KEY, '1') } catch { /* see above */ }
+    cueSpend(GUIDE)
     guiding = true
     hint(touch ? strings.finale.hintKeepScrolling : strings.finale.hintCursor)
     const at = (ms, fn) => guideTimers.push(setTimeout(() => { if (!dead) fn() }, ms))
@@ -317,7 +326,24 @@ export function createFinale(o) {
     const WHEEL = 96, BURST = 240, SWIPE = 56
     const atTop = () => frame.rawProgress() <= 0.001
     let acc = 0, accAt = 0, fromTop = false, spent = false
-    const up = () => { if (spent || dead) return; spent = true; o.onTopUp() }
+    /*
+     * THE SEAM IS ONE SHEET IN BOTH DIRECTIONS (R7). The bench's foot band carries this one's words, and its first
+     * frame is this sheet's bare field. So what only this side shows — the arrival's hint, the tear row's breath — is
+     * gone before the handover, at once rather than faded (a fade would still be half there when the bench takes
+     * over), and one bare frame is drawn before the route changes.
+     */
+    const up = () => {
+      if (spent || dead) return
+      spent = true
+      clearTimeout(beckonTimer); beckon = 'off'
+      const el = o.footHint
+      if (el) {
+        for (const s of el.parentElement?.children ?? []) s.style.transition = 'none'
+        el.classList.remove('on'); el.parentElement?.classList.remove('is-hinting')
+      }
+      frame.request()
+      requestAnimationFrame(() => requestAnimationFrame(() => { if (!dead) o.onTopUp() }))
+    }
     // zooming is the browser's, never a way out: Ctrl + wheel (a trackpad's pinch), or moving around a zoomed page
     const zoomed = () => (window.visualViewport?.scale ?? 1) > 1.01
     addEventListener('wheel', (e) => {
@@ -365,7 +391,7 @@ export function createFinale(o) {
     goTo(f) { scrollTo({ top: o.track.offsetTop + Math.max(0, Math.min(1, f)) * (o.track.offsetHeight - innerHeight), behavior: 'instant' }) },
     destroy() {
       dead = true
-      clearTimeout(idleTimer); guideTimers.forEach(clearTimeout)
+      clearTimeout(idleTimer); clearTimeout(beckonTimer); guideTimers.forEach(clearTimeout)
       off.abort()
       frame.destroy()
       overlay.destroy()

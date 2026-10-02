@@ -30,8 +30,14 @@ export interface C2MountOptions {
   aboutUrl?: string
   /** where the Lab bench lives, in the reading language */
   labUrl?: string
+  /** the Contact finale's address, in the reading language (the href of the runtime's links to it) */
+  contactUrl?: string
   /** does the current URL mean "About is open"? */
   isAboutPath?: () => boolean
+  /** R8: a work's address in the reading language, from its id (e.g. /en/work/istanbul) */
+  workUrl?: (id: string) => string
+  /** R8: the id of the work the current URL names, or null */
+  workAt?: () => string | null
   /**
    * The place the visitor gestured towards when they left the Lab, taken once. The Lab is the fifth destination
    * and a route of its own, so leaving it is a route change: the host keeps the intent on the history entry —

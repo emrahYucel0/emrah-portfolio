@@ -14,6 +14,9 @@
 :root {
   /* ink and ground — the prototype's paper/ink, kept as tokens only */
   --ground: #efeee9;
+  /* copper, the one colour of an action (R2; the runtime's own tokens in engine/c2/style.css say why) */
+  --act: #9a4f22;
+  --act-mark: #b8622f;
   --paper: #e7e6e0;
   --ink: #121212;
   --ink-muted: #46464a;

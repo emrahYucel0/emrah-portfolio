@@ -1,7 +1,8 @@
 // THE FINALE ASKS ONCE — the way in, the attention guide, the foot band (pre-F4 design round).
-//  1. arrival at p = 0: the tear row breathes (p untouched) and the foot's middle says to scroll; the first scroll
-//     ends both for good. Reduced motion: the words, no breath.
-//  2. desktop: the drawing done and the cursor still for 2 s → attention goes to GitHub and back to the email,
+//  1. arrival at p = 0: after 2.5 s of stillness (the site's one hint system, engine/cues.js — R3) the tear row
+//     breathes (p untouched) and the foot's middle says to scroll; not before; the first scroll ends both for good,
+//     and the ask is spent for the session. Reduced motion: the words, no breath.
+//  2. desktop: the drawing done and the cursor still for 2.5 s → attention goes to GitHub and back to the email,
 //     "move your cursor"; once per session; any movement cancels it. Reduced motion: the words only.
 //  3. phone: the same walk by scroll-attention, "keep scrolling".
 //  4. the foot's two ends are the home strip's words (TR/EN), fixed for the whole drawing — no ink counter.
@@ -28,6 +29,24 @@ const tearSig = () => {
   return s
 }
 const attOf = (id) => window.__finale.partition.attOf(id)?.att ?? 0
+const tag0 = (reduced) => (reduced ? 'reduced' : 'normal')
+/*
+ * THE WAY IN IS FROM THE BENCH. A direct /contact opens the drawing settled (AUDIT-01, batch 1), so a page opened on
+ * that URL never stands at p = 0 and has nothing to beckon — which is what this section measured, and failed on, from
+ * then on. A visitor reaches p = 0 by scrolling down off the bench, so that is how the check arrives.
+ */
+const fromBench = async (p) => {
+  await p.goto(`${BASE}/tr/lab`, { waitUntil: 'networkidle' }); await sleep(2400)
+  await p.mouse.move(700, 450)
+  // the bench browses first (R7): 01 → 02 → 03, each its own notch, and the next one down crosses
+  for (let i = 0; i < 2; i++) { await p.mouse.wheel(0, 110); await sleep(800) }
+  // one notch, as spine.cjs crosses: a longer burst's tail could leave the drawing a hair past p = 0
+  await p.mouse.wheel(0, 110)
+  await p.waitForFunction(() => /\/contact$/.test(location.pathname) && !!window.__finale, null, { timeout: 20000 })
+  await sleep(300)
+  const y = await p.evaluate(() => scrollY)
+  if (y !== 0) console.log(`       (arrived at scrollY ${y}, not 0)`)
+}
 
 ;(async () => {
   const br = await pw.chromium.launch({ channel: 'chrome' })
@@ -38,7 +57,12 @@ const attOf = (id) => window.__finale.partition.attOf(id)?.att ?? 0
   console.log('== 1. the way in')
   for (const reduced of [false, true]) {
     const [ctx, p] = await page({ ...desk, reducedMotion: reduced ? 'reduce' : 'no-preference' })
-    await p.goto(`${BASE}/tr/contact`, { waitUntil: 'networkidle' }); await ready(p); await sleep(1600)
+    await fromBench(p); await sleep(900)
+    // not yet: a hint waits for stillness
+    const early = await p.evaluate(hintOf)
+    const e0 = []; for (let i = 0; i < 3; i++) { e0.push(await p.evaluate(tearSig)); await sleep(150) }
+    ok(!early.on && new Set(e0).size === 1, `${tag0(reduced)}: before 2.5 s of stillness nothing asks and nothing breathes`)
+    await sleep(2000)
     const h = await p.evaluate(hintOf)
     const sigs = []
     for (let i = 0; i < 6; i++) { sigs.push(await p.evaluate(tearSig)); await sleep(230) }
@@ -53,6 +77,9 @@ const attOf = (id) => window.__finale.partition.attOf(id)?.att ?? 0
     const h2 = await p.evaluate(hintOf)
     const s2 = []; for (let i = 0; i < 4; i++) { s2.push(await p.evaluate(tearSig)); await sleep(230) }
     ok(!h2.on && new Set(s2).size === 1, `${tag}: the first scroll ends both, for good (back at p = 0: no words, no breath)`)
+    // and it was asked once in this session: arriving again in the same tab asks nothing
+    await fromBench(p); await sleep(3400)
+    ok(!(await p.evaluate(hintOf)).on, `${tag}: once per session — a second arrival is not asked again`)
     await ctx.close()
   }
 
@@ -66,10 +93,10 @@ const attOf = (id) => window.__finale.partition.attOf(id)?.att ?? 0
     await sleep(2300)
     const mid = await p.evaluate(() => ({ h: (() => { const h = document.querySelector('.finale .foot .hint'); return { on: h.classList.contains('on'), t: h.textContent } })(), gh: document.querySelector('[data-cell="github"]').getBoundingClientRect().width }))
     await p.screenshot({ path: path.join(OUT, 'guide-desktop-github.png') })
-    ok(mid.h.on && mid.h.t === 'imleci gezdir', 'the cursor still for 2 s → the foot says "imleci gezdir"', mid.h.t)
+    ok(mid.h.on && mid.h.t === 'imleci gezdir', 'the cursor still for 2.5 s → the foot says "imleci gezdir"', mid.h.t)
     ok(mid.gh > gh0 * 1.3, 'attention went to GitHub, which grew', `${Math.round(gh0)} → ${Math.round(mid.gh)} px`)
     await sleep(2600)
-    const end = await p.evaluate(() => ({ on: document.querySelector('.finale .foot .hint').classList.contains('on'), gh: document.querySelector('[data-cell="github"]').getBoundingClientRect().width, key: sessionStorage.getItem('finale-guide') }))
+    const end = await p.evaluate(() => ({ on: document.querySelector('.finale .foot .hint').classList.contains('on'), gh: document.querySelector('[data-cell="github"]').getBoundingClientRect().width, key: sessionStorage.getItem('cue:finale-guide') }))
     ok(!end.on && end.gh < mid.gh * 0.85 && end.key === '1', 'it comes back, the words go, and it is spent for the session', `github ${Math.round(end.gh)} px`)
     await p.reload({ waitUntil: 'networkidle' }); await ready(p); await sleep(600)
     await p.evaluate(() => window.dispatchEvent(new Event('finale:arrive'))); await sleep(4200)
@@ -108,11 +135,15 @@ const attOf = (id) => window.__finale.partition.attOf(id)?.att ?? 0
     const [ctx, p] = await page({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true })
     await p.goto(`${BASE}/tr/contact`, { waitUntil: 'networkidle' }); await ready(p); await sleep(800)
     await p.screenshot({ path: path.join(OUT, 'arrival-phone.png') })
-    await p.evaluate(() => window.dispatchEvent(new Event('finale:arrive'))); await sleep(3600)
+    /* A direct /contact opens settled, so the guide starts on its own once the sheet has been still for the hint
+       system's 2.5 s; a 'finale:arrive' sent afterwards found it already walked (this failed from batch 1 on). The
+       check waits for the walk to reach GitHub rather than for a fixed time. */
+    await p.waitForFunction(() => window.__finale.partition.attOf('github').att > 0.5, null, { timeout: 9000 }).catch(() => {})
     const s = await p.evaluate(() => ({ on: document.querySelector('.finale .foot .hint').classList.contains('on'), t: document.querySelector('.finale .foot .hint').textContent, gh: window.__finale.partition.attOf('github').att }))
     await p.screenshot({ path: path.join(OUT, 'guide-phone-github.png') })
-    ok(s.on && s.t === 'kaydırmaya devam et' && s.gh > 0.5, 'still for 2 s → "kaydırmaya devam et", attention walks to GitHub', `github att ${s.gh.toFixed(2)}`)
-    await sleep(4000)
+    ok(s.on && s.t === 'kaydırmaya devam et' && s.gh > 0.5, 'still for 2.5 s → "kaydırmaya devam et", attention walks to GitHub', `github att ${s.gh.toFixed(2)}`)
+    await p.waitForFunction(() => !document.querySelector('.finale .foot .hint').classList.contains('on'), null, { timeout: 9000 }).catch(() => {})
+    await sleep(400)
     const e = await p.evaluate(() => ({ on: document.querySelector('.finale .foot .hint').classList.contains('on'), gh: window.__finale.partition.attOf('github').att, y: Math.round(scrollY) }))
     ok(!e.on && e.gh < 0.2, 'and back, without the page having scrolled', `github att ${e.gh.toFixed(2)}`)
     await ctx.close()
@@ -140,7 +171,10 @@ const attOf = (id) => window.__finale.partition.attOf(id)?.att ?? 0
   }
   {
     const [ctx, p] = await page({ viewport: { width: 375, height: 667 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true })
-    await p.goto(`${BASE}/tr/contact`, { waitUntil: 'networkidle' }); await ready(p); await sleep(1500)
+    // a direct /contact opens settled, so what the band asks here is the guide, after the hint system's stillness
+    await p.goto(`${BASE}/tr/contact`, { waitUntil: 'networkidle' }); await ready(p)
+    await p.waitForFunction(() => document.querySelector('.finale .foot .hint').classList.contains('on'), null, { timeout: 8000 }).catch(() => {})
+    await sleep(600)
     const f = await p.evaluate(() => { const foot = document.querySelector('.finale .foot'), r = foot.getBoundingClientRect(); const vis = [...foot.children].filter((e) => getComputedStyle(e).display !== 'none' && +getComputedStyle(e).opacity > 0.5).map((e) => { const b = e.getBoundingClientRect(); return { c: e.className, l: Math.round(b.left), r: Math.round(b.right) } }); return { vis, w: innerWidth, overflow: document.documentElement.scrollWidth > innerWidth + 1 } })
     const inside = f.vis.every((v) => v.l >= 0 && v.r <= f.w)
     ok(inside && !f.overflow && f.vis.length === 1 && f.vis[0].c.includes('hint'), 'phone 375: while the band asks, it says only that (the status yields), inside the screen', JSON.stringify(f.vis))

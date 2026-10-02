@@ -56,7 +56,7 @@ export function applyLocale(next) {
   c.works.forEach((nw, i) => {
     const w = works[i]
     if (!w) return
-    w.strength = nw.strength; w.line = nw.line; w.role = nw.role
+    w.strength = nw.strength; w.client = nw.client; w.line = nw.line; w.role = nw.role
     w.facts = nw.facts; w.captions = nw.captions; w.psi = nw.psi; w.stack = nw.stack; w.stackLang = nw.stackLang
     // images are shared by both languages; only their description changes
     for (const [key, media] of Object.entries(nw.media)) if (w.media[key]) w.media[key].alt = media.alt

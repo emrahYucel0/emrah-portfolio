@@ -100,15 +100,15 @@ async function seam(br, w, h, touch) {
       if (touch && eng === 'chromium') opts.isMobile = true
       const ctx = await br.newContext(opts)
       // the once-per-session attention guide is its own check (beckon.cjs): here it would move the still
-      await ctx.addInitScript(() => { try { sessionStorage.setItem('finale-guide', '1') } catch {} })
+      await ctx.addInitScript(() => { try { sessionStorage.setItem('cue:finale-guide', '1') } catch {} })
       const p = await ctx.newPage()
       const errs = []
       p.on('pageerror', (e) => errs.push(e.message))
       p.on('console', (m) => { if (m.type() === 'error' && !/ResizeObserver/.test(m.text())) errs.push(m.text()) })
       await p.goto(`${BASE}/tr/contact`, { waitUntil: 'networkidle', timeout: 60000 })
       await p.waitForFunction(() => !!window.__finale, null, { timeout: 20000 }).catch(() => {})
-      await sleep(1500)
-      // p = 0: the words and the breath
+      // p = 0: the words and the breath, once the arrival has been still for the hint system's 2.5 s (R3)
+      await sleep(3200)
       const arr = await p.evaluate(() => ({ hint: document.querySelector('.finale .foot .hint').classList.contains('on'), y: scrollY }))
       const s0 = await p.screenshot()
       await sleep(700)

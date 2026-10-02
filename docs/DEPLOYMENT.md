@@ -220,6 +220,13 @@ Then check each item below:
   - hold on Work and Lab, then swipe (the M3 bug must not return);
 - share `https://yucelemrah.com/tr` in a private chat or a card validator: the OG image and title appear.
 
+## The deployment log
+
+Every upload is recorded in [DEPLOY-LOG.md](DEPLOY-LOG.md): date, commit, package, SHA-256, file count, size, and who
+confirmed it live. A package that was built but not uploaded is not a line in it. This exists because
+`deploy/yucelemrah-996a226.zip` was live and unrecorded, and a later session had to infer what visitors were seeing from
+file dates and a backup folder.
+
 ## Checklist
 - **PRE-BUILD:** clean `git status`; `NUXT_PUBLIC_SITE_URL` unset (or the intended HTTPS origin); `npm ci`
 - **BUILD:** `npx nuxt typecheck` exit 0; `npm run generate` exit 0; log shows the production-files line
@@ -229,6 +236,8 @@ Then check each item below:
 - **PRE-UPLOAD (CSP):** `node tools/diag/cspboot.cjs --dir .output/public` exit 0 — the policy names every inline script in the artifact it ships with
 - **PRE-UPLOAD (payload):** no `tools/`, no `*.cjs`, no `lab/proof` route in the artifact
 - **UPLOAD:** document root identified; backup downloaded **and its size and file count checked against the live listing — a tiny backup means STOP**; old files cleaned keeping `.well-known/` and `cgi-bin/`; zip extracted; three `.htaccess` confirmed
+- **AFTER UPLOAD:** append a line to `docs/DEPLOY-LOG.md` — date, commit, package, SHA-256, file count, size —
+  and fill `verified live by` only after opening the deployed site yourself
 - **DNS/SSL:** A record → hosting IP; AutoSSL valid for apex and www
 - **MAIL:** mailbox exists; Email Deliverability valid; inbound / outbound / auth tests recorded
 - **POST-DEPLOY:** redirect matrix; status matrix; 404 is a real 404; console clean; `cspboot.cjs --static <origin>` and `cspboot.cjs <origin> chrome|webkit` exit 0 (**exit 2 = blocked by host** — judge in a real browser, never record it as a site failure)

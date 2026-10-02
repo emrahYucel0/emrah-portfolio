@@ -44,7 +44,7 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
 | R17 | Yayın (DEPLOYMENT.md, CSP, canlı yedeği) | P0 | Karar bekliyor (tarih) | R1 |
 | R18 | Awwwards başvurusu (Developer Award) | P0 | Karar bekliyor (tarih) | R17, R9, R22, R23 |
 | R19 | Full-Stack'in siyah kapsüllerinin çevresindeki hale | P1 | Karar bekliyor (varyant ya da kural) | — |
-| R26 | Harness'lar izlenen `docs/` yollarına yazıyor | P2 | Karar verildi (yön) | — |
+| R27 | Harness'lar izlenen `docs/` yollarına yazıyor | P2 | Karar verildi (yön) | — |
 | R20 | Arka belleğe piksel sayısı tavanı (önerilen 8,3 Mpx) | P1 | Karar bekliyor (değer) | R9 ile birlikte ölçülür |
 | R21 | Büyük ekranlarda büyük harf başına satır sayısına üst sınır | P2 | Karar bekliyor (sanat yönetimi) | — |
 | R22 | Gerçek cihaz testi (iPad, Mac'te Safari, Android telefon) | P0 | Karar verildi | — |
@@ -324,7 +324,7 @@ axe 0.
   - Linefield giriş, çıkış ve hareketi azaltılmış; `workopen` (on/off); `touch`; `herotouch`; `spine`: PASS.
   - Tam gesture2 takımı koşulmadı.
 
-**R26 — harness'lar izlenen yollara yazıyor (2026-10-02'de bulundu):**
+**R27 — harness'lar izlenen yollara yazıyor (2026-10-02'de bulundu):**
 
 `responsive.cjs` bir kez koştuğunda `docs/contact-finale/responsive/` altındaki 20 boyutun karesini,
 `contact-sheet.png`'i ve `responsive.json`'u yeniden yazıyor. Yayın kapısında iki kez koştu ve finalin F3

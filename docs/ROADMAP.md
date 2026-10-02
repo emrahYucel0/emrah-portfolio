@@ -22,7 +22,7 @@ belgedeyse (AUDIT-01, LINEFIELD.md, DEPLOYMENT.md…) burada ona bağlantı veri
 - **Karar bekliyor:** neyin beklendiği yazılı.
 - **Önce inceleme:** mevcut davranış ölçülmeden tasarlanmayacak.
 
-Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3 tamamlandı; R2 sürüyor).
+Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2 tamamlandı).
 
 ---
 
@@ -31,12 +31,11 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3 tamamlandı; R2
 | # | Madde | Öncelik | Karar | Bağımlılık |
 |---|---|---|---|---|
 | R1 | Birleştirme: düzeltme turu 2 → `main`, yayın dalı | P0 | Karar bekliyor (ne zaman) | tam kapı (R16 sayesinde paralel koşulabilir) |
-| R2 | Bakır = eylem rengi | P1 | Karar verildi (2026-10-02); sürüyor | — |
 | R4 | Özel imleç | P2 | Karar verildi (biçim) | R2 |
-| R5 | İşler: "İNCELE →" ve mobilde okunur durgun önizleme | P1 | Karar verildi | R2 |
+| R5 | İşler: "İNCELE →" ve mobilde okunur durgun önizleme | P1 | Karar verildi | — |
 | R6 | Lab bench girişleri: okunur boyut, üzerine gelince ön gösterim | P2 | Kısmen: ön gösterimin biçimi bekliyor | — |
 | R7 | Lab'de kaydırma çalışmalar arasında, tıklama içeri | P2 | Önce inceleme | R6 |
-| R8 | Case study: kendi URL'leri, okunur "sonraki iş", başlık arkası | P1 | Karar bekliyor (URL biçimi) | — |
+| R8 | Case study: kendi URL'leri, okunur "sonraki iş", başlık arkası | P1 | Karar verildi (2026-10-02) | — |
 | R9 | Koyu zeminlerde satır titreşimi | **P0** (R18 için) | Neden açık; önce ölçüm | — |
 | R10 | Safari'de adın ince kesimle çizilmesi | P1 | Önce gerçek iPhone | R22 |
 | R11 | Yavaş ağda ilk kare (8,9 sn) | P2 | Önce değerlendirme | — |
@@ -65,59 +64,6 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3 tamamlandı; R2
 - **Bağımlılık:** tam kapı. R16 yapıldı: başka bir oturum durmadan, kendi portlarıyla koşulabilir.
 - **Öncelik:** P0.
 
-### R2. Bakır = eylem rengi
-- **Açıklama:** Sitede "buraya tıklanır" demenin tek rengi bakır olsun. Üç token:
-  - **Yazı için koyu bakır:** krem zeminde en az 4,5:1.
-  - **İşaretler için parlak bakır:** oklar, çizgiler, halkalar; grafik öğe olarak en az 3:1.
-  - **Siyah zemin için açık ton.**
-
-  Ölçülen adaylar (krem `#efeee9` / gece `#0b0c0e`):
-
-  | Renk | Kremde | Gecede | Not |
-  |---|---|---|---|
-  | `#b8622f` | 3,75:1 | 4,50:1 | Linefield'ın pas çizgisi. Kremde işaret için yeterli, yazı için değil. |
-  | `#9a4f22` | 5,14:1 | — | Yazı rengi adayı |
-  | `#8f4a20` | 5,71:1 | — | Yazı rengi adayı |
-  | `#d4875a` | — | 6,91:1 | Siyah zemin adayı |
-- **Yerler:**
-  - Lab "AÇ →"
-  - hero'daki küçük Hakkımda butonu
-  - EMRAH YÜCEL ayrılınca açılan bölümde "Hakkımda daha fazla" ve yeni **"Kapat"** butonu. Bu buton bölümü
-    kapatır; "Geri" değildir.
-  - detaylı Hakkımda sayfasındaki "Geri"
-  - case study eylemleri
-  - iletişim finalinin eylemleri
-  - menünün aktif öğesi
-- **Karar:** Rol ve yerler belli (2026-10-01).
-  - **Tokenlar (2026-10-02):** yazı `#9a4f22` (kremde 5,14:1), işaret `#b8622f` (kremde 3,75:1), siyah zemin
-    `#d4875a` (6,91:1).
-  - **Menü (2026-10-02):** menüde bakır yok. Menü gezinmedir, eylem değil; bakır içerikte kalır. Listedeki
-    "menünün aktif öğesi" yeri bu yüzden düştü.
-  - **Durum:** sürüyor (`fix/audit-01-batch2`, audit oturumu).
-  - **Yapılan (2026-10-02, birinci kısım):**
-    - Tokenlar: `engine/c2/style.css` (`--act`, tonla değişir) ve `app/assets/css/base.css`.
-    - Bakır olanlar: hero'daki Hakkımda, "Hakkımda daha fazla", yeni **Kapat**, uzun Hakkımda'nın eylem
-      çağrısı ve "Geri", bench'teki "aç →", `/about` sayfasındaki "Geri", düz katmanın bağlantıları, finalin
-      "kopyala" düğmesi.
-    - Kapat, Hakkımda bölümünü kapatır ve odağı hero'daki Hakkımda'ya geri verir.
-    - Ölçüm: hepsi 4,77–5,14:1, gerçek zemin piksellerine karşı. axe: bütün rotalarda ve Hakkımda açıkken 0 ihlal.
-  - **Bekleyen (kullanıcı kararı):**
-    - Case study eylemleri proje mürekkebi üzerinde duruyor. Hiçbir bakır orada 4,5:1'e ulaşmıyor (en iyisi
-      `#d4875a`, 2,68–4,06:1). İstanbul'un mürekkebi `#8e3a17` zaten bakıra yakın.
-    - Finalin bağlantıları kalemle, kopan satırın kendi mürekkebiyle çiziliyor (mürekkep korunumu).
-- **Dosyalar:**
-  - Tokenlar: `engine/c2/style.css`, `app/assets/css/base.css`, `app/assets/css/lab.css`
-  - Hero butonu ve Hakkımda bölümü: `engine/c2/main.js`; hero `.hero-about`, bölüm `.more` (~1280), detay
-    `.ad-back` (~1294)
-  - Lab: `engine/c2/main.js` `.lopen` (~1328), `app/components/lab/LabBench.vue` `.open-link` (~515)
-  - Hakkımda sayfası: `app/pages/[locale]/about.vue` `.back`
-  - Case study: `engine/c2/main.js` `.wnav` (~1334), `.wb-cta`
-  - Final: `app/pages/[locale]/contact.vue`, `engine/lab/finale/`
-  - Menü: `engine/c2/main.js` `.nav` (~1255)
-  - Yeni "Kapat" metni: `shared/content/locales/tr.ts`, `en.ts`, `types.ts`
-- **Bağımlılık:** yok. R4, R5, R14 bu tokenları kullanır.
-- **Öncelik:** P1.
-
 ### R4. Özel imleç
 - **Açıklama:** Çizgilerin üzerinde bir halka, bir işin görselinin üzerinde "AÇ". Yalnız ince işaretçide
   (`pointer: fine`). Dokunmatikte ve hareketi azaltılmış modda yok. Klavye odağını etkilemez.
@@ -129,7 +75,9 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3 tamamlandı; R2
 
 ### R5. İşler: "İNCELE →" ve mobilde durgun önizleme
 - **Açıklama:**
-  - Her işin altında bakır bir "İNCELE →" bağlantısı. Basılı tutmayı bilmeyen ziyaretçi için görünür bir kapı.
+  - Her işin altında bir "İNCELE →" bağlantısı. Basılı tutmayı bilmeyen ziyaretçi için görünür bir kapı. İşler
+    alanı projenin kendi mürekkebinde durduğu için bakır değil, kâğıt rengi ve altı çizili (R2 kararı,
+    2026-10-02).
   - Mobilde durgun önizleme okunur olsun. Bugün görsel satır tonu olarak çiziliyor ve gerçek görsel ancak
     açılınca net (AUDIT-01 A3).
 - **Karar:** Karar verildi (2026-10-01).
@@ -139,7 +87,7 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3 tamamlandı; R2
   - `engine/c2/world.js`
   - `engine/c2/style.css`
   - `shared/content/locales/*.ts`
-- **Bağımlılık:** R2.
+- **Bağımlılık:** yok.
 - **Öncelik:** P1.
 
 ### R6. Lab bench girişleri
@@ -175,8 +123,10 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3 tamamlandı; R2
   - **"Sonraki iş" görseli okunur olsun.**
   - **Başlığın arkasındaki koyu dikdörtgen.** `softRect` boşluğu (AUDIT-01 madde 20) incelenip kaldırılacak ya
     da gerekçelendirilecek.
-- **Karar:** Üçü de yapılacak. **Bekleyen:** URL biçimi (örneğin `/{locale}/work/{id}`); doğrudan açılınca
-  case study mi açılsın, düz sayfa mı.
+- **Karar:** Üçü de yapılacak. **URL (2026-10-02):**
+  - Biçim `/{locale}/work/{id}`: `istanbul`, `ege`, `evden`.
+  - Doğrudan açılınca case study runtime'da, ilk karesinde yerleşik açılır; Geri İşler'e döner.
+  - Script yoksa aynı içeriğin düz HTML'i gösterilir.
 - **Dosyalar:**
   - `engine/c2/main.js`: dünya modu, `nextReg`, `worldFull`, `HOST`
   - `engine/c2/world.js`
@@ -355,7 +305,8 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3 tamamlandı; R2
 | 2026-10-01 | Düzeltme turu 2. Ayrıntılar aşağıda. | `fix/audit-01-batch2` b4054e7..c64d995 | AUDIT-01 §9–§10 |
 | 2026-10-01 | R12: sert trackpad fırlatmasının kuyruğu ikinci durağı açmıyor | `fix/audit-01-batch2` a2967db | aşağıda |
 | 2026-10-02 | R16: tam kapı başka bir oturumla aynı anda koşulabiliyor | `fix/audit-01-batch2` 4d8d833 | aşağıda |
-| 2026-10-02 | R3: tek ipucu sistemi | `fix/audit-01-batch2` (bu commit) | aşağıda |
+| 2026-10-02 | R3: tek ipucu sistemi | `fix/audit-01-batch2` bc03881 | aşağıda |
+| 2026-10-02 | R2: bakır = eylem rengi | `fix/audit-01-batch2` a21a96c | aşağıda |
 
 **Düzeltme turu 2'nin maddeleri:**
 - metinler ve eylem çağrısı
@@ -404,6 +355,18 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3 tamamlandı; R2
   CLAUDE.md'ye yazıldı.
 - **Kontrol:** 4921/4922/4923 ile koşuldu. Üç sunucu da cspboot PASS verdi; 4500–4799 dinleyicileri aynı PID'lerle
   kaldı. Hatalı argüman (iki port) açık bir mesajla durdu. Tam kapı koşulmadı.
+
+**R2'nin ayrıntısı (2026-10-02):**
+- **Tokenlar:** yazı `#9a4f22`, işaret `#b8622f`, siyah zemin `#d4875a`.
+- **Bakır olmayanlar (kararla):**
+  - Menü.
+  - Projelerin kendi mürekkebi: hiçbir bakır orada 4,5:1'e ulaşmıyor. Case study eylemleri ve İşler alanı kâğıt
+    rengi ve altı çizili kalır.
+  - Finalin kalemle çizilen bağlantıları: mürekkep korunumu bozulmasın.
+- **Bakır olanlar:** hero'daki Hakkımda, Hakkımda bölümündeki "daha fazla" ve yeni Kapat, uzun Hakkımda'nın
+  eylem çağrısı ve "Geri", bench'teki "aç →", `/about`'taki "Geri", düz katmanın bağlantıları, finalin "kopyala"
+  düğmesi.
+- **Ölçüm:** 4,77–5,14:1, gerçek zemin piksellerine karşı. axe: 0.
 
 **R3'ün ayrıntısı (2026-10-02):**
 - **Kurallar** (kullanıcı kararları 2026-10-01 ve 2026-10-02):

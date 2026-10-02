@@ -74,7 +74,15 @@ async function seam(br, w, h, touch) {
   await p.goto(`${BASE}/tr/lab`, { waitUntil: 'networkidle' }); await sleep(1800)
   const bare = p.waitForFunction(() => getComputedStyle(document.querySelector('.lab-stage')).getPropertyValue('--veil').trim() === '1', null, { timeout: 6000, polling: 'raf' }).then(() => p.screenshot()).catch(() => null)
   await p.mouse.move(w / 2, h / 2)
-  for (const d of [30, 60, 60, 40]) { await p.mouse.wheel(0, d); await sleep(16) }
+  /*
+   * SEPARATE GESTURES, NOT A BURST. This used four notches sixteen milliseconds apart, which was enough to leave the
+   * bench when it was written. It is not any more, and by design on two counts: round 2 made one gesture move one
+   * study (R7), and the runtime makes one gesture carry one stop. A stream of four notches is therefore ONE gesture
+   * and moves one study, so the finale is never reached, --veil never reaches 1, seam() returns null, and all sixty
+   * sizes report a finding for a measurement that never ran. Measured: four notches 16 ms apart stay on /tr/lab, four
+   * separate gestures arrive at /tr/contact.
+   */
+  for (let i = 0; i < 4; i++) { await p.mouse.wheel(0, 120); await sleep(700) }
   const a = await bare
   await p.waitForFunction(() => location.pathname === '/tr/contact' && !!window.__finale, null, { timeout: 20000 }).catch(() => {})
   const b = await p.screenshot()

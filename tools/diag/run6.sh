@@ -25,6 +25,30 @@ BASELINE_DIR=${BASELINE_DIR:-../../../baselines/pre-site-polish}
 L=${GATE_LOG:-out/final6.log}
 mkdir -p out
 
+# ── A FAILING SECTION IS NEVER TRUNCATED ───────────────────────────────────────────────────────────────────
+#
+# Every section below used to be piped through `tail -N` or a grep. That keeps the log readable while everything
+# passes and throws the reason away exactly when it is wanted: this gate reported `GESTURE: FAIL (5)` and
+# `LAB A11Y: FAIL (1)` with not one failing assertion printed under either, and the only way to learn what failed
+# was to run the harness again by hand.
+#
+# So every section's WHOLE output is kept in out/sections/<name>.log. On success the short form is appended, as
+# before. On failure the whole of it is appended instead, whatever limit the short form would have used.
+SECT=out/sections
+mkdir -p $SECT
+sect(){
+  n=$1; short=$2; shift 2
+  f=$SECT/$n.log
+  "$@" > $f 2>&1
+  rc=$?
+  if [ $rc -eq 0 ]; then
+    sh -c "$short" < $f >> $L
+  else
+    { echo "--- $n FAILED (exit $rc) — its whole output follows, untruncated ---"; cat $f; } >> $L
+  fi
+  return 0
+}
+
 code_of(){ curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$1/tr"; }
 
 # ── the current build: yours to have running, because only you know when you last rebuilt ──────────────────
@@ -45,7 +69,7 @@ if [ "$c" != "200" ]; then
   else
     echo "  the artifact is already at $BASELINE_DIR; only the server was missing"
   fi
-  node sv.cjs "$BASELINE_DIR" $BASE --wk >> out/baseline-server.log 2>&1 &
+  sect sv-BASELINE-DIR-BASE-wk-out-baseline-server-log- 'tail -4' node sv.cjs "$BASELINE_DIR" $BASE --wk >> out/baseline-server.log 2>&1 &
   i=0
   while [ "$(code_of $BASE)" != "200" ]; do
     i=$((i + 1)); [ $i -gt 40 ] && { echo "PREFLIGHT FAILED: served $BASELINE_DIR on $BASE but it never answered 200."; exit 1; }
@@ -71,23 +95,23 @@ echo "preflight ok: $CUR (current) and $BASE (baseline, $BASELINE_TAG) both serv
 : > $L
 say(){ echo "" >> $L; echo "########## $1 ##########" >> $L; }
 say "CSP / BOOT UNDER THE PRODUCTION POLICY"
-node cspboot.cjs $CUR chrome  2>&1 | tail -4 >> $L
-node cspboot.cjs $CUR webkit  2>&1 | tail -4 >> $L
-say "RETIRED LAB — TR NORMAL";  MSYS_NO_PATHCONV=1 node labflash.cjs $CUR normal  tr 2>&1 | tail -7 >> $L
-say "RETIRED LAB — TR REDUCED"; MSYS_NO_PATHCONV=1 node labflash.cjs $CUR reduced tr 2>&1 | tail -7 >> $L
-say "RETIRED LAB — EN NORMAL";  MSYS_NO_PATHCONV=1 node labflash.cjs $CUR normal  en 2>&1 | tail -7 >> $L
-say "DESKTOP SPINE";            node spine.cjs $CUR          2>&1 | tail -34 >> $L
+node cspboot.cjs $CUR chrome
+sect cspboot-CUR-webkit 'tail -4' node cspboot.cjs $CUR webkit
+say "RETIRED LAB — TR NORMAL";  sect labflash-CUR-normal-tr 'tail -7' env MSYS_NO_PATHCONV=1 node labflash.cjs $CUR normal  tr
+say "RETIRED LAB — TR REDUCED"; sect labflash-CUR-reduced-tr 'tail -7' env MSYS_NO_PATHCONV=1 node labflash.cjs $CUR reduced tr
+say "RETIRED LAB — EN NORMAL";  sect labflash-CUR-normal-en 'tail -7' env MSYS_NO_PATHCONV=1 node labflash.cjs $CUR normal  en
+say "DESKTOP SPINE";            sect spine-CUR 'tail -34' node spine.cjs $CUR
 # tail -4 used to cut the reason off: the log said "SPINE: FAIL (1)" with nothing above it
-say "DESKTOP SPINE REDUCED";    node spine.cjs $CUR reduced  2>&1 | tail -34 >> $L
+say "DESKTOP SPINE REDUCED";    sect spine-CUR-reduced 'tail -34' node spine.cjs $CUR reduced
 # GESTURE_RUNS=n repeats this section in place, under the gate's own load (docs/KNOWN-ISSUES.md: owed after F2)
 g=1; while [ $g -le ${GESTURE_RUNS:-1} ]; do
-  say "ONE GESTURE = ONE STOP (run $g of ${GESTURE_RUNS:-1})";   MSYS_NO_PATHCONV=1 node gesture2.cjs $CUR 2>&1 | tail -4 >> $L
+  say "ONE GESTURE = ONE STOP (run $g of ${GESTURE_RUNS:-1})";   sect gesture2-CUR 'tail -4' env MSYS_NO_PATHCONV=1 node gesture2.cjs $CUR
   g=$((g + 1))
 done
-say "INITIAL LOAD webkit";      MSYS_NO_PATHCONV=1 node boot.cjs $CUR webkit /tr 2>&1 | tail -11 >> $L
-say "INITIAL LOAD chrome";      MSYS_NO_PATHCONV=1 node boot.cjs $CUR chrome /tr 2>&1 | tail -11 >> $L
-say "BOOT RESPONSIVE webkit";   MSYS_NO_PATHCONV=1 node bootresp.cjs $CUR webkit 2>&1 | tail -3 >> $L
-say "PROJECT TRANSITIONS";      MSYS_NO_PATHCONV=1 node proj.cjs $CUR 2>&1 | tail -7 >> $L
+say "INITIAL LOAD webkit";      sect boot-CUR-webkit-tr 'tail -11' env MSYS_NO_PATHCONV=1 node boot.cjs $CUR webkit /tr
+say "INITIAL LOAD chrome";      sect boot-CUR-chrome-tr 'tail -11' env MSYS_NO_PATHCONV=1 node boot.cjs $CUR chrome /tr
+say "BOOT RESPONSIVE webkit";   sect bootresp-CUR-webkit 'tail -3' env MSYS_NO_PATHCONV=1 node bootresp.cjs $CUR webkit
+say "PROJECT TRANSITIONS";      sect proj-CUR 'tail -7' env MSYS_NO_PATHCONV=1 node proj.cjs $CUR
 # NOTE: shell.cjs and spine.cjs both end with the same two "one control back to the Lab" checks — the two were
 # restored from overlapping descriptions. Duplicated coverage, not a wrong result; worth deduplicating.
 # Every line of a project's identity panel, sampled through the opening, at three desktop sizes in both
@@ -98,17 +122,17 @@ say "PROJECT TRANSITIONS";      MSYS_NO_PATHCONV=1 node proj.cjs $CUR 2>&1 | tai
 # bottom strip over its own capture — a different mechanism, a different contract, and a real AA failure at
 # 1440x900 that is recorded in docs/KNOWN-ISSUES.md and needs an art-direction decision, not a check.
 say "PROJECT IDENTITY PANELS — INSIDE, AND AA AGAINST WHAT IS BEHIND"
-MSYS_NO_PATHCONV=1 node panelfit.cjs $CUR gate 1920x1080,1440x900,1280x720 tr,en 1,2 2>&1 | tail -12 >> $L
-say "LAB SHELL / RESPONSIVE";   node shell.cjs $CUR          2>&1 | tail -10 >> $L
-say "LAB A11Y";                 node labaxe.cjs $CUR         2>&1 | tail -3  >> $L
+sect panelfit-CUR-gate-1920x1080-1440x900-1280x720-tr 'tail -12' env MSYS_NO_PATHCONV=1 node panelfit.cjs $CUR gate 1920x1080,1440x900,1280x720 tr,en 1,2
+say "LAB SHELL / RESPONSIVE";   sect shell-CUR 'tail -10' node shell.cjs $CUR
+say "LAB A11Y";                 sect labaxe-CUR 'tail -3' node labaxe.cjs $CUR
 # the Contact finale's route: a document route (no runtime), its facts as DOM with and without JS, axe, both engines
-say "CONTACT ROUTE";            node contact.cjs $CUR        2>&1 | tail -12 >> $L
-say "CONTACT FINALE — iOS 15.4";   node compat-ios15.cjs $CUR   2>&1 | tail -1  >> $L
-say "CONTACT SEAM — LAB ⇄ FINALE, ARRIVALS, HISTORY";   node seam.cjs $CUR   2>&1 | grep -E "FAIL|seam:|SEAM" >> $L
-say "CONTACT FINALE — A11Y, KEYBOARD, LANGUAGE, REDUCED, PHONES";   node finale-a11y.cjs $CUR   2>&1 | grep -E "FAIL|FINALE A11Y" >> $L
-say "CONTACT FINALE — THE WAY IN, THE GUIDE, THE FOOT BAND";   node beckon.cjs $CUR   2>&1 | grep -E "FAIL|BECKON" >> $L
-say "JOURNEY TR NORMAL";        node journey.cjs $CUR tr     2>&1 | grep -E "FAIL|errors|JOURNEY" >> $L
-say "JOURNEY EN REDUCED";       node journey.cjs $CUR en reduced 2>&1 | grep -E "FAIL|errors|JOURNEY" >> $L
-say "NON-LAB NORMAL (baseline $BASE)";  node nonlab.cjs $BASE $CUR    2>&1 | tail -13 >> $L
-say "NON-LAB REDUCED (baseline $BASE)"; node nonlabred.cjs $BASE $CUR 2>&1 | tail -13 >> $L
+say "CONTACT ROUTE";            sect contact-CUR 'tail -12' node contact.cjs $CUR
+say "CONTACT FINALE — iOS 15.4";   sect compat-ios15-CUR 'tail -1' node compat-ios15.cjs $CUR
+say "CONTACT SEAM — LAB ⇄ FINALE, ARRIVALS, HISTORY";   sect seam-CUR 'grep -E "FAIL|seam:|SEAM"' node seam.cjs $CUR
+say "CONTACT FINALE — A11Y, KEYBOARD, LANGUAGE, REDUCED, PHONES";   sect finale-a11y-CUR 'grep -E "FAIL|FINALE A11Y"' node finale-a11y.cjs $CUR
+say "CONTACT FINALE — THE WAY IN, THE GUIDE, THE FOOT BAND";   sect beckon-CUR 'grep -E "FAIL|BECKON"' node beckon.cjs $CUR
+say "JOURNEY TR NORMAL";        sect journey-CUR-tr 'grep -E "FAIL|errors|JOURNEY"' node journey.cjs $CUR tr
+say "JOURNEY EN REDUCED";       sect journey-CUR-en-reduced 'grep -E "FAIL|errors|JOURNEY"' node journey.cjs $CUR en reduced
+say "NON-LAB NORMAL (baseline $BASE)";  sect nonlab-BASE-CUR 'tail -13' node nonlab.cjs $BASE $CUR
+say "NON-LAB REDUCED (baseline $BASE)"; sect nonlabred-BASE-CUR 'tail -13' node nonlabred.cjs $BASE $CUR
 echo "" >> $L; echo "RUN6 DONE" >> $L

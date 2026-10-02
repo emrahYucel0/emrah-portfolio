@@ -24,26 +24,43 @@
  */
 import { CORRIDOR_PATCH } from './corridor.js'
 
+/*
+ * A PATCH THAT CHANGES NOTHING MUST NOT BE SILENT.
+ *
+ * These breaks are string surgery on the shader, so a rename in the corridor turns one into a no-op: the broken
+ * build becomes identical to the real one, the check that owns it finds nothing wrong, and it reports PASS — having
+ * quietly stopped testing anything. That happened. lfSol(sol) replaced the smoothstep over `sol` and three of the
+ * six breaks below stopped matching; the WHOLE check noticed only because it ALSO asserts that the break makes it
+ * fail, which is the entire reason that assertion is there.
+ *
+ * So every replacement is checked, and a break that no longer matches throws by name instead of handing back an
+ * unbroken corridor.
+ */
+const cut = (src, from, to, who) => {
+  if (!src.includes(from)) throw new Error('lfbreak=' + who + ' no longer matches the shader: ' + from.slice(0, 48))
+  return src.replace(from, to)
+}
+
 export function patchFor(name) {
   if (name === 'inverse') {
     return {
       ...CORRIDOR_PATCH,
-      warp: CORRIDOR_PATCH.warp
-        .replace('float gg = abs(g) < 1e-4 ? (g < 0.0 ? -1e-4 : 1e-4) : g;', 'float gg = abs(g) < 1e-4 ? 1e-4 : g;')
-        .replace('fade *= 1.0 - smoothstep(0.35, 1.1, res);', ''),
+      warp: cut(
+        cut(CORRIDOR_PATCH.warp, 'float gg = abs(g) < 1e-4 ? (g < 0.0 ? -1e-4 : 1e-4) : g;', 'float gg = abs(g) < 1e-4 ? 1e-4 : g;', 'inverse'),
+        'fade *= 1.0 - smoothstep(0.35, 1.1, res);', '', 'inverse'),
     }
   }
   if (name === 'noextent') {
-    return { ...CORRIDOR_PATCH, pars: CORRIDOR_PATCH.pars.replace('* lfExtent(r, sol)', '') }
+    return { ...CORRIDOR_PATCH, pars: cut(CORRIDOR_PATCH.pars, '* lfExtent(r, sol)', '', 'noextent') }
   }
   if (name === 'extentall') {
-    return { ...CORRIDOR_PATCH, pars: CORRIDOR_PATCH.pars.replace('mix(inside, 1.0, smoothstep(0.08, 0.3, sol))', 'inside') }
+    return { ...CORRIDOR_PATCH, pars: cut(CORRIDOR_PATCH.pars, 'mix(inside, 1.0, lfSol(sol))', 'inside', 'extentall') }
   }
   if (name === 'thinall') {
-    return { ...CORRIDOR_PATCH, pars: CORRIDOR_PATCH.pars.replace('return mix(mix(1.0, kept, clamp(uLFthin.y, 0.0, 1.0)), 1.0, smoothstep(0.08, 0.3, sol));', 'return mix(1.0, kept, clamp(uLFthin.y, 0.0, 1.0));') }
+    return { ...CORRIDOR_PATCH, pars: cut(CORRIDOR_PATCH.pars, 'return mix(mix(1.0, kept, clamp(uLFthin.y, 0.0, 1.0)), 1.0, lfSol(sol));', 'return mix(1.0, kept, clamp(uLFthin.y, 0.0, 1.0));', 'thinall') }
   }
   if (name === 'nowhisker') {
-    return { ...CORRIDOR_PATCH, pars: CORRIDOR_PATCH.pars.replace('lfWhiskType_cur, smoothstep(0.08, 0.3, sol)', 'lfWhisk_cur, smoothstep(0.08, 0.3, sol)') }
+    return { ...CORRIDOR_PATCH, pars: cut(CORRIDOR_PATCH.pars, 'lfWhiskType_cur, lfSol(sol)', 'lfWhisk_cur, lfSol(sol)', 'nowhisker') }
   }
   // `dense` is the real corridor with the thinning switched off at the uniform, not a patched program
   return CORRIDOR_PATCH

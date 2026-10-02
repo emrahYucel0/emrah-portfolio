@@ -22,7 +22,7 @@ belgedeyse (AUDIT-01, LINEFIELD.md, DEPLOYMENT.md…) burada ona bağlantı veri
 - **Karar bekliyor:** neyin beklendiği yazılı.
 - **Önce inceleme:** mevcut davranış ölçülmeden tasarlanmayacak.
 
-Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16 tamamlandı).
+Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3 tamamlandı; R2 sürüyor).
 
 ---
 
@@ -32,7 +32,6 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16 tamamlandı).
 |---|---|---|---|---|
 | R1 | Birleştirme: düzeltme turu 2 → `main`, yayın dalı | P0 | Karar bekliyor (ne zaman) | tam kapı (R16 sayesinde paralel koşulabilir) |
 | R2 | Bakır = eylem rengi | P1 | Karar verildi (2026-10-02); sürüyor | — |
-| R3 | Tek ipucu sistemi | P1 | Karar verildi (2026-10-02) | — |
 | R4 | Özel imleç | P2 | Karar verildi (biçim) | R2 |
 | R5 | İşler: "İNCELE →" ve mobilde okunur durgun önizleme | P1 | Karar verildi | R2 |
 | R6 | Lab bench girişleri: okunur boyut, üzerine gelince ön gösterim | P2 | Kısmen: ön gösterimin biçimi bekliyor | — |
@@ -117,35 +116,6 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16 tamamlandı).
   - Menü: `engine/c2/main.js` `.nav` (~1255)
   - Yeni "Kapat" metni: `shared/content/locales/tr.ts`, `en.ts`, `types.ts`
 - **Bağımlılık:** yok. R4, R5, R14 bu tokenları kullanır.
-- **Öncelik:** P1.
-
-### R3. Tek ipucu sistemi (site geneli)
-- **Açıklama:**
-  - "Kaydır" ipucu yalnız gerektiği yerde çıkar: hero'nun ilk durağı, iletişim varışı ve ekranın bitmiş
-    göründüğü yerler.
-  - Oturum başına bir kez gösterilir.
-  - Yalnız 2–3 sn girdi gelmezse çıkar.
-  - Alt şeridin ortasında, küçük mono yazıyla.
-  - Farklı jestler (basılı tut, yana kaydır, dokun) kendi ipucunu birer kez alır.
-  - İletişim finalindeki beckon bu sisteme taşınır.
-
-  **Bugünkü durum (2026-10-01):**
-  - `hintFor` her durakta kendi zamanlamasını kullanıyor: yüzlerde ve İşler'de 2,5 sn, dünyada 3,5 sn.
-  - "Öğrenildi" bayrakları sayfa ömrü boyunca tutuluyor, oturum boyunca değil.
-  - Final, kendi beckon'unu ayrı bir mekanizmayla gösteriyor.
-- **Karar:** Karar verildi (2026-10-01). Ayrıntılar (2026-10-02):
-  - "Ekranın bitmiş göründüğü yer" olarak yalnız **Linefield geçidinin sonu** seçildi. "Kaydır" ipucu bu yüzden
-    üç yerde çıkar: hero'nun ilk durağı, Linefield geçidinin sonu ve iletişim varışı.
-  - **Bir kez kuralı:** "kaydır" site genelinde oturumda bir kez, ilk uygun yerde gösterilir. İletişim varışının
-    kendi bir kezi var, çünkü orada kaydırmak duraklar arasında gezdirmiyor, çizimi sürüyor.
-- **Dosyalar:**
-  - `engine/c2/main.js`: `hintFor` (~1531), `A.learned`
-  - `engine/c2/style.css`: `#hint`
-  - `engine/lab/finale/finale.js`: beckon (~154)
-  - `app/pages/[locale]/contact.vue`
-  - `shared/content/locales/*.ts`: `hints`, `contact.hintScroll`
-  - Oturum hafızası: `sessionStorage`, zaten kullanılıyor (`app/composables/useVisit.ts`)
-- **Bağımlılık:** yok. R7 ve R14 yeni yerlerini bu sisteme ekler.
 - **Öncelik:** P1.
 
 ### R4. Özel imleç
@@ -384,7 +354,8 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16 tamamlandı).
 | 2026-10-01 | Linefield (bayrak arkasında) | yerel `main` febd93f | `docs/LINEFIELD.md` |
 | 2026-10-01 | Düzeltme turu 2. Ayrıntılar aşağıda. | `fix/audit-01-batch2` b4054e7..c64d995 | AUDIT-01 §9–§10 |
 | 2026-10-01 | R12: sert trackpad fırlatmasının kuyruğu ikinci durağı açmıyor | `fix/audit-01-batch2` a2967db | aşağıda |
-| 2026-10-02 | R16: tam kapı başka bir oturumla aynı anda koşulabiliyor | `fix/audit-01-batch2` (bu commit) | aşağıda |
+| 2026-10-02 | R16: tam kapı başka bir oturumla aynı anda koşulabiliyor | `fix/audit-01-batch2` 4d8d833 | aşağıda |
+| 2026-10-02 | R3: tek ipucu sistemi | `fix/audit-01-batch2` (bu commit) | aşağıda |
 
 **Düzeltme turu 2'nin maddeleri:**
 - metinler ve eylem çağrısı
@@ -433,6 +404,35 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16 tamamlandı).
   CLAUDE.md'ye yazıldı.
 - **Kontrol:** 4921/4922/4923 ile koşuldu. Üç sunucu da cspboot PASS verdi; 4500–4799 dinleyicileri aynı PID'lerle
   kaldı. Hatalı argüman (iki port) açık bir mesajla durdu. Tam kapı koşulmadı.
+
+**R3'ün ayrıntısı (2026-10-02):**
+- **Kurallar** (kullanıcı kararları 2026-10-01 ve 2026-10-02):
+  - İpucu alt şeridin ortasında, şeridin kendi mono yazısıyla çıkar.
+  - Yalnız 2,5 sn girdi yoksa çıkar.
+  - İlk girdide ya da yer değişince gider.
+  - Her jestin ipucu oturumda bir kez gösterilir.
+  - "aşağı kaydır" üç yerde sorulur: hero'nun ilk durağı, Linefield geçidinin sonu (ikisi arasında bir kez) ve
+    iletişim varışı (kendi bir kezi var).
+  - "basılı tut" yüzlerde, kendi jesti İşler'de sorulur.
+  - Proje içindeki "kaydır" kalktı.
+- **Kod:**
+  - Yeni `engine/cues.js` (`CUE_IDLE`, `cueSeen`, `cueSpend`; `sessionStorage`, depolama yoksa sayfa başına bir
+    kez).
+  - Runtime: `cueFor` / `cueAsked`, `#cue` ve `.is-cueing`. Telefonda ipucu şeridi yalnız kaplar.
+  - Şeridin sağ ucu (`#hint`) artık hep durum satırı.
+  - Final: beckon (sözler ve nefes) varıştan 2,5 sn sonra, oturumda bir kez geliyor. Rehber de aynı modülü
+    kullanıyor (2 sn → 2,5 sn).
+- **Harness'lar:**
+  - `beckon.cjs` ve `finale-a11y.cjs`'in p = 0 bölümleri artık bench'ten iniyor. Doğrudan `/contact`, düzeltme
+    turu 1'den beri yerleşik açılıyor; bu yüzden o bölümler o günden beri kalıyordu. Bunu R3'ten önceki build'de de
+    doğruladım: aynı 4 hata.
+  - Telefon rehberi kontrolü sabit süre yerine durumu bekliyor.
+  - `worktap.cjs` `#cue`'yu okuyor; `finale-guide` anahtarı `cue:finale-guide` oldu.
+- **Kontroller:**
+  - Runtime ipucu denetimi 1440 ve 390'da: 25 kontrol PASS.
+  - `beckon` iki koşuda PASS; `finale-a11y` PASS.
+  - Linefield giriş, çıkış ve hareketi azaltılmış; `workopen` (on/off); `worktap`; `journey` (TR ve EN
+    hareketi azaltılmış); `herotouch`; `spine`; `seam`; typecheck: PASS.
 
 **Kullanıcı kararıyla kapatılanlar:**
 - HAKKIMDA odası (AUDIT-01 §9 madde 4): atlandı; 1. turdaki kâğıt bant kalıyor.

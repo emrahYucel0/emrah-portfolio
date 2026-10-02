@@ -196,7 +196,7 @@ export const tr = {
     quietSeparator: ' · ',
     face: 'basılı tut',
     work: 'kaydır · görseli basılı tut', workTouch: 'yana kaydır · görsele dokun',
-    world: 'kaydır',
+    scroll: 'aşağı kaydır',
   },
   a11y: {
     plainNav: 'Düz gezinme', selectedWork: 'Seçili işler', labStudies: 'Lab çalışmaları',

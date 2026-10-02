@@ -74,7 +74,13 @@ html.c2-zoomed[data-c2='on'], html.c2-zoomed[data-c2='on'] body { touch-action: 
 :where(#ui) .strip .nav button { padding-left: 4px; padding-right: 4px; margin: 0 -4px; }
 :where(#ui) .roles { opacity: .82; }
 /* .9, not quieter: in a project the hint sits on the work's ink, and İstanbul's #8e3a17 took .78 to 4.33:1 (AUDIT-01) */
-:where(#ui) #hint { opacity: .9; overflow: hidden; text-overflow: ellipsis; min-width: 0; margin-left: auto; text-align: right; }   /* M3: it shrinks and keeps the right edge on a phone too */
+:where(#ui) #hint { opacity: .9; overflow: hidden; text-overflow: ellipsis; min-width: 0; margin-left: auto; text-align: right; transition: opacity .4s ease; }   /* M3: it shrinks and keeps the right edge on a phone too */
+/* THE ONE HINT (R3, engine/cues.js): centred in the bottom strip, in the strip's own mono, faded in and out. Where the
+   strip is too narrow to hold it beside the two ends, it takes the strip alone while it is shown — as the finale's
+   foot band does. */
+:where(#ui) .bottom #cue { position: absolute; left: 50%; top: 0; bottom: var(--safe-b, 0px); display: flex; align-items: center; transform: translateX(-50%); opacity: 0; transition: opacity .5s ease; pointer-events: none; }
+:where(#ui) .bottom #cue.on { opacity: .9; }
+@media (max-width: 1100px) { :where(#ui) .bottom.is-cueing .roles, :where(#ui) .bottom.is-cueing #hint { opacity: 0; } }
 :where(#ui) .strip[data-tone=dark] { color: var(--paper); }
 :where(#ui) .strip[data-tone=light] { color: var(--ink); }
 :where(#ui) .strip[data-tone=media] { color: var(--paper); }

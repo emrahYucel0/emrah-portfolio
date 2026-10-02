@@ -17,6 +17,7 @@ import { createFlat, paintFlat } from './flat.js'
 import { createPhysics } from './physics.js'
 import * as ST from './states.js'
 import { framesFor, GEOM, ABSENT, psiHTML } from './world.js'
+import { CUE_IDLE, cueSeen, cueSpend } from '../cues.js'
 import { identity, about, capabilities, workIntro, works, lab, contact, previewOf, ui as TXT, applyLocale } from './content.js'
 import { termHtml } from '../../shared/content/term'
 import { mediaElement, placeMedia, loadImage, prepareTone, setMediaScale } from './media.js'
@@ -1290,7 +1291,7 @@ function buildDOM() {
     <a class="id" href="${HOME_URL}" data-go="name">${identity.name}</a>
     <nav class="nav" aria-label="${TXT.nav.label}"><button data-go="work">${TXT.nav.work}</button><button data-go="about">${TXT.nav.about}</button><button data-go="lab">${TXT.nav.lab}</button><button data-go="rest">${TXT.nav.contact}</button><a class="lang" data-locale href="${HOST.localeHref}" hreflang="${TXT.localeSwitch.hreflang}" lang="${TXT.localeSwitch.hreflang}" aria-label="${TXT.localeSwitch.short} — ${TXT.localeSwitch.to}" title="${TXT.localeSwitch.label}: ${TXT.localeSwitch.to}">${TXT.localeSwitch.short}</a></nav>`)
   // M4 A11Y: the bottom strip repeats the h1's roles and gives pointer instructions — visual only; keyboard instructions are below
-  D.bottom = h('div', 'strip bottom', `<span class="roles" lang="en">${identity.primary} · ${identity.secondary}</span><span id="hint"></span>`)
+  D.bottom = h('div', 'strip bottom', `<span class="roles" lang="en">${identity.primary} · ${identity.secondary}</span><span id="cue" aria-hidden="true"></span><span id="hint"></span>`)
   D.bottom.setAttribute('aria-hidden', 'true')
   D.h1 = h('h1', 'sr', `${identity.name} — ${identity.primary} ${TXT.roles.and} ${identity.secondary}, ${identity.location}`)
   D.h1.tabIndex = -1
@@ -1392,7 +1393,7 @@ function buildDOM() {
   D.world.prepend(D.world.querySelector('.wsum'))
   ui.append(D.top, D.main, D.bottom, D.a11y)
   D.aboutBlocks = [...D.detail.querySelectorAll('.ab')]
-  D.hint = $('#hint')
+  D.hint = $('#hint'); D.cue = $('#cue')
   D.lang = D.top.querySelector('[data-locale]')
   D.current = D.work.querySelector('.current')
   D.wtitle = D.current.querySelector('.wtitle'); D.wmeta = D.current.querySelector('.wmeta')
@@ -1563,19 +1564,41 @@ function uiDestination() {
   if (A.mode !== 'index') return 'name'
   return DEST_AT[clamp(A.base, 0, DEST_AT.length - 1)]
 }
-let lastHint = '', lastTone = '', lastTT = '', lastTB = '', lastBg = '', lastWork = '', lastWB = ''
-function hintFor(stop) {
-  const since = performance.now() - A.arrivedAt
-  const H = TXT.hints
-  const quiet = `${identity.city}${H.quietSeparator}${identity.status}`
-  if (A.mode === 'world') return Math.round(A.wp) === 0 && !A.learned.world && since > 3500 ? H.world : ''
+let lastHint = '', lastCue = '', lastTone = '', lastTT = '', lastTB = '', lastBg = '', lastWork = '', lastWB = ''
+// the strip's right end: where the visitor is writing from, and whether he is free — never an instruction now
+function hintFor() {
   if (A.mode !== 'index' || A.aboutOpen) return ''
-  // The hero taught the hold that opened About, and the Lab stop taught the hold that made a room. Neither is true
-  // any more: About is a control on the hero, and the Lab is a route that opens on arrival. A place teaches only
-  // what it still asks for — the two faces and the work field do; the hero and the Lab stop stay quiet.
-  if (stop === STOP.creative || stop === STOP.system) return !A.learned.face && since > 2500 ? H.face : quiet
-  if (stop === STOP.work) return !A.learned.work && since > 2500 ? (TOUCH ? H.workTouch : H.work) : quiet
-  return quiet
+  return `${identity.city}${TXT.hints.quietSeparator}${identity.status}`
+}
+/*
+ * THE ONE HINT SYSTEM (R3, engine/cues.js). A place that asks for a gesture names it in the middle of the bottom
+ * strip, once the visitor has been still there for CUE_IDLE, and only the first time in the session that gesture is
+ * asked for. "Scroll" is asked where the screen looks finished — the hero's first stop and the end of the passage —
+ * and once between them; the faces ask for the hold, the work field for its own gesture. Inside a project nothing is
+ * asked any more: its "scroll" was a place that does not look finished. A hint on screen stays until the visitor
+ * does anything or goes anywhere.
+ */
+function cueAsked(stop) {
+  const H = TXT.hints
+  if (stop === STOP.name && settledAt(STOP.name)) return { name: 'scroll', text: H.scroll }
+  if (LINEFIELD && LF && stop === LFS && settledAt(LFS) && LF.drive.target > 0.9995) return { name: 'scroll', text: H.scroll }
+  if ((stop === STOP.creative || stop === STOP.system) && settledAt(stop)) return { name: 'hold', text: H.face }
+  if (stop === STOP.work && settledAt(STOP.work)) return { name: 'work', text: TOUCH ? H.workTouch : H.work }
+  return null
+}
+function cueFor(stop) {
+  const now = performance.now()
+  const ask = A.mode === 'index' && !A.aboutOpen && !A.busy && !ptr.down ? cueAsked(stop) : null
+  const c = A.cue
+  // one on screen: it stays while its place still asks for it and nothing has been done since it appeared
+  if (c) {
+    if (ask && ask.name === c.name && stop === c.stop && A.lastInput < c.at) return ask.text
+    A.cue = null
+  }
+  if (!ask || cueSeen(ask.name) || now - Math.max(A.arrivedAt, A.lastInput) < CUE_IDLE) return ''
+  cueSpend(ask.name)
+  A.cue = { name: ask.name, stop, at: now }
+  return ask.text
 }
 function stripTones(dom) {
   if (A.mode === 'world' || A.mode === 'exit') return ['media', 'media']
@@ -1674,8 +1697,15 @@ function domUpdate(from, to, front) {
     D.current.classList.toggle('on', k >= 0)
     D.work.querySelectorAll('[data-work]').forEach((b, i) => { b.classList.toggle('active', i === k); b.classList.toggle('visited', A.visited.has(i)); if (i === k) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current') })
   }
-  const hint = hintFor(Math.round(A.p))
+  const hint = hintFor()
   if (hint !== lastHint) { D.hint.textContent = hint; lastHint = hint }
+  const cue = cueFor(Math.round(A.p))
+  if (cue !== lastCue) {
+    // hiding keeps the words, so they fade rather than vanish
+    if (cue) D.cue.textContent = cue
+    D.cue.classList.toggle('on', !!cue); D.bottom.classList.toggle('is-cueing', !!cue)
+    lastCue = cue
+  }
 }
 
 // ─── media ───────────────────────────────────────────────────────────────────
@@ -2238,7 +2268,7 @@ export function setLocale(next) {
   const refocus = focusKey(document.activeElement)   // M4 A11Y
   FR = {}                       // frame blocks carry copy; their geometry does not change, so WORLD textures stand
   buildDOM()
-  lastHint = lastTone = lastTT = lastTB = lastBg = lastWork = lastWB = ''
+  lastHint = lastCue = lastTone = lastTT = lastTB = lastBg = lastWork = lastWB = ''
   mediaShown = ''
   onState.clear()
   layoutDOM()

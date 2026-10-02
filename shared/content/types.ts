@@ -208,14 +208,14 @@ export interface LocaleCopy {
     hintScroll: string; hintCursor: string; hintKeepScrolling: string
   }
   psi: { head: string; mobile: string; desktop: string; labels: [string, string, string, string]; short: [string, string, string, string] }
-  /** the pointer instruction a place shows while it still asks something of the visitor — the hero and the Lab
-   *  stop no longer do (About is a control on the hero; the Lab is a route that opens on arrival) */
+  /** the one instruction a place may show, once per session, in the middle of the bottom strip (engine/cues.js) */
   hints: {
     quietSeparator: string
     face: string
     work: string
     workTouch: string
-    world: string
+    /** where the screen looks finished: the hero's first stop and the end of the Linefield passage */
+    scroll: string
   }
   a11y: {
     plainNav: string; selectedWork: string; labStudies: string; aboutRegion: string; aboutDetail: string; capabilities: string; projectImages: string

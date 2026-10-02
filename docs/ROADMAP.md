@@ -22,7 +22,7 @@ belgedeyse (AUDIT-01, LINEFIELD.md, DEPLOYMENT.md…) burada ona bağlantı veri
 - **Karar bekliyor:** neyin beklendiği yazılı.
 - **Önce inceleme:** mevcut davranış ölçülmeden tasarlanmayacak.
 
-Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24 tamamlandı).
+Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24 tamamlandı; R8 iki kısmı yapıldı, cep kararı bekliyor).
 
 ---
 
@@ -34,7 +34,7 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24 ta
 | R4 | Özel imleç | P2 | Karar verildi (biçim) | R2 |
 | R6 | Lab bench girişleri: okunur boyut, üzerine gelince ön gösterim | P2 | Kısmen: ön gösterimin biçimi bekliyor | — |
 | R7 | Lab'de kaydırma çalışmalar arasında, tıklama içeri | P2 | Önce inceleme | R6 |
-| R8 | Case study: kendi URL'leri, okunur "sonraki iş", başlık arkası | P1 | Karar verildi (2026-10-02); sürüyor (URL'ler yapıldı) | — |
+| R8 | Case study: kendi URL'leri, okunur "sonraki iş", başlık arkası | P1 | Kısmen: cep için yeni karar bekliyor (B AA'dan kaldı) | — |
 | R9 | Koyu zeminlerde satır titreşimi | **P0** (R18 için) | Neden açık; önce ölçüm | — |
 | R10 | Safari'de adın ince kesimle çizilmesi | P1 | Önce gerçek iPhone | R22 |
 | R11 | Yavaş ağda ilk kare (8,9 sn) | P2 | Önce değerlendirme | — |
@@ -127,6 +127,21 @@ Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24 ta
   - Kontroller: R8b denetimi 12/12 (1440, 390, hareketi azaltılmış), R5 ve R8a yeniden; Linefield, `workopen`,
     `proj`, `journey`, `spine`, axe 0, typecheck.
   - **Kalan:** başlığın arkasındaki cep.
+- **Cep (2026-10-02): karar B kontrastta kaldı, uygulanmadı.**
+  - Üç prototip yapıldı (stiller scratchpad'de):
+    - A: bugünkü, satırlar cepte tamamen siliniyor.
+    - B: satırlar %40'a inceliyor.
+    - C: satırlar %65'e inceliyor.
+  - Kullanıcı B'yi seçti. Ama `panelfit.cjs` (kapının kontrolü; her satırı arkasındaki her piksele karşı
+    ölçer) B ile 106 hata verdi: her satırda arka plan piksellerinin %7–14'ü AA'nın altında, en kötüsü 1,97:1.
+    Bugünkü build PASS.
+  - Değişiklik geri alındı; yaması saklandı.
+  - **Seçenekler:**
+    1. A kalsın (AA geçiyor).
+    2. Karma: metnin kendi satır kutularının hemen arkası tamamen boş, cebin geri kalanı B gibi ince satırlı.
+       Satır kutuları DOM'dan ölçülüp karenin boşluk haritasına verilmeli. Orta büyüklükte bir motor işi; AA
+       korunur.
+    3. B ve metnin arkasına proje mürekkebinde yumuşak bir hale (CSS). Ucuz ama ölçülmeli.
 - **Dosyalar:**
   - `engine/c2/main.js`: dünya modu, `nextReg`, `worldFull`, `HOST`
   - `engine/c2/world.js`

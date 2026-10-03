@@ -55,6 +55,18 @@ phase plan, the approval checkpoints and every decision. **Re-read it after any 
    - **No hard cut in either case.**
 6. **EDGE keeps its full stop:** `EDGE.`
 
+## Decisions, 2026-10-03 (Phase B reviewed and approved as it is)
+
+1. **The glow is ON.** The reference's warm atmosphere behind the louvers at the crossing, its warm light sweep and
+   the EDGE word's halo all stay. It is the named constant `CS_GLOW` in `runtime.js`; `?csatmo=0` remains only for
+   comparison.
+2. **The edges' copper stays on R2's tokens as built:** from the mark (#b8622f) up to its night form (#d4875a), not
+   the reference's peach crest.
+3. **The words stay made of the site's rows,** not the reference's solid letters with rules over them.
+4. **The tempo stays as measured:** 5 gestures from Work to the bench. The gesture that leaves Work turns the
+   louvers straight to the band, then come the stops (beside, in front), then the release-and-carry, and **DEPTH is
+   the rest point before the bench**. SURFACE is not a rest point of its own.
+
 ## Phase A: what was found (read-only, at 15da1d5)
 
 - **Today's Work → bench handover is under one frame, but not pixel-identical.**

@@ -5,7 +5,7 @@
  * and the gestures are untouched. Reached only as `?cross=1` on a locale route, in development, in a build where
  * __CROSS__ is true. Modelled on linefield/debug.js, including its once-only mount.
  *
- *   ?csatmo=0|1        without / with the reference's warm glow at the crossing (R14 decision 4; default 1)
+ *   ?csatmo=0|1        without / with the reference's warm glow at the crossing (default: CS_GLOW, on — decided 2026-10-03)
  *   ?steps=1..8        how many gestures carry EDGE around the line (default CS_ORBIT_STEPS = 2)
  *   ?cstempo=step|scroll  one gesture per free part (default), or the reference's continuous scroll
  *   ?csbreak=nomip     calibration: the faces have no mipmaps and no anisotropic filtering, so a louver seen at a
@@ -14,7 +14,7 @@
 import '@fontsource-variable/big-shoulders-display'
 import { createSurface } from '../surface.js'
 import { CS_ORBIT_STEPS, CS_Z0, CS_Z1, bandStops, louverClock } from './slats.js'
-import { createCross } from './runtime.js'
+import { CS_GLOW, createCross } from './runtime.js'
 import { CS_FREE_PX, CS_FREE_RATE, CS_QUIET, CS_STEP_GAP, CS_STEP_TH, createPacer } from './input.js'
 import { FAMILY } from '../states.js'
 
@@ -37,7 +37,8 @@ async function faceReady() {
 
 async function mount() {
   const qs = new URLSearchParams(location.search)
-  const atmo = qs.get('csatmo') !== '0'
+  // the glow is on unless the URL asks for the comparison without it (?csatmo=0)
+  const atmo = qs.has('csatmo') ? qs.get('csatmo') !== '0' : CS_GLOW
   const stepsQ = Number.parseInt(qs.get('steps') ?? '', 10)
   const steps = stepsQ >= 1 && stepsQ <= 8 ? stepsQ : CS_ORBIT_STEPS
   const breakName = qs.get('csbreak')

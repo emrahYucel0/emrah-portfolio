@@ -17,6 +17,9 @@ import { FAMILY } from '../states.js'
 
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v))
 
+/** the warm glow at the crossing — the reference's atmosphere, light and halo. ON: user decision, R14, 2026-10-03 */
+export const CS_GLOW = true
+
 /*
  * THE COPPER. R2's tokens: the mark (#b8622f) on light ground, its night form (#d4875a) on black. The line stands
  * on black at the crossing, so it takes the night form; its glow is the same copper, thinner.
@@ -30,7 +33,7 @@ const CSS = `
 .cs-dom.warm .cs-word{text-shadow:0 0 34px rgba(255,187,108,.28)}
 `
 
-export function createCross(surface, { atmosphere = true, breakName = null } = {}) {
+export function createCross(surface, { atmosphere = CS_GLOW, breakName = null } = {}) {
   const gl = surface.gl
   const mesh = createMesh(gl)
   let V = null, L = null, front = null, back = null, Q = null, count = 0

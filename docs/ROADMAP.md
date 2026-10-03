@@ -194,6 +194,15 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
   - **Durgun hâlde.** Lameller C2'nin kendi karesini veriyor: 1440×900@2'de ön yüz 0 piksel farkla.
   - **Titreşim ölçülmedi.** Kalibre edilen iki ölçü de ayırt etmedi; cihazda değerlendirilecek.
   - **Bayrak kapalı build.** Canlı paketle (`1e663bd`) build kimliği ve zaman damgası dışında bayt bayt aynı.
+- **Karar (2026-10-03, Faz B onayı — olduğu gibi):**
+  1. **Parıltı açık.** Kesit anında demonun sıcak atmosferi, ışık süpürmesi ve EDGE'in halesi kalıyor
+     (`CS_GLOW`).
+  2. **Kenarların bakırı R2 tokenlarında** kalıyor: `#b8622f`'ten `#d4875a`'ya. Demonun şeftali tepesi
+     kullanılmıyor.
+  3. **Sözcükler sitenin satırlarından** yapılıyor.
+  4. **Tempo ölçüldüğü gibi:** İşler → bench 5 jest. İşler'den çıkan jest lamelleri doğrudan banda döndürür; bench'ten
+     önceki durak DEPTH.
+- **Sonraki:** Faz C planı önerildi; başlamadan önce kullanıcı onayı bekleniyor.
 - **Dosyalar:**
   - `engine/c2/main.js`: `startBridge`, `A.mode === 'bridge'`
   - `engine/c2/states.js`

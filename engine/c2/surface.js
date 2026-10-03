@@ -415,7 +415,8 @@ export function createSurface(canvas) {
    * never touched, and what is left of this file behaves exactly as it did before the feature existed — which
    * is the thing the flag-off comparison against `pre-linefield` actually asserts.
    */
-  const VARIANTS_ON = typeof __LINEFIELD__ !== 'undefined' && __LINEFIELD__
+  // (and the same for every other feature that brings a variant: the mechanism exists if any of them is on)
+  const VARIANTS_ON = (typeof __LINEFIELD__ !== 'undefined' && __LINEFIELD__) || (typeof __CROSS__ !== 'undefined' && __CROSS__)
   const ready = new Promise((resolve, reject) => {
     const check = () => {
       if (par && ![prog, cprog].every((p) => gl.getProgramParameter(p, par.COMPLETION_STATUS_KHR))) { requestAnimationFrame(check); return }

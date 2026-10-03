@@ -142,6 +142,57 @@ phase plan, the approval checkpoints and every decision. **Re-read it after any 
    - The full flag-off `run6.sh` gate, asking first if it is expected to take longer than 30 minutes.
 5. **LAN preview:** `nuxt dev --host` with the flag on, on this worktree's own port.
 
+## Phase B: the performance decision (2026-10-03)
+
+### Technique B was built and measured, and it fails
+
+- **What was built.** The louvers were drawn in C2's own fragment shader, as the variant `slats`, in
+  `engine/c2/cross/slats.js`.
+  - The CPU mirrors the demo's CSS-3D transforms exactly. The browser's own bounding rects of the demo's faces
+    match the model to within about 2 px at 50%.
+  - Per pixel, the shader casts the eye's ray into the four louvers a lookup names, meets the nearest visible face
+    or edge, and hands C2's row machinery the material coordinate with its exact gradient.
+  - The look tracks the demo through the whole sweep: `tools/diag/out/cross/sheet-*.png`, made by `csshot.cjs`,
+    `csdemo.cjs` and `cssheet.cjs`.
+- **How it was measured.** `tools/diag/csperf.cjs` against the dev server, headless Chrome.
+  - **The GPU really used:** ANGLE on the **Intel UHD Graphics (D3D11)**. The machine also has an RTX 4050; the
+    harness prints the renderer so that a number from the wrong GPU cannot decide anything.
+  - **The measure that decides:** `EXT_disjoint_timer_query_webgl2`, the GPU's own time for the draw, median per
+    frame.
+  - **The control:** the same state drawn through the base program, an ordinary place on this site.
+
+| size (backing) | control | slats, first build | slats, optimised¹ |
+|---|---|---|---|
+| 1440×900@2 (2160×1350) | 16.0 ms | 43.1 ms | **31.7 ms** |
+| 1920×1080@1 (1920×1080) | 11.4 ms | 30.8 ms | **22.9 ms** |
+| 1920×1080@1.5 (2880×1620) | 25.5 ms | 68.9 ms | **51.1 ms** |
+| 390×844@3 (683×1477) | 5.6 ms | 14.9 ms | 11.1 ms |
+| 390×660@3 (683×1155) | 4.4 ms | 11.8 ms | 8.7 ms |
+
+¹ **What the optimisation did.** Both sides were packed into one double-height state, so the row machinery is asked
+once per pixel instead of twice, and a pixel that no face covers asks it nothing. The base program's text was
+untouched; its names are redirected by the variant.
+
+- **The verdict: FAIL.** The pass criterion was p95 ≤ 16.7 ms and under 1% of frames over 33 ms, at 1440×900 and
+  1920×1080. Even optimised, the slat pass costs about **twice** the control.
+- **The control already misses 60 fps here at 1440×900@2.** No per-pixel addition to C2's shader can meet the
+  criterion on this GPU.
+- **Not trusted:** the `raf` and `sync` rows of the same runs. Other sessions were running on the machine and the
+  control itself moved by up to 70% between runs. The GPU timer is the one that does not move with that.
+- **Decision 1 applies: switch to C, and the user is told.**
+
+### Technique C, as built
+
+Phase A described C as "canvas-2D slat renderer (strips of C2 snapshots)". The idea is kept, but the strips are
+drawn with WebGL, in the same context as C2.
+
+- **The faces.** C2 renders the flat SURFACE and DEPTH states, with its own shader, rows and anti-aliasing, into
+  two textures (mipmapped).
+- **The louvers.** Each louver is a box of quads in perspective, sampling those textures, with a depth buffer for
+  occlusion.
+- **Why WebGL and not canvas-2D:** canvas-2D cannot draw perspective (only affine), and its downscaling has no
+  mipmaps, which is the shimmer risk.
+
 ## Working rules for this worktree
 
 - **Own ports, build folder and gate log:** `SERVE_PORTS`, `BUILD_DIR=../builds/cross-section`,

@@ -19,6 +19,21 @@ import { ICONS, PUBLIC_ROUTES, siteUrl } from './shared/site'
 const OFF = new Set(['0', 'false', 'off', 'no'])
 const LINEFIELD = !OFF.has(String(process.env.NUXT_PUBLIC_LINEFIELD ?? '').toLowerCase())
 
+/**
+ * CROSS SECTION — the Work → Lab passage under development (docs/CROSS-SECTION.md, R14).
+ *
+ * OFF BY DEFAULT, the other way round from Linefield: it is not released. Only an explicit `1`, `true`, `on` or
+ * `yes` turns it on, so no release can carry it by accident.
+ *
+ *   NUXT_PUBLIC_CROSS=1 npm run dev         the debug entry, `/tr?cross=1` (Phase B)
+ *   npm run generate                         the release build, Cross Section OFF and absent
+ *
+ * Off, `__CROSS__` is replaced with `false` at transform time and every Cross Section module sits behind a dynamic
+ * import in a branch that cannot be taken, so the bundler never emits their chunk.
+ */
+const ON = new Set(['1', 'true', 'on', 'yes'])
+const CROSS = ON.has(String(process.env.NUXT_PUBLIC_CROSS ?? '').toLowerCase())
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-09-16',
   devtools: { enabled: false },
@@ -53,7 +68,7 @@ export default defineNuxtConfig({
   // lowers the syntax and makes Nuxt drop the import map on its own.
   vite: {
     build: { target: ['safari15', 'ios15'] },
-    define: { __LINEFIELD__: JSON.stringify(LINEFIELD) },
+    define: { __LINEFIELD__: JSON.stringify(LINEFIELD), __CROSS__: JSON.stringify(CROSS) },
   },
 
   nitro: {

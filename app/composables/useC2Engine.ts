@@ -38,6 +38,7 @@ let active = false
  */
 /** replaced at transform time by the bundler; see the note in nuxt.config.ts */
 declare const __LINEFIELD__: boolean
+declare const __CROSS__: boolean
 
 export const C2_ARRIVE = 'c2Arrive'
 const takeArrival = (): string | null => {
@@ -189,6 +190,12 @@ export function useC2Engine() {
     if (__LINEFIELD__ && import.meta.dev && new URLSearchParams(location.search).has('linefield')) {
       const { mountLinefield } = await import('../../engine/c2/linefield/debug.js')
       await mountLinefield()
+      return
+    }
+    // Cross Section's Phase B entry (docs/CROSS-SECTION.md): the same arrangement, behind its own flag
+    if (__CROSS__ && import.meta.dev && new URLSearchParams(location.search).has('cross')) {
+      const { mountCross } = await import('../../engine/c2/cross/debug.js')
+      await mountCross()
       return
     }
     // A remount — the visitor coming back from the Lab — is not a boot: the runtime never stopped and its visit is

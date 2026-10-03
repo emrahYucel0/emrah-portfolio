@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cross Section — side by side</title>
+<!--
+  CROSS SECTION, SIDE BY SIDE, OFF ONE CLOCK (Phase B review).
+
+  Served by the dev server with the flag on, through Vite's file route, so this page, the reference and the debug
+  entry share one origin and one clock drives both panes:
+
+    http://<host>:<port>/_nuxt/@fs/<repo>/tools/diag/compare/cs-compare.html?view=demo&size=1440x900
+      view=demo   left: the approved reference          right: ours, with the warm glow
+      view=glow   left: ours, with the warm glow        right: ours, without it      (R14 decision 4)
+      size=WxH    each pane's own viewport, scaled to fit
+
+  The reference is read from docs/reference/ and never written to.
+-->
+<style>
+  html,body{margin:0;height:100%;background:#2a2a2a;color:#e7e6e0;font:11px/1.3 ui-monospace,Consolas,monospace}
+  #panes{display:flex;gap:8px;justify-content:center;align-items:flex-start;padding:8px 8px 0}
+  .pane{position:relative;overflow:hidden;background:#000}
+  .pane iframe{border:0;transform-origin:0 0;display:block}
+  .pane b{position:absolute;left:6px;top:4px;z-index:2;font-weight:400;background:rgba(0,0,0,.55);padding:2px 5px}
+  #bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;padding:10px}
+  #bar button{font:inherit;background:#e7e6e0;color:#121212;border:0;padding:6px 9px;cursor:pointer}
+  #s{width:min(520px,60vw);accent-color:#b8622f}
+  #p{min-width:64px;text-align:right;font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<div id="panes"></div>
+<div id="bar">
+  <button data-go="0">0</button><button id="play">PLAY</button><button id="back">BACK</button>
+  <input id="s" type="range" min="0" max="1000" value="0" aria-label="Progress"><span id="p">0%</span>
+  <span id="stops"></span><button data-go="1">1</button>
+</div>
+<script>
+const Q = new URLSearchParams(location.search)
+const view = Q.get('view') === 'glow' ? 'glow' : 'demo'
+const [PW, PH] = (Q.get('size') || '1440x900').split('x').map(Number)
+const here = location.pathname.slice(0, location.pathname.indexOf('/tools/diag/'))
+const DEMO = `${here}/docs/reference/cross-section-v2.html`
+const OURS = (atmo) => `/tr?cross=1&csatmo=${atmo}`
+const panes = view === 'demo'
+  ? [['REFERENCE (approved demo)', DEMO, 'demo'], ['OURS — glow on', OURS(1), 'ours']]
+  : [['OURS — glow on', OURS(1), 'ours'], ['OURS — glow off', OURS(0), 'ours']]
+const scale = Math.min(1, (innerWidth - 24) / 2 / PW, (innerHeight - 70) / PH)
+const host = document.getElementById('panes')
+const frames = panes.map(([label, src, kind]) => {
+  const d = document.createElement('div'); d.className = 'pane'
+  d.style.width = `${Math.round(PW * scale)}px`; d.style.height = `${Math.round(PH * scale)}px`
+  const f = document.createElement('iframe'); f.src = src; f.width = PW; f.height = PH
+  f.style.transform = `scale(${scale})`
+  const b = document.createElement('b'); b.textContent = label
+  d.append(f, b); host.append(d)
+  return { f, kind }
+})
+const ready = ({ f, kind }) => new Promise((r) => {
+  const go = () => {
+    try {
+      const w = f.contentWindow
+      if (kind === 'demo' && w.__demo) { w.document.getElementById('dock').classList.add('hidden'); w.document.getElementById('hint').style.display = 'none'; return r(w) }
+      if (kind === 'ours' && w.__cs && w.__cs.renderer) { w.__cs.dock(false); return r(w) }
+    } catch (e) {}
+    setTimeout(go, 150)
+  }
+  go()
+})
+const Z0 = 0.44, Z1 = 0.56, N = 2
+const stopP = (i) => Z0 + (0.08 + (0.72 * i) / N) * (Z1 - Z0)
+let wins = [], playing = 0, cur = 0
+const S = document.getElementById('s'), P = document.getElementById('p')
+window.__set = (v) => {
+  cur = Math.max(0, Math.min(1, v))
+  wins.forEach((w, k) => { if (frames[k].kind === 'demo') w.__demo.setProgress(cur); else w.__cs.setProgress(cur) })
+  S.value = String(Math.round(cur * 1000)); P.textContent = `${(cur * 100).toFixed(1)}%`
+}
+window.__sweep = (from, to, ms) => new Promise((res) => {
+  const t0 = performance.now(), id = ++playing
+  const s = () => { if (id !== playing) return res(); const k = Math.min(1, (performance.now() - t0) / ms); window.__set(from + (to - from) * k); k < 1 ? requestAnimationFrame(s) : res() }
+  s()
+})
+window.__pair = async () => { wins = await Promise.all(frames.map(ready)); window.__set(0); return true }
+const stops = document.getElementById('stops')
+;['BEHIND', 'BESIDE', 'FRONT'].forEach((t, i) => { const b = document.createElement('button'); b.textContent = t; b.onclick = () => { playing++; window.__set(stopP(i)) }; stops.append(b) })
+document.querySelectorAll('[data-go]').forEach((b) => { b.onclick = () => { playing++; window.__set(Number(b.dataset.go)) } })
+document.getElementById('play').onclick = () => window.__sweep(cur >= 0.999 ? 0 : cur, 1, 7000 * (1 - (cur >= 0.999 ? 0 : cur)))
+document.getElementById('back').onclick = () => window.__sweep(cur, 0, 7000 * cur)
+S.oninput = () => { playing++; window.__set(Number(S.value) / 1000) }
+window.__pair()
+</script>
+</body>
+</html>

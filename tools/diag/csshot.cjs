@@ -16,11 +16,14 @@ const atmo = opt('atmo', '1')
 const tag = opt('tag', `atmo${atmo}`)
 const extra = opt('q', '')
 const OUT = `out/cross/shots/${tag}`
+// (the engine is part of the tag when it is not Chrome)
 const AT = [0, 0.12, 0.25, 0.35, 0.42, 0.44, 0.47, 0.5, 0.53, 0.56, 0.6, 0.7, 0.85, 1]
 
 ;(async () => {
   fs.mkdirSync(OUT, { recursive: true })
-  const b = await pw.chromium.launch({ channel: 'chrome', headless: !args.includes('--headed') })
+  // --engine=webkit: Playwright's WebKit, the nearest thing to Safari on this machine (not a device result)
+  const engine = opt('engine', 'chrome')
+  const b = engine === 'webkit' ? await pw.webkit.launch() : await pw.chromium.launch({ channel: 'chrome', headless: !args.includes('--headed') })
   let bad = 0
   for (const [w, h] of sizes) {
     const ctx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: w < 700 ? 3 : 2 })

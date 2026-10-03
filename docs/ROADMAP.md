@@ -185,6 +185,15 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
      iPhone'da ya da tam kapıda kırılgan çıkarsa yedek: DEPTH opakken rota değişir, kanvas bench'in üstünde
      solar. **İki durumda da sert kesme yok.**
   6. **EDGE noktasını korur:** `EDGE.`
+- **Faz B (2026-10-03, inceleme bekliyor).** Ayrıntı `docs/CROSS-SECTION.md`'de.
+  - **Teknik B kuruldu ve ölçüldü.** Intel UHD'de, iyileştirmeden sonra bile sıradan bir yerin yaklaşık iki katı
+    tutuyor: 1440×900@2'de GPU 31,7 ms, kontrol 16,0 ms. **Geçmedi.** Karar 1 gereği C'ye geçildi.
+  - **Teknik C.** C2'nin kendi düz SURFACE/DEPTH resimleri doku olarak kullanılıyor; lameller perspektifte
+    geometri olarak çiziliyor.
+  - **Maliyet.** 1440×900@2'de GPU 10,5 ms, kontrol 15,9 ms; 1920×1080@1'de 7,9 ms, kontrol 11,4 ms. Geçti.
+  - **Durgun hâlde.** Lameller C2'nin kendi karesini veriyor: 1440×900@2'de ön yüz 0 piksel farkla.
+  - **Titreşim ölçülmedi.** Kalibre edilen iki ölçü de ayırt etmedi; cihazda değerlendirilecek.
+  - **Bayrak kapalı build.** Canlı paketle (`1e663bd`) build kimliği ve zaman damgası dışında bayt bayt aynı.
 - **Dosyalar:**
   - `engine/c2/main.js`: `startBridge`, `A.mode === 'bridge'`
   - `engine/c2/states.js`
@@ -202,6 +211,11 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
 - **Karar:** Bekleyen: göstergenin biçimi; bütçenin rakamları.
 - **Dosyalar:** `engine/c2/main.js` (`SPINE`, `domUpdate`), `engine/c2/style.css`, `tools/diag/journey.cjs`.
 - **Bağımlılık:** R14.
+- **R14'ten (2026-10-03):**
+  - **Hedef.** Cross Section'da İşler → bench yaklaşık 5 jest (kullanıcı kararı).
+  - **Ölçülen.** Faz B'nin hata ayıklama girişinde geçit 4 jest (dönüş, yanında, önünde, bırakıp taşıma); bench'e
+    çıkışla birlikte 5. Mouse çentiği, 60 Hz kaydırma ve 120 Hz fiske aynı sayıyı veriyor (`cstempo.cjs`).
+  - **Kesin aralıklar** cihazda ayarlanacak.
 - **Öncelik:** P2.
 
 ### R17. Yayın

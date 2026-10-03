@@ -192,6 +192,109 @@ drawn with WebGL, in the same context as C2.
   occlusion.
 - **Why WebGL and not canvas-2D:** canvas-2D cannot draw perspective (only affine), and its downscaling has no
   mipmaps, which is the shimmer risk.
+- **The edges are geometry now**, so the scene is drawn with 4× multisampling; C2's own canvas has none.
+- **The louvers follow C2's row grid.** C2 puts its rows at `r·s + 0.31 px` (the neutral physics displacement).
+  The row spacing is chosen so that every louver starts half a row off that grid, which puts each louver's three
+  rows in its middle. The leftover height is one shorter louver at the bottom. Spacing comes out at 6.625 px on
+  desktop and 6.72 px on a phone; the reference uses 7.02 and 6.63.
+
+### Phase B: measured, on technique C
+
+**Performance.** `csperf.cjs`, Intel UHD, GPU timer query, median per frame:
+
+| size (backing) | C | control (an ordinary place) | keeping up (rAF) |
+|---|---|---|---|
+| 1440×900@2 (2160×1350) | **10.5 ms** | 15.9 ms | PASS |
+| 1920×1080@1 | **7.9 ms** | 11.4 ms | PASS |
+| 1920×1080@1.5 (2880×1620) | 17.2 ms | 25.6 ms | FAIL: 20.8 ms p95, against 27.8 for the control |
+| 390×844@3 (683×1477) | **3.6 ms** | 5.6 ms | PASS |
+| 390×660@3 | **2.8 ms** | 4.4 ms | PASS |
+
+C costs less than an ordinary place on this site. The one size that misses 60 fps is the one where the site
+itself misses it by more. That is the backing store's size (R20), not the louvers.
+
+**At rest the louvers are C2's own picture** (`__cs.restCheck`). This is the property the Work seam in Phase C
+stands on.
+
+- **Front side:**
+  - 1440×900@2: **0 pixels differ.**
+  - 390×844@3: 95 pixels differ, at most 1 level of 255.
+  - 1920×1080@1: 3,637 pixels differ, at most 1 level.
+- **Back side, inside the scene:** 0 pixels at 1440, 43 on the phone, and one pixel row at 1920@1, each at most
+  4 levels.
+- **Back side, the strips:** they differ by up to 4 levels. The ground there is the reference's night (#0e0f11),
+  while the DEPTH state's paper is #111215. In Phase C the strips belong to the runtime; the colour has to be
+  chosen there.
+
+**Tempo and the band** (`cstempo.cjs`, wheel streams dispatched in-page on a fixed clock, the step tempo):
+
+- **The passage takes 4 gestures each way** (turn, beside, in front, release and carry), for one mouse notch, a
+  60 Hz swipe and a hard 120 Hz flick alike. With the leave to the bench, Work → bench is **5**, which is the
+  R14 target.
+- **One flick from rest never skips the band.** From SURFACE it stops at the band's first stop (EDGE behind the
+  line): 0 frames out of 416 got past it. From DEPTH it stops at the last stop: 0 out of 444.
+- **Inside the band, one gesture of any shape moves exactly one stop.**
+- **This is the debug entry's pacer.** Phase C replaces its gesture detection with the site's `opensGesture`.
+
+**Shimmer: NOT MEASURED.** Two measures were tried, and both were calibrated against `?csbreak=nomip` (no mipmaps
+and no anisotropic filtering). Neither discriminated, so no claim is made:
+
+- **Mean |Laplacian| over the scene:** broken/real 1.06–1.07. The louvers' outlines and the letters dominate it.
+- **Error against a 4× supersampled ground truth on a crop:** broken/real 1.01–1.18. At the progresses where the
+  faces are steep, the truth itself differs structurally, because C2's row anti-aliasing depends on the dpr.
+
+As with Linefield, whether it shimmers is judged on the device.
+
+**Look against the reference.** `cs-compare.html` and `cspair.cjs` produce stills at 1440×900, 390×844, 390×660
+and 375×560, plus films (`tools/diag/out/cross/film/`). The two runs move together through the whole sweep. The
+differences, all deliberate and all for review:
+
+| | reference | ours |
+|---|---|---|
+| the words | solid letters with fine rules over them | made of the rows, as everywhere on this site |
+| the edges' crest | peach (#ffd0a1) | R2's copper, from #b8622f up to #d4875a |
+| at rest | louvers 1.06× wide; faces 2.25 px in front of the plane | exactly flat, so that rest is C2's own frame |
+
+**Atmosphere, two versions** (`cs-compare.html?view=glow`, and `?csatmo=0|1` on the entry).
+
+- **Glow on:** the reference's warm radial air behind the louvers and its warm light sweep across them, and the
+  EDGE word's warm halo.
+- **Glow off:** none of the warm air, a neutral light sweep, and no halo on the word.
+- **Either way,** the copper line keeps its own copper glow.
+
+**WebKit (Playwright, not a device)** renders every size without errors. It draws SURFACE, EDGE and DEPTH in a
+thin cut rather than 900. That is the same behaviour as the hero name (R10, never confirmed on real Safari), and
+the iPhone settles it.
+
+**Phone landscape (844×390)** gives 25 louvers with rows 3.97 px apart, too fine to carry the words well. It
+needs its own rule in Phase C, as planned.
+
+**Flag off.** The release build (`npm run generate`, `NUXT_PUBLIC_CROSS` unset) was compared with the live
+package `deploy/yucelemrah-1e663bd.zip`, SHA-256 `cd150812ff38b68d…`, as recorded in the deploy log.
+`origin/main` differs from `1e663bd` only in docs.
+
+- **Every JavaScript chunk is byte-identical.**
+- **No file differs** once Nuxt's per-build ID and its prerender timestamp are normalised (0 of 218).
+- **Zero occurrences** of any Cross Section marker. The one hit for `__cs` is Vue's `__cssModules`.
+- **What was therefore not run, and why.** `nonlabred` and the full `run6` gate were not run: the flag-off output
+  is the live site's code. `engine/c2/surface.js` is back to `origin/main`, and the only touched shared files are
+  `nuxt.config.ts` (the define) and `useC2Engine.ts` (the dev-only mount behind `__CROSS__ && import.meta.dev`).
+- **`npx nuxt typecheck`:** clean.
+
+**The LAN preview.** `NUXT_PUBLIC_CROSS=1 npx nuxt dev --port 4960 --host 0.0.0.0`, opened at
+`http://192.168.1.5:4960/tr?cross=1` (add `&csatmo=0` for the version without the glow).
+
+**Harnesses added (Phase B), all writing under `tools/diag/out/cross/`:**
+
+| harness | what it does |
+|---|---|
+| `csshot.cjs` | stills; `--engine=webkit` |
+| `csdemo.cjs` | the reference's stills |
+| `cssheet.cjs` | contact sheets |
+| `csperf.cjs` | cost |
+| `cspair.cjs` with `compare/cs-compare.html` | side by side, and films |
+| `cstempo.cjs` | tempo and the band |
+| `csshimmer.cjs` | the shimmer attempt, kept so it is not repeated |
 
 ## Working rules for this worktree
 

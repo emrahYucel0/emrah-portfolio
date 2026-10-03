@@ -78,7 +78,8 @@ async function mount() {
   const measure = () => {
     V.W = innerWidth; V.H = innerHeight
     V.P = V.W < V.H * 0.8; V.T = V.P && V.W >= 700; V.S = !V.P && V.H < 520
-    V.dpr = Math.min(devicePixelRatio || 1, V.W < 700 ? 1.75 : 1.5)
+    // ?csdpr= overrides the site's cap: only so a harness can render a supersampled ground truth (csshimmer.cjs)
+    V.dpr = Number(qs.get('csdpr')) || Math.min(devicePixelRatio || 1, V.W < 700 ? 1.75 : 1.5)
     V.strip = V.P && !V.T ? 44 : 50
     for (const b of [topbar, bottombar]) b.style.height = `${V.strip}px`
     surface.resize(V.W, V.H, V.dpr)
@@ -216,6 +217,18 @@ async function mount() {
     trace: (on) => { trace = on ? [] : null; return trace },
     traced: () => trace || [],
     play,
+    /** luminance of a css-px rectangle of the canvas, at the backing store's resolution, top row first */
+    crop: (x, y, w, h) => {
+      const d = V.dpr, X = Math.round(x * d), Wd = Math.round(w * d), Hd = Math.round(h * d), Y = canvas.height - Math.round(y * d) - Hd
+      const buf = new Uint8Array(Wd * Hd * 4)
+      gl.readPixels(X, Y, Wd, Hd, gl.RGBA, gl.UNSIGNED_BYTE, buf)
+      // bytes, base64: a supersampled crop is tens of millions of values, too many to hand back as numbers
+      const out = new Uint8Array(Wd * Hd)
+      for (let r = 0; r < Hd; r++) for (let c = 0; c < Wd; c++) { const i = ((Hd - 1 - r) * Wd + c) * 4; out[r * Wd + c] = Math.round(0.299 * buf[i] + 0.587 * buf[i + 1] + 0.114 * buf[i + 2]) }
+      let bin = ''
+      for (let i = 0; i < out.length; i += 0x8000) bin += String.fromCharCode.apply(null, out.subarray(i, i + 0x8000))
+      return { w: Wd, h: Hd, b64: btoa(bin) }
+    },
     frameMs: () => (times.length ? times.reduce((a, b) => a + b, 0) / times.length : 0),
     /*
      * AT REST THE LOUVERS ARE C2'S OWN PICTURE, pixel for pixel — the property the Work seam (Phase C) stands on.

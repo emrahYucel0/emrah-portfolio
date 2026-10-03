@@ -2313,8 +2313,10 @@ function frame(now) {
     IDX[LFS] = LF.at(lfDrawn)
   }
   if (CROSS && CS) {
-    IDX[CXS] = CS.state(A.csLeg)
-    CS.domAt(A.csLeg && A.mode === 'index' && A.base === CXS && Math.abs(A.p - CXS) < 0.04)
+    // standing on the place, it is the visitor's leg by definition; only a jump past it shows it as scenery
+    const leg = A.csLeg || A.base === CXS
+    IDX[CXS] = CS.state(leg)
+    CS.domAt(leg && A.mode === 'index' && A.base === CXS && Math.abs(A.p - CXS) < 0.04)
   }
 
   let from, to, front, overlay = 0
@@ -2508,7 +2510,10 @@ function frame(now) {
     if (csMesh) { if (CS.due) { CS.render(); drawn = true } }
     else if (draw) {
       surface.render(); drawn = true; lastMem = stillMem; lastMemT = now
-      if (CROSS && CS && A.csLeg && from === to && (from === CS.front || from === CS.back)) CS.capture(from === CS.back ? 1 : 0)
+      // kept whenever C2 has drawn this place's own state whole — which it only does when the place is the visitor's leg
+      // (standing on it, or just turning back off it into Work: that frame is the landing on SURFACE)
+      if (CROSS && CS && from === to && (from === CS.front || from === CS.back)) CS.capture(from === CS.back ? 1 : 0)
+      else if (CROSS && CS && A.base === CXS) CS.check('c2:render on the place')
     }
     lastSig = csMesh ? '' : sig; A.cleared = false
     noteFrame(drawn, et)
@@ -2675,6 +2680,8 @@ window.__lab = { CONTACT_STOP, A, V, ptr, phys, surface, works, STOP, SPINE,
     cs: () => CS,
     csState: () => (CS ? { ...CS.probe(), leg: A.csLeg, stop: CXS, moving: CS.moving } : null),
     csSet: (i) => { if (!CS) return; CS.set(i); lastSig = '' },
+    csBreak: () => { CS?.breakOff(); lastSig = '' },
+    csGLErrors: () => window.__csGLErrors || [],
     // the seam audit (place.js): landings compared as they happen, and the louvers at an end against C2's frame there
     csAudit: (on) => CS?.audit(on),
     csLandings: () => CS?.landings(),

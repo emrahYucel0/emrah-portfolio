@@ -15,6 +15,7 @@
 // Every measure has its CONTROL: the front state through the BASE program at the same size — an ordinary place on
 // this site. The slats' cost is the difference.
 const pw = require('playwright')
+const { watch } = require('./consolewatch.cjs')
 const fs = require('node:fs')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const args = process.argv.slice(2)
@@ -29,6 +30,7 @@ const stat = (a) => {
   const q = (f) => s[Math.min(s.length - 1, Math.floor(s.length * f))]
   return { n: s.length, med: +q(0.5).toFixed(2), p95: +q(0.95).toFixed(2), max: +s[s.length - 1].toFixed(2), over33: +((s.filter((v) => v > 33.4).length / s.length) * 100).toFixed(2) }
 }
+const row0 = (S) => `${S.w}x${S.h}@${S.dpr}`
 const f = (x) => (x ? `${x.med.toFixed(2)} / ${x.p95.toFixed(2)}` : 'n/a').padEnd(14)
 
 ;(async () => {
@@ -39,6 +41,7 @@ const f = (x) => (x ? `${x.med.toFixed(2)} / ${x.p95.toFixed(2)}` : 'n/a').padEn
   for (const S of SIZES) {
     const ctx = await b.newContext({ viewport: { width: S.w, height: S.h }, deviceScaleFactor: S.dpr })
     const p = await ctx.newPage()
+    const W = watch(p, row0(S))
     await p.goto(`http://127.0.0.1:${port}/tr?cross=1`, { waitUntil: 'load', timeout: 180000 })
     await p.waitForFunction(() => window.__cs && window.__cs.renderer, null, { timeout: 120000 })
     await p.evaluate(() => document.fonts.ready)
@@ -66,6 +69,8 @@ const f = (x) => (x ? `${x.med.toFixed(2)} / ${x.p95.toFixed(2)}` : 'n/a').padEn
     console.log(`      sync  control ${f(row.syncCtl)} sweep ${f(row.syncSweep)} band ${f(row.syncBand)}`)
     console.log(`      gpu   control ${f(row.gpuCtl)} sweep ${f(row.gpuSweep)} (${row.gpuNote})`)
     console.log(`      raf   control ${f(row.rafCtl)} sweep ${f(row.rafSweep)} band ${f(row.rafBand)}  >33ms ${row.rafSweep.over33}% / ${row.rafBand.over33}%   ${row.pass ? 'PASS' : 'FAIL'}`)
+    const bad = await W.verdict(p)
+    if (bad.length) { process.exitCode = 1; console.log(`      FAIL console (${bad.length}): ${bad[0]}`) }
     await ctx.close()
   }
   await b.close()

@@ -15,11 +15,14 @@
 //
 // Streams are dispatched from inside the page on a fixed clock (tools/diag/cstempo.cjs has the shapes).
 const pw = require('playwright')
+const { watch } = require('./consolewatch.cjs')
 const args = process.argv.slice(2)
 const port = args.find((a) => /^\d+$/.test(a)) || '4960'
 const opt = (k, d) => { const a = args.find((x) => x.startsWith(`--${k}=`)); return a ? a.slice(k.length + 3) : d }
 const engine = opt('engine', 'chrome')
 const only = opt('only', '').split(',').filter(Boolean)
+// e.g. --q=csbreak=leakgl: the calibration break that reintroduces the GL-state leak (must FAIL)
+const Q = opt('q', '')
 const want = (s) => !only.length || only.includes(s.toLowerCase())
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 let fails = 0
@@ -28,9 +31,9 @@ const check = (ok, msg) => { console.log(`   ${ok ? 'ok  ' : 'FAIL'} ${msg}`); i
 async function open(b, w = 1440, h = 900, extra = {}) {
   const ctx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: w < 700 ? 3 : 2, ...extra })
   const p = await ctx.newPage()
-  p.__errs = []
-  p.on('pageerror', (e) => p.__errs.push(e.message))
-  await p.goto(`http://127.0.0.1:${port}/tr`, { waitUntil: 'load', timeout: 180000 })
+  // every console error, every WebGL warning, every page error, and the runtime's own GL record (consolewatch.cjs)
+  p.__watch = watch(p, `${w}x${h}`)
+  await p.goto(`http://127.0.0.1:${port}/tr${Q ? `?${Q}` : ''}`, { waitUntil: 'load', timeout: 180000 })
   await p.waitForFunction(() => window.__lab && window.__lab.A.mode === 'index' && window.__lab.csState, null, { timeout: 120000 })
   await sleep(1000)
   await p.evaluate(() => {
@@ -86,6 +89,12 @@ async function toLastWork(p) {
 }
 // every section arrives at the place for itself, then holds it at the position it is about
 async function atCross(p, x) {
+  // the runtime owns the screen only on the index: a section that left for the Lab comes back first
+  if (await p.evaluate(() => location.pathname.includes('/lab'))) {
+    await p.goto(`http://127.0.0.1:${port}/tr${Q ? `?${Q}` : ''}`, { waitUntil: 'load', timeout: 180000 })
+    await p.waitForFunction(() => window.__lab && window.__lab.A.mode === 'index' && window.__lab.csState, null, { timeout: 120000 })
+    await sleep(800)
+  }
   const STOP = await p.evaluate(() => window.__lab.STOP)
   const here = await p.evaluate(() => window.__lab.A.base)
   if (here !== STOP.cross) { await p.evaluate((s) => window.__lab.go(s.cross), STOP); await sleep(2800); await settle(p, 300) }
@@ -151,6 +160,24 @@ const gest = (p, shape, sign) => p.evaluate(([s, g]) => window.__gest(s, g), [sh
     const c = (await st(p)).x
     check(a === 1 && b2 === 2 && c === 1, `ArrowDown then ArrowUp: ${a} → ${b2} → ${c}`)
   }
+  if (want('resize')) {
+    console.log('\n RESIZE')
+    await atCross(p, 2)
+    await p.setViewportSize({ width: 1280, height: 800 })
+    await sleep(900)
+    await p.keyboard.press('ArrowDown'); await sleep(1400); await settle(p, 400)
+    const s = await st(p)
+    check(s.x === 3 && s.valid[0] && s.valid[1], `a resize in the band, then a gesture: both faces hold a frame again and the louvers go on (x ${s.x}, valid ${s.valid})`)
+    await p.setViewportSize({ width: 1440, height: 900 }); await sleep(900)
+  }
+  if (want('fallback')) {
+    console.log('\n FALLBACK')
+    await atCross(p, 1)
+    await p.evaluate(() => window.__lab.csBreak())
+    await p.keyboard.press('ArrowDown'); await sleep(120)
+    const s = await st(p)
+    check(s.broken && s.x === 2 && s.p === s.target, `with the louvers switched off, a gesture still moves one position and shows it at once, as a cut (broken ${s.broken}, x ${s.x}, p ${s.p})`)
+  }
   if (want('header')) {
     console.log('\n HEADER')
     await toLastWork(p)
@@ -161,7 +188,8 @@ const gest = (p, shape, sign) => p.evaluate(([s, g]) => window.__gest(s, g), [sh
     const path = await p.evaluate(() => location.pathname)
     check(T && !T.leg && T.mesh === 0 && T.wordVis === 0 && path.includes('/lab'), `the strip's LAB from Work crosses the place as scenery and opens the bench (leg ${T?.leg}, louver frames ${T?.mesh}, EDGE frames ${T?.wordVis}, ${path})`)
   }
-  check(p.__errs.length === 0, `no page errors (${p.__errs.length})${p.__errs.length ? ': ' + p.__errs[0].slice(0, 160) : ''}`)
+  const v1 = await p.__watch.verdict(p)
+  check(v1.length === 0, `console clean: no console error, no WebGL warning, no page error, no GL-check record (${v1.length})${v1.length ? '\n        ' + v1.slice(0, 6).join('\n        ') : ''}`)
   await p.context().close()
 
   if (want('touch') && engine === 'chrome') {
@@ -182,7 +210,8 @@ const gest = (p, shape, sign) => p.evaluate(([s, g]) => window.__gest(s, g), [sh
     await swipe(700, 150, 120); await sleep(1300); await settle(q, 300)
     const x2 = (await st(q)).x
     check(x0 === 1 && x1 === 2 && x2 === 3, `a slow swipe, then a long fast one: one position each (${x0} → ${x1} → ${x2})`)
-    check(q.__errs.length === 0, `no page errors on the phone (${q.__errs.length})`)
+    const v2 = await q.__watch.verdict(q)
+    check(v2.length === 0, `console clean on the phone (${v2.length})${v2.length ? '\n        ' + v2.slice(0, 6).join('\n        ') : ''}`)
     await q.context().close()
   }
   await b.close()

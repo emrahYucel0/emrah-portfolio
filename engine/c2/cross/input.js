@@ -79,7 +79,13 @@ export function createPacer(onFrame, { steps = 2, tempo = 'step' } = {}) {
 
   function tick(now) {
     raf = 0
-    const dt = Math.min(0.05, (now - last) / 1000); last = now
+    /*
+     * NEVER A NEGATIVE STEP OF TIME. A frame's timestamp is when the frame BEGAN; the clock was being reset to
+     * performance.now() at the END of the previous tick, which is later whenever a tick runs long — and a negative dt
+     * turns the band's easing round, so the louvers swung about a stop instead of settling on it (found 2026-10-03,
+     * when a slower frame made the swing large enough to keep a harness waiting for ever).
+     */
+    const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now
     const target = stepIdx >= 0 ? pOf(ZS[stepIdx]) : freeP(raw)
     const inBand = disp > CS_Z0 - 0.005 && disp < CS_Z1 + 0.005
     const step = inBand && stepIdx >= 0
@@ -89,7 +95,8 @@ export function createPacer(onFrame, { steps = 2, tempo = 'step' } = {}) {
     disp = clamp(disp + step)
     if (Math.abs(disp - target) < 1e-5) disp = target
     if (disp !== before) onFrame(disp)
-    if (disp !== target) kick()
+    // the chain carries on on frame timestamps alone; only a pacer starting from rest takes the wall clock
+    if (disp !== target && !raf) raf = requestAnimationFrame(tick)
   }
   const kick = () => { if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick) } }
 

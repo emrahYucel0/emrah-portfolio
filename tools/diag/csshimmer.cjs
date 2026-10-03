@@ -17,6 +17,7 @@
 // What it cannot say: shimmer is motion and this is a still. It says the frame is not aliased; whether it boils
 // between frames is judged on the device.
 const pw = require('playwright')
+const { watch } = require('./consolewatch.cjs')
 const args = process.argv.slice(2)
 const port = args.find((a) => /^\d+$/.test(a)) || '4960'
 const sizes = args.filter((a) => /^\d+@[\d.]+$/.test(a)).map((s) => { const [w, d] = s.split('@').map(Number); return { w, h: w < 700 ? 844 : 900, dpr: d } })
@@ -27,6 +28,7 @@ const AT = [0.34, 0.38, 0.41, 0.43, 0.58, 0.61, 0.66]
 async function crops(b, S, q, dpr) {
   const ctx = await b.newContext({ viewport: { width: S.w, height: S.h }, deviceScaleFactor: 1 })
   const p = await ctx.newPage()
+  const W = watch(p, `shimmer ${S.w}@${dpr}`)
   await p.goto(`http://127.0.0.1:${port}/tr?cross=1&csatmo=0&csdpr=${dpr}${q}`, { waitUntil: 'load', timeout: 180000 })
   await p.waitForFunction(() => window.__cs && window.__cs.renderer, null, { timeout: 120000 })
   await p.evaluate(() => document.fonts.ready)
@@ -37,6 +39,8 @@ async function crops(b, S, q, dpr) {
     const c = await p.evaluate(([x, r]) => { window.__cs.setProgress(x); return window.__cs.crop(r.x, r.y, r.w, r.h) }, [v, box])
     out.push({ w: c.w, h: c.h, px: Buffer.from(c.b64, 'base64') })
   }
+  const bad = await W.verdict(p)
+  if (bad.length) { process.exitCode = 1; console.log(`   FAIL console (${bad.length}): ${bad[0]}`) }
   await ctx.close()
   return out
 }

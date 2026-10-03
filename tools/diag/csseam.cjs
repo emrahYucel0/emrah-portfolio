@@ -17,6 +17,7 @@
 // Pixel deltas: luminance (0.299/0.587/0.114) over the area between the strips, "changed" = more than 8 levels.
 // Writes tools/diag/out/cross/seam/ (and with --film, .webm recordings to tools/diag/out/cross/film/).
 const pw = require('playwright')
+const { watch } = require('./consolewatch.cjs')
 const fs = require('node:fs')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const args = process.argv.slice(2)
@@ -24,6 +25,7 @@ const port = args.find((a) => /^\d+$/.test(a)) || '4960'
 const opt = (k, d) => { const a = args.find((x) => x.startsWith(`--${k}=`)); return a ? a.slice(k.length + 3) : d }
 const engine = opt('engine', 'chrome')
 const FILM = args.includes('--film')
+const Q = opt('q', '')
 const sizes = args.filter((a) => /^\d+x\d+@[\d.]+$/.test(a)).map((s) => { const [wh, d] = s.split('@'); const [w, h] = wh.split('x').map(Number); return { w, h, dpr: Number(d) } })
 if (!sizes.length) sizes.push({ w: 1440, h: 900, dpr: 2 }, { w: 390, h: 844, dpr: 3 })
 const OUT = 'out/cross/seam'
@@ -59,9 +61,8 @@ function lumaDiff(a, b, w, h, y0, y1) {
     const extra = FILM ? { recordVideo: { dir: 'out/cross/film/tmp', size: { width: S.w, height: S.h } } } : {}
     const ctx = await b.newContext({ viewport: { width: S.w, height: S.h }, deviceScaleFactor: S.dpr, ...extra })
     const p = await ctx.newPage()
-    const errs = []
-    p.on('pageerror', (e) => errs.push(e.message))
-    await p.goto(`http://127.0.0.1:${port}/tr`, { waitUntil: 'load', timeout: 180000 })
+    const W = watch(p, tag)
+    await p.goto(`http://127.0.0.1:${port}/tr${Q ? `?${Q}` : ''}`, { waitUntil: 'load', timeout: 180000 })
     await p.waitForFunction(() => window.__lab && window.__lab.A.mode === 'index' && window.__lab.csState, null, { timeout: 120000 })
     await sleep(1200)
     const STOP = await p.evaluate(() => window.__lab.STOP)
@@ -138,6 +139,7 @@ function lumaDiff(a, b, w, h, y0, y1) {
     const idSurface = await p.evaluate(() => window.__lab.csIdentity())
     const landings = await p.evaluate(() => window.__lab.csLandings())
     const log = await p.evaluate(() => window.__csLog)
+    const consoleBad = await W.verdict(p)
     await ctx.close()
     if (FILM) {
       const vid = await p.video().path()
@@ -180,7 +182,7 @@ function lumaDiff(a, b, w, h, y0, y1) {
       console.log(`      the landing on DEPTH:   ${landing ? `${landing.changed} px (mean ${landing.mean.toFixed(2)})` : 'not caught between two screencast frames'}`)
       check(blank === 0, `no blank frame in the path (${blank})`)
     }
-    check(errs.length === 0, `no page errors (${errs.length})${errs.length ? ': ' + errs[0].slice(0, 160) : ''}`)
+    check(consoleBad.length === 0, `console clean: no console error, no WebGL warning, no page error, no GL-check record (${consoleBad.length})${consoleBad.length ? '\n        ' + consoleBad.slice(0, 6).join('\n        ') : ''}`)
     fs.writeFileSync(`${OUT}/${tag}.json`, JSON.stringify({ floorWork, floorDepth, controlTravel, idDepth, idSurface, landings, atDepth, backAt }, null, 2))
   }
   await b.close()

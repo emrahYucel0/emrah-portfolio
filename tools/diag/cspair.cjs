@@ -6,6 +6,7 @@
 // and the debug entry on one origin. Writes to tools/diag/out/cross/pair/<view>/ and, with --film, .webm recordings
 // of a forward and a backward sweep to tools/diag/out/cross/film/.
 const pw = require('playwright')
+const { watch } = require('./consolewatch.cjs')
 const fs = require('node:fs')
 const path = require('node:path')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -29,6 +30,7 @@ const AT = [0, 0.2, 0.35, 0.42, 0.44 + 0.08 * 0.12, 0.44 + 0.44 * 0.12, 0.44 + 0
     const extra = FILM ? { recordVideo: { dir: 'out/cross/film/tmp', size: { width: Math.min(vw, 1920), height: Math.round(vh * Math.min(1, 1920 / vw)) } } } : {}
     const ctx = await b.newContext({ viewport: { width: vw, height: vh }, deviceScaleFactor: 1, ...extra })
     const p = await ctx.newPage()
+    const W = watch(p, `${w}x${h}`)
     await p.goto(`${PAGE}?view=${view}&size=${w}x${h}`, { waitUntil: 'load', timeout: 180000 })
     await p.waitForFunction(() => window.__pair, null, { timeout: 60000 })
     await p.evaluate(() => window.__pair())
@@ -43,6 +45,8 @@ const AT = [0, 0.2, 0.35, 0.42, 0.44 + 0.08 * 0.12, 0.44 + 0.44 * 0.12, 0.44 + 0
       await p.evaluate(() => window.__sweep(0, 1, 8000)); await sleep(700)
       await p.evaluate(() => window.__sweep(1, 0, 6000)); await sleep(500)
     }
+    const bad = await W.verdict(p)
+    if (bad.length) { process.exitCode = 1; console.log(`  FAIL console (${bad.length}): ${bad[0]}`) }
     await ctx.close()
     if (FILM) {
       const vid = await p.video().path()

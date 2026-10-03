@@ -22,6 +22,7 @@
  * Imported only where __CROSS__ is true.
  */
 import { CS_THICK } from './slats.js'
+import { saveGL } from './glstate.js'
 
 const HALF = CS_THICK / 2
 
@@ -108,7 +109,14 @@ void main() {
   }
 }`
 
-export function createMesh(gl) {
+// the resolved frame onto the canvas, texel for texel, by an ordinary draw call (see draw())
+const CP_FS = `#version 300 es
+precision highp float;
+uniform sampler2D uSrc;
+out vec4 o;
+void main() { o = texelFetch(uSrc, ivec2(gl_FragCoord.xy), 0); }`
+
+export function createMesh(gl, { leak = false } = {}) {
   const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s }
   const link = (vs, fs, attrs) => {
     const p = gl.createProgram()
@@ -121,9 +129,11 @@ export function createMesh(gl) {
   }
   const bg = link(BG_VS, BG_FS, ['aPos'])
   const lv = link(LV_VS, LV_FS, ['aPos', 'aAttr', 'aEdge'])
+  const cp = link(BG_VS, CP_FS, ['aPos'])
   const aniso = gl.getExtension('EXT_texture_filter_anisotropic')
 
   // vertex arrays of our own: C2's attribute 0 lives in the default vertex array and is never touched
+  const restoreInit = saveGL(gl)
   const bgVao = gl.createVertexArray()
   gl.bindVertexArray(bgVao)
   const bgBuf = gl.createBuffer()
@@ -138,18 +148,19 @@ export function createMesh(gl) {
   gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, STRIDE * 4, 0)
   gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 4, gl.FLOAT, false, STRIDE * 4, 12)
   gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 2, gl.FLOAT, false, STRIDE * 4, 28)
-  gl.bindVertexArray(null)
-  gl.bindBuffer(gl.ARRAY_BUFFER, null)
+  restoreInit()
   let verts = new Float32Array(0)
 
   let faces = [null, null]       // the two face textures
-  let msFbo = null, msColor = null, msDepth = null, size = [0, 0]
+  let msFbo = null, msColor = null, msDepth = null, size = [0, 0], rsFbo = null, rsTex = null
   const samples = Math.min(4, gl.getParameter(gl.MAX_SAMPLES) || 0)
 
   const targets = (w, h) => {
     if (size[0] === w && size[1] === h && msFbo) return
     for (const r of [msColor, msDepth]) if (r) gl.deleteRenderbuffer(r)
     if (msFbo) gl.deleteFramebuffer(msFbo)
+    if (rsFbo) gl.deleteFramebuffer(rsFbo)
+    if (rsTex) gl.deleteTexture(rsTex)
     msFbo = gl.createFramebuffer()
     gl.bindFramebuffer(gl.FRAMEBUFFER, msFbo)
     msColor = gl.createRenderbuffer()
@@ -160,8 +171,15 @@ export function createMesh(gl) {
     gl.bindRenderbuffer(gl.RENDERBUFFER, msDepth)
     gl.renderbufferStorageMultisample(gl.RENDERBUFFER, samples, gl.DEPTH_COMPONENT24, w, h)
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, msDepth)
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null)
-    gl.bindRenderbuffer(gl.RENDERBUFFER, null)
+    // the samples are resolved into this texture, never straight onto the canvas (see draw())
+    rsTex = gl.createTexture()
+    gl.bindTexture(gl.TEXTURE_2D, rsTex)
+    gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, w, h)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+    rsFbo = gl.createFramebuffer()
+    gl.bindFramebuffer(gl.FRAMEBUFFER, rsFbo)
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, rsTex, 0)
     size = [w, h]
   }
 
@@ -205,13 +223,14 @@ export function createMesh(gl) {
 
   return {
     samples,
-    read(i) { return faces[i] ? readTex(faces[i], sizes[i][0], sizes[i][1]) : null },
-    readCanvas() { const w = gl.drawingBufferWidth, h = gl.drawingBufferHeight, out = new Uint8Array(w * h * 4); gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, out); return out },
+    read(i) { if (!faces[i]) return null; const r = saveGL(gl); const out = readTex(faces[i], sizes[i][0], sizes[i][1]); r(); return out },
+    readCanvas() { const r = saveGL(gl); const w = gl.drawingBufferWidth, h = gl.drawingBufferHeight, out = new Uint8Array(w * h * 4); gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.pixelStorei(gl.PACK_ALIGNMENT, 4); gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, out); r(); return out },
     /**
      * Have C2 draw a face. `draw` renders one frame into whatever framebuffer is bound; the texture it leaves is
      * the face, at the canvas's own resolution, with mipmaps for when it is seen at a slant.
      */
     face(i, w, h, draw, { mips = true } = {}) {
+      const r = saveGL(gl)
       const t = alloc(i, w, h)
       const fbo = gl.createFramebuffer()
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo)
@@ -220,24 +239,28 @@ export function createMesh(gl) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, null)
       gl.deleteFramebuffer(fbo)
       finish(t, mips)
+      r()
     },
     /**
      * THE FRAME ON THE CANVAS, kept as a face: copied out of the drawing buffer right after C2 has drawn it, before
      * the browser takes the buffer away. The louvers then begin from exactly what the visitor was looking at.
      */
     capture(i) {
+      const r = saveGL(gl)
       const w = gl.drawingBufferWidth, h = gl.drawingBufferHeight
       const t = alloc(i, w, h)
       gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null)
       gl.bindTexture(gl.TEXTURE_2D, t)
       gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 0, 0, w, h)
       finish(t, true)
+      r()
     },
     /**
      * Band k of n of a face, drawn by C2 into the face's texture: a full C2 frame costs as much as an ordinary place
      * does, so the face that is still turned away is drawn a third at a time instead of all at once.
      */
     band(i, k, n, draw) {
+      const r = saveGL(gl)
       const w = gl.drawingBufferWidth, h = gl.drawingBufferHeight
       const t = alloc(i, w, h)
       const fbo = gl.createFramebuffer()
@@ -251,6 +274,7 @@ export function createMesh(gl) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, null)
       gl.deleteFramebuffer(fbo)
       if (k === n - 1) finish(t, true)
+      r()
     },
     /**
      * The quads for this pose: per louver, the face the eye can see and the edge it can see. Corners are taken
@@ -303,6 +327,7 @@ export function createMesh(gl) {
     draw(V, Q, count, look) {
       // the canvas's own size: on the site it is the composed size times the dpr AND the large-screen scale
       // and the projection maps CSS px to device px the same way C2 does: by its dpr, over the backing's own extent
+      const restore = saveGL(gl)
       const bw = gl.drawingBufferWidth, bh = gl.drawingBufferHeight, r = V.dpr * (V.u || 1)
       targets(bw, bh)
       gl.bindFramebuffer(gl.FRAMEBUFFER, msFbo)
@@ -341,14 +366,24 @@ export function createMesh(gl) {
         gl.disable(gl.BLEND)
       }
       gl.disable(gl.SCISSOR_TEST)
-      gl.bindVertexArray(null)
-      gl.bindBuffer(gl.ARRAY_BUFFER, null)
-      // resolve the samples onto the canvas
+      /*
+       * THE SAMPLES ARE RESOLVED INTO A TEXTURE, AND THE TEXTURE IS DRAWN ONTO THE CANVAS. Not blitted straight onto
+       * the canvas: a blit to the default framebuffer depends on its format matching, which the page does not choose
+       * (the browser does — and may change it for the display), and it is not a draw call. This way the canvas only
+       * ever receives an ordinary draw, the same kind C2 itself does.
+       */
       gl.bindFramebuffer(gl.READ_FRAMEBUFFER, msFbo)
-      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null)
+      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, rsFbo)
       gl.blitFramebuffer(0, 0, bw, bh, 0, 0, bw, bh, gl.COLOR_BUFFER_BIT, gl.NEAREST)
       gl.bindFramebuffer(gl.FRAMEBUFFER, null)
-      gl.activeTexture(gl.TEXTURE0)
+      gl.viewport(0, 0, bw, bh)
+      gl.useProgram(cp.p)
+      gl.bindVertexArray(bgVao)
+      gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, rsTex); gl.uniform1i(cp.u('uSrc'), 2)
+      gl.drawArrays(gl.TRIANGLES, 0, 3)
+      // (the calibration break `leakgl` leaves this pass's program and the rest of its state bound — the fault a user
+      // found on 2026-10-03 — so the harnesses can be shown to fail on it)
+      if (!leak) restore()
     },
   }
 }

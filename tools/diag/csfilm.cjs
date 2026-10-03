@@ -6,6 +6,7 @@
 // --keys). Playwright's recorder runs at about 25 fps, so the film shows the path, not the frame pacing — the frame-
 // level evidence is csseam.cjs. Writes tools/diag/out/cross/film/path-<WxH>.webm.
 const pw = require('playwright')
+const { watch } = require('./consolewatch.cjs')
 const fs = require('node:fs')
 const args = process.argv.slice(2)
 const port = args.find((a) => /^\d+$/.test(a)) || '4960'
@@ -20,6 +21,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
   for (const [w, h] of sizes) {
     const ctx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: w < 700 ? 3 : 2, recordVideo: { dir: 'out/cross/film/tmp', size: { width: w, height: h } } })
     const p = await ctx.newPage()
+    const W = watch(p, `${w}x${h}`)
     await p.goto(`http://127.0.0.1:${port}/tr`, { waitUntil: 'load', timeout: 180000 })
     await p.waitForFunction(() => window.__lab && window.__lab.A.mode === 'index' && window.__lab.csState, null, { timeout: 120000 })
     await sleep(800)
@@ -40,6 +42,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
     await step(-1); await sleep(1800)
     await step(-1); await sleep(1800)
     await step(-1); await sleep(3200)
+    const bad = await W.verdict(p)
+    if (bad.length) { process.exitCode = 1; console.log(`  FAIL console (${bad.length}):\n    ${bad.slice(0, 6).join('\n    ')}`) } else console.log('  console clean')
     await ctx.close()
     const dest = `out/cross/film/path-${w}x${h}.webm`
     fs.renameSync(await p.video().path(), dest)

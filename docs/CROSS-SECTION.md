@@ -414,6 +414,109 @@ and back, at 1440×900, 390×844 and 375×560.
 - **C4:** reduced motion as cuts with the EDGE still, the landscape rule, and R10 by the iPhone's answer.
 - **C5:** the remaining harness updates and the full gate.
 
+### C2 not approved: the scene was not drawn on the user's machine (2026-10-03)
+
+**Reported.** On desktop Chrome on Windows, Intel GPU:
+- the logic advanced (five gestures, then the Lab), but nothing turned;
+- the band stayed flat SURFACE, and DEPTH at rest was an empty cream field;
+- the console filled with `WebGL: INVALID_OPERATION: uniform3f: location is not from the associated program`
+  (`surface.js:583`, from `main.js`'s frame).
+
+**Found.**
+1. **The GL state leak, reproduced exactly** in headed Chrome on this machine: 260 messages, until Chrome stops
+   reporting.
+   - The louver pass left its own program bound.
+   - On the next frame C2's `phys()` writes `uGrid` without binding first, and the write was refused. This is the
+     same class of fault Linefield met in `surface.use()`.
+2. **A wait with no end.** The louvers leave an end only once C2's frame of that end has been kept.
+   - That copy was conditional on the place being "the end of the visitor's leg".
+   - If it was never kept, the louvers stayed parked at the end while the gestures went on counting.
+   - The screen then showed the wordless scenery state: an empty cream field.
+
+   This matches every symptom reported. The empty picture itself was **not reproduced** here: on this machine,
+   headed and headless, the louvers drew despite the warnings. The wait has been removed regardless (below).
+3. **A bug in the debug scene's pacer, older than this.** It reset its clock at the END of a tick while a frame's
+   timestamp is its START.
+   - A slow tick then gave a negative `dt`, and the band's easing swung about a stop instead of settling.
+   - The extra state saving made the swing large enough to keep `cstempo.cjs` waiting until it was killed.
+   - The runtime's own clock already clamps at 0; only the debug pacer was affected.
+
+**Fixed.**
+- **`engine/c2/cross/glstate.js`: every pass saves and restores the state C2 relies on:**
+  - program, vertex array and array buffer;
+  - draw and read framebuffers, renderbuffer, viewport and scissor;
+  - blend, depth, cull and stencil switches, blend functions and equations;
+  - depth function and mask, colour mask, clear values;
+  - pixel-store settings;
+  - the active unit and the 2D binding of units 0–8.
+
+  This covers the louver pass, the copy of C2's frame, each band, the debug faces, the harness readbacks, and even
+  creating the mesh.
+- **The louver frame reaches the canvas by an ordinary draw.** The samples are resolved into a texture, and a copy
+  pass draws it; there is no blit to the default framebuffer, whose format the browser chooses.
+- **Nothing waits for ever.**
+  - On the place, it is the visitor's leg by definition: the state, the DOM and the copy no longer depend on how the
+    visitor arrived.
+  - A face that has not been kept within 2 frames is drawn by C2 directly.
+  - A face lost to a resize is redrawn before it is shown.
+- **In development** every pass is followed by `gl.getError()`.
+  - The first error of each pass is reported by NAME and PASS in the console and in a red banner, and every error is
+    kept on `window.__csGLErrors`.
+  - Errors already pending when a pass begins are reported as "before" it, so a leak elsewhere is still named.
+- **In production** the first louver frame is checked once. On any error the louvers are switched off for the visit,
+  and the place shows its positions as cuts, never a frozen picture.
+- **The debug pacer** re-arms on frame timestamps and never takes a negative step of time.
+
+**Why the harnesses did not see it, and what changed** (`tools/diag/consolewatch.cjs`):
+- **`cross.cjs` and `csseam.cjs` listened only for page errors.** A WebGL error is never a page error: Chrome reports
+  it as a console warning, and the page carries on.
+- **The harnesses that did listen to the console** (`csshot`, `csperf`, `cspair`) ran the Phase B debug entry. It has
+  a context of its own with no C2 runtime in it, so the leak (louver pass, then `phys()`) could not happen there.
+- **Chrome stops reporting** after 32 WebGL errors per context, so a harness that listens late hears nothing.
+- **Not the cause:** the headless GPU backend. Headless used the same Intel D3D11 adapter and showed the same warnings.
+  Nobody was listening for them.
+- **Every Cross Section harness now attaches the watcher before navigating, and fails on:**
+  - any console error;
+  - any console warning or error naming WebGL or a GL error;
+  - any page error;
+  - any record of the runtime's own GL check.
+- **Calibrated.** `--q=csbreak=leakgl` reintroduces the leak, and `cross.cjs` then FAILS on exactly the reported
+  warning; the dev check names "before cross:louvers" and "c2:render on the place".
+
+**After the fix:**
+- **`cross.cjs`:** PASS in Chrome and WebKit, including the new sections:
+  - RESIZE: a resize in the band, and both faces are back;
+  - FALLBACK: louvers switched off, and the positions are shown as cuts;
+  - console clean.
+- **The stall path:** `?csbreak=nocapture` never keeps C2's frame, and the louvers still turn and draw (101 louver
+  frames).
+- **`csseam.cjs`:** PASS at 1440×900@2, 390×844@3 and 375×560@3 (Chrome), and at 1440×900@2 and 390×660@3 (WebKit).
+  - Identity at the ends: 0 px at 1440×900, at most 1 level on phones.
+  - Every landing: 0 px.
+  - Console clean.
+- **`cstempo.cjs`:** PASS. **`csshot.cjs`:** console clean.
+- **Cost on the Intel UHD (GPU timer):** the resolve-and-copy pass adds about 1–2 ms, and the louvers stay below an
+  ordinary place.
+
+  | size | louvers | ordinary place |
+  |---|---|---|
+  | 1440×900@2 | 12.2 ms | 16.0 ms |
+  | 1920×1080@1 | 8.5 ms | 11.4 ms |
+  | 390×844 | 4.1 ms | 5.6 ms |
+
+  The rAF rows were NOT trustworthy in this run: the machine was in use, and the control itself missed its own
+  earlier figures.
+- **Headed recording at the user's configuration** (`tools/diag/csheaded.cjs`): installed Chrome 154, headed,
+  maximised, no emulation, 1920×991 at dpr 1, Intel UHD on D3D11.
+  - The path drew every position: 1,168 louver frames, DEPTH black at rest, back to Work.
+  - Console clean.
+  - The recording is Chrome's screencast of that window (`tools/diag/out/cross/film/headed-1920x991.webm`), not a
+    desktop capture.
+- **Flag off:** still byte-identical JavaScript to the live `1e663bd` package (0 of 218 files differ beyond the build
+  ID and timestamp). Typecheck clean.
+
+**Still owed:** the user's own machine is the test the harnesses missed. C3 waits until the scene draws there.
+
 ## Working rules for this worktree
 
 - **Own ports, build folder and gate log:** `SERVE_PORTS`, `BUILD_DIR=../builds/cross-section`,

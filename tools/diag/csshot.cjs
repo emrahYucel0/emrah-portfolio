@@ -5,6 +5,7 @@
 // Needs the dev server with the flag on: NUXT_PUBLIC_CROSS=1 npx nuxt dev --port <port>. The entry exists only in
 // development, so a built site cannot answer. Writes to tools/diag/out/cross/shots/.
 const pw = require('playwright')
+const { watch } = require('./consolewatch.cjs')
 const fs = require('node:fs')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const args = process.argv.slice(2)
@@ -28,10 +29,9 @@ const AT = [0, 0.12, 0.25, 0.35, 0.42, 0.44, 0.47, 0.5, 0.53, 0.56, 0.6, 0.7, 0.
   for (const [w, h] of sizes) {
     const ctx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: w < 700 ? 3 : 2 })
     const p = await ctx.newPage()
-    const errs = []
-    p.on('pageerror', (e) => errs.push(`pageerror: ${e.message}`))
-    // the dev server's own font preload notice is about the layout, not about this scene
-    p.on('console', (m) => { if ((m.type() === 'error' || m.type() === 'warning') && !/preloaded using link preload/.test(m.text())) errs.push(`${m.type()}: ${m.text()}`) })
+    // every console error, every WebGL warning, every page error (consolewatch.cjs)
+    const W = watch(p, `${w}x${h}`)
+    const errs = W.bad
     await p.goto(`http://127.0.0.1:${port}/tr?cross=1&csatmo=${atmo}${extra ? `&${extra}` : ''}`, { waitUntil: 'load', timeout: 180000 })
     const ok = await p.waitForFunction(() => window.__cs && window.__cs.renderer, null, { timeout: 120000 }).then(() => true, () => false)
     if (!ok) { console.log(`  ${w}x${h}: __cs never appeared`); errs.forEach((e) => console.log('   ', e)); bad++; await ctx.close(); continue }

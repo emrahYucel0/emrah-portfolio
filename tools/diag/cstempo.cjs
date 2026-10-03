@@ -19,6 +19,7 @@
 // This is the debug entry's pacer, not the site's gesture rule; Phase C replaces the detection with opensGesture and
 // these assertions move to the integrated harness.
 const pw = require('playwright')
+const { watch } = require('./consolewatch.cjs')
 const args = process.argv.slice(2)
 const port = args.find((a) => /^\d+$/.test(a)) || '4960'
 const tempo = (args.find((a) => a.startsWith('--tempo=')) || '--tempo=step').slice(8)
@@ -29,6 +30,7 @@ const check = (ok, msg) => { console.log(`   ${ok ? 'ok  ' : 'FAIL'} ${msg}`); i
   const b = await pw.chromium.launch({ channel: 'chrome' })
   const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } })
   const p = await ctx.newPage()
+  const W = watch(p, 'tempo')
   await p.goto(`http://127.0.0.1:${port}/tr?cross=1&cstempo=${tempo}`, { waitUntil: 'load', timeout: 180000 })
   await p.waitForFunction(() => window.__cs && window.__cs.renderer, null, { timeout: 120000 })
   await p.evaluate(() => {
@@ -87,6 +89,8 @@ const check = (ok, msg) => { console.log(`   ${ok ? 'ok  ' : 'FAIL'} ${msg}`); i
     const s = await p.evaluate(() => window.__cs.stop)
     check(s === 1, `${shape} inside the band: stop 0 → ${s}`)
   }
+  const bad = await W.verdict(p)
+  check(bad.length === 0, `console clean (${bad.length})${bad.length ? ': ' + bad[0] : ''}`)
   await b.close()
   console.log(fails ? `   FAIL (${fails})` : '   PASS')
   process.exit(fails ? 1 : 0)

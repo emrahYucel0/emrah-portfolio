@@ -35,7 +35,7 @@ const CSS = `
 
 export function createCross(surface, { atmosphere = CS_GLOW, breakName = null } = {}) {
   const gl = surface.gl
-  const mesh = createMesh(gl)
+  const mesh = createMesh(gl, { leak: breakName === 'leakgl' })
   let V = null, L = null, front = null, back = null, Q = null, count = 0
   let atmo = atmosphere
 

@@ -542,11 +542,19 @@ Leaving arms the same tail guard the work field uses, so one gesture is still on
 
 ## Reduced motion
 
-Two static states and a crossfade. The passage is a movement whose whole content is movement and there is no
-honest still of the middle of it, so what is given is its two ends — both readable, both the real states — and
-a crossfade between them, which is what every other pair of places on this site does. The corridor's program is
-not bound at all: in reduced motion the renderer is the flat 2D one, which has no variants. Measured: every
-frame the harness asked for is one of the two ends, never a sample of the passage.
+Two static states and a **cut** between them. The passage is a movement whose whole content is movement and
+there is no honest still of the middle of it, so what is given is its two ends — both readable, both the real
+states. The corridor's program is not bound at all: in reduced motion the renderer is the flat 2D one
+(`engine/c2/flat.js`), which has no variants. Measured: every frame the harness asked for is one of the two ends,
+never a sample of the passage.
+
+**Correction (2026-10-03).** This section used to say "a crossfade between them, which is what every other pair of
+places on this site does". Neither half was true. `flat.js` draws **one** slot — `front < 0.5 ? slots[0] :
+slots[1]` in `render()` — so a `front` tween in reduced motion is a cut at its midpoint, here and between every
+other pair of places. The cut is the site's reduced-motion behaviour and is kept (user decision, R14, 2026-10-03).
+The comments in `engine/c2/main.js` (`canonical()`, the corridor binding in `frame()`) and in
+`engine/c2/linefield/runtime.js` (`prepare`, `reducedPair`) still say "crossfade"; they describe the same cut and
+are left for the next change that touches those files.
 
 ## Turkish
 

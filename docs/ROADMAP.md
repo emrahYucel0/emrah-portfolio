@@ -39,7 +39,7 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
 | R10 | Safari'de adın ince kesimle çizilmesi | P1 | Önce gerçek iPhone | R22 |
 | R11 | Yavaş ağda ilk kare (8,9 sn) | P2 | Önce değerlendirme | — |
 | R13 | Gövde metni ve tipografik hiyerarşi | P1 | Karar bekliyor (ölçek) | — |
-| R14 | Cross Section (İşler → Lab köprüsünün yerine) | P1 | Karar verildi (yön; bekleme; sözcükler; tasarım) | R2, R15 |
+| R14 | Cross Section (İşler → Lab köprüsünün yerine) | P1 | **Sürüyor** (Faz B; `feature/cross-section`) | R2, R15 |
 | R15 | Tempo, ilerleme göstergesi, performans bütçesi | P2 | Karar bekliyor | R14 |
 | R17 | Yayın (DEPLOYMENT.md, CSP, canlı yedeği) | P0 | **Bitti** (2026-10-03, `b8918dc` canlıda) | — |
 | R18 | Awwwards başvurusu (Developer Award) | P0 | Karar bekliyor (tarih) | R17, R9, R22, R23 |
@@ -168,6 +168,23 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
   - **Yörünge halkası yok.**
   - **Sert bir fiske o anı asla atlamaz**: kesit anı tek bir hareketle geçilemez (R24 ve bir-hareket-bir-durak
     kuralıyla aynı aile; Cross Section'ın kendi kapısında ayrıca sınanır).
+- **Durum: sürüyor (2026-10-03).** Dal `feature/cross-section`, worktree `emrah-portfolio-cross`. Faz A (yalnız
+  okuma, plan) onaylandı; Faz B (sahne, `?cross=1` arkasında, yalnız geliştirmede) başladı. Kaynak belge:
+  `docs/CROSS-SECTION.md`. Referans demo: `docs/reference/cross-section-v2.html`.
+- **Karar (2026-10-03, Faz A onayı):**
+  1. **Teknik B:** lameller C2'nin kendi shader'ında (bir varyant); bakır çizgi ve EDGE küçük bir DOM katmanı.
+     Faz B önce Intel performans ölçümüyle başlar (`csperf`, kullanıcının makinesinde); geçmezse C'ye (kanvas 2D
+     lamel çizici) geçilir ve kullanıcıya söylenir.
+  2. **Hareketi azaltılmış mod kesme olarak kalır**, sitenin geri kalanı gibi; `flat.js`'e çapraz geçiş eklenmez.
+     `docs/LINEFIELD.md`'deki "çapraz geçiş" ifadesi düzeltildi (`flat.js` tek yuva çiziyor).
+  3. **Tempo hedefi:** İşler → bench toplam **yaklaşık 5 jest** (kısa dönüş ve taşıma, bandın durakları). Kesin
+     aralıklar Faz B'de cihazda ayarlanır ve R15'e karşı kaydedilir.
+  4. **Atmosfer:** Faz B'de iki sürüm yan yana gösterilir, kesit anında demonun sıcak parıltısıyla ve onsuz;
+     seçim kullanıcının.
+  5. **DEPTH → bench:** Faz C hedefi, panjurun canlı bench'in üstünde açılması (`'cs'` ekran sahipliği durumu).
+     iPhone'da ya da tam kapıda kırılgan çıkarsa yedek: DEPTH opakken rota değişir, kanvas bench'in üstünde
+     solar. **İki durumda da sert kesme yok.**
+  6. **EDGE noktasını korur:** `EDGE.`
 - **Dosyalar:**
   - `engine/c2/main.js`: `startBridge`, `A.mode === 'bridge'`
   - `engine/c2/states.js`

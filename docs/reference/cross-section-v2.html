@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#efeee9">
+<title>CROSS SECTION — v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@900&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{--ground:#efeee9;--ink:#121212;--paper:#e7e6e0;--strip:50px;--gutter:clamp(18px,2.6vw,42px);
+  --mono:'DM Mono',ui-monospace,Consolas,monospace}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden}
+body{background:var(--ground);color:var(--ink);font-family:var(--mono);-webkit-font-smoothing:antialiased;
+  user-select:none;overscroll-behavior:none;touch-action:none}
+button,input{font:inherit}
+#stage{position:fixed;inset:0;overflow:hidden;isolation:isolate}
+#underlay{position:absolute;inset:0;background:var(--ground)}
+#atmosphere{position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:radial-gradient(ellipse 65% 52% at 54% 48%,rgba(180,120,65,.22),transparent 68%)}
+#scene{position:absolute;inset:var(--strip) 0 var(--strip);overflow:visible;perspective:1200px;perspective-origin:52% 50%;pointer-events:none}
+#plane{position:absolute;inset:0;transform-style:preserve-3d;will-change:transform}
+.louver{position:absolute;left:0;width:100%;transform-origin:50% 50%;transform-style:preserve-3d;will-change:transform}
+.face{position:absolute;inset:0;backface-visibility:hidden;background-repeat:repeat,no-repeat,no-repeat}
+.face.front{transform:translateZ(2.25px)}
+.face.back{transform:translateZ(-2.25px) rotateX(180deg)}
+.edge{position:absolute;left:0;width:100%;height:4.5px;opacity:0;
+  background:linear-gradient(0deg,#402618 0%,#ac7345 34%,#ffd0a1 53%,#99613a 74%,#3f2b21 100%);transform-origin:50% 0}
+.edge.t{top:0;transform:translateZ(2.25px) rotateX(-90deg)}
+.edge.b{bottom:0;transform:translateZ(2.25px) rotateX(90deg)}
+#crosshair{position:absolute;top:var(--strip);bottom:var(--strip);left:50%;width:1px;background:#ddac75;opacity:0;
+  pointer-events:none;box-shadow:0 0 20px 6px rgba(230,165,99,.46);transform:translateX(-50%)}
+#crosshair{z-index:3}
+#orbit{display:none}
+#edgeword{position:absolute;left:0;top:0;pointer-events:none;white-space:nowrap;will-change:transform,opacity;opacity:0;
+  font:900 clamp(46px,9.5vw,150px)/.8 'Big Shoulders Display',Impact,'Arial Narrow',sans-serif;letter-spacing:-.01em;color:#f3dcbd;
+  text-shadow:0 0 34px rgba(255,187,108,.28)}
+#light{position:absolute;inset:var(--strip) 0 var(--strip);pointer-events:none;opacity:0;mix-blend-mode:screen;
+  background:linear-gradient(105deg,transparent 18%,rgba(246,228,203,.04) 33%,rgba(253,202,145,.32) 49%,transparent 66%)}
+#topbar,#bottombar{position:absolute;z-index:10;left:0;right:0;height:var(--strip);padding:0 var(--gutter);
+  display:flex;align-items:center;justify-content:space-between;font:400 10px/1.4 var(--mono);letter-spacing:.08em}
+#topbar{top:0;border-bottom:1px solid rgba(18,18,18,.14)}
+#bottombar{bottom:0;border-top:1px solid rgba(18,18,18,.14)}
+#progress{position:absolute;z-index:9;left:0;bottom:var(--strip);height:2px;width:100%}
+#progress>b{display:block;height:100%;width:0;background:#b88050}
+#hint{position:absolute;z-index:8;top:calc(var(--strip) + 22px);left:var(--gutter);font:400 10px/1.5 var(--mono);
+  letter-spacing:.07em;color:rgba(18,18,18,.6);pointer-events:none}
+#dock{position:absolute;left:50%;bottom:calc(var(--strip) + 20px);z-index:12;transform:translateX(-50%);
+  display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(239,238,233,.94);color:#121212;
+  border:1px solid rgba(18,18,18,.14);white-space:nowrap;max-width:calc(100vw - 24px)}
+#dock button{border:0;background:transparent;color:inherit;font:400 10px/1 var(--mono);padding:6px 4px;cursor:pointer}
+#dock button:focus-visible{outline:2px solid #b88050;outline-offset:2px}
+#scrub{accent-color:#af784e;width:clamp(90px,17vw,260px)}
+#pct{font-size:10px;min-width:40px;text-align:right;font-variant-numeric:tabular-nums}
+#dock.hidden{display:none}
+#warn{position:absolute;z-index:11;top:calc(var(--strip) + 22px);right:var(--gutter);font:400 10px/1.4 var(--mono);color:#b8622f}
+.sr{position:absolute;left:-9999px}
+@media(max-width:700px){:root{--strip:46px}#dock{gap:6px;padding:8px}#scrub{width:clamp(64px,24vw,150px)}}
+</style>
+</head>
+<body>
+<main id="stage">
+  <p class="sr">The page is made of thin horizontal slats. The word SURFACE is printed on their fronts and DEPTH on their backs. Scrolling turns the slats over; halfway through they are seen edge-on and only their copper edges remain.</p>
+  <div id="underlay"></div><div id="atmosphere"></div>
+  <div id="scene" aria-hidden="true"><div id="plane"></div></div>
+  <svg id="orbit" aria-hidden="true"><path id="ringBack" fill="none" stroke="#c98b58" stroke-opacity=".22" stroke-width="1"/><path id="trail" fill="none" stroke="#e0a26e" stroke-width="1.3" stroke-linecap="round"/></svg>
+  <div id="crosshair"></div><div id="edgeword" aria-hidden="true">EDGE.</div><div id="light"></div>
+  <header id="topbar"><span>EMRAH YÜCEL</span><span>TR / EN</span></header>
+  <div id="hint">Kaydır</div>
+  <div id="warn" hidden>Big Shoulders yüklenemedi — yedek font</div>
+  <div id="progress"><b id="fill"></b></div>
+  <div id="dock" role="group" aria-label="Demo kontrolleri">
+    <button id="play" type="button">Oynat</button>
+    <button id="rev" type="button">Geri</button>
+    <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="İlerleme">
+    <span id="pct">0%</span>
+    <button id="reset" type="button">Başa</button>
+    <button id="hide" type="button">Gizle</button>
+  </div>
+  <footer id="bottombar"><span id="where">İŞLER</span><span id="side">01 / 02</span></footer>
+</main>
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id);
+const EDGE_WORD='EDGE.';
+const stage=$('stage'),plane=$('plane'),scene=$('scene'),underlay=$('underlay'),atmos=$('atmosphere'),
+  light=$('light'),cross=$('crosshair'),fill=$('fill'),scrub=$('scrub'),pct=$('pct'),hint=$('hint'),
+  topbar=$('topbar'),bottombar=$('bottombar'),where=$('where'),side=$('side');
+
+// Copy: the word on the fronts and the word on the backs.
+const FRONT_WORD='SURFACE', BACK_WORD='DEPTH';
+
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+const smooth=t=>{t=clamp(t);return t*t*(3-2*t)};
+const ease=(v,a,b)=>smooth((v-a)/(b-a));
+const mix=(a,b,t)=>a+(b-a)*t;
+let FACE='Impact, "Arial Narrow", sans-serif';
+const louvers=[];
+
+function wordImage(word,w,h,fg,align){
+  const r=Math.min(2,window.devicePixelRatio||1);
+  const c=document.createElement('canvas');c.width=Math.round(w*r);c.height=Math.round(h*r);
+  const g=c.getContext('2d');g.setTransform(r,0,0,r,0,0);
+  const narrow=w<700;
+  let fs=h*(narrow?0.3:0.46);
+  g.font='900 '+fs+'px '+FACE;
+  const maxW=w*(narrow?0.9:0.86);
+  const mw=g.measureText(word).width;if(mw>maxW){fs*=maxW/mw;g.font='900 '+fs+'px '+FACE;}
+  g.fillStyle=fg;g.textBaseline='alphabetic';g.textAlign=align;
+  const x=align==='left'?w*0.05:w*0.95, y=h*(narrow?0.66:0.74);
+  g.fillText(word,x,y);
+  return c.toDataURL('image/png');
+}
+
+function build(){
+  const w=scene.clientWidth,h=scene.clientHeight;
+  const count=Math.max(25,Math.min(50,Math.round(h/(w<700?20:21))));
+  const pitch=h/count, line=w<700?0.7:0.85, rowSpace=pitch/3;
+  const imgF=wordImage(FRONT_WORD,w,h,'#121212','left');
+  const imgB=wordImage(BACK_WORD,w,h,'#e7e6e0','right');
+  const offX=0; // louvers span exactly the screen width (wider layers are only partly rasterized by Chrome once flipped)
+  plane.replaceChildren();louvers.length=0;
+  for(let i=0;i<count;i++){
+    const top=i*pitch;
+    const el=document.createElement('div');el.className='louver';
+    el.style.top=top.toFixed(3)+'px';el.style.height=(pitch+0.45).toFixed(3)+'px';
+    const f=document.createElement('div');f.className='face front';
+    const b=document.createElement('div');b.className='face back';
+    f.style.backgroundImage=`repeating-linear-gradient(to bottom,rgba(18,18,18,.7) 0 ${line}px,transparent ${line}px ${rowSpace}px),url(${imgF}),linear-gradient(90deg,#efeee9,#eae9e3 42%,#efeee9)`;
+    b.style.backgroundImage=`repeating-linear-gradient(to bottom,rgba(231,230,224,.72) 0 ${line*1.15}px,transparent ${line*1.15}px ${rowSpace}px),url(${imgB}),linear-gradient(91deg,#111215,#1a191b 35%,#0c0d0f 85%)`;
+    for(const face of [f,b]){
+      face.style.backgroundSize=`auto,${w}px ${h}px,auto`;
+      face.style.backgroundPosition=`0 0,${offX}px ${(-top).toFixed(3)}px,0 0`;
+    }
+    const e1=document.createElement('div');e1.className='edge t';
+    const e2=document.createElement('div');e2.className='edge b';
+    el.append(f,b,e1,e2);plane.appendChild(el);
+    const y=i/(count-1),wave=Math.sin(y*Math.PI*2.25),cw=Math.pow(Math.max(0,1-Math.abs(y-.49)*1.9),1.4);
+    louvers.push({el,e1,e2,y,wave,cw});
+  }
+  render(disp);
+}
+
+function render(p){
+  p=clamp(p);
+  // The slats hold edge-on while the word circles the axis, then carry on.
+  const zb=clamp((p-Z0)/(Z1-Z0));
+  const ps=p<Z0?p/Z0*.47:p>Z1?.53+(p-Z1)/(1-Z1)*.47:.47+.03*ease(zb,0,.1)+.03*ease(zb,.85,1);
+  scrub.value=Math.round(p*1000);pct.textContent=Math.round(p*100)+'%';fill.style.width=(p*100)+'%';
+  const peak=Math.pow(Math.max(0,1-Math.abs(ps-.5)/.28),1.4);
+  const W=stage.clientWidth;
+  scene.style.perspective=Math.max(640,W*1.09)+'px';
+  plane.style.transform=`translate3d(0,0,${(-36*peak).toFixed(1)}px) rotateY(${(2.5*peak).toFixed(2)}deg) scale(${(1+.045*peak).toFixed(3)})`;
+  for(const {el,e1,e2,y,wave,cw} of louvers){
+    const phase=.035*wave+.04*(1-cw);
+    const rot=180*ease(ps,.15+phase,.85+phase);
+    const shimmer=Math.sin((ps-.5)*12+y*8+p*6);
+    const z=peak*(75*cw+22*wave), x=peak*wave*cw*W*.028, sx=1.06+peak*(.12+.07*cw);
+    el.style.transform=`translate3d(${x.toFixed(2)}px,0,${z.toFixed(2)}px) rotateX(${rot.toFixed(3)}deg) rotateY(${(peak*wave*12).toFixed(2)}deg) scaleX(${sx.toFixed(3)})`;
+    const hl=clamp((.27+.75*peak)*(.66+.34*shimmer));
+    const ev=Math.pow(Math.abs(Math.sin(rot*Math.PI/180)),1.35)*(.45+peak*.48);
+    e1.style.opacity=e2.style.opacity=ev.toFixed(3);
+    e1.style.filter=e2.style.filter=`brightness(${(.43+hl*1.12).toFixed(2)})`;
+  }
+  // ---- The word at the edge: it circles the copper axis during the cross-section, lands, then turns edge-on into the line ----
+  {
+    const ew=$('edgeword'),trail=$('trail'),ringBack=$('ringBack');if(ew.textContent!==EDGE_WORD)ew.textContent=EDGE_WORD;
+    const W=stage.clientWidth,H=stage.clientHeight,cx=W/2;
+    const z=clamp((p-Z0)/(Z1-Z0));                     // 0..1 across the sticky band
+    const R=Math.min(W*(W<700?0.36:0.3),H*0.5), tilt=0.16, cy=H/2-R*tilt;
+    const inWord=ease(z,0,ZS[0]), turnOff=ease(z,ZS[ZS.length-1],1);
+    const deg=wordAngle(z), land=1-deg/180;              // 180° behind → 0° in front, in 45° stops
+    const th=deg*Math.PI/180;
+    const sx=Math.sin(th),cz=Math.cos(th);              // cz>0: in front of the axis
+    const persp=1/(1-cz*0.28);                         // nearer = larger
+    const x=cx+R*sx*(1-land*0) , y=cy+R*tilt*cz;
+    const wBox=ew.offsetWidth||1,hBox=ew.offsetHeight||1;
+    const sc=(.55+.45*land)*persp;
+    const edgeOn=Math.max(.001,1-turnOff);             // the word turns edge-on and becomes the line
+    ew.style.transform=`translate(${(x-wBox/2).toFixed(1)}px,${(y-hBox/2).toFixed(1)}px) scale(${(sc*edgeOn).toFixed(3)},${sc.toFixed(3)})`;
+    const vis=(z>0&&z<1)?inWord*(cz<0?.45:1):0;
+    ew.style.opacity=vis.toFixed(3);
+    ew.style.zIndex=cz<0?'1':'4';
+    // orbit ring (faint, whole) and the trail of the path travelled so far
+    const ringA=inWord*(1-turnOff);
+    let d='';for(let k=0;k<=72;k++){const a=k/72*Math.PI*2;d+=(k?'L':'M')+(cx+R*Math.sin(a)).toFixed(1)+' '+(cy+R*tilt*Math.cos(a)).toFixed(1);}
+    ringBack.setAttribute('d',d);ringBack.style.opacity=ringA.toFixed(3);
+    let t='';const a0=Math.PI,a1=th,n=Math.max(2,Math.round((a1-a0)/(Math.PI/36)));
+    for(let k=0;k<=n;k++){const a=a0+(a1-a0)*k/n;t+=(k?'L':'M')+(cx+R*Math.sin(a)).toFixed(1)+' '+(cy+R*tilt*Math.cos(a)).toFixed(1);}
+    trail.setAttribute('d',land>0.002?t:'');trail.style.opacity=(ringA*.9).toFixed(3);
+  }
+  const dark=ease(ps,.31,.51);
+  underlay.style.background=`rgb(${Math.round(mix(239,14,dark))},${Math.round(mix(238,15,dark))},${Math.round(mix(233,17,dark))})`;
+  atmos.style.opacity=String(peak*.8);cross.style.opacity=String(peak*peak*.85);light.style.opacity=String(peak*.78);
+  const night=ps>.42, col=night?'#e7e6e0':'#121212', line=night?'rgba(231,230,224,.16)':'rgba(18,18,18,.14)';
+  topbar.style.color=bottombar.style.color=col;topbar.style.borderColor=bottombar.style.borderColor=line;
+  where.textContent=ps<.5?'İŞLER':'LAB';side.textContent=ps<.5?'01 / 02':'02 / 02';
+  hint.style.opacity=String(1-ease(p,.02,.12));
+}
+
+// ---- Input: the cross-section is a sequence of stops, one scroll each ----
+// Outside the band the scroll is continuous. Arriving at the band, the word appears behind the
+// copper axis; each scroll then moves it one stop around the axis (ORBIT_STEPS stops to the front). The next
+// scroll turns it edge-on into the line and the slats carry on. A stop needs a fresh gesture:
+// at most one stop per STEP_GAP ms, so a flick or trackpad momentum cannot run through the band.
+const Z0=0.44,Z1=0.56;
+// How many scrolls it takes the word to go from behind the axis to in front of it.
+// 2 → halfway (90°), then in front. 4 → 135°, 90°, 45°, in front. Also settable with ?steps=4 in the URL.
+const ORBIT_STEPS=(()=>{const q=parseInt(new URLSearchParams(location.search).get('steps'),10);return q>=1&&q<=8?q:2;})();
+const ZS=Array.from({length:ORBIT_STEPS+1},(_,i)=>0.08+0.72*i/ORBIT_STEPS);   // band stops, behind → in front
+const ANG=Array.from({length:ORBIT_STEPS+1},(_,i)=>180-180*i/ORBIT_STEPS);
+const STEP_GAP=650, STEP_TH=40, FREE_RATE=1.8;
+const pOf=z=>Z0+z*(Z1-Z0);
+const freeP=r=>r<=.5?r/.5*Z0:Z1+(r-.5)/.5*(1-Z1);
+const freeR=p=>p<=Z0?p/Z0*.5:p>=Z1?.5+(p-Z1)/(1-Z1)*.5:.5;
+let raw=0,disp=0,stepIdx=-1,acc=0,lastStep=-1e9,playing=0,last=performance.now(),drag=null;
+const stopPlay=()=>{playing=0;$('play').textContent='Oynat';};
+
+function enter(i){stepIdx=i;acc=0;lastStep=performance.now();}
+function impulse(dy){                          // dy > 0 means forward, in wheel-pixel units
+  const now=performance.now();
+  if(stepIdx>=0){
+    if(Math.sign(dy)!==Math.sign(acc))acc=0;
+    acc+=dy;
+    if(Math.abs(acc)>=STEP_TH&&now-lastStep>STEP_GAP){
+      const s=Math.sign(acc);acc=0;lastStep=now;stepIdx+=s;
+      if(stepIdx>=ZS.length){stepIdx=-1;raw=.52;}   // leave forward: word becomes the line, slats continue
+      else if(stepIdx<0){stepIdx=-1;raw=.48;}        // leave backward: word fades behind, back to SURFACE
+    }
+    return;
+  }
+  const before=raw;raw=clamp(raw+dy/1700);
+  if(before<.5&&raw>=.5){raw=.5;enter(0);}                 // from SURFACE: the word appears behind the axis
+  else if(before>.5&&raw<=.5){raw=.5;enter(ZS.length-1);}  // from DEPTH: the word comes back in front
+}
+function wordAngle(z){
+  if(z<=ZS[0])return ANG[0];if(z>=ZS[ZS.length-1])return ANG[ANG.length-1];
+  for(let i=0;i<ZS.length-1;i++)if(z<=ZS[i+1]){const t=(z-ZS[i])/(ZS[i+1]-ZS[i]);return ANG[i]+(ANG[i+1]-ANG[i])*t;}
+  return 0;
+}
+
+function tick(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  if(playing){impulse(playing*dt*.12*1700);if((playing>0&&disp>=.999)||(playing<0&&disp<=.001))stopPlay();}
+  const target=stepIdx>=0?pOf(ZS[stepIdx]):freeP(raw);
+  const inBand=disp>Z0-.005&&disp<Z1+.005;
+  let step;
+  if(inBand||stepIdx>=0)step=(target-disp)*Math.min(1,dt*4.2);          // each stop eases in over ~0.6 s
+  else step=clamp((target-disp)*Math.min(1,dt*9),-FREE_RATE*dt,FREE_RATE*dt);
+  const before=disp;disp=clamp(disp+step);
+  if(Math.abs(disp-before)>1e-5||!louvers.length)render(disp);
+  requestAnimationFrame(tick);
+}
+
+function jumpTo(p){                            // dev scrub / test hook: go straight to a frame
+  disp=clamp(p);
+  if(disp>Z0&&disp<Z1){const z=(disp-Z0)/(Z1-Z0);let best=0;ZS.forEach((v,i)=>{if(Math.abs(v-z)<Math.abs(ZS[best]-z))best=i;});enter(best);raw=.5;}
+  else{stepIdx=-1;raw=freeR(disp);}
+  render(disp);
+}
+
+window.addEventListener('wheel',e=>{if(e.target===scrub)return;e.preventDefault();stopPlay();impulse(clamp(e.deltaY,-140,140));},{passive:false});
+window.addEventListener('pointerdown',e=>{if(e.target.closest('#dock'))return;stopPlay();drag={y:e.clientY};try{stage.setPointerCapture(e.pointerId)}catch(_){}});
+window.addEventListener('pointermove',e=>{if(!drag)return;const dy=drag.y-e.clientY;drag.y=e.clientY;impulse(dy*1700/Math.max(320,stage.clientHeight*1.25));});
+window.addEventListener('pointerup',()=>drag=null);window.addEventListener('pointercancel',()=>drag=null);
+window.addEventListener('keydown',e=>{
+  if(['ArrowDown','ArrowUp','PageDown','PageUp',' ','Home','End'].includes(e.key))e.preventDefault();
+  if(e.key==='ArrowDown'||e.key==='PageDown'||e.key===' '){stopPlay();impulse(140);}
+  if(e.key==='ArrowUp'||e.key==='PageUp'){stopPlay();impulse(-140);}
+  if(e.key==='Home'){stopPlay();jumpTo(0);}if(e.key==='End'){stopPlay();jumpTo(1);}
+  if(e.key==='h'||e.key==='H')$('dock').classList.toggle('hidden');
+});
+scrub.addEventListener('input',e=>{stopPlay();jumpTo(e.target.value/1000);});
+$('play').onclick=()=>{if(playing){stopPlay();return;}if(disp>=.999)jumpTo(0);playing=1;$('play').textContent='Durdur';};
+$('rev').onclick=()=>{if(disp<=.001)jumpTo(1);playing=-1;$('play').textContent='Durdur';};
+$('reset').onclick=()=>{stopPlay();jumpTo(0);};
+$('hide').onclick=()=>$('dock').classList.add('hidden');
+let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(build,140);});
+
+window.__demo={setProgress:jumpTo,impulse,get progress(){return disp},get stop(){return stepIdx}};
+
+(async()=>{
+  let ok=false;
+  try{
+    await document.fonts.load('900 100px "Big Shoulders Display"');
+    ok=document.fonts.check('900 100px "Big Shoulders Display"');
+    if(ok){const t=document.createElement('canvas').getContext('2d');
+      t.font='900 100px "Big Shoulders Display"';const a=t.measureText('SURFACE').width;
+      t.font='900 100px Impact';const b=t.measureText('SURFACE').width;ok=Math.abs(a-b)>1;}
+  }catch(_){ok=false;}
+  if(ok)FACE='"Big Shoulders Display", Impact, sans-serif';else $('warn').hidden=false;
+  build();requestAnimationFrame(tick);
+})();
+})();
+</script>
+</body>
+</html>

@@ -165,39 +165,104 @@ export function createMesh(gl) {
     size = [w, h]
   }
 
+  // a face texture of this size, kept and reused; reallocated only when the canvas has changed size
+  const sizes = [[0, 0], [0, 0]]
+  function alloc(i, w, h) {
+    if (faces[i] && sizes[i][0] === w && sizes[i][1] === h) return faces[i]
+    if (faces[i]) gl.deleteTexture(faces[i])
+    const t = gl.createTexture()
+    gl.bindTexture(gl.TEXTURE_2D, t)
+    // all the levels at once, so generateMipmap never reallocates and a copy never meets an incomplete texture
+    gl.texStorage2D(gl.TEXTURE_2D, Math.floor(Math.log2(Math.max(w, h))) + 1, gl.RGBA8, w, h)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+    gl.bindTexture(gl.TEXTURE_2D, null)
+    faces[i] = t; sizes[i] = [w, h]
+    return t
+  }
+  function finish(t, mips) {
+    gl.bindTexture(gl.TEXTURE_2D, t)
+    // (the calibration break `nomip` leaves them out: a face seen at a slant then aliases, as canvas-2D would)
+    if (mips) gl.generateMipmap(gl.TEXTURE_2D)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, mips ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR)
+    if (aniso) gl.texParameterf(gl.TEXTURE_2D, aniso.TEXTURE_MAX_ANISOTROPY_EXT, mips ? Math.min(8, gl.getParameter(aniso.MAX_TEXTURE_MAX_ANISOTROPY_EXT)) : 1)
+    gl.bindTexture(gl.TEXTURE_2D, null)
+  }
+
+  // harness only: a face's pixels, or the canvas's, read back (RGBA, GL's row order)
+  function readTex(t, w, h) {
+    const fbo = gl.createFramebuffer()
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo)
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0)
+    const out = new Uint8Array(w * h * 4)
+    gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, out)
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+    gl.deleteFramebuffer(fbo)
+    return out
+  }
+
   return {
     samples,
+    read(i) { return faces[i] ? readTex(faces[i], sizes[i][0], sizes[i][1]) : null },
+    readCanvas() { const w = gl.drawingBufferWidth, h = gl.drawingBufferHeight, out = new Uint8Array(w * h * 4); gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, out); return out },
     /**
      * Have C2 draw a face. `draw` renders one frame into whatever framebuffer is bound; the texture it leaves is
      * the face, at the canvas's own resolution, with mipmaps for when it is seen at a slant.
      */
     face(i, w, h, draw, { mips = true } = {}) {
-      if (faces[i]) gl.deleteTexture(faces[i])
-      const t = gl.createTexture()
-      gl.bindTexture(gl.TEXTURE_2D, t)
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
+      const t = alloc(i, w, h)
       const fbo = gl.createFramebuffer()
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo)
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0)
       draw()
       gl.bindFramebuffer(gl.FRAMEBUFFER, null)
       gl.deleteFramebuffer(fbo)
+      finish(t, mips)
+    },
+    /**
+     * THE FRAME ON THE CANVAS, kept as a face: copied out of the drawing buffer right after C2 has drawn it, before
+     * the browser takes the buffer away. The louvers then begin from exactly what the visitor was looking at.
+     */
+    capture(i) {
+      const w = gl.drawingBufferWidth, h = gl.drawingBufferHeight
+      const t = alloc(i, w, h)
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null)
       gl.bindTexture(gl.TEXTURE_2D, t)
-      // (the calibration break `nomip` leaves them out: a face seen at a slant then aliases, as canvas-2D would)
-      if (mips) gl.generateMipmap(gl.TEXTURE_2D)
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, mips ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR)
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-      if (aniso && mips) gl.texParameterf(gl.TEXTURE_2D, aniso.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(8, gl.getParameter(aniso.MAX_TEXTURE_MAX_ANISOTROPY_EXT)))
-      gl.bindTexture(gl.TEXTURE_2D, null)
-      faces[i] = t
+      gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 0, 0, w, h)
+      finish(t, true)
+    },
+    /**
+     * Band k of n of a face, drawn by C2 into the face's texture: a full C2 frame costs as much as an ordinary place
+     * does, so the face that is still turned away is drawn a third at a time instead of all at once.
+     */
+    band(i, k, n, draw) {
+      const w = gl.drawingBufferWidth, h = gl.drawingBufferHeight
+      const t = alloc(i, w, h)
+      const fbo = gl.createFramebuffer()
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo)
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0)
+      const y0 = Math.floor((h * k) / n), y1 = Math.floor((h * (k + 1)) / n)
+      gl.enable(gl.SCISSOR_TEST)
+      gl.scissor(0, y0, w, y1 - y0)
+      draw()
+      gl.disable(gl.SCISSOR_TEST)
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+      gl.deleteFramebuffer(fbo)
+      if (k === n - 1) finish(t, true)
     },
     /**
      * The quads for this pose: per louver, the face the eye can see and the edge it can see. Corners are taken
      * through the louver's own matrix to scene space here; the shader only projects.
      */
-    geometry(L, Q, sides, strip, H) {
+    geometry(L, Q, sides, strip, H, dpr) {
+      // C2's own pixel mapping: a CSS px is exactly `dpr` device px from the top-left, whatever the backing store was
+      // rounded to (390 at 1.75 is 682.5, stored as 683). Texture coordinates follow that mapping, not the rounding,
+      // or the face drifts by up to half a pixel across the screen.
+      const bw = gl.drawingBufferWidth, bh = gl.drawingBufferHeight
+      // and the louvers span the backing's whole extent in those px, so its last column is covered too (682.5 → 683)
+      const Wq = bw / dpr
       const n = Q.louvers.length
       const need = n * 2 * 6 * STRIDE
       if (verts.length < need) verts = new Float32Array(need)
@@ -209,19 +274,19 @@ export function createMesh(gl) {
         verts[o++] = u; verts[o++] = v; verts[o++] = side; verts[o++] = kind; verts[o++] = ev; verts[o++] = br
       }
       const quad = (c) => { for (const k of [0, 1, 2, 0, 2, 3]) put(...c[k]) }
-      const W = L.W
+      const W = Wq, uMax = 1
       for (let i = 0; i < n; i++) {
         const l = Q.louvers[i], M = l.M, top = l.top, hl = l.hl
         const sd = sides(l.Minv, Q.eye, top, hl)
         // the image a face carries is the screen's own: v is the GL texture row of screen y (y up)
-        const vy = (sy) => 1 - (strip + sy) / H
+        const vy = (sy) => 1 - ((strip + sy) * dpr) / bh
         if (sd.face > 0) {
-          quad([[M, 0, top, HALF, 0, vy(top), 0, 0, 0, 0], [M, W, top, HALF, 1, vy(top), 0, 0, 0, 0],
-            [M, W, top + hl, HALF, 1, vy(top + hl), 0, 0, 0, 0], [M, 0, top + hl, HALF, 0, vy(top + hl), 0, 0, 0, 0]])
+          quad([[M, 0, top, HALF, 0, vy(top), 0, 0, 0, 0], [M, W, top, HALF, uMax, vy(top), 0, 0, 0, 0],
+            [M, W, top + hl, HALF, uMax, vy(top + hl), 0, 0, 0, 0], [M, 0, top + hl, HALF, 0, vy(top + hl), 0, 0, 0, 0]])
         } else if (sd.face < 0) {
           // the back's image is turned over with the louver: local y maps to image y 2·top + hl − y
-          quad([[M, 0, top, -HALF, 0, vy(top + hl), 1, 0, 0, 0], [M, W, top, -HALF, 1, vy(top + hl), 1, 0, 0, 0],
-            [M, W, top + hl, -HALF, 1, vy(top), 1, 0, 0, 0], [M, 0, top + hl, -HALF, 0, vy(top), 1, 0, 0, 0]])
+          quad([[M, 0, top, -HALF, 0, vy(top + hl), 1, 0, 0, 0], [M, W, top, -HALF, uMax, vy(top + hl), 1, 0, 0, 0],
+            [M, W, top + hl, -HALF, uMax, vy(top), 1, 0, 0, 0], [M, 0, top + hl, -HALF, 0, vy(top), 1, 0, 0, 0]])
         }
         if (sd.edge !== 0 && l.ev > 0.002) {
           const y0 = sd.edge < 0 ? top : top + hl
@@ -236,7 +301,9 @@ export function createMesh(gl) {
      * framebuffer. `count` vertices from geometry().
      */
     draw(V, Q, count, look) {
-      const bw = Math.round(V.W * V.dpr), bh = Math.round(V.H * V.dpr)
+      // the canvas's own size: on the site it is the composed size times the dpr AND the large-screen scale
+      // and the projection maps CSS px to device px the same way C2 does: by its dpr, over the backing's own extent
+      const bw = gl.drawingBufferWidth, bh = gl.drawingBufferHeight, r = V.dpr * (V.u || 1)
       targets(bw, bh)
       gl.bindFramebuffer(gl.FRAMEBUFFER, msFbo)
       gl.viewport(0, 0, bw, bh)
@@ -245,20 +312,20 @@ export function createMesh(gl) {
       // the ground
       gl.useProgram(bg.p)
       gl.bindVertexArray(bgVao)
-      gl.uniform2f(bg.u('uRes'), V.W, V.H); gl.uniform1f(bg.u('uDpr'), V.dpr)
+      gl.uniform2f(bg.u('uRes'), bw / r, bh / r); gl.uniform1f(bg.u('uDpr'), r)
       gl.uniform4f(bg.u('uScene'), V.strip, V.H - 2 * V.strip, V.W, 0)
       gl.uniform3f(bg.u('uGap'), look.gap[0], look.gap[1], look.gap[2])
       gl.uniform4f(bg.u('uAtmo'), look.atmo, look.light, look.warm, 0)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
       // the louvers, inside the scene only: the material never crosses into a strip
       gl.enable(gl.SCISSOR_TEST)
-      gl.scissor(0, Math.round(V.strip * V.dpr), bw, Math.round((V.H - 2 * V.strip) * V.dpr))
+      gl.scissor(0, Math.round(V.strip * r), bw, Math.round((V.H - 2 * V.strip) * r))
       gl.useProgram(lv.p)
       gl.bindVertexArray(lvVao)
       gl.bindBuffer(gl.ARRAY_BUFFER, lvBuf)
       gl.bufferData(gl.ARRAY_BUFFER, verts.subarray(0, count * STRIDE), gl.STREAM_DRAW)
       gl.uniform3f(lv.u('uEye'), Q.eye[0], Q.eye[1], Q.eye[2])
-      gl.uniform3f(lv.u('uView'), V.W, V.H, V.strip)
+      gl.uniform3f(lv.u('uView'), bw / r, bh / r, V.strip)
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, faces[0]); gl.uniform1i(lv.u('uFace0'), 0)
       gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, faces[1]); gl.uniform1i(lv.u('uFace1'), 1)
       gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true)

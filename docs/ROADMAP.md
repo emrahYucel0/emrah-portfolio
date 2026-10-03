@@ -202,7 +202,19 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
   3. **Sözcükler sitenin satırlarından** yapılıyor.
   4. **Tempo ölçüldüğü gibi:** İşler → bench 5 jest. İşler'den çıkan jest lamelleri doğrudan banda döndürür; bench'ten
      önceki durak DEPTH.
-- **Sonraki:** Faz C planı önerildi; başlamadan önce kullanıcı onayı bekleniyor.
+- **Karar (2026-10-03, Faz C onayı):** önerilen varsayılanlarla.
+  - Koyu ucun zemini `#111215` (DEPTH kâğıdı).
+  - Yatay telefon kuralı önerildiği gibi.
+  - Sıra: önce C1 + C2, İş dikişi için durulur. Tam kapıdan önce sorulur.
+- **Faz C, C1 + C2 (2026-10-03, onay bekliyor).** Ayrıntı `docs/CROSS-SECTION.md`'de.
+  - **Yer.** Cross Section omurgada bir yer: `work · cross · lab`.
+  - **Tempo.** 5 jest; bir jest bir konum. Sert fiske bandı atlamıyor; dokunmada da (Chrome ve WebKit).
+  - **İş dikişi yapı gereği aynı.** Lamellerin uçtaki karesi C2'nin karesiyle 1440×900'de 0 piksel farklı; inişler
+    her boyutta 0 piksel. Telefonda en çok 1 seviye.
+  - **Başlık atlaması.** Yeri kelimesiz geçiyor.
+  - **Bayrak kapalı build.** Canlı paketle bayt bayt aynı JavaScript.
+  - **Bench çıkışı şimdilik yolculukla** (C3 perde açılmasını getirecek).
+  - **Açık:** iPhone'daki ince sözcük sonucu bildirilmedi (R10).
 - **Dosyalar:**
   - `engine/c2/main.js`: `startBridge`, `A.mode === 'bridge'`
   - `engine/c2/states.js`

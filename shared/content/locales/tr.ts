@@ -2,6 +2,7 @@ import type { LocaleCopy } from '../types'
 
 /** replaced at transform time by the bundler; see the note in nuxt.config.ts */
 declare const __LINEFIELD__: boolean
+declare const __CROSS__: boolean
 
 // Turkish is a first-class experience, not a translation layer. The About prose is Emrah's own approved copy.
 // Professional role names (Creative Developer, Full-Stack Developer), brand names and the two face words stay
@@ -97,6 +98,14 @@ export const tr = {
     frontendLabel: 'FRONTEND — NASIL DÜŞÜNÜRÜM',
     backendSaid: 'Durum, ölçek, hata, doğruluk',
     frontendSaid: 'His, zamanlama, sürtünme, ilk kare',
+  } } : {}),
+  /*
+   * CROSS SECTION is unreleased (R14), so its copy leaves the published bundle with its code, as Linefield's did. Its
+   * three words are the material's names and stay English in both languages; the heading is its name, also English.
+   */
+  ...(typeof __CROSS__ !== 'undefined' && __CROSS__ ? { cross: {
+    heading: 'Cross Section',
+    said: 'İnce lamellerin ön yüzlerinde SURFACE, arka yüzlerinde DEPTH yazıyor. Lameller dönerken kesitten geçilir: orada yalnız bakır kenarları, bakır bir çizgi ve EDGE sözcüğü kalır.',
   } } : {}),
   work: {
     heading: 'İşler',

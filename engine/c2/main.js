@@ -185,9 +185,12 @@ function measure() {
  * one list.
  */
 const LINEFIELD = typeof __LINEFIELD__ !== 'undefined' && __LINEFIELD__
+// CROSS SECTION (R14, docs/CROSS-SECTION.md): the passage between Work and the Lab, off unless NUXT_PUBLIC_CROSS is set.
+// Written as its own pair of literals so that, with the flag off, each branch folds to exactly the list it always was.
+const CROSS = typeof __CROSS__ !== 'undefined' && __CROSS__
 const SPINE = LINEFIELD
-  ? ['name', 'creative', 'system', 'linefield', 'work', 'lab', 'rest']
-  : ['name', 'creative', 'system', 'work', 'lab', 'rest']
+  ? (CROSS ? ['name', 'creative', 'system', 'linefield', 'work', 'cross', 'lab', 'rest'] : ['name', 'creative', 'system', 'linefield', 'work', 'lab', 'rest'])
+  : (CROSS ? ['name', 'creative', 'system', 'work', 'cross', 'lab', 'rest'] : ['name', 'creative', 'system', 'work', 'lab', 'rest'])
 const STOP = Object.fromEntries(SPINE.map((n, i) => [n, i]))
 // the corridor and everything it is made of, loaded once at boot and only where the flag is on
 let LF = null
@@ -197,6 +200,9 @@ let LF = null
  * feature has been held to since Phase A, and a stop number compared against -1 is simply never any stop.
  */
 const LFS = LINEFIELD ? STOP.linefield : -1
+// the passage between Work and the Lab, loaded once at boot where its flag is on; its stop, named once (as LFS is)
+let CS = null
+const CXS = CROSS ? STOP.cross : -1
 /**
  * THE CONTACT STOP — the index position that hands over to the Contact finale (/[locale]/contact). Every use of
  * that position reads this constant: the handover (frame), the stop tables of the strip and of navigate(), IDX's
@@ -250,6 +256,10 @@ const A = {
   // place what A.wt is to the work field — the axis INSIDE the stop, which the spine does not travel.
   lfp: 0, lfExit: 0,
 }
+// CROSS SECTION: whether the passage is an end of the visitor's leg (its own state, words and all) or scenery on the
+// way past, and the travel a gesture has put towards its next position. Declared only where the flag is on, so a
+// published build does not carry even the names.
+if (CROSS) Object.assign(A, { csLeg: false, csAcc: 0 })
 const ptr = { x: -1e4, y: -1e4, vx: 0, vy: 0, t: 0, hover: false, touch: false, down: false, downT: 0, sx: 0, sy: 0, moved: 0, axis: null, rub: 0, ui: false }
 const touches = new Map()
 
@@ -293,6 +303,7 @@ function rebuild() {
     lab: () => ST.labState(V),
     rest: () => ST.rest(V, A.visitOrder, A.aboutMark),
     ...(LINEFIELD ? { linefield: () => LF.build(V, TXT.linefield) } : {}),
+    ...(CROSS ? { cross: () => CS.build(V) } : {}),
   }
   IDX = SPINE.map((n) => PLACE[n]())
   if (REDUCED) for (const s of IDX) s.ampK = 0
@@ -482,7 +493,7 @@ const GEST_EDGE = 0.25
 /** the place a gesture is measured from: the stop on the index, the frame inside a project */
 const gestureBase = () => (A.mode === 'world' ? A.wbase : A.base)
 /** measure the next gesture from here, with nothing spent */
-function resetGesture() { A.gFrom = gestureBase(); A.gSpent = false; A.gInner = 0; A.gMinGap = Infinity }
+function resetGesture() { A.gFrom = gestureBase(); A.gSpent = false; A.gInner = 0; A.gMinGap = Infinity; if (CROSS) A.csAcc = 0 }
 /** and forget the stream, so that whatever comes next opens a gesture of its own */
 function forgetStream() { A.gAt = -1e9; A.gEnv = 0; A.gPeak = 0 }
 /*
@@ -605,6 +616,25 @@ function scrollBy(d, touch = false) {
       A.lastInput = now
       return
     }
+    /*
+     * CROSS SECTION: ONE GESTURE, ONE POSITION. The passage is five positions, not an axis (place.js): a gesture
+     * moves one, in its direction, as soon as it has travelled CS.STEP — and is then spent, so the rest of a flick
+     * cannot take a second. From DEPTH the gesture carries on to the bench; back from the band, it turns the louvers
+     * flat and the frame loop carries it on into Work.
+     */
+    if (CROSS && CS && settledAt(CXS)) {
+      if (Math.sign(d) !== Math.sign(A.csAcc)) A.csAcc = 0
+      A.csAcc += d
+      if (Math.abs(A.csAcc) >= CS.STEP) {
+        const dir = Math.sign(A.csAcc)
+        A.csAcc = 0
+        A.gSpent = true
+        A.gesture = false
+        if (CS.step(dir) === 'lab') { A.base = A.pT = STOP.lab; A.labArmed = true; A.leftWork = now }
+      }
+      A.lastInput = now
+      return
+    }
     // wheel tunes the work field; a finger tunes it sideways and swipes vertically between places
     if (settledAt(STOP.work) && !touch) {
       // the register as the field can actually hold it, so that a flick at either end counts as the nothing it moved
@@ -622,12 +652,14 @@ function scrollBy(d, touch = false) {
         A.wT = 0; A.base = STOP.work - 1; A.pT = A.base + 0.35; A.gesture = false; A.gSpent = true; A.leftWork = now
       } else if (A.wT > N - 1 + GEST_EDGE) {
         if (ran) { A.wT = N - 1; return }
-        A.wT = N - 1; A.gesture = false; A.gSpent = true; startBridge()
+        A.wT = N - 1; A.gesture = false; A.gSpent = true
+        // with the passage, the far end of the work field is one stop like any other (R14); without it, the bridge
+        if (CROSS && CS) { A.base = A.pT = CXS; A.leftWork = now } else startBridge()
       }
       return
     }
     // a finger swiping on past the work field carries the whole field into the Lab
-    if (settledAt(STOP.work) && touch && d > 0) { A.bridgeAcc = (A.bridgeAcc || 0) + d; if (A.bridgeAcc > 0.12) { A.bridgeAcc = 0; A.gSpent = true; startBridge() } A.lastInput = now; return }
+    if (settledAt(STOP.work) && touch && d > 0) { A.bridgeAcc = (A.bridgeAcc || 0) + d; if (A.bridgeAcc > 0.12) { A.bridgeAcc = 0; A.gSpent = true; if (CROSS && CS) { A.base = A.pT = CXS; A.leftWork = now } else startBridge() } A.lastInput = now; return }
     // THE BUDGET: one stop from where this gesture began, and the rest of a flick is absorbed
     A.pT = clamp(A.pT + d, Math.max(0, A.gFrom - 1), Math.min(LAST, A.gFrom + 1))
   } else if (A.mode === 'world') {
@@ -649,7 +681,7 @@ function scrollBy(d, touch = false) {
   A.gesture = true; A.lastInput = now; A.labArmed = true
 }
 function go(i) {
-  if (A.mode === 'index') { if (i === STOP.lab && settledAt(STOP.work)) { startBridge(); return } A.base = A.pT = clamp(i, 0, LAST) }
+  if (A.mode === 'index') { if (!CROSS && i === STOP.lab && settledAt(STOP.work)) { startBridge(); return } A.base = A.pT = clamp(i, 0, LAST) }
   else if (A.mode === 'world') { A.wbase = A.wpT = clamp(i, 0, lastFrame()) }
   A.gesture = false; A.lastInput = -1e9; A.labArmed = true
   // asked for by name — a key or a control in the strip — so the meter starts again from where that put us, and
@@ -827,6 +859,14 @@ addEventListener('keydown', (e) => {
   if (step) {
     e.preventDefault()
     if (A.aboutOpen) { if (!A.aboutDetail) closeAbout(); return }
+    // on Cross Section a key is a gesture: one position, and from DEPTH on to the bench
+    if (CROSS && CS && settledAt(CXS)) {
+      const now = performance.now()
+      resetGesture(); forgetStream()
+      if (CS.step(step) === 'lab') { A.base = A.pT = STOP.lab; A.labArmed = true; A.leftWork = now }
+      A.lastInput = now
+      return
+    }
     // on the passage a key advances the passage, and only carries on along the spine from its far end
     if (LINEFIELD && LF && settledAt(LFS)) {
       const t = LF.drive.target
@@ -1385,6 +1425,16 @@ function onArrive(stop, prev) {
       LF.drive.stop(); LF.drive.set(at); A.lfp = at
     }
   }
+  /*
+   * CROSS SECTION, entered at the end it is entered from: from Work at SURFACE (and the same gesture turns on into the
+   * band), from the far side at DEPTH. Left, it lands whatever was in the air; passed by, it is met at its near end.
+   */
+  if (CROSS && CS) {
+    A.csLeg = stop === CXS || prev === CXS
+    if (stop === CXS) CS.arrive(prev < CXS)
+    else if (prev === CXS) CS.leave()
+    else if ((prev - CXS) * (stop - CXS) < 0) CS.passBy(stop > CXS)
+  }
   if (stop === STOP.work && prev !== STOP.work) {
     // arriving on the work field, the first (or last) work is still in pieces
     if (prev > STOP.work) { A.wT = N - 1; A.wt = N - 1 + 0.9 } else { A.wT = 0; A.wt = -0.9 }
@@ -1526,6 +1576,12 @@ function buildDOM() {
       <p class="sr">${TXT.linefield.backendLabel}: ${TXT.linefield.backendSaid}. ${TXT.linefield.frontendLabel}: ${TXT.linefield.frontendSaid}.</p>`)
   }
 
+  /*
+   * CROSS SECTION in the DOM: a heading to land focus on and to name the place, and what the louvers carry, said for
+   * a reader who cannot see them. SURFACE, EDGE and DEPTH are the material's names and stay English everywhere.
+   */
+  if (CROSS) D.cs = h('section', 'layer cs-place', `<h2 class="lbl sr" tabindex="-1" lang="en">${TXT.cross.heading}</h2><p class="sr">${TXT.cross.said}</p>`)
+
   D.lab = h('section', 'layer lab', `<div class="cap"><h2 class="lbl" tabindex="-1">${lab.title}</h2><p class="ltext">${lab.line}</p>
     <p class="lopen"><a href="${LAB_URL}" data-lab>${lab.open} — ${lab.count}</a></p></div>
     <p class="lab-now" aria-live="polite"></p>
@@ -1550,6 +1606,7 @@ function buildDOM() {
   D.main = h('main', 'layers')
   D.main.append(D.h1, D.heroAct, D.about, D.detail, D.creative, D.system, D.work, D.lab, D.world)
   if (LINEFIELD) D.main.insertBefore(D.lf, D.work)
+  if (CROSS) D.main.insertBefore(D.cs, D.lab)
   lastSaid = ''
   D.top.prepend(D.skip)
   D.h1.after(D.lead, D.keys)
@@ -1557,6 +1614,8 @@ function buildDOM() {
   // the project summary is read before the project's own navigation, so Tab from it reaches that navigation
   D.world.prepend(D.world.querySelector('.wsum'))
   ui.append(D.top, D.main, D.bottom, D.a11y)
+  // the copper line and the word EDGE: drawn in the DOM over the material, never read (aria-hidden)
+  if (CROSS && CS?.dom) ui.append(CS.dom)
   D.aboutBlocks = [...D.detail.querySelectorAll('.ab')]
   D.hint = $('#hint'); D.cue = $('#cue')
   D.lang = D.top.querySelector('[data-locale]')
@@ -1747,6 +1806,7 @@ function pocketLines(k) {
 // heading on the index any more — the finale's route owns its own — so it is null there.
 const HEADING_OF = {
   ...(LINEFIELD ? { linefield: () => D.lf?.querySelector('h2') } : {}),
+  ...(CROSS ? { cross: () => D.cs?.querySelector('h2') } : {}),
   name: () => D.h1,
   creative: () => D.creative.querySelector('h2'),
   system: () => D.system.querySelector('h2'),
@@ -1756,6 +1816,7 @@ const HEADING_OF = {
 }
 const NAME_OF = {
   ...(LINEFIELD ? { linefield: () => TXT.linefield?.heading } : {}),
+  ...(CROSS ? { cross: () => TXT.cross?.heading } : {}),
   name: () => identity.name,
   creative: () => capabilities.surface.role,
   system: () => capabilities.system.role,
@@ -1934,6 +1995,7 @@ function domUpdate(from, to, front) {
     setOn(D.system, d === 'system')
     setOn(D.work, d === 'work')
     if (LINEFIELD && LF) setOn(D.lf, d === 'linefield')
+    if (CROSS && CS) setOn(D.cs, d === 'cross')
     setOn(D.world, d === 'world')
   } else {
     // it belongs to the hero, so it is there whenever the hero is: from the first frame of the opening, and gone
@@ -1951,6 +2013,8 @@ function domUpdate(from, to, front) {
       D.lf.querySelector('.lf-back').classList.toggle('on', A.lfp < 0.5)
       D.lf.querySelector('.lf-front').classList.toggle('on', A.lfp >= 0.5)
     }
+    // the heading belongs to the passage's ends, not to its movement: nothing is read while the louvers turn
+    if (CROSS && CS) setOn(D.cs, idleIdx && at(CXS) && !loaded && !CS.moving)
     setOn(D.world, A.mode === 'world' || A.mode === 'exit')
   }
   if (D.lead.hidden !== A.aboutOpen) D.lead.hidden = A.aboutOpen
@@ -2191,6 +2255,7 @@ function canonical() {
    * carries the visitor across, and past the far end it still continues along the spine.
    */
   if (LINEFIELD && LF) A.lfp = LF.drive.target < 0.5 ? 0 : 1
+  if (CROSS && CS) CS.snap()
   A.introReg = 0; A.nameAmp = 0
 }
 let last = performance.now()
@@ -2222,6 +2287,11 @@ function frame(now) {
    * is what a gesture acts on — and quantises what is SHOWN in canonical().
    */
   if (LINEFIELD && LF) A.lfp = LF.drive.step(A.lfp, et)
+  // CROSS SECTION's clock is the runtime's too. Its turn back ends by carrying the same gesture on into Work.
+  if (CROSS && CS) {
+    const onIt = A.mode === 'index' && A.base === CXS && Math.abs(A.p - CXS) < 5e-4
+    if (CS.advance(et, onIt) === 'work' && A.base === CXS) { A.base = A.pT = STOP.work; A.leftWork = now; A.gesture = false }
+  }
   if (REDUCED) canonical()
   IDX[STOP.work] = WORKS[clamp(Math.round(A.wt), 0, N - 1)]
   /*
@@ -2241,6 +2311,10 @@ function frame(now) {
     const onIt = A.base === LFS && Math.abs(A.p - LFS) < 0.04
     lfDrawn = onIt ? A.lfp : (A.p > LFS ? 1 : 0)
     IDX[LFS] = LF.at(lfDrawn)
+  }
+  if (CROSS && CS) {
+    IDX[CXS] = CS.state(A.csLeg)
+    CS.domAt(A.csLeg && A.mode === 'index' && A.base === CXS && Math.abs(A.p - CXS) < 0.04)
   }
 
   let from, to, front, overlay = 0
@@ -2385,7 +2459,9 @@ function frame(now) {
   const pr = A.press
   const devs = pr && pr.st.beneath !== 'pin' ? [{ x: pr.f.cx, y: pr.f.cy, ax: pr.f.hw * 1.25, ay: 36 + pr.f.h * 0.9, amt: clamp(pr.L * 1.35, 0, 1) }] : []
   const physSteps = Math.min(40, Math.max(1, Math.ceil(et / 0.05 - 1e-9))), ph = et / physSteps
-  for (let i = 0; i < physSteps; i++) { phys.step(ph / 2, [src], devs); phys.step(ph / 2, [src], devs) }
+  // CROSS SECTION holds the material still while its louvers turn: the frame C2 draws when they land is then the
+  // one they were carrying (place.js)
+  if (!(CROSS && CS && CS.holdPhysics)) for (let i = 0; i < physSteps; i++) { phys.step(ph / 2, [src], devs); phys.step(ph / 2, [src], devs) }
   ptr.vx *= Math.exp(-et * 9); ptr.vy *= Math.exp(-et * 9)
   surface.phys(phys)
 
@@ -2424,8 +2500,17 @@ function frame(now) {
       if (moving || sig !== staticSig) { A.staticHero = false; staticSig = null; draw = true; retireStaticHero() }
       else draw = false
     }
-    if (draw) { surface.render(); drawn = true; lastMem = stillMem; lastMemT = now }
-    lastSig = sig; A.cleared = false
+    /*
+     * CROSS SECTION: while its louvers move they are drawn as geometry, every frame; at either end C2 draws the place
+     * itself, and each such frame is kept as the face the next movement starts from (place.js).
+     */
+    const csMesh = CROSS && CS && A.mode === 'index' && A.base === CXS && Math.abs(A.p - CXS) < 5e-4 && CS.louvers
+    if (csMesh) { if (CS.due) { CS.render(); drawn = true } }
+    else if (draw) {
+      surface.render(); drawn = true; lastMem = stillMem; lastMemT = now
+      if (CROSS && CS && A.csLeg && from === to && (from === CS.front || from === CS.back)) CS.capture(from === CS.back ? 1 : 0)
+    }
+    lastSig = csMesh ? '' : sig; A.cleared = false
     noteFrame(drawn, et)
   } else if (!A.cleared) { surface.clear(); A.cleared = true; lastSig = ''; capReset() }
   A.jsMs = lerp(A.jsMs || 0, performance.now() - now, 0.05)
@@ -2585,6 +2670,16 @@ window.__lab = { CONTACT_STOP, A, V, ptr, phys, surface, works, STOP, SPINE,
     // how lfseam.cjs measures the words' own footprint independently of whatever else is on screen.
     lfWords: (v) => { A.lfWordsAt = v == null ? null : clamp(v, 0, 1); lastSig = '' },
   } : {}),
+  // Cross Section's hooks leave with its flag: read where the passage is, hold it at a position
+  ...(CROSS ? {
+    cs: () => CS,
+    csState: () => (CS ? { ...CS.probe(), leg: A.csLeg, stop: CXS, moving: CS.moving } : null),
+    csSet: (i) => { if (!CS) return; CS.set(i); lastSig = '' },
+    // the seam audit (place.js): landings compared as they happen, and the louvers at an end against C2's frame there
+    csAudit: (on) => CS?.audit(on),
+    csLandings: () => CS?.landings(),
+    csIdentity: () => { const r = CS?.identity(); lastSig = ''; return r },
+  } : {}),
   configure, routeChanged, setLocale, locale: () => TXT,  previewOf, go, forcedPress, navigate, exit, expandAbout, collapseAbout, startBridge, openLab, arriveAt, replayIntro: playIntro, IDX: () => IDX, WORKS: () => WORKS, WORLD: () => WORLD, frames: framesOf, touches, sig: () => lastSig, redraw: () => { lastSig = '' } }
 let rt = 0, booted = false
 // a resize before the surface exists (a phone's URL bar settling during load) is picked up once start() finishes
@@ -2640,6 +2735,11 @@ function prepare(pace) {
     const m = await import('./linefield/runtime.js')
     LF = m.createLinefield()
     LF.prepare(surface)
+  }
+  // Cross Section the same way: one dynamic import in a branch the bundler drops when its flag is off
+  if (CROSS) {
+    const m = await import('./cross/place.js')
+    CS = m.createPlace(surface, { reduced: REDUCED })
   }
   await step('surface')
   buildDOM()

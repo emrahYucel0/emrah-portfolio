@@ -53,13 +53,17 @@ export function createCross(surface, { atmosphere = CS_GLOW, breakName = null } 
 
   // C2 draws a state, flat, into whatever framebuffer is bound: the face a louver carries is C2's own picture
   const flat = (st) => {
+    // on the site this surface is the runtime's, mid-frame: whatever else it was set to draw is put aside and back
+    const keep = { pen: surface.pen, overlay: surface.overlay, shiver: surface.shiver, bs: surface.beneathStart, bc: surface.beneathCount }
     surface.use?.(null)
     surface.pair(st, st, 1)
     surface.beneath(st)
     surface.features = []
     surface.strip = V.strip
     surface.onBeforeDraw = null
+    surface.pen = [-99, -99, 0]; surface.overlay = 0; surface.shiver = 0; surface.beneathStart = 0; surface.beneathCount = 0
     surface.render()
+    surface.pen = keep.pen; surface.overlay = keep.overlay; surface.shiver = keep.shiver; surface.beneathStart = keep.bs; surface.beneathCount = keep.bc
   }
 
   const api = {
@@ -72,14 +76,16 @@ export function createCross(surface, { atmosphere = CS_GLOW, breakName = null } 
     get atmosphere() { return atmo },
     setAtmosphere(on) { atmo = !!on; dom.classList.toggle('warm', atmo) },
     /** lay the scene out for this viewport and have C2 draw its two faces (call after surface.resize) */
-    build(v) {
+    build(v, { faces = true } = {}) {
       V = v
       for (const st of [front, back]) if (st) surface.release(st)
       L = layout(V)
       front = faceState(V, L, 0)
       back = faceState(V, L, 1)
       line.style.top = `${V.strip}px`; line.style.bottom = `${V.strip}px`
-      const bw = Math.round(V.W * V.dpr), bh = Math.round(V.H * V.dpr)
+      // the debug entry draws both faces now; on the site they are taken from the canvas and drawn in bands (place.js)
+      if (!faces) return api
+      const bw = gl.drawingBufferWidth, bh = gl.drawingBufferHeight
       // their textures are built first: building one rebinds the framebuffer, which must not happen mid-face
       surface.warm(front); surface.warm(back)
       const mips = breakName !== 'nomip'
@@ -87,17 +93,25 @@ export function createCross(surface, { atmosphere = CS_GLOW, breakName = null } 
       mesh.face(1, bw, bh, () => flat(back), { mips })
       return api
     },
+    /** band k of n of face i, drawn by C2 from that face's state (0 SURFACE, 1 DEPTH) */
+    band(i, k, n) {
+      const st = i ? back : front
+      surface.warm(st)
+      mesh.band(i, k, n, () => flat(st))
+    },
     /** pose the scene at progress p; what is drawn follows on the next render */
     at(p) {
       Q = pose(L, clamp(p))
-      count = mesh.geometry(L, Q, sides, V.strip, V.H)
+      count = mesh.geometry(L, Q, sides, V.strip, V.H, V.dpr * (V.u || 1))
       api.domAt(Q.p)
       return Q
     },
     /** what the ground between the louvers is at this pose: the reference's underlay, cream to night */
     gap() {
       const d = Q ? Q.dark : 0
-      return [239 + (14 - 239) * d, 238 + (15 - 238) * d, 233 + (17 - 233) * d].map((c) => Math.round(c) / 255)
+      // cream to the DEPTH side's own paper (#111215, user decision 2026-10-03), so DEPTH at rest and DEPTH in motion
+      // stand on one ground; the reference's night was #0e0f11
+      return [239 + (17 - 239) * d, 238 + (18 - 238) * d, 233 + (21 - 233) * d].map((c) => Math.round(c) / 255)
     },
     /*
      * THE WORD AT THE EDGE, the reference's own geometry: it arrives behind the copper line, circles it in stops

@@ -32,11 +32,13 @@ export function wordPlacement(L, word, align) {
 }
 
 /** side 0: SURFACE, ink on cream (the louvers' fronts). side 1: DEPTH, pale on black (their backs). */
-export function faceState(V, L, side) {
+export function faceState(V, L, side, { word: withWord = true } = {}) {
   const word = side === 0 ? FRONT_WORD : BACK_WORD
   const at = wordPlacement(L, word, side === 0 ? 'left' : 'right')
   const narrow = L.W < 700
   const img = build(V, V.H, ({ solid }) => {
+    // the place as scenery (a header jump passing it) carries the ruling and not the word
+    if (!withWord) return
     solid.font = `900 ${at.fs}px ${FAMILY}`
     solid.textAlign = at.align
     solid.textBaseline = 'alphabetic'
@@ -44,7 +46,7 @@ export function faceState(V, L, side) {
     solid.textAlign = 'left'
   })
   return mk(V, {
-    id: side === 0 ? 'cross-front' : 'cross-back',
+    id: !withWord ? 'cross-pass' : side === 0 ? 'cross-front' : 'cross-back',
     spacing: L.spacing,
     freq: 0.1,
     // no wave: the louvers are the movement, and a breathing row would tear the letters across three louvers

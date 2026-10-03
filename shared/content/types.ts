@@ -163,6 +163,12 @@ export interface LocaleCopy {
     backendSaid: string
     frontendSaid: string
   }
+  /** present only in a Cross Section build (R14); its heading is its English name, `said` is in the page's language */
+  cross?: {
+    heading: string
+    /** what the louvers carry and what the passage does, for a reader who cannot see the material */
+    said: string
+  }
   work: {
     heading: string
     intro: string

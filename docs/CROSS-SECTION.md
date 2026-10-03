@@ -308,6 +308,112 @@ package `deploy/yucelemrah-1e663bd.zip`, SHA-256 `cd150812ff38b68d…`, as recor
 | `cstempo.cjs` | tempo and the band |
 | `csshimmer.cjs` | the shimmer attempt, kept so it is not repeated |
 
+## Phase C: approved 2026-10-03, with the proposed defaults
+
+- **The dark end's ground is `#111215`**, the DEPTH paper, not the reference's `#0e0f11`. DEPTH at rest and DEPTH
+  in motion therefore stand on one ground; the 4-level strip mismatch is gone.
+- **The phone landscape rule** is as proposed: below 520 px of height, rows no finer than the site's phone pitch
+  of 5.2 px (about 18 louvers at 844×390), with words and EDGE sized from the height. It lands in C4.
+- **Order:** C1 + C2, then STOP for the Work seam. Ask before the full gate. While Phase C runs, no other session
+  touches `engine/c2`.
+- **Open:** the user's iPhone result for the thin words was not given (the note still had the template's
+  "[heavy / thin]"). That decides whether R10's font loading is fixed in this phase or closed as a Playwright
+  artefact.
+
+### C1: the place on the spine (built)
+
+- **The spine.** With the flag on it is
+  `name · creative · system · linefield · work · cross · lab · rest`.
+  - It is written as its own pair of literals, so each flag-off branch folds to exactly the list it always was.
+  - The place is named once: `CXS = CROSS ? STOP.cross : -1`.
+  - The place-keyed tables (`PLACE`, `HEADING_OF`, `NAME_OF`) gain a `cross` entry behind the flag.
+  - The navigation-target list at `main.js:1591` is not touched: no header control targets the passage.
+- **`engine/c2/cross/place.js`** is the place. `main.js` hands it input, the clock and the frame. Its positions:
+
+  | position | what is on screen |
+  |---|---|
+  | 0 | SURFACE (passed through) |
+  | 1 | EDGE behind the line |
+  | 2 | EDGE beside it |
+  | 3 | EDGE in front |
+  | 4 | DEPTH (rest) |
+
+  - **One gesture moves one position.** The site's own rule (`opensGesture`) decides what a gesture is. A gesture
+    is spent once it has travelled `CS_STEP` (0.04 of a stop: about 36 px of wheel, or 2% of the height under a
+    finger).
+  - **Keys** are gestures: one position each.
+- **Ways in and out:**
+  - The work field's far end, and a finger swipe off it, enter the place instead of starting the bridge.
+  - The same gesture plays the turn to position 1, as soon as C2's frame of SURFACE has been kept.
+  - From position 1, the gesture back turns the louvers flat and carries on into Work's last work.
+  - From DEPTH, the gesture forward travels to the Lab stop and opens the bench. This is an interim: C3 replaces
+    it with the reveal.
+- **Header jumps.** `go(STOP.lab)` from Work no longer starts the bridge; it travels. A jump crosses the place as
+  scenery: a wordless state (`cross-pass`), no louvers, no EDGE.
+- **The DOM.** A heading layer `cs-place`, in English with `lang="en"`, plus a localised screen-reader line in
+  `TXT.cross` (behind the flag). The copper line and EDGE live in the runtime's `#ui`, `aria-hidden`.
+
+### C2: the Work seam (built)
+
+**It is built, not tuned.**
+
+- **At either end, C2 draws the place itself.** The louvers are drawn as geometry only for progress strictly
+  between the ends, whether moving or held in the band.
+- **Every C2 frame of the place at rest is copied** off the canvas (`copyTexSubImage2D`, before the browser takes
+  the buffer). The louvers' first frame therefore starts from exactly that picture.
+- **The other face** is drawn by C2 into its texture in three bands across the first frames of the movement, while
+  it is still turned away. No frame pays for a whole extra C2 render.
+- **The material's physics is held still** while the louvers are the picture, and for one frame after. When C2 takes
+  the far end back, the frame it draws is the one the louvers carried.
+- **Pixel mapping.** The louvers use C2's own dpr (CSS px × 1.75, not the rounded backing ratio) and span the
+  backing store's whole extent, so a 390-wide phone at 1.75 (682.5 px, stored as 683) is covered to its last column.
+- **Leaving an end:** the louvers leave only once that end's own frame has been kept.
+
+**Measured** (`tools/diag/csseam.cjs` against the dev server, controls first; Chrome and WebKit):
+
+| | 1440×900@2 | 390×844@3 | 390×660@3 | 375×560@3 |
+|---|---|---|---|---|
+| controls: still Work, still DEPTH | 0 px | 0 px | 0 px | 0 px |
+| identity, louvers at the end vs C2's frame (SURFACE / DEPTH) | **0 / 0** | 380 / 22 px, ≤1 level | 683 / 683 px, ≤1 level | 656 / 656 px, ≤1 level |
+| landing, carried face vs C2's frame (DEPTH / SURFACE) | **0 / 0** | **0 / 0** | **0 / 0** | **0 / 0** |
+| screencast: the first louver frame, the landing on DEPTH | **0 / 0 px** | **0 / 0** | **0 / 0** | **0 / 0** |
+| the C2 travel Work → SURFACE, worst step / control travel into Work | 147k / 244k px | 57k / 75k | 46k / 67k | 24k / 42k |
+| blank frames, page errors | 0, 0 | 0, 0 | 0, 0 | 0, 0 |
+
+How to read it:
+- **Identity** is the louvers drawn at an end against the frame they were copied from.
+- **The ≤1-level pixels** on phones are well under the 8 levels that count as "changed". They never reach the
+  screen: at rest C2 draws the place, and the louvers draw only once they have moved.
+- **WebKit** (Playwright): identity is at most 1 level, every landing is 0, and there are no errors.
+- **The travel into SURFACE** is the site's own travel between places. Its steps stay below those of an ordinary
+  travel into Work at every size.
+
+**The place's rules** (`tools/diag/cross.cjs`, Chrome and WebKit): all PASS.
+- One gesture off Work's last work lands on position 1, for a notch, a 60 Hz swipe and a hard 120 Hz flick; the
+  flick's tail never passes position 1.
+- Inside the band, one gesture of any shape is one position.
+- A flick from in front carries to DEPTH and rests there.
+- A flick back from DEPTH is one position, and four back return to Work's last work.
+- Keys move one position each.
+- On a 390×844 touch phone, a slow swipe and a long fast one each move one position.
+- The strip's LAB from Work crosses the place as scenery (0 louver frames, 0 EDGE frames) and opens the bench.
+
+**Films** (`tools/diag/csfilm.cjs`, `tools/diag/out/cross/film/path-*.webm`): Work's last work → the band → DEPTH
+and back, at 1440×900, 390×844 and 375×560.
+
+**Flag off.** `npm run generate` with the flag unset was compared with the live `1e663bd` package.
+- **Every JavaScript chunk is byte-identical.**
+- **No file differs** beyond Nuxt's build ID and prerender timestamp (0 of 218).
+- **0 Cross Section markers.** The state fields are declared only where the flag is on, so not even their names
+  ship.
+- **`npx nuxt typecheck`:** clean.
+- **Not run yet: the full flag-off gate.** It is asked for before running, as agreed.
+
+**Still to come in Phase C:**
+- **C3:** the DEPTH → bench reveal, and the bench's upward gesture into DEPTH.
+- **C4:** reduced motion as cuts with the EDGE still, the landscape rule, and R10 by the iPhone's answer.
+- **C5:** the remaining harness updates and the full gate.
+
 ## Working rules for this worktree
 
 - **Own ports, build folder and gate log:** `SERVE_PORTS`, `BUILD_DIR=../builds/cross-section`,

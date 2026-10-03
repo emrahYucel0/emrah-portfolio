@@ -2,6 +2,7 @@ import type { LocaleCopy } from '../types'
 
 /** replaced at transform time by the bundler; see the note in nuxt.config.ts */
 declare const __LINEFIELD__: boolean
+declare const __CROSS__: boolean
 
 export const en = {
   meta: {
@@ -93,6 +94,14 @@ export const en = {
     frontendLabel: 'FRONTEND — HOW I THINK',
     backendSaid: 'State, scale, failure, truth',
     frontendSaid: 'Feel, timing, friction, first paint',
+  } } : {}),
+  /*
+   * CROSS SECTION is unreleased (R14), so its copy leaves the published bundle with its code, as Linefield's did. Its
+   * three words are the material's names and stay English in both languages; the heading is its name, also English.
+   */
+  ...(typeof __CROSS__ !== 'undefined' && __CROSS__ ? { cross: {
+    heading: 'Cross Section',
+    said: 'SURFACE is printed on the fronts of thin slats and DEPTH on their backs. Turning them over passes through the cross section, where only their copper edges, a copper line and the word EDGE remain.',
   } } : {}),
   work: {
     heading: 'Work',

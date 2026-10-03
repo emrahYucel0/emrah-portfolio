@@ -18,6 +18,16 @@ const pw = require('playwright')
 const { stopsOf } = require('./stops.cjs')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const port = process.argv[2]
+/*
+ * FILTERS, so one suspicious cell can be re-run on its own as many times as it takes. The flick matrix is 4
+ * shapes x 5 places x 2 directions and takes about 25 minutes; when a single case needs a verdict, repeating the
+ * whole matrix buys nothing and costs the quiet machine time it does not have.
+ *   node gesture2.cjs 4950 --shape=long --place=linefield --reps=10 --only-flicks
+ */
+const argOf = (k, d) => { const a = process.argv.find((x) => x.startsWith('--' + k + '=')); return a ? a.split('=')[1] : d }
+const ONLY_SHAPE = argOf('shape'), ONLY_PLACE = argOf('place')
+const FLICK_REPS = +argOf('reps', '1')
+const ONLY_FLICKS = process.argv.includes('--only-flicks')
 let fails = 0
 const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'FAIL'} ${l}${x ? ` — ${x}` : ''}`) }
 const note = (l) => console.log(`       ${l}`)
@@ -61,12 +71,64 @@ const FLICKS = {
   long: async (p, dir) => { for (let i = 0; i < 90; i++) { await p.mouse.wheel(0, 300 * dir); await sleep(1) } },
 }
 
+/*
+ * A NAVIGATION THAT MISSES ITS WINDOW IS NOT A RESULT. `networkidle` resolves here in about a second, measured —
+ * but twice it threw during a long run and ended a 40-minute matrix at case 1, which reads as a failure and is
+ * only load. `nav` retries three times and settles for `load`, because every caller waits for the runtime
+ * explicitly on the next line anyway. Nothing about what is measured changes.
+ */
+const nav = async (pg, url, tries = 3) => {
+  for (let i = 0; ; i++) {
+    const ok = await pg.goto(url, { waitUntil: i === 0 ? 'networkidle' : 'load', timeout: 45000 }).then(() => true, () => false)
+    if (ok) return
+    if (i >= tries - 1) throw new Error('could not open ' + url + ' in ' + tries + ' tries')
+  }
+}
+/*
+ * WHAT THE ENGINE ACTUALLY SAW, for a case that fails.
+ *
+ * This file drives the wheel through Playwright, one round trip per event, so the gaps the page receives are the
+ * harness's own and grow with the machine's load — which is why its coast and tail cases have failed on some runs
+ * and not others, and why that is recorded in docs/KNOWN-ISSUES.md. When a case overshoots, the question is
+ * always the same: did the engine open a second gesture on a gap the WHEEL left, or on a gap the HARNESS left?
+ * Two listeners answer it. Both only observe — nothing here dispatches, delays or swallows an event.
+ *
+ *   capture phase, before the engine's own handler: the state it is about to judge against
+ *   bubble phase, registered after it: whether that judgement opened a gesture
+ *
+ * `quiet` is not read from the engine — it is a local there — but it is exactly `gap > GEST_STREAM`, and
+ * GEST_STREAM is 120 ms, so the gap on the line tells you whether it was true.
+ */
+const GEST_STREAM_MS = 120
+const installWatch = (pg) => pg.evaluate(() => {
+  if (window.__gw) return
+  window.__gw = []
+  const A = () => window.__lab && window.__lab.A
+  addEventListener('wheel', (e) => {
+    const a = A(); if (!a) return
+    window.__gw.push({ t: +performance.now().toFixed(1), dy: +e.deltaY.toFixed(1), gap: +(performance.now() - a.gAt).toFixed(1),
+      env: +(a.gEnv ?? -1).toFixed(4), peak: +(a.gPeak ?? -1).toFixed(4), spent: !!a.gSpent, from: a.gFrom, base: a.base })
+  }, { capture: true })
+  addEventListener('wheel', () => {
+    const a = A(), r = window.__gw[window.__gw.length - 1]; if (!a || !r) return
+    r.opened = a.gFrom !== r.from || (r.spent && !a.gSpent)
+    r.pT = +a.pT.toFixed(3)
+  })
+})
+const takeWatch = async (pg) => { const r = await pg.evaluate(() => { const x = window.__gw || []; window.__gw = []; return x }).catch(() => []); return r }
+const sayOpenings = (rec) => {
+  const op = rec.filter((e) => e.opened)
+  if (!op.length) return '  (no opening was observed)'
+  return '  openings: ' + op.map((e, i) => `#${i + 1} dy ${e.dy} gap ${e.gap}ms ${e.gap > GEST_STREAM_MS ? 'QUIET-TRUE' : 'quiet-false'} env ${e.env} peak ${e.peak} env/peak ${e.peak > 0 ? (e.env / e.peak).toFixed(2) : '?'}${e.spent ? ' spent' : ''}`).join('  |  ')
+    + `  ·  all gaps ${rec.slice(1).map((e) => Math.round(e.gap)).join(',')}`
+}
 ;(async () => {
   const b = await pw.webkit.launch()
   const p = await (await b.newContext({ viewport: { width: 1366, height: 768 } })).newPage()
-  await p.goto(`http://127.0.0.1:${port}/tr`, { waitUntil: 'networkidle' })
+  await nav(p, `http://127.0.0.1:${port}/tr`)
   await p.waitForFunction(() => window.__lab?.A.mode === 'index', null, { timeout: 40000 }).catch(() => {})
   await sleep(3000)
+  await installWatch(p)
   const STOP = await stopsOf(p)
   const SPINE = await p.evaluate(() => window.__lab.SPINE || null).catch(() => null)
   const LAST = (SPINE ? SPINE.length : Object.keys(STOP).length) - 1
@@ -87,7 +149,7 @@ const FLICKS = {
   const c = await st()
   ok(c.mode === 'world' && c.k === a.k && c.wbase - a.wbase <= 1, 'one momentum gesture inside a project moves at most one frame, and never leaves the project', `${JSON.stringify(a)} → ${JSON.stringify(c)}`)
 
-  await p.goto(`http://127.0.0.1:${port}/tr`, { waitUntil: 'networkidle' })
+  await nav(p, `http://127.0.0.1:${port}/tr`)
   await p.waitForFunction(() => window.__lab?.A.mode === 'index', null, { timeout: 40000 }).catch(() => {})
   await sleep(3000)
   const i0 = await st()
@@ -118,7 +180,7 @@ const FLICKS = {
    * A check whose result depends on the case before it is not measuring what it says it is.
    */
   const goTo = async (name) => {
-    await p.goto(`http://127.0.0.1:${port}/tr`, { waitUntil: 'networkidle' })
+    await nav(p, `http://127.0.0.1:${port}/tr`)
     await p.waitForFunction(() => window.__lab?.A.mode === 'index', null, { timeout: 40000 }).catch(() => {})
     await sleep(2600)
     if (name !== 'name') { await p.evaluate((n) => window.__lab.go(window.__lab.STOP[n]), name); await sleep(2600) }
@@ -132,14 +194,19 @@ const FLICKS = {
   const HAS_AXIS = new Set(['work', 'linefield'].filter((n) => STOP[n] !== undefined))
 
   for (const kind of ['burst', 'coast', 'tail', 'long']) {
+    if (ONLY_SHAPE && ONLY_SHAPE !== kind) continue
     console.log(`\n-- a hard flick: ${kind}`)
     for (const name of PLACES) {
+      if (ONLY_PLACE && ONLY_PLACE !== name) continue
       for (const dir of [1, -1]) {
+       for (let rep = 0; rep < FLICK_REPS; rep++) {
         await goTo(name)
         await hushClear(p)
         const before = await posOf(p)
+        await installWatch(p); await takeWatch(p)
         await FLICKS[kind](p, dir)
         await sleep(3200)
+        const rec = await takeWatch(p)
         const after = await posOf(p)
         const moved = after.pos - before.pos
         const atEnd = (dir > 0 && before.pos >= LAST) || (dir < 0 && before.pos <= 0)
@@ -150,6 +217,8 @@ const FLICKS = {
         const good = Math.abs(moved) <= 1 && (Math.abs(moved) === 1 || atEnd || held)
         const why = moved === 0 ? (atEnd ? 'the end of the spine' : held ? `stayed, and its own axis moved ${ran.toFixed(2)}` : 'NOTHING MOVED') : `${moved > 0 ? '+' : ''}${moved}`
         ok(good, `${kind} ${dir > 0 ? 'down' : 'up  '} from ${name.padEnd(10)} ${before.pos} → ${after.pos}`, why)
+        if (!good) console.log(`     ${sayOpenings(rec)}`)
+       }
       }
     }
 
@@ -161,7 +230,7 @@ const FLICKS = {
      */
     const studyOf = (pg) => pg.evaluate(() => [...document.querySelectorAll('.lab-stage .rec')].findIndex((b) => b.getAttribute('aria-current') === 'true') + 1)
     for (const dir of [1, -1]) {
-      await p.goto(`http://127.0.0.1:${port}/tr/lab`, { waitUntil: 'networkidle' })
+      await nav(p, `http://127.0.0.1:${port}/tr/lab`)
       await sleep(2400)
       await hushClear(p)
       const before = await posOf(p), s0 = await studyOf(p)
@@ -174,6 +243,10 @@ const FLICKS = {
       ok(good, `${kind} ${dir > 0 ? 'down' : 'up  '} from the bench (01) ${dir > 0 ? `study ${s0} → ${s1}` : `${before.pos} → ${after.pos}`}`, `${dir > 0 ? 'one study' : 'one stop'}  ${after.path}`)
     }
   }
+  // one cell, re-run on its own: the sections after this are the bench, the arrival and the cadences, and
+  // repeating them ten times over says nothing about the case under the microscope
+  if (ONLY_FLICKS) { console.log(`
+GESTURE (flicks only): ${fails === 0 ? 'PASS' : `FAIL (${fails})`}`); await b.close(); process.exit(fails ? 1 : 0) }
 
   /*
    * ── AND THE ARRIVAL STAYS RESPONSIVE ──────────────────────────────────────────────────────────────────────

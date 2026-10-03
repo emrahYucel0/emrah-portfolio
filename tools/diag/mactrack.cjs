@@ -63,6 +63,19 @@ const SWIPE = {
 }
 const cutAt = (events, ms) => events.filter(([t]) => t <= ms)
 
+/*
+ * A NAVIGATION THAT MISSES ITS WINDOW IS NOT A RESULT. `networkidle` resolves here in about a second, measured —
+ * but twice it threw during a long run and ended a 40-minute matrix at case 1, which reads as a failure and is
+ * only load. `nav` retries three times and settles for `load`, because every caller waits for the runtime
+ * explicitly on the next line anyway. Nothing about what is measured changes.
+ */
+const nav = async (pg, url, tries = 3) => {
+  for (let i = 0; ; i++) {
+    const ok = await pg.goto(url, { waitUntil: i === 0 ? 'networkidle' : 'load', timeout: 45000 }).then(() => true, () => false)
+    if (ok) return
+    if (i >= tries - 1) throw new Error('could not open ' + url + ' in ' + tries + ' tries')
+  }
+}
 ;(async () => {
   const b = await pw[engine === 'chrome' ? 'chromium' : 'webkit'].launch(engine === 'chrome' ? { channel: 'chrome' } : {})
   const ctx = await b.newContext({ viewport: { width: 1366, height: 768 } })
@@ -71,7 +84,7 @@ const cutAt = (events, ms) => events.filter(([t]) => t <= ms)
   const goTo = async (name) => {
     // A FRESH DOCUMENT PER CASE, deliberately. `A.gPeak` and `A.gEnv` outlive a gesture, and `gEnv < gPeak * 0.5`
     // is one of the three things a rise depends on, so a previous case's throw would decide this one's verdict.
-    await p.goto(`${base}/tr`, { waitUntil: 'networkidle', timeout: 60000 })
+    await nav(p, `${base}/tr`)
     await p.waitForFunction(() => window.__lab?.A.mode === 'index', null, { timeout: 40000 })
     await sleep(2600)
     if (name !== 'name') { await p.evaluate((n) => window.__lab.go(window.__lab.STOP[n]), name); await sleep(2600) }
@@ -165,20 +178,34 @@ const cutAt = (events, ms) => events.filter(([t]) => t <= ms)
         for (const silence of SILENCES) {
           if (ONLY_SIL && +ONLY_SIL !== silence) continue
           for (let rep = 0; rep < REPS; rep++) {
+          /*
+           * A DESTINATION WITH AN INNER AXIS RUNS IT, AND THAT IS NOT "ABSORBED".
+           * The Work field and the Linefield passage each run their own progress for a gesture before carrying on,
+           * which is the site's rule. From Creative the second swipe's destination is Linefield, so the index
+           * stays on the stop before it while the passage moves — and this file, which read only `A.base`, called
+           * that absorbed. ptp2.cjs was taught this and mactrack was not: `creative down` scored 15/24 against
+           * `name down` 22/24 for no reason to do with the floor. The axis is read now, so running it is told
+           * apart from doing nothing.
+           */
           await goTo(place)
-          const from = await p.evaluate(() => window.__lab.A.base)
+          const b4 = await p.evaluate(() => ({ base: window.__lab.A.base, wT: +(window.__lab.A.wT ?? 0).toFixed(3), lfp: +(window.__lab.A.lfp ?? -1).toFixed(3) }))
+          const from = b4.base
           const thrown = cutAt(THROW[rate](), cut).map(([t, d]) => [t, d * dir])
           const swiped = SWIPE[rate]().map(([t, d]) => [t, d * dir])
           const r = await run(thrown, swiped, silence)
           await sleep(300)
-          const after = await p.evaluate(() => window.__lab.A.base)
+          const aft = await p.evaluate(() => ({ base: window.__lab.A.base, wT: +(window.__lab.A.wT ?? 0).toFixed(3), lfp: +(window.__lab.A.lfp ?? -1).toFixed(3) }))
+          const after = aft.base
+          const HAS_AXIS = new Set(['work', 'linefield'])
+          const nextName = SPINE[from + dir]
+          const axisRan = HAS_AXIS.has(nextName) && (nextName === 'work' ? Math.abs(aft.wT - b4.wT) > 0.02 : Math.abs(aft.lfp - b4.lfp) > 0.02)
           const sw = r.log.filter((e) => e.tag === 'swipe')
           const opened = sw.find((e) => e.opened)
           const first = sw[0]
-          const moved = Math.abs(after - from)
+          const moved = Math.abs(after - from) + (axisRan && Math.abs(after - from) === 1 ? 1 : 0)
           const atEnd = dir > 0 ? from + 2 > LAST : from - 2 < 0
           const landT = r.lands.length ? Math.round(r.lands[0][0] - r.t0) : null
-          const heard = !!opened
+          const heard = !!opened || axisRan
           const label = `${rate}Hz cut@${String(cut).padStart(4)}ms silence ${String(silence).padStart(3)}ms`
           const why = first
             ? `at its first event: gap ${first.gap}ms, mag ${(Math.abs(first.dy) * PER_PX).toFixed(3)} stops (floor 0.12), envelope ${first.env}`
@@ -187,9 +214,18 @@ const cutAt = (events, ms) => events.filter(([t]) => t <= ms)
           const opens = r.log.filter((e) => e.opened)
           const coal = { throw: r.log.filter((e) => e.tag === 'throw'), swipe: r.log.filter((e) => e.tag === 'swipe') }
           const worstThrow = Math.max(0, ...coal.throw.map((e) => e.n)), worstSwipe = Math.max(0, ...coal.swipe.map((e) => e.n))
+          /*
+           * WHAT SPACING THE PAGE ACTUALLY SAW. The 120 Hz fix turns on events arriving about 8.33 ms apart: that
+           * is what lets the floor read them as a frame's worth. This harness dispatches from a setTimeout loop,
+           * and under load it cannot hold 8 ms — the page then sees 16 ms gaps, the events read as one frame's
+           * worth each, and the case fails for the harness's reason rather than the site's. The median gap among
+           * the swipe's own events is therefore reported on every case, so the two can be told apart.
+           */
+          const swGaps = sw.map((e) => e.gap).filter((g) => g > 0).sort((a, b) => a - b)
+          const medGap = swGaps.length ? swGaps[Math.floor(swGaps.length / 2)] : null
           const opensSaid = `  opened ${opens.length}x [${opens.map((e) => `${e.tag}@${Math.round(e.t - r.t0)}ms dy ${e.dy} gap ${e.gap} env ${e.env} env/peak ${e.fallen} n${e.n}`).join(' | ')}]`
             + `  dispatched ${coal.throw.length}/${r.nThrow} throw + ${coal.swipe.length}/${r.nSwipe} swipe events, never summed; the harness was at most ${r.late}ms late`
-          const detail = `${from}→${after} (moved ${moved})  throw's last event +${Math.round(r.lastThrow)}ms, swipe began +${Math.round(r.swipeT0)}ms, stop announced ${landT == null ? 'after the run' : '+' + landT + 'ms'}  ·  ${heard ? `HEARD on swipe event ${sw.indexOf(opened) + 1} of ${sw.length}` : `ABSORBED in ${sw.length} events`}, ${why}`
+          const detail = `[median swipe gap ${medGap == null ? '?' : medGap.toFixed(1)}ms, meant to be ${rate === 120 ? '8.3' : '16.7'}] ${from}→${after} (moved ${moved}${axisRan ? `, the second ran ${nextName}'s own axis: ${b4.lfp} → ${aft.lfp}` : ''})  throw's last event +${Math.round(r.lastThrow)}ms, swipe began +${Math.round(r.swipeT0)}ms, stop announced ${landT == null ? 'after the run' : '+' + landT + 'ms'}  ·  ${heard ? `HEARD on swipe event ${sw.indexOf(opened) + 1} of ${sw.length}` : `ABSORBED in ${sw.length} events`}, ${why}`
           table.push({ place, dir, rate, cut, silence, heard, moved, atEnd })
           if (moved > 2 || LOG) console.log(`       ${opensSaid}`)
           if (LOG) for (const e of r.log) console.log(`         ${e.tag.padEnd(5)} +${String(Math.round(e.t - r.t0)).padStart(5)}ms dy ${String(e.dy).padStart(8)} n${e.n} gap ${String(e.gap).padStart(6)} env ${String(e.env).padStart(7)} peak ${String(e.peak).padStart(7)} fallen ${e.fallen} spent ${e.spentB} pT ${e.pTb}→${e.pT} base ${e.base}${e.opened ? '   <== OPENED' : ''}`)

@@ -436,6 +436,23 @@ const GEST_ENV_KEEP = 0.75 // what the envelope keeps from one event to the next
 const GEST_FRAME = 16.7    // ms of input one event normally carries
 const GEST_COALESCED = 8   // and at most this many frames' worth is read as having arrived together
 /*
+ * R28: AND AT MOST THIS MANY EVENTS ARE READ AS ONE FRAME'S WORTH.
+ *
+ * GEST_FLOOR is "about one notch of travel". It was measured per EVENT, which quietly made it a different
+ * threshold on different hardware: a 60 Hz Mac trackpad sends one event a frame, so its swipe's first momentum
+ * event is 190 px and clears the floor, while a 120 Hz ProMotion trackpad sends half the delta twice as often —
+ * its biggest event of all is 95 px, BELOW the floor — so a 120 Hz swipe could never open a gesture by rise at
+ * all. Measured (tools/diag/mactrack.cjs, 48 judged cases): after the momentum was cut off, a deliberate second
+ * swipe was heard 21 of 24 times at 60 Hz and 6 of 24 at 120 Hz, and those 6 were only the 400 ms silences, where
+ * the GAP opens the gesture and the floor never comes into it.
+ *
+ * `clamp(gap / GEST_FRAME, 1, …)` cannot see this, because it only ever DIVIDES: an event arriving half a frame
+ * after the last one is still read as one event's worth. Letting the divisor fall to GEST_DENSE reads a stream
+ * denser than one event per frame as what it actually amounts to in a frame — and 95 px every 8.33 ms is 190 px a
+ * frame, which is exactly what the 60 Hz device sends.
+ */
+const GEST_DENSE = 0.5     // half a frame: one 120 Hz doubling, and no more
+/*
  * AND A STREAM DOES NOT RISE OUT OF ITSELF (R12). The floor was what kept a swipe's own ramp from reading as new
  * throws, and a hard throw outgrows the floor within its first few events: on a 120 Hz trackpad, delivered in
  * coalesced pairs, it ramps 40 · 100 · 280 px, and the 280 — 2.8 times the envelope, well past one notch — was a rise.
@@ -492,8 +509,34 @@ function opensGesture(d, now) {
   const gap = now - A.gAt
   A.gAt = now
   const perFrame = mag / clamp(gap / GEST_FRAME, 1, GEST_COALESCED)
-  // a new throw is a jump out of a stream that has died down — never the stream's own ramp (see GEST_FALLEN)
-  const rise = mag > GEST_FLOOR && perFrame > A.gEnv * GEST_RISE && A.gEnv < A.gPeak * GEST_FALLEN
+  /*
+   * R28: the floor is cleared by the event OR by what it amounts to in a frame, whichever is the larger. Only the
+   * FLOOR reads the denser figure — the envelope, the peak and the rise ratio below are all still `perFrame`, so
+   * their units and every threshold measured against them are untouched.
+   *
+   * `Math.max` and not a swap, because the two say different things and both are wanted. A dense stream needs the
+   * per-frame figure, which is the 120 Hz case. A SPARSE one needs the event's own size: a deliberate mouse notch
+   * 300 ms after the last is 120 px, but only 15 px a frame, and reading it per frame would put it under the floor
+   * and swallow exactly the notches an earlier round of this work went to some trouble to keep (origin/main
+   * measured 1,1,1,1,1 at 300 ms spacing). Taking the larger can only ever admit more than before, never less.
+   */
+  const inFrame = mag / clamp(gap / GEST_FRAME, GEST_DENSE, GEST_COALESCED)
+  /*
+   * R28, and the other half of the Mac case: A STREAM THAT HAS STOPPED HAS DIED DOWN, whatever its last size was.
+   *
+   * `A.gEnv < A.gPeak * GEST_FALLEN` asks whether the stream has decayed, and it reads the ENVELOPE, which only
+   * decays per event. Cut the momentum early — fingers down on the pad, which is what a Mac does — and no further
+   * events arrive, so the envelope freezes at whatever it was and the ratio freezes with it. Measured at a 300 ms
+   * cut: env/peak 0.535, just above the half, so no rise was possible at all and the new swipe could only get in
+   * on a gap of 340 ms or more. The hand had stopped the scroll and the site still held the door shut.
+   *
+   * A silence says the same thing the decay would have said. GEST_STREAM is already this file's word for it —
+   * "events closer together than this arrived as a stream" — so a gap wider than that means the stream is over.
+   * A FLING CANNOT USE THIS: its own events are 8-17 ms apart and never leave a 120 ms hole, so `quiet` is false
+   * for every event a decaying tail sends. The floor and the 2.6x rise still have to be cleared either way.
+   */
+  const quiet = gap > GEST_STREAM
+  const rise = Math.max(mag, inFrame) > GEST_FLOOR && perFrame > A.gEnv * GEST_RISE && (quiet || A.gEnv < A.gPeak * GEST_FALLEN)
   A.gEnv = Math.max(A.gEnv * GEST_ENV_KEEP, perFrame)
   A.gPeak = Math.max(A.gPeak, perFrame)
   /*

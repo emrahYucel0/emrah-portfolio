@@ -45,7 +45,7 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
 | R18 | Awwwards başvurusu (Developer Award) | P0 | Karar bekliyor (tarih) | R17, R9, R22, R23 |
 | R19 | Full-Stack'in siyah kapsüllerinin çevresindeki hale | P1 | Karar bekliyor (varyant ya da kural) | — |
 | R27 | Harness'lar izlenen `docs/` yollarına yazıyor | P2 | **Bitti** (2026-10-03) | — |
-| R28 | Mac dokunmatik yüzeyinde ikinci kaydırmanın yutulması (120 Hz) | **P0** (sonraki yayın) | Ölçüldü; düzeltme önerildi | R22 (gerçek MacBook) |
+| R28 | Mac dokunmatik yüzeyinde ikinci kaydırmanın yutulması (120 Hz) | **P0** | **Düzeltildi; gerçek MacBook onayı bekliyor** | R22 |
 | R20 | Arka belleğe piksel sayısı tavanı (önerilen 8,3 Mpx) | P1 | Karar bekliyor (değer) | R9 ile birlikte ölçülür |
 | R21 | Büyük ekranlarda büyük harf başına satır sayısına üst sınır | P2 | Karar bekliyor (sanat yönetimi) | — |
 | R22 | Gerçek cihaz testi (iPad, Mac'te Safari, Android telefon) | P0 | Karar verildi | — |
@@ -316,8 +316,29 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
   oynatılmış bir yeniden kurgu, gerçek bir Mac değil. Sonra düzeltilir ve **`gesture2`, `trackpad` ve `mactrack`**
   kapılarından yeniden geçirilir; `mactrack`'in 400 ms satırı zaten 12/12, düzeltmeden sonra 80-250 ms satırları
   da dolmalı ve `trackpad`'in 140 durumu bir durak kuralını bozmamalı.
-- **Bu yayında değişiklik yok (kullanıcı kararı, 2026-10-02).** Tam tablo ve sayılar
-  `docs/KNOWN-ISSUES.md`'de.
+- **DÜZELTİLDİ (2026-10-03, `fix/r28-mac-second-swipe`).** İki parça, beş satır kod:
+  1. **Eşik kare başına okunuyor.** `clamp(gap / GEST_FRAME, 1, …)` yalnız BÖLER; yarım kare sonra gelen bir olay
+     hâlâ "bir olaylık" sayılıyordu. Bölen `GEST_DENSE = 0.5`'e inince, 8,33 ms'de bir gelen 95 piksel **kare
+     başına 190 piksel** okunuyor — 60 Hz'in tek olayda gönderdiğiyle birebir aynı. `Math.max(mag, inFrame)`
+     kullanıldı, takas değil: seyrek bir akışta olayın kendi boyu gerekir (300 ms sonraki bilinçli bir fare
+     çentiği 120 piksel ama kare başına 15 pikseldir), yani kural **ancak daha fazlasını kabul eder, daha azını
+     değil**.
+  2. **Durmuş bir akış sönmüştür.** `gEnv < gPeak * GEST_FALLEN` zarfı okur, zarf da yalnız olay başına söner;
+     parmaklar yere konup momentum kesilince zarf olduğu yerde **donuyordu** (ölçüm: 300 ms'de kesilince
+     env/peak 0,535, yarının hemen üstünde), yani hiç yükseliş mümkün olmuyordu. `quiet = gap > GEST_STREAM`
+     eklendi: 120 ms'den geniş bir boşluk akışın bittiğini söyler. **Sönen bir kuyruk bunu kullanamaz** — kendi
+     olayları 8–17 ms aralıklıdır, 120 ms'lik bir delik bırakmaz.
+- **Ölçümler.** macOS ikinci kaydırma: **48 durumda 21 yutulma → 4**; 120 Hz artık 60 Hz ile aynı seviyede.
+  Windows hassas dokunmatik: PASS. `trackpad` 7 şeklin 140 durumu: **PASS, sıfır taşma**. Serbest dönen tekerlek
+  (`freespin.cjs`, iki motorda 105'er dönüş): **350 ms'ye kadar birebir aynı** — yani `quiet`'in yönettiği bütün
+  aralıkta fark yok. Hızlı kontroller: `touch`, `spine`, `linefield` (148 ok), `bench`, `workopen`, `worktap`,
+  `worktext` — hepsi PASS.
+- **R28'in yapmadığı iki şey, ikisi de ayrı kayıtlı:** 450–600 ms'lik son çentiklerde serbest dönen tekerleğin
+  ikinci durak alması, ve `long` şeklinin akış ortasında ikinci durak alması. İkisi de R28 öncesi motorda da var
+  (ikincisinde **daha sık**: 10 koşuda 3'e karşı 1), ikisi de bu yayında değiştirilmedi.
+- **R22 AÇIK KALIYOR.** Buradaki her şey Windows'ta Chrome ile oynatılmış bir macOS yeniden kurgusudur; hiçbir
+  Apple donanımına dokunulmadı ve harness gerçek bir ProMotion'ın 8,33 ms'si yerine ~10 ms veriyor. **Gerçek bir
+  MacBook'ta denenene kadar bu düzeltme kapanmış sayılmamalı.**
 - **Not — harness'ın kendi hatası, kayıt için.** İlk tam koşuda iki durum "üç durak" göstermişti. Site bunu
   yapamaz: `A.pT` her harekette `A.gFrom ± 1`'e kıstırılıyor (`main.js:587`), yani üç durak üç hareket açılışı
   demek, ve gerçek bir 120 Hz akışı eşiği hiç geçemediği için üçüncüyü açamaz. Sebep harness'tı: vadesi gelen

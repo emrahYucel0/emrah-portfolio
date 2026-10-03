@@ -464,6 +464,39 @@ Reproduce: `node mactrack.cjs <port>` and `node ptp2.cjs <port> chrome --only=se
 
 ---
 
+## LAB A11Y: one axe colour-contrast violation on `.state` at `/en/lab` — RESOLVED: axe samples it mid-fade
+
+**Settled 2026-10-03: not a contrast fault, and nothing was changed.** `.state` is the bench's foot line,
+"Istanbul · Available for selected projects". It is shown and then taken away:
+
+```
+t =    0 ms   opacity 1      visible
+t = 1515 ms   opacity 0.23   fading
+t = 2018 ms   opacity 0      invisible, and stays there
+```
+
+Measured in the window a visitor actually reads it — t = 600 ms, opacity 1, the bench's hint still at 0 —
+against the real pixels behind it, the type hidden for the capture:
+
+**worst ratio 8.09:1, 0% of the pixels under AA.** The requirement is 4.5:1.
+
+axe samples during the fade. At about 1.5 s the element is at opacity 0.23, so its composited colour is nearly
+the ground itself and the ratio collapses toward 1:1 — a "serious" violation for a state nobody reads, gone 500 ms
+later and invisible after that. It reports identically on the build before this one, so it is not from any recent
+work. The element stays at `visibility: visible` on purpose: only the paint goes, so a screen reader still gets
+the line.
+
+**A measuring mistake worth keeping, because it nearly caused a wrong fix.** The first attempt pinned
+`opacity: 1` to hold the element still, and reported 1.01:1 with 9.5% of pixels under AA — "the colour needs
+fixing". It did not. Forcing it visible kept it on screen past 2.5 s, which is when the bench's hint appears, so
+the measurement was of TWO labels drawn over each other: "SCROLL TO BROWSE · TAP TO OPEN" and "ISTANBUL ·
+AVAILABLE FOR SELECTED PROJECTS" on one line, which the crop shows as `SCROLIBUTO BROWSE LABTAP FOR SOPERCTED
+PROJECTS`. The failing pixels were the hint's own glyphs, not the ground. In normal running the two never coexist
+— `.state` is gone by 2 s and the hint arrives at 2.5 s. Looking at the pixels is what caught it; the number
+alone would have sent a correct colour to be changed.
+
+### The original entry, kept for the record
+
 ## LAB A11Y: one axe colour-contrast violation on `.state` at `/en/lab`, 390 px, normal motion
 
 **Where** `tools/diag/labaxe.cjs`: `390 normal /en/lab  violations 1 — color-contrast(serious x1: .state)`.
@@ -479,6 +512,87 @@ very close to the line. Worth settling with a static reading of `.state`'s own c
 
 **Not fixed here** because it is outside the reported fault and the release is otherwise closed; it is the Lab
 bench's status line, in English only, at one width.
+
+---
+
+## A very long, very dense flick can take a second stop mid-stream (`long` shape, gesture2)
+
+**Status: measured on both engines, pre-existing, NOT changed (2026-10-03).** Found while proving R28 did not
+break anything; it is older than R28 and present on the engine now live. Filed beside the free-spin item below
+because the two are the same family: a stream the rule stops recognising as one gesture.
+
+**The comparison**, `long` x `linefield`, both directions, alternating old/new, ten runs a side on a quiet
+machine (`node gesture2.cjs <port> --shape=long --place=linefield --reps=1 --only-flicks`):
+
+| engine | runs with an overshoot |
+|---|---|
+| pre-R28 (`b8918dc`, live) | **3 of 10** |
+| R28 | **1 of 10** |
+
+The pre-R28 engine shows it MORE often, and the signatures are the same on both:
+
+```
+old  dy -300  gap 21ms  quiet-false  env 0.0984  peak 0.2505  env/peak 0.39  spent
+old  dy -300  gap 20ms  quiet-false  env 0.1011  peak 0.2755  env/peak 0.37  spent
+new  dy -300  gap 18ms  quiet-false  env 0.1088  peak 0.2755  env/peak 0.39  spent
+```
+
+`quiet-false` in every case, so the condition R28 added is not involved; `env/peak` around 0.37, already under
+GEST_FALLEN's 0.5, so the pre-R28 third condition was satisfied too; and a 300 px event clears the per-event floor
+on its own, so R28's `Math.max(mag, inFrame)` changes nothing for it. It opens by `rise` on the path that has
+always existed.
+
+**How much of this is the harness.** The `long` shape intends 90 events **1 ms apart**. The page receives them
+**17-67 ms apart** — Playwright's round trip stretches the stream roughly thirtyfold, which is what lets the
+envelope decay between events until a mid-stream event looks like a new throw. No real device sends 300 px every
+40 ms for ninety events; a mouse wheel's detents are 100-150 px and a trackpad's deltas are smaller still. So the
+shape as delivered is not a gesture any hardware makes, and the overshoot may not be reachable in life at all.
+That is the reason it is recorded rather than fixed: the honest next step is to find out whether a real device can
+produce this stream, not to loosen or tighten a rule against a stream only Playwright can send.
+
+Reproduce: the command above, several times — it appears in roughly a third of runs on the live engine.
+
+---
+
+## A free-spinning wheel's last slow detents can take a second stop — and can oscillate
+
+**Status: measured on both engines, NOT changed. Its own decision (user, 2026-10-03).** Found while proving R28
+did not break the free spin; it is older than R28 and present on the engine now live.
+
+**Measured** (`tools/diag/freespin.cjs`, 105 spins per engine: 3 notch sizes x 7 end gaps x 5 place/direction
+combinations, dispatched from inside the page so the gaps hold):
+
+| end gap between the last detents | pre-R28 engine | R28 engine |
+|---|---|---|
+| 150, 200, 250, 300, 350 ms | 15/15 ok at every notch size | 15/15 ok |
+| **450 ms** | 6 of 15 took a second stop | 6 of 15 |
+| **600 ms** | 5 of 15 | 7 of 15 |
+
+The two engines are **identical through 350 ms**, which is the whole range R28's `quiet` governs, so this is not
+R28's doing. Every overshoot sits where `gap > GEST_GAP` (400 ms) and `opens = rise || gap > GEST_GAP` fires
+unconditionally — a line R28 never touched.
+
+**What a visitor feels.** The throw lands one stop at about 1.5 s. Then, with no new input, the page moves again:
+
+| end gap | first stop | the extra stop |
+|---|---|---|
+| 450 ms | ~1.5 s | **~2.5 s** after the first detent |
+| 600 ms | ~1.5 s | **~3.0 s** |
+
+A second or more of stillness, then movement, reads as the page acting on its own rather than as the gesture
+continuing. At 600 ms it can go further and **oscillate** — one spin landed `0 to 1` at 1491 ms, `1 to 2` at
+2103 ms, back `2 to 1` at 2518 ms and `1 to 2` again at 2991 ms. That is worse than an overshoot and is the part
+to fix first if this is ever acted on.
+
+**Is the wheel plausibly still turning?** Yes, but barely: 450 ms a detent is 2.2 notches a second and 600 ms is
+1.7, which a free-spinning wheel does pass through on its way to stopping — after a spin that has already run
+2.7-3.3 s. So the input is real; what is arguable is calling a detent 600 ms after the last one *the same
+gesture*, when GEST_GAP deliberately says 400 ms of silence is a new intention.
+
+**Why it is not urgent.** It needs hardware with a true free-spin mode. The reviewer's own mouse is ratcheted
+(stated 2026-10-02), and a ratcheted wheel's detents do not space out like this — they stop.
+
+Reproduce: `node freespin.cjs <port> chrome` and read the 450 ms and 600 ms rows.
 
 ---
 

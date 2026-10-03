@@ -55,33 +55,8 @@ export function faceState(V, L, side) {
     paperHex: side === 0 ? '#efeee9' : '#111215',
     bg: side === 0 ? '#efeee9' : '#0b0c0e',
     negative: side === 1,
-    // the material coordinate is scene-local and half a row up (slats.js); this puts the image back in register
-    offY: L.strip + L.spacing / 2,
     ...img,
     layout: { word, ...at },
     capacity: 1.4,
   })
-}
-
-/**
- * BOTH SIDES IN ONE STATE (see slats.js, "one state, both sides"): the content texture is twice the screen's height,
- * the front's word in the upper half and the back's in the lower, each in screen coordinates. The variant chooses
- * per pixel which half is read, and with which ink, paper and row thickness — so the row machinery is asked once.
- */
-export function pairState(V, L) {
-  const front = faceState(V, L, 0), back = faceState(V, L, 1)
-  const fa = front.layout, ba = back.layout
-  const img = build(V, V.H * 2, ({ solid }) => {
-    solid.font = `900 ${fa.fs}px ${FAMILY}`
-    solid.textBaseline = 'alphabetic'
-    solid.textAlign = fa.align
-    solid.fillText(fa.word, fa.x, L.strip + fa.y)
-    solid.font = `900 ${ba.fs}px ${FAMILY}`
-    solid.textAlign = ba.align
-    solid.fillText(ba.word, ba.x, V.H + L.strip + ba.y)
-    solid.textAlign = 'left'
-  })
-  const st = mk(V, { ...front, id: 'cross-pair', ...img, texH: V.H * 2 })
-  st.sides = { front, back, offY: [L.strip + L.spacing / 2, V.H + L.strip + L.spacing / 2] }
-  return st
 }

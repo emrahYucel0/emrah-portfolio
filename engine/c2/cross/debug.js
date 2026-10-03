@@ -8,8 +8,8 @@
  *   ?csatmo=0|1        without / with the reference's warm glow at the crossing (R14 decision 4; default 1)
  *   ?steps=1..8        how many gestures carry EDGE around the line (default CS_ORBIT_STEPS = 2)
  *   ?cstempo=step|scroll  one gesture per free part (default), or the reference's continuous scroll
- *   ?csbreak=grad      calibration: the gradient handed to the rows is wrong (constant), so foreshortened rows
- *                      are anti-aliased as if they were flat. A shimmer or moiré measure must read it worse.
+ *   ?csbreak=nomip     calibration: the faces have no mipmaps and no anisotropic filtering, so a louver seen at a
+ *                      slant aliases its rows. A shimmer or moiré measure must read it worse than the real build.
  */
 import '@fontsource-variable/big-shoulders-display'
 import { createSurface } from '../surface.js'
@@ -59,8 +59,6 @@ async function mount() {
   const surface = createSurface(canvas)
   await surface.ready
   const cross = createCross(surface, { atmosphere: atmo, breakName })
-  await cross.prepare()
-  surface.use('slats')
   host.appendChild(cross.dom)
 
   // the site's strips, as furniture: the scene runs between them and the material never crosses into one
@@ -109,7 +107,7 @@ async function mount() {
     cross.at(p)
     if (control) {
       // the control: the same state through the BASE program — what an ordinary flat place on this site costs
-      surface.use(null); surface.pair(cross.front, cross.front, 1); surface.beneath(cross.front)
+      surface.use?.(null); surface.pair(cross.front, cross.front, 1); surface.beneath(cross.front)
       surface.features = []; surface.strip = V.strip; surface.onBeforeDraw = null
       surface.render()
     } else cross.render()
@@ -219,6 +217,31 @@ async function mount() {
     traced: () => trace || [],
     play,
     frameMs: () => (times.length ? times.reduce((a, b) => a + b, 0) / times.length : 0),
+    /*
+     * AT REST THE LOUVERS ARE C2'S OWN PICTURE, pixel for pixel — the property the Work seam (Phase C) stands on.
+     * Reads back the louvers' frame at p = 0 (side 0) or p = 1 (side 1) and C2's own flat frame of that state, and
+     * counts the device pixels that differ, inside the scene and in all. `tol` is per channel, 0..255.
+     */
+    restCheck: (side = 0, tol = 0) => {
+      const w = canvas.width, h = canvas.height
+      const read = () => { const b = new Uint8Array(w * h * 4); gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, b); return b }
+      p = side ? 1 : 0; cross.at(p); cross.render(); const a = read()
+      const st = side ? cross.back : cross.front
+      surface.use?.(null); surface.pair(st, st, 1); surface.beneath(st); surface.features = []; surface.strip = V.strip; surface.onBeforeDraw = null
+      surface.render(); const b = read()
+      const y0 = Math.round(V.strip * V.dpr), y1 = h - y0
+      let diff = 0, diffScene = 0, worst = 0
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const i = (y * w + x) * 4
+          const d = Math.max(Math.abs(a[i] - b[i]), Math.abs(a[i + 1] - b[i + 1]), Math.abs(a[i + 2] - b[i + 2]))
+          if (d > worst) worst = d
+          if (d > tol) { diff++; if (y >= y0 && y < y1) diffScene++ }
+        }
+      }
+      draw()
+      return { w, h, diff, diffScene, worst }
+    },
     /*
      * THE COST, measured three ways — and what each one is NOT.
      *

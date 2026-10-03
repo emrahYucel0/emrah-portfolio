@@ -1,17 +1,18 @@
 /*
  * ── CROSS SECTION: THE SCENE ────────────────────────────────────────────────────────────────────────────────
  *
- * What the scene is at any progress p: the louvers' pose (slats.js), the two states they carry (state.js), the
- * data the variant reads, and the two things drawn in the DOM rather than in the material — the copper line and
- * the word EDGE. EDGE is a solid, lit word that circles the line; it is not made of rows, and its "behind the
- * line" and "in front of it" are its order against the line, exactly as in the reference.
+ * What the scene is at any progress p: the louvers' pose (slats.js), the two pictures they carry (state.js, drawn
+ * by C2 itself), the louvers as geometry (mesh.js), and the two things drawn in the DOM rather than in the
+ * material — the copper line and the word EDGE. EDGE is a solid, lit word that circles the line; it is not made of
+ * rows, and its "behind the line" and "in front of it" are its order against the line, exactly as in the reference.
  *
  * Phase B: used by the debug entry only. Phase C binds the same object into the runtime.
  *
  * Imported only where __CROSS__ is true.
  */
-import { CS_MAX, CS_Z0, CS_Z1, LUT_COLS, LUT_STEP, SLATS_PATCH, bandStops, ease, layout, louverClock, pack, pose, wordAngle } from './slats.js'
-import { EDGE_WORD, faceState, pairState } from './state.js'
+import { CS_Z0, CS_Z1, bandStops, ease, layout, louverClock, pose, sides, wordAngle } from './slats.js'
+import { EDGE_WORD, faceState } from './state.js'
+import { createMesh } from './mesh.js'
 import { FAMILY } from '../states.js'
 
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v))
@@ -31,11 +32,9 @@ const CSS = `
 
 export function createCross(surface, { atmosphere = true, breakName = null } = {}) {
   const gl = surface.gl
-  let V = null, L = null, front = null, back = null, pair = null, Q = null
+  const mesh = createMesh(gl)
+  let V = null, L = null, front = null, back = null, Q = null, count = 0
   let atmo = atmosphere
-  const data = new Float32Array(5 * 4 * CS_MAX)
-  let lut = new Uint8Array(1), lutRows = 1
-  let dataTex = null, lutTex = null
 
   // ── the DOM: the line and the word ─────────────────────────────────────────────────────────────────────────
   const dom = document.createElement('div')
@@ -49,88 +48,53 @@ export function createCross(surface, { atmosphere = true, breakName = null } = {
     document.head.appendChild(st)
   }
 
-  const textures = () => {
-    if (!dataTex) {
-      dataTex = gl.createTexture()
-      gl.bindTexture(gl.TEXTURE_2D, dataTex)
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, 5, CS_MAX, 0, gl.RGBA, gl.FLOAT, null)
-      for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.NEAREST], [gl.TEXTURE_MAG_FILTER, gl.NEAREST], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v)
-    }
-    if (!lutTex) {
-      lutTex = gl.createTexture()
-      gl.bindTexture(gl.TEXTURE_2D, lutTex)
-      for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.NEAREST], [gl.TEXTURE_MAG_FILTER, gl.NEAREST], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v)
-    }
-  }
-
-  const locs = new Map()
-  const loc = (name) => {
-    const pr = gl.getParameter(gl.CURRENT_PROGRAM)
-    let c = locs.get(pr); if (!c) locs.set(pr, (c = {}))
-    return (c[name] ??= gl.getUniformLocation(pr, name))
+  // C2 draws a state, flat, into whatever framebuffer is bound: the face a louver carries is C2's own picture
+  const flat = (st) => {
+    surface.use?.(null)
+    surface.pair(st, st, 1)
+    surface.beneath(st)
+    surface.features = []
+    surface.strip = V.strip
+    surface.onBeforeDraw = null
+    surface.render()
   }
 
   const api = {
     dom,
-    patch: SLATS_PATCH,
+    mesh,
     get layout() { return L },
     get pose() { return Q },
     get front() { return front },
     get back() { return back },
     get atmosphere() { return atmo },
     setAtmosphere(on) { atmo = !!on; dom.classList.toggle('warm', atmo) },
-    prepare() { return surface.variant('slats', SLATS_PATCH) },
+    /** lay the scene out for this viewport and have C2 draw its two faces (call after surface.resize) */
     build(v) {
       V = v
-      for (const st of [front, back, pair]) if (st) surface.release(st)
+      for (const st of [front, back]) if (st) surface.release(st)
       L = layout(V)
       front = faceState(V, L, 0)
       back = faceState(V, L, 1)
-      pair = pairState(V, L)
-      lutRows = Math.ceil(L.h / LUT_STEP) + 1
-      lut = new Uint8Array(LUT_COLS * lutRows * 4)
       line.style.top = `${V.strip}px`; line.style.bottom = `${V.strip}px`
+      const bw = Math.round(V.W * V.dpr), bh = Math.round(V.H * V.dpr)
+      // their textures are built first: building one rebinds the framebuffer, which must not happen mid-face
+      surface.warm(front); surface.warm(back)
+      const mips = breakName !== 'nomip'
+      mesh.face(0, bw, bh, () => flat(front), { mips })
+      mesh.face(1, bw, bh, () => flat(back), { mips })
       return api
     },
     /** pose the scene at progress p; what is drawn follows on the next render */
     at(p) {
       Q = pose(L, clamp(p))
-      pack(L, Q, data, lut, lutRows)
+      count = mesh.geometry(L, Q, sides, V.strip, V.H)
       api.domAt(Q.p)
       return Q
     },
-    /** what the ground between the louvers is at this pose */
+    /** what the ground between the louvers is at this pose: the reference's underlay, cream to night */
     gap() {
       const d = Q ? Q.dark : 0
       return [239 + (14 - 239) * d, 238 + (15 - 238) * d, 233 + (17 - 233) * d].map((c) => Math.round(c) / 255)
-    },
-    /** bind the variant and its data: call with the variant's program bound, i.e. inside onBeforeDraw */
-    apply() {
-      textures()
-      gl.activeTexture(gl.TEXTURE7)
-      gl.bindTexture(gl.TEXTURE_2D, dataTex)
-      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 5, CS_MAX, gl.RGBA, gl.FLOAT, data)
-      gl.uniform1i(loc('uCSdata'), 7)
-      gl.activeTexture(gl.TEXTURE8)
-      gl.bindTexture(gl.TEXTURE_2D, lutTex)
-      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1)
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, LUT_COLS, lutRows, 0, gl.RGBA, gl.UNSIGNED_BYTE, lut)
-      gl.uniform1i(loc('uCSlut'), 8)
-      gl.activeTexture(gl.TEXTURE0)
-      gl.uniform1i(loc('uCSn'), L.count)
-      gl.uniform3f(loc('uCSeye'), Q.eye[0], Q.eye[1], Q.eye[2])
-      gl.uniform4f(loc('uCSscene'), L.strip, L.h, L.W, L.spacing)
-      gl.uniform4f(loc('uCSlutG'), LUT_COLS, lutRows, L.W / (LUT_COLS - 1), LUT_STEP)
-      const g = api.gap()
-      gl.uniform3f(loc('uCSgap'), g[0], g[1], g[2])
-      // the reference: atmosphere at 0.8 of the peak, the light at 0.78; without the warm glow, neither is warm
-      gl.uniform4f(loc('uCSatmo'), atmo ? Q.peak * 0.8 : 0, Q.peak * 0.78, atmo ? 1 : 0, 0)
-      gl.uniform4f(loc('uCSbreak'), breakName === 'grad' ? 1 : 0, 0, 0, 0)
-      const sd = pair.sides
-      gl.uniform4f(loc('uCSface'), sd.front.thick, sd.back.thick, sd.offY[0], sd.offY[1])
-      gl.uniform3fv(loc('uCSink0'), sd.front.ink); gl.uniform3fv(loc('uCSink1'), sd.back.ink)
-      gl.uniform3fv(loc('uCSpap0'), sd.front.paper); gl.uniform3fv(loc('uCSpap1'), sd.back.paper)
-      gl.uniform3fv(loc('uCSbg0'), sd.front.bgv); gl.uniform3fv(loc('uCSbg1'), sd.back.bgv)
     },
     /*
      * THE WORD AT THE EDGE, the reference's own geometry: it arrives behind the copper line, circles it in stops
@@ -157,15 +121,10 @@ export function createCross(surface, { atmosphere = true, breakName = null } = {
       word.style.opacity = (z > 0 && z < 1 ? inWord * (cz < 0 ? 0.45 : 1) : 0).toFixed(3)
       word.style.zIndex = cz < 0 ? '1' : '4'
     },
-    /** draw one frame: the two states, the variant bound, its data set inside the draw */
+    /** draw one frame of the pose set by at() */
     render() {
-      surface.pair(pair, pair, 1)
-      surface.beneath(pair)
-      surface.features = []
-      surface.strip = V.strip
-      surface.use('slats')
-      surface.onBeforeDraw = () => api.apply()
-      surface.render()
+      // the reference: atmosphere at 0.8 of the peak, the light at 0.78; without the warm glow, neither is warm
+      mesh.draw(V, Q, count, { gap: api.gap(), atmo: atmo ? Q.peak * 0.8 : 0, light: Q.peak * 0.78, warm: atmo ? 1 : 0 })
     },
   }
   api.setAtmosphere(atmo)

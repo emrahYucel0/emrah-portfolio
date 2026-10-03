@@ -45,7 +45,7 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
 | R18 | Awwwards başvurusu (Developer Award) | P0 | Karar bekliyor (tarih) | R17, R9, R22, R23 |
 | R19 | Full-Stack'in siyah kapsüllerinin çevresindeki hale | P1 | Karar bekliyor (varyant ya da kural) | — |
 | R27 | Harness'lar izlenen `docs/` yollarına yazıyor | P2 | **Bitti** (2026-10-03) | — |
-| R28 | Mac dokunmatik yüzeyinde ikinci kaydırmanın yutulması (120 Hz) | **P0** | **Düzeltildi; gerçek MacBook onayı bekliyor** | R22 |
+| R28 | Mac dokunmatik yüzeyinde ikinci kaydırmanın yutulması (120 Hz) | **P0** | **Canlıda (`1e663bd`); gerçek MacBook onayı bekliyor** | R22 |
 | R20 | Arka belleğe piksel sayısı tavanı (önerilen 8,3 Mpx) | P1 | Karar bekliyor (değer) | R9 ile birlikte ölçülür |
 | R21 | Büyük ekranlarda büyük harf başına satır sayısına üst sınır | P2 | Karar bekliyor (sanat yönetimi) | — |
 | R22 | Gerçek cihaz testi (iPad, Mac'te Safari, Android telefon) | P0 | Karar verildi | — |
@@ -336,9 +336,15 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
 - **R28'in yapmadığı iki şey, ikisi de ayrı kayıtlı:** 450–600 ms'lik son çentiklerde serbest dönen tekerleğin
   ikinci durak alması, ve `long` şeklinin akış ortasında ikinci durak alması. İkisi de R28 öncesi motorda da var
   (ikincisinde **daha sık**: 10 koşuda 3'e karşı 1), ikisi de bu yayında değiştirilmedi.
+- **CANLIDA (2026-10-03, `1e663bd`).** `deploy/yucelemrah-1e663bd.zip` cPanel'den yüklendi ve kullanıcı
+  tarafından canlıda doğrulandı. Yüklemeden sonra bu makineden: `cspboot --static`, `cspboot ... chrome` ve
+  `... webkit` — üçü de geçti. Ayrıca düzeltmenin kendi imzası canlıda sınandı, yalnız "açılıyor mu" diye değil:
+  8 ms'de bir 95 piksel gönderen bir akış — 120 Hz'lik bir dokunmatik yüzeyin momentum biçimi, eski olay başına
+  eşiğin ALTINDA, yeni kare başına eşiğin ÜSTÜNDE — indeksi bir durak hareket ettirdi. Kayıt:
+  `docs/DEPLOY-LOG.md` (Not 4).
 - **R22 AÇIK KALIYOR.** Buradaki her şey Windows'ta Chrome ile oynatılmış bir macOS yeniden kurgusudur; hiçbir
   Apple donanımına dokunulmadı ve harness gerçek bir ProMotion'ın 8,33 ms'si yerine ~10 ms veriyor. **Gerçek bir
-  MacBook'ta denenene kadar bu düzeltme kapanmış sayılmamalı.**
+  MacBook'ta denenene kadar bu düzeltme kapanmış sayılmamalı** — canlıda olması onaylandığı anlamına gelmez.
 - **Not — harness'ın kendi hatası, kayıt için.** İlk tam koşuda iki durum "üç durak" göstermişti. Site bunu
   yapamaz: `A.pT` her harekette `A.gFrom ± 1`'e kıstırılıyor (`main.js:587`), yani üç durak üç hareket açılışı
   demek, ve gerçek bir 120 Hz akışı eşiği hiç geçemediği için üçüncüyü açamaz. Sebep harness'tı: vadesi gelen

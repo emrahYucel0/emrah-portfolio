@@ -20,19 +20,20 @@ const OFF = new Set(['0', 'false', 'off', 'no'])
 const LINEFIELD = !OFF.has(String(process.env.NUXT_PUBLIC_LINEFIELD ?? '').toLowerCase())
 
 /**
- * CROSS SECTION — the Work → Lab passage under development (docs/CROSS-SECTION.md, R14).
+ * CROSS SECTION — the Work → Lab passage (docs/CROSS-SECTION.md, R14).
  *
- * OFF BY DEFAULT, the other way round from Linefield: it is not released. Only an explicit `1`, `true`, `on` or
- * `yes` turns it on, so no release can carry it by accident.
+ * ON BY DEFAULT, the way Linefield is (R25): released with integration approved on 2026-10-04. Every release build
+ * carries the passage unless it is explicitly turned off, so nobody can publish the site without it by forgetting a
+ * variable. The one-line off switch is `NUXT_PUBLIC_CROSS=0` (or `false`, `off`, `no`).
  *
- *   NUXT_PUBLIC_CROSS=1 npm run dev         the debug entry, `/tr?cross=1` (Phase B)
- *   npm run generate                         the release build, Cross Section OFF and absent
+ *   npm run generate                        the release build, Cross Section ON
+ *   NUXT_PUBLIC_CROSS=0 npm run generate    without it: the Work → Lab bridge, byte for byte as before
+ *   npm run dev                             on in development too; `/tr?cross=1` is the Phase B debug entry
  *
  * Off, `__CROSS__` is replaced with `false` at transform time and every Cross Section module sits behind a dynamic
  * import in a branch that cannot be taken, so the bundler never emits their chunk.
  */
-const ON = new Set(['1', 'true', 'on', 'yes'])
-const CROSS = ON.has(String(process.env.NUXT_PUBLIC_CROSS ?? '').toLowerCase())
+const CROSS = !OFF.has(String(process.env.NUXT_PUBLIC_CROSS ?? '').toLowerCase())
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-09-16',

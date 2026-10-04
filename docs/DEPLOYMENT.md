@@ -16,7 +16,7 @@
 ```bash
 npm ci
 npx nuxt typecheck
-npm run generate          # → .output/public   (Linefield ON — see below)
+npm run generate          # → .output/public   (Linefield ON, Cross Section ON — see below)
 ```
 
 **Linefield is on by default.** `npm run generate` builds the release *with* the passage; there is no variable to
@@ -28,6 +28,18 @@ NUXT_PUBLIC_LINEFIELD=0 npm run generate    # a flag-off build, for the gate's f
 
 A release build must show Linefield's code in the package — `grep -ril uLFmode .output/public/_nuxt/*.js` finds it —
 and a flag-off build must not.
+
+**Cross Section is on by default too** (R14, released the same way as Linefield in R25). `npm run generate` builds the
+release *with* the passage between Work and the Lab. The one-line off switch brings back the Work → Lab bridge,
+byte for byte as it was:
+
+```bash
+NUXT_PUBLIC_CROSS=0 npm run generate        # a build without Cross Section (the bridge), for the gate's flag-off half
+```
+
+A release build must show Cross Section's code in the package — `grep -ril cs-still .output/public/_nuxt/*.js` finds
+it (its own chunk) — and a `NUXT_PUBLIC_CROSS=0` build must not. Both switches are independent; a fully flag-off
+build, the one compared with the previous live package, sets both to `0`.
 The build log ends with `production files for https://yucelemrah.com: robots.txt, sitemap.xml, 404.html, .htaccess (CSP with N script hashes)`.
 
 The CSP script hashes are computed from the generated HTML. A new build always ships its own matching `.htaccess`: **never deploy HTML from one build with the `.htaccess` of another.**
@@ -230,6 +242,8 @@ file dates and a backup folder.
 ## Checklist
 - **PRE-BUILD:** clean `git status`; `NUXT_PUBLIC_SITE_URL` unset (or the intended HTTPS origin); `npm ci`
 - **BUILD:** `npx nuxt typecheck` exit 0; `npm run generate` exit 0; log shows the production-files line
+- **BUILD (Cross Section):** on by default — confirm it is IN the package (`grep -ril cs-still .output/public/_nuxt/*.js`
+  returns at least one file) and that Work → Cross Section → the bench, and back up, works in the artifact being shipped
 - **BUILD (Linefield):** on by default — confirm it is IN the package (`grep -ril uLFmode .output/public/_nuxt/*.js`
   returns at least one file) and that Full-Stack → Linefield → Work works in the artifact being shipped
 - **PRE-UPLOAD:** `.output/public` contains `.htaccess`, `_nuxt/.htaccess`, `opt/.htaccess`, `404.html`, `robots.txt`, `sitemap.xml`, `og/`, favicons; no `200.html`

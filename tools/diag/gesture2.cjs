@@ -167,7 +167,7 @@ const sayOpenings = (rec) => {
    */
   const LAB_STOP = STOP.lab
   const posOf = async (pg) => {
-    const s = await pg.evaluate(() => ({ path: location.pathname, c2: document.documentElement.dataset.c2 ?? 'off', mode: window.__lab?.A?.mode ?? null, base: window.__lab?.A?.base ?? null, wT: +(window.__lab?.A?.wT ?? 0).toFixed(2), lfp: +(window.__lab?.A?.lfp ?? -1).toFixed(3) }))
+    const s = await pg.evaluate(() => ({ path: location.pathname, c2: document.documentElement.dataset.c2 ?? 'off', mode: window.__lab?.A?.mode ?? null, base: window.__lab?.A?.base ?? null, wT: +(window.__lab?.A?.wT ?? 0).toFixed(2), lfp: +(window.__lab?.A?.lfp ?? -1).toFixed(3), csx: window.__lab?.csState?.()?.x ?? null }))
     if (/\/contact$/.test(s.path)) return { ...s, pos: LAST }
     if (/\/lab$/.test(s.path)) return { ...s, pos: LAB_STOP }
     if (/\/lab\//.test(s.path)) return { ...s, pos: LAB_STOP }
@@ -191,7 +191,8 @@ const sayOpenings = (rec) => {
   // the places the index itself owns, named — never numbered (see CLAUDE.md)
   const PLACES = (SPINE || []).filter((n) => n !== 'lab' && n !== 'rest')
   // and the two that have an axis of their own: a flick may run the axis instead of leaving
-  const HAS_AXIS = new Set(['work', 'linefield'].filter((n) => STOP[n] !== undefined))
+  // (Cross Section, R14, has positions of its own: one flick inside it moves exactly ONE of them — its own rule)
+  const HAS_AXIS = new Set(['work', 'linefield', 'cross'].filter((n) => STOP[n] !== undefined))
 
   for (const kind of ['burst', 'coast', 'tail', 'long']) {
     if (ONLY_SHAPE && ONLY_SHAPE !== kind) continue
@@ -212,10 +213,10 @@ const sayOpenings = (rec) => {
         const atEnd = (dir > 0 && before.pos >= LAST) || (dir < 0 && before.pos <= 0)
         const axis = HAS_AXIS.has(name)
         // what an axis carried, so that "it stayed" can be told from "nothing happened"
-        const ran = name === 'work' ? Math.abs(after.wT - before.wT) : Math.abs(after.lfp - before.lfp)
-        const held = moved === 0 && axis && ran > 0.2
+        const ran = name === 'work' ? Math.abs(after.wT - before.wT) : name === 'cross' ? Math.abs((after.csx ?? 0) - (before.csx ?? 0)) : Math.abs(after.lfp - before.lfp)
+        const held = moved === 0 && axis && (name === 'cross' ? ran === 1 : ran > 0.2)
         const good = Math.abs(moved) <= 1 && (Math.abs(moved) === 1 || atEnd || held)
-        const why = moved === 0 ? (atEnd ? 'the end of the spine' : held ? `stayed, and its own axis moved ${ran.toFixed(2)}` : 'NOTHING MOVED') : `${moved > 0 ? '+' : ''}${moved}`
+        const why = moved === 0 ? (atEnd ? 'the end of the spine' : held ? `stayed, and its own axis moved ${ran.toFixed(2)}` : axis && ran > 0 ? `stayed, but its own axis moved ${ran.toFixed(2)}${name === 'cross' ? ' (one position is the rule)' : ''}` : 'NOTHING MOVED') : `${moved > 0 ? '+' : ''}${moved}`
         ok(good, `${kind} ${dir > 0 ? 'down' : 'up  '} from ${name.padEnd(10)} ${before.pos} → ${after.pos}`, why)
         if (!good) console.log(`     ${sayOpenings(rec)}`)
        }

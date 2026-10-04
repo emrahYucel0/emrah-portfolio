@@ -3,6 +3,7 @@
 #
 #   sh run6.sh                 current build on 4500, baseline build on 4600
 #   sh run6.sh 4500 4600       ...or name both ports
+#   ONLY="spine-CUR gesture2-CUR" sh run6.sh 4500 4600     ...or only these sections (the gate in groups)
 #
 # Two gates can run at once from two worktrees (ROADMAP R16): each passes its own ports (serve.sh's SERVE_PORTS)
 # and writes into its own worktree's out/. GATE_LOG names the log, for a second gate in the SAME worktree.
@@ -38,6 +39,9 @@ SECT=out/sections
 mkdir -p $SECT
 sect(){
   n=$1; short=$2; shift 2
+  # ONLY="name name ..." runs just those sections — the gate in groups, each reported before the next (2026-10-04).
+  # Unset, every section runs, exactly as before.
+  if [ -n "$ONLY" ] && ! echo " $ONLY " | grep -q " $n "; then return 0; fi
   f=$SECT/$n.log
   "$@" > $f 2>&1
   rc=$?

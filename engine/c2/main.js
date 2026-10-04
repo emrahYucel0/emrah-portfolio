@@ -185,7 +185,7 @@ function measure() {
  * one list.
  */
 const LINEFIELD = typeof __LINEFIELD__ !== 'undefined' && __LINEFIELD__
-// CROSS SECTION (R14, docs/CROSS-SECTION.md): the passage between Work and the Lab, off unless NUXT_PUBLIC_CROSS is set.
+// CROSS SECTION (R14, docs/CROSS-SECTION.md): the passage between Work and the Lab, on by default (NUXT_PUBLIC_CROSS=0 turns it off).
 // Written as its own pair of literals so that, with the flag off, each branch folds to exactly the list it always was.
 const CROSS = typeof __CROSS__ !== 'undefined' && __CROSS__
 const SPINE = LINEFIELD
@@ -1104,8 +1104,8 @@ const csFrame = CROSS ? (now, et) => {
     A.csHeld = false
     CS.revealRelease()
     lastSig = ''
-    // (only while it is still coming: a tail runs on without a pause, a new gesture comes after one — hushTail's rule)
-    if (owns()) { const t = performance.now(); if (t - A.csLastIn < 140) A.hush = t + 140; resetGesture(); forgetStream(); document.title = TITLE() }
+    // a stream still arriving is kept as the spent gesture it is (see the listener below); one that has stopped is over
+    if (owns()) { if (performance.now() - A.csLastIn >= GEST_REST) { resetGesture(); forgetStream() } else A.gSpent = true; document.title = TITLE() }
     return false
   }
   // somewhere else was asked for mid-reveal (Back, a link): the screen is the host's again and the reveal is dropped
@@ -1136,8 +1136,22 @@ const csFrame = CROSS ? (now, et) => {
   res?.(true)
   return true
 } : null
-// the input that arrives while the seam has the screen is the bench's or nobody's; only its time is kept, for the hush
-if (CROSS) addEventListener('wheel', () => { if (document.documentElement.dataset.c2 === 'cs') A.csLastIn = performance.now() }, { passive: true, capture: true })
+/*
+ * THE STREAM IS WATCHED THROUGH THE SEAM. While the blinds hold the screen the wheel is the bench's or nobody's, but the
+ * gesture rule still reads it, as one gesture already spent (it moved the seam): its gaps, its envelope, its peak. So a
+ * stream that is still arriving when the runtime takes the screen back is the SAME gesture, held to a landed stream's
+ * quiet (GEST_REST), and not a new one per detent. (Found in the release gate's dry run: a slowing wheel's last detents,
+ * 150-330 ms apart, each opened a gesture after the hand-over and walked DEPTH back to Work.)
+ */
+if (CROSS) addEventListener('wheel', (e) => {
+  // (and while the runtime already stands at the place but does not have the screen yet: arriving cold, by the route, it
+  // is placed at DEPTH frames before its first frame is up, and the stream goes on arriving in between)
+  if (document.documentElement.dataset.c2 !== 'cs' && !(CS && A.base === CXS && !owns())) return
+  const now = performance.now()
+  A.csLastIn = now
+  if (opensGesture((e.deltaMode === 1 ? e.deltaY * 32 : e.deltaY) * 0.0011, now)) { A.gMinGap = Infinity; A.gInner = 0 }
+  A.gSpent = true
+}, { passive: true, capture: true })
 const csDrop = CROSS ? () => {
   A.csRv = 0; A.csHeld = false
   CS.revealEnd(); CS.revealRelease()
@@ -1178,6 +1192,15 @@ function arriveAt(target) {
   A.labArmed = false
   A.hush = performance.now() + 420
   resetGesture(); forgetStream()
+  /*
+   * ARRIVING AT CROSS SECTION FROM THE BENCH IS ARRIVING MID-STREAM (R14, the release gate's dry run). The gesture that
+   * left the bench may still be arriving, and its last slowing detents come 150-330 ms apart: past the hush, each opened
+   * a gesture and walked DEPTH back through the passage to Work. So the arrival is a spent stream, held to a landed
+   * stream's quiet (GEST_REST): detents closer than that are the same gesture, and the next one after a real pause is new.
+   * Only for this place; every other arrival from the Lab is as it was.
+   */
+  // (and without the hush: it swallows events unseen, so when it lifted the next detent looked like a new gesture)
+  if (CROSS && stop === CXS) { A.hush = 0; A.gSpent = true; A.gAt = performance.now(); A.gMinGap = 0; A.gEnv = A.gPeak = 1 }
   document.title = TITLE()
   lastSig = ''
   return true

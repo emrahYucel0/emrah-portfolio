@@ -655,7 +655,34 @@ reliably.
 
 `npx nuxt typecheck`: clean.
 
-**Not run: the full flag-off gate (`run6.sh`).** It is asked for first, as agreed.
+**The full flag-off gate (`run6.sh`), asked for and approved 2026-10-04.**
+- **Setup:** ports 4962 (under test), 4964 (LAN) and 4963 (baseline), `BUILD_DIR=builds/cross-section`,
+  `GATE_LOG=out/cross-gate.log`. It ran 03:12–04:23, 71 minutes.
+- **Passed:**
+  - CSPBOOT, SPINE (twice), BOOT RESPONSIVE (WebKit), PROJ, PANELFIT, WORK TEXT, SHORT PHONE, SHELL;
+  - CONTACT ROUTE, COMPAT IOS15.4, SEAM (twice), FINALE A11Y, BECKON;
+  - JOURNEY TR NORMAL, JOURNEY EN REDUCED.
+- **NON-LAB, normal and reduced:** REVIEW. Every difference against the `pre-site-polish` baseline is the Linefield
+  place in the spine (`linefield-back` / `linefield-front`), which the live site has.
+- **Failed:**
+  - **GESTURE:** 3 of 72 cases, all coast or tail flicks taking two stops or none (`coast down from name 0 → 2`,
+    `coast up from linefield 3 → 1`, `tail up from work 4 → 4`).
+  - **LAB A11Y:** 1, a colour-contrast sample on the bench's `.hint` at `/en/lab`, 1440.
+- **Re-run alone, they failed again.** The machine was not quiet: other sessions' dev and static servers, a Vite dev
+  server and about 33 Chrome processes, at 17% CPU.
+- **So the same harnesses ran as an A/B against the live `1e663bd` package**, served on 4965 at the same time and on
+  the same machine. Its JavaScript and CSS are byte-identical to the build under test.
+
+  | | live `1e663bd` | build under test |
+  |---|---|---|
+  | LAB A11Y | **FAIL**, the same `.hint` at `/en/lab` 1440 | PASS (it had failed alone once) |
+  | GESTURE coast, run 1 / run 2 | PASS / **FAIL (3)**, incl. `coast up from the bench 5 → 3` | **FAIL (3)** / **FAIL (1)** |
+  | GESTURE tail, run 1 / run 2 | PASS / PASS | PASS / PASS |
+
+- **Reading:** both failures are the live site's, at the same rate, under this machine's load. Neither comes from
+  Cross Section: with the flag off its code is not in the build at all. GESTURE is the known load-sensitive harness
+  (one Playwright round trip per wheel event, KNOWN-ISSUES). The `.hint` sample flips the way `.state`'s did, read
+  mid-fade. **A clean gate needs a quiet machine.** The other sessions' processes are not this session's to stop.
 
 ## Working rules for this worktree
 

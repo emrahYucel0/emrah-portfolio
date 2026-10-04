@@ -318,6 +318,13 @@ session, not something the site does — `work down` at 2854 ms, the case that f
 **Read the `stalls` column correctly.** `stalls 2854ms+74` is `<when>ms+<how long>`: at 2854 ms after the throw's
 first event, ONE animation frame lasted 74 ms. It is not a 2.8-second stall.
 
+**2026-10-04, the Cross Section C3 gate (flag off, JS and CSS byte-identical to the live `1e663bd`).** `GESTURE` failed 3
+coast/tail cases and `LAB A11Y` failed once on the bench's `.hint` at `/en/lab` 1440 (a new element for the same
+mid-fade sampling). Re-run alone they failed again, because other sessions' servers and browsers were running. An A/B
+against the live package on the same machine at the same time showed the same failures there: `LAB A11Y` FAIL on
+live and PASS on the build; `coast` PASS then FAIL (3) on live, including `coast up from the bench 5 → 3`. Details are
+in `docs/CROSS-SECTION.md`. Alone is not enough: the machine must be quiet.
+
 **What to do.** Run `gesture2`, `labaxe`, `trackpad`, `spine` and `seam` in group B, alone, as the release did.
 A failure in one of them while groups run in parallel is re-run alone before it is treated as real (the standing
 rule for this release). `seam.cjs`'s arrival test is now measured per frame interval rather than per sample, so

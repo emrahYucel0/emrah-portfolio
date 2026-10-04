@@ -31,6 +31,7 @@ import { CS_ORBIT_STEPS, CS_REVEAL_S, CS_Z0, CS_Z1, bandStops, layout, louverClo
 import { CS_BAND_K, CS_FREE_K, CS_FREE_RATE } from './input.js'
 import { createCross, createCrossDom } from './runtime.js'
 import { faceState } from './state.js'
+import { FAMILY } from '../states.js'
 import { GL_DEV, checkGL, drainGL } from './glstate.js'
 
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v))
@@ -97,14 +98,18 @@ export function createPlace(surface, { reduced = false } = {}) {
    */
   let audit = false
   const landings = []
+  // (and which rows of the drawing buffer the differences are on, counted from its top, the worst first: a seam that is
+  // off by a row shows as one or two rows, not as a field)
   const compare = (a, b) => {
     let diff = 0, worst = 0
+    const w = gl ? gl.drawingBufferWidth : 1, h = a.length / 4 / w, byRow = new Map()
     for (let i = 0; i < a.length; i += 4) {
       const d = Math.max(Math.abs(a[i] - b[i]), Math.abs(a[i + 1] - b[i + 1]), Math.abs(a[i + 2] - b[i + 2]))
-      if (d > 0) diff++
+      if (d > 0) { diff++; if (d > 1) { const row = h - 1 - Math.floor(i / 4 / w); byRow.set(row, Math.max(byRow.get(row) || 0, d)) } }
       if (d > worst) worst = d
     }
-    return { px: a.length / 4, diff, worst }
+    const rows = [...byRow.entries()].sort((x, y) => y[1] - x[1]).slice(0, 6).map(([r, d]) => `${r}:${d}`)
+    return { px: a.length / 4, diff, worst, rows }
   }
 
   const api = {
@@ -129,7 +134,18 @@ export function createPlace(surface, { reduced = false } = {}) {
     /** the calibration break named in the address, development only (null in a build) */
     get breakName() { return breakName },
     /** harness only: the louvers' layout and the reveal's (null in reduced motion) */
-    layouts() { const L = scene ? scene.layout : null, R = scene ? scene.revealLayout : null; return L ? { count: L.count, pitch: L.pitch, rows: L.spacing, h: L.h, reveal: R ? { count: R.count, rows: R.rows, pitch: R.pitch } : null } : null },
+    layouts() {
+      const L = scene ? scene.layout : null, R = scene ? scene.revealLayout : null
+      if (!L) return null
+      // the words' ink, measured as C2 sets them (state.js): where SURFACE and DEPTH actually reach, in the composition's px
+      const box = (st) => {
+        const at = st.layout, mc = document.createElement('canvas').getContext('2d')
+        mc.font = `900 ${at.fs}px ${FAMILY}`
+        const m = mc.measureText(at.word), x = at.align === 'left' ? at.x : at.x - m.width
+        return { word: at.word, fs: +at.fs.toFixed(1), x0: x - m.actualBoundingBoxLeft + (at.align === 'left' ? 0 : 0), x1: x + m.actualBoundingBoxRight, y0: V.strip + at.y - m.actualBoundingBoxAscent, y1: V.strip + at.y + m.actualBoundingBoxDescent }
+      }
+      return { W: V.W, H: V.H, u: V.u || 1, strip: V.strip, count: L.count, pitch: L.pitch, rows: L.spacing, h: L.h, reveal: R ? { count: R.count, rows: R.rows, pitch: R.pitch } : null, words: [box(front), box(back)] }
+    },
     build(v) {
       V = v
       for (const st of [front, back, pass]) if (st) surface.release(st)

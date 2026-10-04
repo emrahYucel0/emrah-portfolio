@@ -21,6 +21,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const args = process.argv.slice(2)
 const port = args.find((a) => /^\d+$/.test(a)) || '4960'
 const opt = (k, d) => { const a = args.find((x) => x.startsWith(`--${k}=`)); return a ? a.slice(k.length + 3) : d }
+// e.g. --q=cspxcap=8.3: R20's proposed ceiling on the backing store (debug.js)
+const Q = opt('q', '')
 const SIZES = opt('sizes', '1440x900@2,1920x1080@1,1920x1080@1.5,390x844@3,390x660@3').split(',').map((s) => {
   const [wh, d] = s.split('@'); const [w, h] = wh.split('x').map(Number); return { w, h, dpr: Number(d || 1) }
 })
@@ -42,7 +44,7 @@ const f = (x) => (x ? `${x.med.toFixed(2)} / ${x.p95.toFixed(2)}` : 'n/a').padEn
     const ctx = await b.newContext({ viewport: { width: S.w, height: S.h }, deviceScaleFactor: S.dpr })
     const p = await ctx.newPage()
     const W = watch(p, row0(S))
-    await p.goto(`http://127.0.0.1:${port}/tr?cross=1`, { waitUntil: 'load', timeout: 180000 })
+    await p.goto(`http://127.0.0.1:${port}/tr?cross=1${Q ? '&' + Q : ''}`, { waitUntil: 'load', timeout: 180000 })
     await p.waitForFunction(() => window.__cs && window.__cs.renderer, null, { timeout: 120000 })
     await p.evaluate(() => document.fonts.ready)
     await p.evaluate(() => window.__cs.dock(false))

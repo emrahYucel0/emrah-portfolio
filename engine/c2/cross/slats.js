@@ -179,14 +179,16 @@ export const CS_REVEAL_S = 1.15
  * 991 px field, 2.2% each, and the same moment read as a quick dissolve through fine lines. Matching the phone in CSS
  * pixels changes nothing (they already match), so the reveal matches the phone's SHARE of the field instead: on a
  * wider screen a reveal slat is as many of the crossing's rows as it takes to be at least CS_REVEAL_SHARE of the
- * field. The crossing keeps its own louvers, and a phone keeps exactly the slats that were approved on it.
+ * field. The crossing keeps its own louvers, and the approved phone (390×660) keeps exactly its 3-row slats.
  *
  * Only the reveal is laid out this way, and a reveal slat is still a whole number of C2's rows starting half a row off
  * its grid, like every louver, so at r = 0 it is still DEPTH exactly.
  */
 export const CS_REVEAL_SHARE = 0.035
 export function revealLayout(L, V, { rows = 0 } = {}) {
-  const m = rows || (V.W < 700 ? 3 : Math.max(3, Math.ceil((CS_REVEAL_SHARE * L.h) / L.spacing - 1e-6)))
+  // (the responsive pass, 2026-10-04: a TALL phone had the same exception and 38-42 thin slats — 390×844, 430×932 — so the
+  // rule is now everyone's. A twentieth of a row's tolerance keeps the approved phones, 390×660 and 375×667, at 3 rows.)
+  const m = rows || Math.max(3, Math.ceil((CS_REVEAL_SHARE * L.h) / L.spacing - 0.05))
   if (m === 3) return { ...L, rows: 3 }
   const pitch = m * L.spacing
   const whole = Math.floor(L.h / pitch + 1e-6)

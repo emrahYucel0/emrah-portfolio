@@ -379,8 +379,9 @@ async function toBench(p) { await atCross(p, 4); await p.keyboard.press('ArrowDo
       await q.evaluate((s) => window.__lab.go(s.cross), STOP); await sleep(2500)
       const L = await q.evaluate(() => window.__lab.csLayout())
       const share = L.reveal.pitch / L.h
-      const ok = w < 700 ? L.reveal.rows === 3 : share >= 0.035 - 1e-6
-      check(ok, `${w}×${h}: reveal slats ${L.reveal.rows} rows, ${L.reveal.pitch.toFixed(1)} px, ${L.reveal.count} across the field (${(share * 100).toFixed(2)}% each; ${w < 700 ? 'a phone keeps 3 rows' : 'at least 3.5%'})`)
+      // every screen at least the phone's share (with a twentieth of a row's tolerance); the approved phone keeps 3 rows
+      const ok = share >= 0.035 - (0.05 * L.rows) / L.h - 1e-6 && (w !== 390 || h !== 660 || L.reveal.rows === 3)
+      check(ok, `${w}×${h}: reveal slats ${L.reveal.rows} rows, ${L.reveal.pitch.toFixed(1)} px, ${L.reveal.count} across the field (${(share * 100).toFixed(2)}% each; at least 3.5%${w === 390 && h === 660 ? ', and the approved phone keeps 3 rows' : ''})`)
       await ctx.close()
     }
   }

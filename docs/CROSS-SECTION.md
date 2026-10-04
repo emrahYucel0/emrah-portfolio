@@ -845,6 +845,84 @@ session's ports 4962/4963/4964 with the dev server stopped, 11:28–12:14 (46 mi
   harness. `gesture2` makes one Playwright round trip per wheel event; even on a quiet machine the page sees its
   events 20–60 ms apart instead of the stream intended (KNOWN-ISSUES). It is not from Cross Section.
 
+### C4 + C5 approved (2026-10-04): integration
+
+The user checked on desktop and iPhone. The desktop blinds read as blinds, and turning the phone mid-passage redraws
+cleanly. Before the release, a responsive pass was asked for, like Linefield's.
+
+### The responsive pass (2026-10-04)
+
+ runs quick checks on the real runtime at every size, in four groups.  makes an
+overview of SURFACE, EDGE beside and DEPTH per size (). At each size:
+- SURFACE and DEPTH's ink, as C2 sets it, at least 8 px clear of the strips and the edges;
+- the louvers' row pitch no finer than 5.2 px;
+- the blinds' slats at about the phone's 3.5% share;
+- EDGE at all three stops inside the field;
+- both seams' identity and landings, the bench round trip included, at most 1 level;
+- the console clean.
+
+| class | size @ DPR | words: closest to a strip or edge | louvers, row pitch | blinds: slats × rows, share | EDGE in frame | seams (worst level) | console |
+|---|---|---|---|---|---|---|---|
+| phones | 360x800@3 | 20 px | 36, 6.72 px | 27 × 4, 3.78% | yes | 1 | 0 |
+| phones | 360x800@2 | 20 px | 36, 6.72 px | 27 × 4, 3.78% | yes | 1 | 0 |
+| phones | 375x667@2 | 20 px | 29, 6.72 px | 29 × 3, 3.48% | yes | 1 | 0 |
+| phones | 390x844@3 | 22 px | 38, 6.72 px | 29 × 4, 3.56% | yes | 1 | 0 |
+| phones | 430x932@3 | 23 px | 42, 6.72 px | 26 × 5, 3.98% | yes | 1 | 0 |
+| phones | 390x660@3 | 22 px | 29, 6.72 px | 29 × 3, 3.52% | yes | 1 | 0 |
+| phones | 375x560@3 | 20 px | 24, 6.72 px | 24 × 3, 4.27% | yes | 1 | 0 |
+| phones | 844x390@3 | 45 px | 19, 5.23 px | 19 × 3, 5.41% | yes | 1 | 0 |
+| phones | 932x430@3 | 50 px | 22, 5.23 px | 22 × 3, 4.75% | yes | 1 | 0 |
+| tablets | 768x1024@2 | 42 px | 47, 6.62 px | 28 × 5, 3.58% | yes | 1 | 0 |
+| tablets | 1024x768@2 | 56 px | 34, 6.62 px | 26 × 4, 3.97% | yes | 1 | 0 |
+| tablets | 820x1180@2 | 46 px | 48, 7.64 px | 29 × 5, 3.54% | yes | 1 | 0 |
+| tablets | 1180x820@2 | 64 px | 37, 6.62 px | 28 × 4, 3.68% | yes | 1 | 0 |
+| tablets | 1024x1366@2 | 56 px | 47, 9.03 px | 29 × 5, 3.57% | yes | 1 | 0 |
+| tablets | 1366x1024@2 | 74 px | 47, 6.62 px | 28 × 5, 3.58% | yes | 1 | 0 |
+| laptops | 1280x800@2 | 69 px | 36, 6.62 px | 27 × 4, 3.79% | yes | 1 | 0 |
+| laptops | 1280x720@1.5 | 68 px | 32, 6.62 px | 24 × 4, 4.27% | yes | 1 | 0 |
+| laptops | 1366x768@1 | 73 px | 34, 6.62 px | 26 × 4, 3.97% | yes | 1 | 0 |
+| laptops | 1440x900@2 | 78 px | 41, 6.62 px | 25 × 5, 4.14% | yes | 0 | 0 |
+| laptops | 1440x900@1 | 78 px | 41, 6.62 px | 25 × 5, 4.14% | yes | 1 | 0 |
+| laptops | 1536x864@1.25 | 82 px | 39, 6.62 px | 29 × 4, 3.47% | yes | 1 | 0 |
+| laptops | 1728x1117@2 | 94 px | 52, 6.62 px | 26 × 6, 3.91% | yes | 1 | 0 |
+| desktop | 1920x1080@1 | 103 px | 50, 6.62 px | 25 × 6, 4.06% | yes | 1 | 0 |
+| desktop | 1920x1080@2 | 103 px | 50, 6.62 px | 25 × 6, 4.06% | yes | 1 | 0 |
+| desktop | 2560x1440@1 | 103 px | 50, 6.62 px | 25 × 6, 4.06% | yes | 1 | 0 |
+| desktop | 2560x1440@2 | 103 px | 50, 6.62 px | 25 × 6, 4.06% | yes | 1 | 0 |
+| desktop | 3440x1440@1 | 136 px | 50, 6.62 px | 25 × 6, 4.06% | yes | 1 | 0 |
+| desktop | 3840x2160@1 | 129 px | 47, 9.03 px | 28 × 5, 3.61% | yes | 1 | 0 |
+| desktop | 3840x2160@2 | 129 px | 47, 9.03 px | 28 × 5, 3.61% | yes | 1 | 0 |
+
+**Two narrow fixes came out of it:**
+1. **Tall phones had thin blinds.** At 360×800, 390×844 and 430×932 there were 36–42 slats of 2.4–2.8% each, because
+   phones were held at 3 rows. The share rule is now everyone's, with a twentieth of a row's tolerance, so the
+   approved 390×660 and 375×667 keep exactly their 3 rows. Tall phones now get 26–29 slats.
+2. **At a fractional ratio one boundary row was the strip's.** At 1536×864@1.25 the strips end at device row 62.5
+   and 1017.5. The louvers' scissor rounded that row away, and the louvers stopped mid-row, so the whole row
+   (1,920 px) was the strip's ground. That was 93 levels off C2's frame at either end, and 110 on the blinds' first
+   frame. The scissor now takes whole boundary rows, and the first and last louvers reach them (at both ends of the
+   louver, so it holds for the turned-over back too). 1536×864@1.25 is now **0 px** at both ends. Integer ratios
+   are unchanged, and the phones at 1.75 measure the same or better.
+
+Regression after both: ,  (1536×864@1.25, 375×667@2, 1920×991@1, 390×844@3),
+ (1536×864@1.25, 375×667@2) and  all PASS.
+
+**Frame cost at the largest sizes** (, the GPU's own timer, this machine's Intel UHD, median ms). The debug
+entry now composes as the site does past 1920×1080, and  applies R20's proposed ceiling.
+
+| size (backing store) | the passage | an ordinary place |
+|---|---|---|
+| 1920×1080@1 (1920×1080, 2.1 Mpx) | 8.7 | 11.4 |
+| 2560×1440@2 (3840×2160, 8.3 Mpx) | 33.6 | 45.0 |
+| 3840×2160@2 (5760×3240, 18.7 Mpx) | 74.5 | 101.4 |
+| 3840×2160@2, R20 cap 8.3 Mpx (3841×2161) | 33.7 | 45.5 |
+
+- **The passage costs about 25% less than an ordinary place at every size,** so it never makes a large screen slower
+  than the site already is.
+- **At 2560×1440@2 and above, nothing on the site keeps 60 fps on this Intel iGPU.**
+- **The R20 cap would roughly halve the cost of everything** at 3840×2160@2, where 2560×1440@2 already sits at the
+  cap. That is a site-wide change (R20), proposed and not applied.
+
 ## Working rules for this worktree
 
 - **Own ports, build folder and gate log:** `SERVE_PORTS`, `BUILD_DIR=../builds/cross-section`,

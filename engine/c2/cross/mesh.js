@@ -308,18 +308,32 @@ export function createMesh(gl, { leak = false } = {}) {
       const W = Wq, uMax = 1
       // a louver's thickness: the reveal's slats may be thicker than the crossing's (slats.js, revealLayout)
       const HALF = Q.half ?? HALF0
+      /*
+       * THE FIELD'S EDGES ARE WHOLE DEVICE ROWS (the responsive pass, 2026-10-04). At a fractional ratio the strips end
+       * mid-row — 50 px × 1.25 is 62.5 device px — and that row is C2's own blend of strip and field. The faces carry it
+       * (they are C2's picture), so the first and last louvers reach out to the whole boundary rows, and the scissor in
+       * draw() takes them too; before this the row was the strip's ground, 93-110 levels off C2's frame at 1536×864@1.25.
+       * The reach is applied at both ends of the louver, so it holds whichever face is showing (the back is turned over);
+       * at an integer ratio it is nothing.
+       */
+      const fieldH = H - 2 * strip
+      const reachTop = (strip * dpr - Math.floor(strip * dpr + 1e-6)) / dpr
+      const reachBot = (Math.ceil((H - strip) * dpr - 1e-6) - (H - strip) * dpr) / dpr
       for (let i = 0; i < n; i++) {
         const l = Q.louvers[i], M = l.M, top = l.top, hl = l.hl
         const sd = sides(l.Minv, Q.eye, top, hl, HALF)
         // the image a face carries is the screen's own: v is the GL texture row of screen y (y up)
         const vy = (sy) => 1 - ((strip + sy) * dpr) / bh
+        const e = i === 0 ? reachTop : i === n - 1 ? Math.max(0, fieldH + reachBot - (top + hl)) : 0
+        const a0 = top - e, a1 = top + hl + e
         if (sd.face > 0) {
-          quad([[M, 0, top, HALF, 0, vy(top), 0, 0, 0, 0], [M, W, top, HALF, uMax, vy(top), 0, 0, 0, 0],
-            [M, W, top + hl, HALF, uMax, vy(top + hl), 0, 0, 0, 0], [M, 0, top + hl, HALF, 0, vy(top + hl), 0, 0, 0, 0]])
+          quad([[M, 0, a0, HALF, 0, vy(a0), 0, 0, 0, 0], [M, W, a0, HALF, uMax, vy(a0), 0, 0, 0, 0],
+            [M, W, a1, HALF, uMax, vy(a1), 0, 0, 0, 0], [M, 0, a1, HALF, 0, vy(a1), 0, 0, 0, 0]])
         } else if (sd.face < 0) {
           // the back's image is turned over with the louver: local y maps to image y 2·top + hl − y
-          quad([[M, 0, top, -HALF, 0, vy(top + hl), 1, 0, 0, 0], [M, W, top, -HALF, uMax, vy(top + hl), 1, 0, 0, 0],
-            [M, W, top + hl, -HALF, uMax, vy(top), 1, 0, 0, 0], [M, 0, top + hl, -HALF, 0, vy(top), 1, 0, 0, 0]])
+          const f = (y) => vy(2 * top + hl - y)
+          quad([[M, 0, a0, -HALF, 0, f(a0), 1, 0, 0, 0], [M, W, a0, -HALF, uMax, f(a0), 1, 0, 0, 0],
+            [M, W, a1, -HALF, uMax, f(a1), 1, 0, 0, 0], [M, 0, a1, -HALF, 0, f(a1), 1, 0, 0, 0]])
         }
         if (sd.edge !== 0 && l.ev > 0.002) {
           const y0 = sd.edge < 0 ? top : top + hl
@@ -356,7 +370,9 @@ export function createMesh(gl, { leak = false } = {}) {
       gl.drawArrays(gl.TRIANGLES, 0, 3)
       // the louvers, inside the scene only: the material never crosses into a strip
       gl.enable(gl.SCISSOR_TEST)
-      gl.scissor(0, Math.round(V.strip * r), bw, Math.round((V.H - 2 * V.strip) * r))
+      // (whole device rows: at a fractional ratio the field's edge rows are C2's, carried by the faces — see geometry())
+      const sy0 = Math.floor(V.strip * r + 1e-6), sy1 = Math.ceil((V.H - V.strip) * r - 1e-6)
+      gl.scissor(0, sy0, bw, sy1 - sy0)
       gl.useProgram(lv.p)
       gl.bindVertexArray(lvVao)
       gl.bindBuffer(gl.ARRAY_BUFFER, lvBuf)

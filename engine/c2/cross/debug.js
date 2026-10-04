@@ -77,10 +77,16 @@ async function mount() {
 
   const V = { W: 1, H: 1, u: 1, P: false, T: false, S: false, dpr: 1, pad: 18, strip: 50 }
   const measure = () => {
-    V.W = innerWidth; V.H = innerHeight
+    // the site's own composition (main.js measure): past 1920×1080 the field is composed at that size and shown up to 1.6×,
+    // so the scene and the backing store are what a large screen really gets — the ratio carries the scale (V.u stays 1)
+    const u = Math.max(1, Math.min(innerWidth / 1920, innerHeight / 1080, 1.6))
+    V.W = Math.round(innerWidth / u); V.H = Math.round(innerHeight / u)
     V.P = V.W < V.H * 0.8; V.T = V.P && V.W >= 700; V.S = !V.P && V.H < 520
     // ?csdpr= overrides the site's cap: only so a harness can render a supersampled ground truth (csshimmer.cjs)
-    V.dpr = Number(qs.get('csdpr')) || Math.min(devicePixelRatio || 1, V.W < 700 ? 1.75 : 1.5)
+    V.dpr = (Number(qs.get('csdpr')) || Math.min(devicePixelRatio || 1, V.W < 700 ? 1.75 : 1.5)) * u
+    // ?cspxcap=8.3: R20's proposed ceiling on the backing store, in megapixels — the ratio is lowered until it fits
+    const cap = Number(qs.get('cspxcap')) || 0
+    if (cap) V.dpr = Math.min(V.dpr, Math.sqrt((cap * 1e6) / (V.W * V.H)))
     V.strip = V.P && !V.T ? 44 : 50
     for (const b of [topbar, bottombar]) b.style.height = `${V.strip}px`
     surface.resize(V.W, V.H, V.dpr)

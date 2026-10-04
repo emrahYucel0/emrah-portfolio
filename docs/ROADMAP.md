@@ -22,9 +22,9 @@ belgedeyse (AUDIT-01, LINEFIELD.md, DEPLOYMENT.md…) burada ona bağlantı veri
 - **Karar bekliyor:** neyin beklendiği yazılı.
 - **Önce inceleme:** mevcut davranış ölçülmeden tasarlanmayacak.
 
-Son güncelleme: 2026-10-02, `fix/audit-01-batch2` (R12, R16, R3, R2, R5, R24, R8, R7 ve AUDIT-01 §9'un son satırı
-tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya da yayın bekliyor. Dalın ucu
-`audit-01-batch2-rc` etiketiyle işaretli; birleştirmeyi Linefield oturumu yapacak.
+Son güncelleme: 2026-10-04, `feature/image-quality` (worktree `../emrah-portfolio-iq`, 8da676c'den). Canlıda
+df5ab32. Görüntü kalitesi turu başladı: R9, R19, R20, R21. Sıra: R9 ölçümü → R9 düzeltmesi → R19 → R20 → R21.
+Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 
 ---
 
@@ -35,7 +35,7 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
 | R1 | Birleştirme: düzeltme turu 2 → `main`, yayın dalı | P0 | **Bitti** (2026-10-02, `4d64ac8`) | — |
 | R4 | Özel imleç | P2 | Kısmen: halkanın boyutu ve rengi bekliyor | — (R2 bitti) |
 | R6 | Lab bench girişleri: okunur boyut, üzerine gelince ön gösterim | P2 | Kısmen: ön gösterimin biçimi bekliyor | — |
-| R9 | Koyu zeminlerde satır titreşimi | **P0** (R18 için) | Neden açık; önce ölçüm | — |
+| R9 | Koyu zeminlerde satır titreşimi | **P0** (R18 için) | **Sürüyor** (`feature/image-quality`): aday mekanizma ölçülüyor | — |
 | R10 | Safari'de adın ince kesimle çizilmesi | P1 | **Kapandı** (2026-10-04: iPhone'da kalın; Playwright WebKit artefaktı) | R22 |
 | R11 | Yavaş ağda ilk kare (8,9 sn) | P2 | Önce değerlendirme | — |
 | R13 | Gövde metni ve tipografik hiyerarşi | P1 | Karar bekliyor (ölçek) | — |
@@ -43,10 +43,10 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
 | R15 | Tempo, ilerleme göstergesi, performans bütçesi | P2 | Karar bekliyor | R14 |
 | R17 | Yayın (DEPLOYMENT.md, CSP, canlı yedeği) | P0 | **Bitti** (2026-10-03, `b8918dc` canlıda) | — |
 | R18 | Awwwards başvurusu (Developer Award) | P0 | Karar bekliyor (tarih) | R17, R9, R22, R23 |
-| R19 | Full-Stack'in siyah kapsüllerinin çevresindeki hale | P1 | Karar bekliyor (varyant ya da kural) | — |
+| R19 | Full-Stack'in siyah kapsüllerinin çevresindeki hale | P1 | Karar bekliyor (korunum kuralının kapsamı: yalnız Full-Stack mi, iki yüz mü) | R9 |
 | R27 | Harness'lar izlenen `docs/` yollarına yazıyor | P2 | **Bitti** (2026-10-03) | — |
 | R28 | Mac dokunmatik yüzeyinde ikinci kaydırmanın yutulması (120 Hz) | **P0** | **Canlıda (`1e663bd`); gerçek MacBook onayı bekliyor** | R22 |
-| R20 | Arka belleğe piksel sayısı tavanı (önerilen 8,3 Mpx) | P1 | **Karar verildi:** bu yayında yok; görüntü kalitesi turunda R9 ve R19 ile kendi adımı | R9, R19 |
+| R20 | Arka belleğe piksel sayısı tavanı ve uyarlanır çizim oranı | P1 | **Karar verildi** (2026-10-04): güvenlik tavanı + uyarlanır oran; değerler ölçümle | R9 |
 | R21 | Büyük ekranlarda büyük harf başına satır sayısına üst sınır | P2 | Karar bekliyor (sanat yönetimi) | — |
 | R22 | Gerçek cihaz testi (iPad, Mac'te Safari, Android telefon) | P0 | Karar verildi | — |
 | R23 | Awwwards başvuru malzemesi (ekran görüntüleri, kısa video, başlık, açıklama) | P0 | Karar bekliyor (içerik) | R9 |
@@ -110,6 +110,17 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
   - gamma-doğru karıştırma (ayrı bir adım)
 - **Karar:** Önce mekanizma ölçülecek, sonra düzeltme seçilecek. Yayını (R17) engellemez, çünkü canlıda da var.
   **Awwwards başvurusundan (R18) önce şart.**
+- **Sürüyor (2026-10-04):** `feature/image-quality`, worktree `../emrah-portfolio-iq`.
+  - **Aday mekanizma** (inceleme, henüz ölçülmedi): satırlar bir arka bellek pikselinden ince. Shader piksel
+    başına tek örnek alıyor; kenar `smoothstep`'i alanı korumuyor (`surface.js` `rows()`, `aa`). Mürekkep ile
+    kâğıt sRGB değerleriyle karışıyor. Bir satırın yaydığı ışık, merkezinin piksele göre konumuna bağlı. Model:
+    çizim oranı 1'de koyu zeminde 2,2–2,4 kat, krem zeminde 1,19 kat. Linefield'ın 10,50 px'teki 73,5 seviyelik
+    yayılımı, satırların dönüşümlü olarak pikselin merkezine ve kenarına düşmesiyle açıklanıyor.
+  - **Adım 1 (kullanıcı kararı 2026-10-04):** yalnız ölçüm, motor değişmez. Model gerçek build'de DPR 1, 1,5 ve
+    2'de; Full-Stack, bir işin içi, Linefield'ın koyu yarısı ve krem bir kontrol üzerinde sınanır. Model tutmazsa
+    durulur ve rapor edilir.
+  - "Satır aralığını tamsayıya kilitlemek" adayı bırakıldı: dalgalanan satırları düzeltmiyor, `V.u` ve R20 ile
+    çakışıyor.
 - **Dosyalar:** `engine/c2/main.js` (`V.dpr`, `measure`), `engine/c2/surface.js` (shader, `resize`),
   `engine/c2/linefield/` (kendi aralık hesabı), `docs/LINEFIELD.md` (ölçümler).
 - **Bağımlılık:** yok. Gerçek MacBook ekranında görsel onay gerekiyor (R22). R20 ile birlikte ölçülmeli.
@@ -321,30 +332,55 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
 
 ### R19. Full-Stack'in siyah kapsüllerinin çevresindeki hale
 - **Açıklama:** Satırlar kapsülün kenarında yığılıyor; siyah kapsüllerin çevresinde bir hale oluşuyor.
-- **Durum:** Atılabilir A/B/C varyantları `builds/var-A`, `var-B` ve `var-C`'de. Olası düzeltme koridorun mürekkep
-  korunumu kuralı.
-- **Karar:** Bekleyen: varyant ya da korunum kuralı.
-- **Dosyalar:** `engine/c2/states.js` (Full-Stack yüzü), `engine/c2/surface.js`, `engine/c2/linefield/corridor.js`
-  (korunum kuralı).
-- **Bağımlılık:** yok.
+- **Mekanizma** (`tools/diag/lfhalo.cjs` başlığı): kapsül satırları iter, satırlar kenarda sıkışır. Satırın yarı
+  kalınlığı ekran pikseli cinsinden sabit kaldığı için piksel başına mürekkep artar; 2,1 arka bellek pikselinin
+  altında kaynaşma kuralı satırları ayrıca birleştirir.
+- **Düzeltme (2026-10-04):** daha önce burada adı geçen `builds/var-A`, `var-B` ve `var-C` hale düzeltmesi
+  değil. Onlar Linefield'ın seyreltme varyantları (her 4., 6. ve 8. satır; `docs/LINEFIELD.md`, "The three
+  variants") ve 2026-10-01 tarihli. Kalan yol korunum kuralı: Linefield'ın `lfHw`'si gibi, kalınlık sıkışma oranına
+  bölünür (alt sınır 0,30). Yalnız kapsüllerin (opening) sıkıştırmasına uygulanır, toplama ve sıkıştırma
+  jestlerinin bilinçli kaynaşmasına değil. Durum başına bir anahtarla açılır; diğer durumlar değişmez. Hareketi
+  azaltılmış yolda (`flat.js`) da aynısı yapılır.
+- **Karar:** Bekleyen: kuralın kapsamı (yalnız Full-Stack mi, kompozisyonu paylaşan iki yüz mü), görsel
+  karşılaştırmadan sonra.
+- **Dosyalar:** `engine/c2/states.js` (Full-Stack yüzü), `engine/c2/surface.js`, `engine/c2/flat.js`,
+  `engine/c2/linefield/corridor.js` (örnek kural).
+- **Bağımlılık:** R9'un düzeltmesinden sonra (halenin parlaklığı karıştırmaya da bağlı).
 - **Öncelik:** P1.
 
-### R20. Arka belleğe piksel sayısı tavanı
-- **Açıklama:** Büyük ve yüksek DPR'lı ekranlarda kanvasın arka belleği sınırsız büyüyor. Önerilen tavan 8,3 Mpx
-  (3840×2160). Tavanı aşan ekranda çizim oranı düşürülür.
-- **Karar:** Bekleyen: değer.
-- **Karar (2026-10-04):** Cross Section yayınında yok. Görüntü kalitesi turunda R9 ve R19 ile birlikte kendi adımı
+### R20. Arka belleğe piksel sayısı tavanı ve uyarlanır çizim oranı
+- **Açıklama:** Büyük ve yüksek DPR'lı ekranlarda kanvasın arka belleği sınırsız büyüyor. Çizim oranı
+  `min(DPR, 1,5) × V.u` (telefonda 1,75).
+  - **Not (2026-10-04):** 2560×1440@2'de oran 2,0 ve arka bellek tam 3840×2160 = 8,3 Mpx. Önerilen 8,3 Mpx'lik
+    sabit tavan bu ekranda hiçbir şeyi değiştirmez.
+  - Intel UHD'de maliyet yaklaşık 5 ms/Mpx (`docs/CROSS-SECTION.md`: 2,1 Mpx 11,4 ms; 8,3 Mpx 45 ms; 18,7 Mpx
+    101 ms). Bu GPU'da 60 fps yaklaşık 2,5–3 Mpx'e kadar tutuyor. 2560×1440@1 (3,7 Mpx) ölçülmedi.
+- **Karar (2026-10-04, kullanıcı):** güvenlik tavanı + uyarlanır oran. R9'dan sonra yapılır. Kısıtlar:
+  - oturum içinde yalnız aşağı iner, hiçbir zaman geri çıkmaz;
+  - yalnız site dururken değişir; geçişin ya da pasajın (Linefield, Cross Section) ortasında asla;
+  - altına hiç inmeyen bir tabanı var;
+  - tek tek yavaş karelere değil, birkaç saniyelik sürekli bir ölçüme göre karar verir;
+  - telefonlarda, ölçümle gerekli görülmedikçe uygulanmaz;
+  - tümü tek bir sabitle kapatılabilir.
+
+  Tavanın, tabanın ve ölçüm penceresinin değerleri ölçümle önerilecek.
+- **Karar (2026-10-04, önceki):** Cross Section yayınında yok. Görüntü kalitesi turunda R9 ve R19 ile birlikte kendi adımı
   olacak. Ölçüm (`docs/CROSS-SECTION.md`, duyarlı tarama): 3840×2160@2'de arka bellek 18,7 Mpx. Bu Intel UHD'de
   sıradan bir yer 101 ms, Cross Section 74 ms; 8,3 Mpx tavanla ikisi de yaklaşık yarıya iniyor (45 ms ve 34 ms).
 - **Dosyalar:** `engine/c2/main.js` (`V.dpr`, `V.u`, `measure`), `engine/c2/surface.js` (`resize`),
   `engine/c2/linefield/`.
-- **Bağımlılık:** çizim oranını değiştirdiği için R9 ile birlikte ölçülmeli.
+- **Bağımlılık:** R9. R9'un düzeltmesi titreşimi çizim oranından bağımsız kılmalı; yoksa düşen oran satır
+  şeritleri üretir.
 - **Öncelik:** P1.
 
 ### R21. Büyük ekranlarda büyük harf başına satır sayısına üst sınır
 - **Açıklama:** Büyük harf başına düşen satır sayısı telefonda 12, 4K'da 37. Bir üst sınır konup konmayacağı ve
   değeri sanat yönetimi kararı.
-- **Karar:** Bekleyen: kullanıcının sanat yönetimi kararı.
+  - **Not (2026-10-04):** 12 ve 37 Linefield'ın sözcükleri. Aralık `max(2,6, min(7, cap / 12))`
+    (`linefield/state.js`): telefon alt sınıra (12) çarpıyor; büyük ekranda aralık sayfanın 7 px'inde kalıyor, bu
+    yüzden harf büyüdükçe satır sayısı artıyor. Kahraman adı 1080p'de zaten yaklaşık 50 satırla çiziliyor (hesap,
+    ölçülmedi).
+- **Karar:** Bekleyen: kullanıcının sanat yönetimi kararı. Dört ekran boyutundan bir karşılaştırma sayfasıyla.
 - **Dosyalar:** `engine/c2/linefield/state.js` (satır aralığı), `engine/c2/states.js`, `docs/LINEFIELD.md`.
 - **Bağımlılık:** yok.
 - **Öncelik:** P2.

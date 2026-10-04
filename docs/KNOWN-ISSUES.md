@@ -498,6 +498,29 @@ Reproduce: `node mactrack.cjs <port>` and `node ptp2.cjs <port> chrome --only=se
 
 ---
 
+## LAB A11Y: one axe colour-contrast sample on the bench's `.hint` at `/en/lab`, 1440 — flaky, shared with live
+
+**Recorded 2026-10-04, at the Cross Section release gate, at the user's decision.** `labaxe.cjs` reports one
+`color-contrast (serious)` on `.lab-stage .foot .hint` at `/en/lab`, 1440×900, normal motion, in some runs and not in
+others. The hint is the bench's one cue: it fades in after `CUE_IDLE`, so axe can sample it mid-fade, the same
+mechanism as the `.state` entry below.
+
+**Not from Cross Section, measured both ways on a quiet machine:**
+
+| | live `1e663bd` | the release build (Cross Section on) |
+|---|---|---|
+| run 1 | FAIL (`.hint`) | FAIL (`.hint`) |
+| run 2 | PASS | PASS |
+
+At C3 (2026-10-04, under load) the same sample failed on live and passed on the build. Cross Section does not touch
+the bench's hint.
+
+**Still open:** whether the hint has a real contrast problem at full opacity. The `.state` entry below was settled
+by measuring at the moment a visitor reads it, and the hint has not been measured that way. Until it is, a
+LAB A11Y failure that names only `.hint` at `/en/lab` 1440 is this case. Anything else in LAB A11Y is not.
+
+---
+
 ## LAB A11Y: one axe colour-contrast violation on `.state` at `/en/lab` — RESOLVED: axe samples it mid-fade
 
 **Settled 2026-10-03: not a contrast fault, and nothing was changed.** `.state` is the bench's foot line,

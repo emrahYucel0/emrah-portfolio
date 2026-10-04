@@ -55,6 +55,24 @@ node tools/diag/cspboot.cjs https://yucelemrah.com webkit     PASS  the same, an
 and the live spine reads `name · creative · system · linefield · work · lab · rest`, `/tr/contact` answers 200, with
 no page errors. `origin/main` was fast-forwarded to `b8918dc` before the upload.
 
+**Release candidate — `df5ab32`, Cross Section (R14). NOT UPLOADED; no table row until it is.** Prepared on
+2026-10-04 on `feature/cross-section`. `main` will be fast-forwarded to it; it is still checked out in another worktree.
+
+- **What is new:** between Work and the Lab, **Cross Section**, a passage of louvers (SURFACE → EDGE → DEPTH).
+  - It is reached by scrolling, five gestures each way. A hard flick never skips the EDGE moment.
+  - Past DEPTH, blinds open onto the Lab bench; up from the bench they close over it again.
+  - Reduced motion shows each position as a cut, with an EDGE still.
+  - It replaces the Work → Lab bridge. `docs/CROSS-SECTION.md` has the record.
+- **On by default** (`nuxt.config.ts`). `NUXT_PUBLIC_CROSS=0 npm run generate` is the one-line off switch: that build is
+  byte-identical in JS and CSS to the live `1e663bd` package.
+- **Package:** `deploy/yucelemrah-df5ab32.zip`, SHA-256 `9a627488d516721a…`, 220 files, 8.9 MiB (10,257,048 bytes
+  unpacked). `cspboot --dir` PASS on the build and on the unpacked zip.
+- **Gate:** the full gate on this build, flag on, in four groups on a quiet machine. Everything passes but two known,
+  recorded cases, both shared with the live package: LAB A11Y's `.hint` sample and GESTURE's fast-flick cases.
+  `docs/CROSS-SECTION.md` has the record.
+- **Before upload:** the user's own check on the iPhone (LAN preview `http://192.168.1.5:4964/tr`). Then fast-forward
+  `main`, push only when asked, and upload by `docs/DEPLOYMENT.md`'s checklist.
+
 ## Adding a line
 
 After an upload, append a row and fill `verified live by` only once someone has actually opened the deployed site. The

@@ -39,7 +39,7 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
 | R10 | Safari'de adın ince kesimle çizilmesi | P1 | **Kapandı** (2026-10-04: iPhone'da kalın; Playwright WebKit artefaktı) | R22 |
 | R11 | Yavaş ağda ilk kare (8,9 sn) | P2 | Önce değerlendirme | — |
 | R13 | Gövde metni ve tipografik hiyerarşi | P1 | Karar bekliyor (ölçek) | — |
-| R14 | Cross Section (İşler → Lab köprüsünün yerine) | P1 | **Sürüyor** (Faz C, C4 + C5 bitti; son kapı ve entegrasyon onayı bekliyor; `feature/cross-section`) | R2, R15 |
+| R14 | Cross Section (İşler → Lab köprüsünün yerine) | P1 | **Yayın adayı hazır** (`df5ab32`, paket hazır; iPhone kontrolü ve yükleme bekliyor; `feature/cross-section`) | R2, R15 |
 | R15 | Tempo, ilerleme göstergesi, performans bütçesi | P2 | Karar bekliyor | R14 |
 | R17 | Yayın (DEPLOYMENT.md, CSP, canlı yedeği) | P0 | **Bitti** (2026-10-03, `b8918dc` canlıda) | — |
 | R18 | Awwwards başvurusu (Developer Award) | P0 | Karar bekliyor (tarih) | R17, R9, R22, R23 |
@@ -242,6 +242,18 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
   - **Hareketi azaltılmış mod:** her konum bir kesme; bantta EDGE anı durağan bir resim olarak (bakır çubuklar,
     çizgi, EDGE).
   - **Bayrak kapalı build:** canlı paketle aynı JavaScript ve CSS.
+- **Entegrasyon onaylandı (2026-10-04)** (masaüstü ve iPhone).
+- **Yayın adayı (2026-10-04, yüklenmedi).** Ayrıntı `docs/CROSS-SECTION.md` ve `docs/DEPLOY-LOG.md`'de.
+  - **Duyarlı tarama:** 29 boyut (telefon, tablet, dizüstü, masaüstü, geniş; DPR 1–3, 1,25 ve 1,5 dahil) geçti. İki
+    dar düzeltme: uzun telefonlarda panjur lamelleri telefona benzetildi; kesirli DPR'de şerit sınırındaki satır C2'nin
+    kendisi.
+  - **Yayında varsayılan olarak açık** (R25 gibi). Tek satırlık kapatma: `NUXT_PUBLIC_CROSS=0`; bu build canlı paketle
+    JS ve CSS'te bayt bayt aynı.
+  - **Kapı (bayrak açık, dört grup, sessiz makine):** iki bilinen durum dışında hepsi geçti; ikisi de canlıda da var
+    (LAB A11Y `.hint`, GESTURE hızlı fiskeler).
+  - **Paket:** `deploy/yucelemrah-df5ab32.zip`, SHA-256 `9a627488d516721a…`, 220 dosya, 8,9 MiB.
+  - **Açık:** `main`, `emrah-portfolio-linefield`'da açık olduğu için henüz ileri sarılmadı. Push yok. Kullanıcı
+    önce iPhone'da bakacak.
 - **Dosyalar:**
   - `engine/c2/main.js`: `startBridge`, `A.mode === 'bridge'`
   - `engine/c2/states.js`

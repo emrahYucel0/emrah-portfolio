@@ -923,6 +923,74 @@ entry now composes as the site does past 1920×1080, and `?cspxcap=` applies R20
 - **The R20 cap would roughly halve the cost of everything** at 3840×2160@2, where 2560×1440@2 already sits at the
   cap. That is a site-wide change (R20), proposed and not applied.
 
+### The release candidate (2026-10-04)
+
+**Step 1, `main`.** `main` had not moved: `main` = `origin/main` = 15da1d5, the branch's base, so a fast-forward is
+possible. But `main` is checked out in `emrah-portfolio-linefield`, another session's worktree. Moving the ref from
+here would leave that worktree's files stale, so the user decided to release from `feature/cross-section`, which is
+exactly what `main` will become, and fast-forward `main` once that worktree no longer has it checked out. Nothing has
+been pushed.
+
+**Step 2, on by default** (`nuxt.config.ts`, like R25 for Linefield). `__CROSS__` is true unless
+`NUXT_PUBLIC_CROSS=0` (`false`, `off`, `no`). `docs/DEPLOYMENT.md` says so and gives the package check. Verified both
+ways:
+- `NUXT_PUBLIC_CROSS=0 npm run generate` against the live `1e663bd` package (`tools/diag/cscompare.cjs`): 27 JS and
+  12 CSS files byte-identical, 219 files, nothing else differing beyond the build ID, the timestamps and the config
+  script's CSP hash, and 0 Cross Section markers;
+- `npm run generate` (nothing set): the passage is in its own chunk (`grep -ril cs-still` finds it), Linefield too, and
+  there are 220 files. `cspboot --dir` PASS, typecheck clean. `cross.cjs` on the build's own `--wk` server PASSES in
+  Chrome and WebKit (every section but COLD, whose forced fallback is a development switch).
+
+**Found before the gate, in a dry run of its flick checks on the release build:**
+- **Up from the bench, a slowing wheel walked DEPTH back to Work.** Its last detents are 150–330 ms apart. After
+  the hand-over (warm) or the route arrival (cold) the stream's history was gone, so each detent opened a gesture.
+  The gesture rule now watches the stream while the blinds hold the screen and while the runtime stands at the place
+  without the screen yet. An arrival at Cross Section starts as a spent stream, without the hush, which swallowed
+  events unseen. Replayed 6 times cold and 6 times warm, it stays at DEPTH every time, and `cross.cjs` (up, way,
+  cold, reverse, touch) still passes, so a deliberate gesture after a pause still counts.
+- **`gesture2.cjs` did not know Cross Section's axis.** It now knows it (one flick, one position).
+- **`run6.sh` can run in groups** (`ONLY=...`).
+
+**Step 3, the full gate on the release build, flag on, in four groups,** on this session's ports 4962/4963. The user
+made the machine quiet first.
+
+| group | sections | time | result |
+|---|---|---|---|
+| 1. The runtime and the Lab | RETIRED LAB ×3, SPINE ×2, SHELL, LAB A11Y, JOURNEY ×2 | 12 min | PASS except LAB A11Y (1): the `.hint` sample, see below |
+| 2. GESTURE | gesture2, as five fresh WebKit sessions | 13 min | 70 ok, 3 known fast-flick cases |
+| 3. Boot, projects, phones | INITIAL LOAD ×2, BOOT RESPONSIVE, PROJ, PANELFIT, WORK TEXT, SHORT PHONE | 14 min | PASS (INITIAL LOAD: errors 0) |
+| 4. Contact and the baseline | CONTACT ROUTE, COMPAT IOS15.4, SEAM ×2, FINALE A11Y, BECKON, NON-LAB ×2 | 9 min | PASS; NON-LAB REVIEW, only the spine's new places |
+
+- **RETIRED LAB:** 0 frames of the retired Lab, including the new way up, "Lab → Cross Section".
+- **LAB A11Y (1)** is the axe sample on the bench's `.hint` at `/en/lab` 1440, read mid-fade.
+  - Re-run alone on the quiet machine it failed, then passed, **on the live package and on this build alike**.
+  - The user decided to record it (KNOWN-ISSUES) and go on.
+- **GESTURE, run as one session, hung after 37 minutes:** WebKit idle, 0 CPU, inside the long session (KNOWN-ISSUES:
+  accumulation in long Playwright sessions). The case it hung at passes alone, so the group was re-run as five fresh
+  sessions: the non-flick sections, then burst, coast, tail and long.
+  - Its three failures are the known class, where the harness's per-event round trips stretch a gap past the 340 ms
+    quiet and the site rightly reads a new gesture: `coast up from linefield` (opened at 343 ms), `tail down from
+    cross` (357 ms; that run's gaps reached 446 ms), and `long down from creative`.
+  - `coast down from cross` failed once in the hung session (4 positions) and once in three reps alone (2), the same
+    class.
+- **NON-LAB:** the differences against the old `pre-site-polish` baseline are the spine's places (`linefield-*`,
+  `cross-pass`), with pixΔ 32.2, against 31.1 in the flag-off gate.
+
+**Step 4, the package.**
+
+| | |
+|---|---|
+| package | `deploy/yucelemrah-df5ab32.zip` (gitignored), with `yucelemrah-df5ab32.zip.sha256` |
+| built from | `df5ab32`, the release build (`npm run generate`, nothing set): Cross Section ON, Linefield ON |
+| SHA-256 | `9a627488d516721a20bea7f18f82b76a9675e74d991127bce57f236eaf14f70c` |
+| files | 220 (live `1e663bd`: 219; the one more is Cross Section's chunk), three `.htaccess` |
+| size | 10,257,048 bytes unpacked, 9,332,545 zipped (8.9 MiB) |
+| checks | `cspboot --dir` PASS on the build and on the zip's own unpacked contents; unpacked = build |
+| LAN preview | `http://192.168.1.5:4964/tr`, the same build (same build ID), served `--lan --wk` on this session's port |
+
+**Not done, as agreed:** no push, no upload, and `main` not yet fast-forwarded. The user checks the release build on the
+iPhone first.
+
 ## Working rules for this worktree
 
 - **Own ports, build folder and gate log:** `SERVE_PORTS`, `BUILD_DIR=../builds/cross-section`,

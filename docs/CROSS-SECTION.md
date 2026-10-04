@@ -821,7 +821,29 @@ or WebGL warning.
   - 0 Cross Section markers.
 
   `npx nuxt typecheck`: clean.
-- **Not run yet: the final full gate.** As agreed, the user is told first, so the machine can be made quiet.
+
+**The final full flag-off gate (`run6.sh`), 2026-10-04.** The user made the machine quiet first. It ran on this
+session's ports 4962/4963/4964 with the dev server stopped, 11:28–12:14 (46 minutes).
+- **Passed:**
+  - CSPBOOT, SPINE (twice), BOOT RESPONSIVE (WebKit), PROJ, PANELFIT, WORK TEXT, SHORT PHONE, SHELL;
+  - **LAB A11Y** (it had failed under load at C3);
+  - CONTACT ROUTE, COMPAT IOS15.4, SEAM (twice), FINALE A11Y, BECKON;
+  - JOURNEY TR NORMAL, JOURNEY EN REDUCED.
+- **NON-LAB:** REVIEW, the same Linefield-in-the-spine difference against the old baseline as at C3.
+- **GESTURE: FAIL (4).** Coast or long flicks moved two places: `coast down from name 0 → 2`,
+  `coast up from linefield 3 → 1`, `long up from work 4 → 2`, `long up from the bench 5 → 3`.
+- **The A/B against the live `1e663bd` package** (served on 4965), alternating, two runs per shape:
+
+  | | live `1e663bd` | build under test |
+  |---|---|---|
+  | coast, run 1 / 2 | **1** / **3** FAIL, incl. `coast up from the bench 5 → 3` | 0 / 0 |
+  | long, run 1 / 2 | **1** / **2** FAIL | **3** / **3** FAIL |
+  | total | **7** | **6** |
+
+  They are the same cases, two places instead of one, falling sometimes on one side and sometimes on the other.
+- **Reading:** the build's JavaScript is byte-identical to live, so this is the live site's own behaviour under this
+  harness. `gesture2` makes one Playwright round trip per wheel event; even on a quiet machine the page sees its
+  events 20–60 ms apart instead of the stream intended (KNOWN-ISSUES). It is not from Cross Section.
 
 ## Working rules for this worktree
 

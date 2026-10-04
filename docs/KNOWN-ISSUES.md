@@ -325,6 +325,12 @@ against the live package on the same machine at the same time showed the same fa
 live and PASS on the build; `coast` PASS then FAIL (3) on live, including `coast up from the bench 5 → 3`. Details are
 in `docs/CROSS-SECTION.md`. Alone is not enough: the machine must be quiet.
 
+**And on a quiet machine (the C4 + C5 final gate, 2026-10-04):** `LAB A11Y` passed and `GESTURE` still failed: 4
+coast/long flicks took two stops. An alternating A/B on the same quiet machine failed 7 flick cases on the live
+package and 6 on the build, the same cases. So `GESTURE`'s coast and long shapes are not decided by this harness even
+when the machine is quiet: its per-event round trips still put the events 20–60 ms apart. `trackpad.cjs`, which plays
+its streams from inside the page, is the measure for those shapes.
+
 **What to do.** Run `gesture2`, `labaxe`, `trackpad`, `spine` and `seam` in group B, alone, as the release did.
 A failure in one of them while groups run in parallel is re-run alone before it is treated as real (the standing
 rule for this release). `seam.cjs`'s arrival test is now measured per frame interval rather than per sample, so

@@ -72,6 +72,12 @@ no page errors. `origin/main` was fast-forwarded to `b8918dc` before the upload.
   `docs/CROSS-SECTION.md` has the record.
 - **Before upload:** the user's own check on the iPhone (LAN preview `http://192.168.1.5:4964/tr`). Then fast-forward
   `main`, push only when asked, and upload by `docs/DEPLOYMENT.md`'s checklist.
+- **Approved for release by the user after the iPhone check (2026-10-04).** The upload is done by hand, through cPanel.
+- **Built from `df5ab32`; the commits after it are documentation only.** `main` was fast-forwarded to `4521323` and
+  then to the commit that records this. `git diff --stat df5ab32..4521323` touches only `docs/CROSS-SECTION.md`,
+  `docs/DEPLOY-LOG.md`, `docs/KNOWN-ISSUES.md` and `docs/ROADMAP.md`. The commits after that touch only
+  `docs/` and `tools/diag/hintaa.cjs`, a harness that is never part of the build. The package's name and SHA-256 above
+  stand for `df5ab32`; a build of `main`'s tip produces the same code.
 
 ## Adding a line
 

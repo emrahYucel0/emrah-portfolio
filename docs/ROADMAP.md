@@ -46,7 +46,7 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
 | R19 | Full-Stack'in siyah kapsüllerinin çevresindeki hale | P1 | Karar bekliyor (varyant ya da kural) | — |
 | R27 | Harness'lar izlenen `docs/` yollarına yazıyor | P2 | **Bitti** (2026-10-03) | — |
 | R28 | Mac dokunmatik yüzeyinde ikinci kaydırmanın yutulması (120 Hz) | **P0** | **Canlıda (`1e663bd`); gerçek MacBook onayı bekliyor** | R22 |
-| R20 | Arka belleğe piksel sayısı tavanı (önerilen 8,3 Mpx) | P1 | Karar bekliyor (değer) | R9 ile birlikte ölçülür |
+| R20 | Arka belleğe piksel sayısı tavanı (önerilen 8,3 Mpx) | P1 | **Karar verildi:** bu yayında yok; görüntü kalitesi turunda R9 ve R19 ile kendi adımı | R9, R19 |
 | R21 | Büyük ekranlarda büyük harf başına satır sayısına üst sınır | P2 | Karar bekliyor (sanat yönetimi) | — |
 | R22 | Gerçek cihaz testi (iPad, Mac'te Safari, Android telefon) | P0 | Karar verildi | — |
 | R23 | Awwwards başvuru malzemesi (ekran görüntüleri, kısa video, başlık, açıklama) | P0 | Karar bekliyor (içerik) | R9 |
@@ -252,8 +252,8 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
   - **Kapı (bayrak açık, dört grup, sessiz makine):** iki bilinen durum dışında hepsi geçti; ikisi de canlıda da var
     (LAB A11Y `.hint`, GESTURE hızlı fiskeler).
   - **Paket:** `deploy/yucelemrah-df5ab32.zip`, SHA-256 `9a627488d516721a…`, 220 dosya, 8,9 MiB.
-  - **Açık:** `main`, `emrah-portfolio-linefield`'da açık olduğu için henüz ileri sarılmadı. Push yok. Kullanıcı
-    önce iPhone'da bakacak.
+  - **Yayın onaylandı (2026-10-04)** kullanıcının iPhone kontrolünden sonra. `main` ileri sarıldı ve push edildi.
+    Paket `df5ab32`'den; sonraki commit'ler yalnızca belge. Yüklemeyi kullanıcı cPanel'den elle yapıyor.
 - **Dosyalar:**
   - `engine/c2/main.js`: `startBridge`, `A.mode === 'bridge'`
   - `engine/c2/states.js`
@@ -324,6 +324,9 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
 - **Açıklama:** Büyük ve yüksek DPR'lı ekranlarda kanvasın arka belleği sınırsız büyüyor. Önerilen tavan 8,3 Mpx
   (3840×2160). Tavanı aşan ekranda çizim oranı düşürülür.
 - **Karar:** Bekleyen: değer.
+- **Karar (2026-10-04):** Cross Section yayınında yok. Görüntü kalitesi turunda R9 ve R19 ile birlikte kendi adımı
+  olacak. Ölçüm (`docs/CROSS-SECTION.md`, duyarlı tarama): 3840×2160@2'de arka bellek 18,7 Mpx. Bu Intel UHD'de
+  sıradan bir yer 101 ms, Cross Section 74 ms; 8,3 Mpx tavanla ikisi de yaklaşık yarıya iniyor (45 ms ve 34 ms).
 - **Dosyalar:** `engine/c2/main.js` (`V.dpr`, `V.u`, `measure`), `engine/c2/surface.js` (`resize`),
   `engine/c2/linefield/`.
 - **Bağımlılık:** çizim oranını değiştirdiği için R9 ile birlikte ölçülmeli.

@@ -498,7 +498,23 @@ Reproduce: `node mactrack.cjs <port>` and `node ptp2.cjs <port> chrome --only=se
 
 ---
 
-## LAB A11Y: one axe colour-contrast sample on the bench's `.hint` at `/en/lab`, 1440 — flaky, shared with live
+## LAB A11Y: one axe colour-contrast sample on the bench's `.hint` at `/en/lab`, 1440 — RESOLVED: axe samples it mid-fade
+
+**Settled 2026-10-04: not a contrast fault, and nothing was changed.** Measured the way `.state` was
+(`tools/diag/hintaa.cjs`), against the release build:
+- in the window a visitor reads it: no input, the hint set at about 2.6 s and at full opacity by about 3.1 s (a 495 ms
+  fade-in);
+- its own computed colour, `rgb(18, 18, 18)`, against every pixel behind its glyphs, with the hint's text hidden for
+  that capture;
+- at 1440×900 at DPR 2 (2,769 glyph pixels) and DPR 1 (907):
+
+**worst ratio 16.13:1, 0% of the pixels under AA.** The requirement is 4.5:1.
+
+What is behind it is the foot band's own opaque ground, `rgb(239, 238, 233)`. No other label shares its box: `.roles`
+and `.state` stay clear of it at 1440, and the crop (`tools/diag/out/hintaa/`) shows the hint alone. So the axe
+failure is the 495 ms fade-in, sampled at a low opacity, the same mechanism as `.state` below. The text that
+follows was written before this was measured.
+
 
 **Recorded 2026-10-04, at the Cross Section release gate, at the user's decision.** `labaxe.cjs` reports one
 `color-contrast (serious)` on `.lab-stage .foot .hint` at `/en/lab`, 1440×900, normal motion, in some runs and not in
@@ -515,9 +531,7 @@ mechanism as the `.state` entry below.
 At C3 (2026-10-04, under load) the same sample failed on live and passed on the build. Cross Section does not touch
 the bench's hint.
 
-**Still open:** whether the hint has a real contrast problem at full opacity. The `.state` entry below was settled
-by measuring at the moment a visitor reads it, and the hint has not been measured that way. Until it is, a
-LAB A11Y failure that names only `.hint` at `/en/lab` 1440 is this case. Anything else in LAB A11Y is not.
+A LAB A11Y failure that names only `.hint` at `/en/lab` 1440 is this case. Anything else in LAB A11Y is not.
 
 ---
 

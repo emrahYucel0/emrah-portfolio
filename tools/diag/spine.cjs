@@ -146,6 +146,8 @@ const swipe = async (p, dy) => {
   // the spine is read from a locale route: on /tr/lab the runtime is never started and cannot be asked
   await fresh('/tr')
   const STOP = await stopsOf(p)
+  // above the bench: Work, or — with Cross Section on the spine (R14) — the passage, entered at DEPTH
+  const UP = STOP.cross ?? STOP.work, UPN = STOP.cross != null ? 'Cross Section (DEPTH)' : 'Work'
   await fresh('/tr/lab')
   let s = await p.evaluate(state)
   ok(!s.docScroll, 'Lab Home does not scroll as a document', `scrollHeight vs viewport: ${s.docScroll ? 'taller' : 'exactly one screen'}`)
@@ -160,10 +162,10 @@ const swipe = async (p, dy) => {
   await fresh('/tr/lab')
   await p.evaluate(watchP)
   await wheelBurst(p, -110, 1)
-  await settleIndex(p, '/tr', STOP.work, 'wheel: Lab -> Work')
+  await settleIndex(p, '/tr', UP, 'wheel: Lab -> Work')
   s = await p.evaluate(state)
   let path1 = await p.evaluate(seen)
-  ok(s.path === '/tr' && s.c2 === 'on' && s.base === STOP.work, 'Lab → Work', `at ${s.path} c2 ${s.c2} mode ${s.mode} base ${s.base} p ${s.p}`)
+  ok(s.path === '/tr' && s.c2 === 'on' && s.base === UP, `Lab → ${UPN}`, `at ${s.path} c2 ${s.c2} mode ${s.mode} base ${s.base} p ${s.p}`)
   ok(!path1.some((v) => v < 2.5), 'no flash through Name on the way to Work', `p seen: ${Math.min(...path1)}…${Math.max(...path1)}`)
 
   await fresh('/tr/lab')
@@ -181,9 +183,9 @@ const swipe = async (p, dy) => {
   console.log('\n-- trackpad momentum')
   await fresh('/tr/lab')
   await momentum(p, -1)
-  await settleIndex(p, '/tr', STOP.work, 'momentum: Lab -> Work')
+  await settleIndex(p, '/tr', UP, 'momentum: Lab -> Work')
   s = await p.evaluate(state)
-  ok(s.path === '/tr' && s.base === STOP.work, 'Lab → Work (momentum) — one gesture, one stop', `at ${s.path} c2 ${s.c2} base ${s.base} (wanted ${STOP.work})`)
+  ok(s.path === '/tr' && s.base === UP, `Lab → ${UPN} (momentum) — one gesture, one stop`, `at ${s.path} c2 ${s.c2} base ${s.base} (wanted ${UP})`)
   await fresh('/tr/lab')
   await momentum(p, 1); await sleep(700)
   ok((await studyAt(p)) === 2, 'a momentum gesture down from 01 browses one study: 02')
@@ -199,9 +201,9 @@ const swipe = async (p, dy) => {
   p = phonePage
   await fresh('/tr/lab')
   await swipe(p, 220)
-  await settleIndex(p, '/tr', STOP.work, 'swipe: Lab -> Work')
+  await settleIndex(p, '/tr', UP, 'swipe: Lab -> Work')
   s = await p.evaluate(state)
-  ok(s.path === '/tr' && s.base === STOP.work, 'Lab → Work (swipe) — one gesture, one stop', `at ${s.path} c2 ${s.c2} base ${s.base} (wanted ${STOP.work})`)
+  ok(s.path === '/tr' && s.base === UP, `Lab → ${UPN} (swipe) — one gesture, one stop`, `at ${s.path} c2 ${s.c2} base ${s.base} (wanted ${UP})`)
   await fresh('/tr/lab')
   await toLastStudy(p, true)
   ok((await studyAt(p)) === 3, 'two swipes up: 03')
@@ -231,22 +233,26 @@ const swipe = async (p, dy) => {
   await p.evaluate(() => document.querySelector('#ui [data-go="work"]')?.click())
   await settleIndex(p, '/tr', STOP.work, 'nav control to Work')
   ok((await p.evaluate(state)).base === STOP.work, 'standing at Work')
-  await swipe(p, -220)
-  await settleBench(p, '/tr/lab', 'Work -> bridge -> bench')
+  // with Cross Section on the spine (R14) the way is the passage: five swipes, one position each, then the bench
+  let swipes = 0
+  if (STOP.cross != null) {
+    for (; swipes < 7 && !(await p.evaluate(() => /\/lab$/.test(location.pathname) && !document.documentElement.dataset.c2)); swipes++) { await swipe(p, -220); await sleep(2600) }
+  } else { await swipe(p, -220); swipes = 1 }
+  await settleBench(p, '/tr/lab', 'Work -> bench')
   s = await p.evaluate(state)
-  ok(s.path === '/tr/lab' && s.bench, 'Work → bridge → the bench', `at ${s.path}`)
+  ok(s.path === '/tr/lab' && s.bench && swipes === (STOP.cross != null ? 5 : 1), `Work → ${STOP.cross != null ? 'Cross Section → ' : 'bridge → '}the bench`, `at ${s.path}, ${swipes} swipe(s)`)
 
   // ── history ───────────────────────────────────────────────────────────────
   console.log('\n-- browser history')
   p = deskPage
   await fresh('/tr/lab')
-  await wheelBurst(p, -110, 1); await settleIndex(p, '/tr', STOP.work, 'wheel to Work (history setup)')
+  await wheelBurst(p, -110, 1); await settleIndex(p, '/tr', UP, 'wheel to Work (history setup)')
   await p.goBack(); await settleBench(p, '/tr/lab', 'Back -> bench')
   s = await p.evaluate(state)
   ok(s.path === '/tr/lab' && s.bench, 'one Back returns to the bench', `at ${s.path}`)
-  await p.goForward(); await settleIndex(p, '/tr', STOP.work, 'Forward -> Work')
+  await p.goForward(); await settleIndex(p, '/tr', UP, 'Forward -> Work')
   s = await p.evaluate(state)
-  ok(s.path === '/tr' && s.base === STOP.work, 'Forward restores Work', `base ${s.base}`)
+  ok(s.path === '/tr' && s.base === UP, 'Forward restores Work', `base ${s.base}`)
 
   // bench → study → Back → bench → reverse gesture → Work
   await fresh('/tr/lab')
@@ -258,9 +264,9 @@ const swipe = async (p, dy) => {
   await p.goBack(); await settleBench(p, '/tr/lab', 'study -> Back -> bench')
   s = await p.evaluate(state)
   ok(s.path === '/tr/lab' && s.bench && !s.docScroll, 'Back → the bench, and it does not scroll')
-  await wheelBurst(p, -110, 1); await settleIndex(p, '/tr', STOP.work, 'bench -> wheel -> Work')
+  await wheelBurst(p, -110, 1); await settleIndex(p, '/tr', UP, 'bench -> wheel -> Work')
   s = await p.evaluate(state)
-  ok(s.path === '/tr' && s.base === STOP.work, 'and the site grammar resumes: → Work', `base ${s.base}`)
+  ok(s.path === '/tr' && s.base === UP, 'and the site grammar resumes: → Work', `base ${s.base}`)
 
   // ── a study owns its scroll, and never navigates ───────────────────────────
   console.log('\n-- the studies keep their scroll')

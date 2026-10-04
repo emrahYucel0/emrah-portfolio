@@ -36,10 +36,10 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
 | R4 | Özel imleç | P2 | Kısmen: halkanın boyutu ve rengi bekliyor | — (R2 bitti) |
 | R6 | Lab bench girişleri: okunur boyut, üzerine gelince ön gösterim | P2 | Kısmen: ön gösterimin biçimi bekliyor | — |
 | R9 | Koyu zeminlerde satır titreşimi | **P0** (R18 için) | Neden açık; önce ölçüm | — |
-| R10 | Safari'de adın ince kesimle çizilmesi | P1 | Önce gerçek iPhone | R22 |
+| R10 | Safari'de adın ince kesimle çizilmesi | P1 | **Kapandı** (2026-10-04: iPhone'da kalın; Playwright WebKit artefaktı) | R22 |
 | R11 | Yavaş ağda ilk kare (8,9 sn) | P2 | Önce değerlendirme | — |
 | R13 | Gövde metni ve tipografik hiyerarşi | P1 | Karar bekliyor (ölçek) | — |
-| R14 | Cross Section (İşler → Lab köprüsünün yerine) | P1 | **Sürüyor** (Faz C, C3 onay bekliyor; `feature/cross-section`) | R2, R15 |
+| R14 | Cross Section (İşler → Lab köprüsünün yerine) | P1 | **Sürüyor** (Faz C, C4 + C5 bitti; son kapı ve entegrasyon onayı bekliyor; `feature/cross-section`) | R2, R15 |
 | R15 | Tempo, ilerleme göstergesi, performans bütçesi | P2 | Karar bekliyor | R14 |
 | R17 | Yayın (DEPLOYMENT.md, CSP, canlı yedeği) | P0 | **Bitti** (2026-10-03, `b8918dc` canlıda) | — |
 | R18 | Awwwards başvurusu (Developer Award) | P0 | Karar bekliyor (tarih) | R17, R9, R22, R23 |
@@ -67,7 +67,8 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
   push edilmedi.
 - **Yayının kaydetmesi gereken bilinen sorunlar:**
   - R9: koyu zeminlerde satır titreşimi (canlıda da var; nedeni açık).
-  - R10: Playwright WebKit'te ad ince kesimle çiziliyor; gerçek Safari'de doğrulanmadı.
+  - R10: kapandı (2026-10-04). Gerçek iPhone'da ad ve Cross Section sözcükleri kalın; Playwright WebKit'teki ince
+    kesim bir artefakt.
   - R7 telefonda: otomatik koşular (WebKit ve Chrome, dokunmatik, yerel ağ) geçti, gerçek iPhone'da yeniden
     bakılmadı (R22). Finalden parmakla yukarı çıkış WebKit'te sınanamıyor, yalnız Chrome'da sınandı.
   - Tam gesture2 takımı (yaklaşık 67 dk) bu dalda koşulmadı; alt kümesi koşuldu.
@@ -123,6 +124,10 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
   (font preload).
 - **Bağımlılık:** gerçek cihaz.
 - **Öncelik:** P1.
+- **Kapandı (2026-10-04).** Kullanıcı gerçek iPhone'unda baktı: SURFACE, EDGE, DEPTH ve kahraman adı ("EMRAH YÜCEL")
+  istendiği gibi **kalın** çiziliyor. Playwright WebKit'teki ince kesim **Playwright'ın WebKit yapısına özgü bir
+  artefakt**; gerçek Safari'de yok. Font yüklemesi değiştirilmedi. Harness'lerde WebKit'teki ince kesim bir hata
+  sayılmaz.
 
 ### R11. Yavaş ağda ilk kare
 - **Açıklama:** Fast 3G + 4× CPU'da ilk kare 11,2 sn'den 8,9 sn'ye indi (205e1d5). Daha da iyileştirilebilir mi
@@ -214,7 +219,7 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
   - **Başlık atlaması.** Yeri kelimesiz geçiyor.
   - **Bayrak kapalı build.** Canlı paketle bayt bayt aynı JavaScript.
   - **Bench çıkışı şimdilik yolculukla** (C3 perde açılmasını getirecek).
-  - **Açık:** iPhone'daki ince sözcük sonucu bildirilmedi (R10).
+  - **Açık:** iPhone'daki ince sözcük sonucu bildirilmedi (R10). **Kapandı 2026-10-04:** iPhone'da kalın.
 - **C2 onaylandı (2026-10-04).** Kullanıcının masaüstünde, sert yenilemeden sonra sahne baştan sona çiziliyor. İş
   dikişi onaylandı. Kullanıcının DPR'si şu an 1; Cross Section kontrolleri DPR 1 ve 2'de koşuyor (KNOWN-ISSUES, R9).
   Masaüstü düzeyinde ekran görüntüsü ya da kayıt asla alınmaz.
@@ -225,6 +230,18 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
     Cross Section'ı atlamıyor; yol iki yönde de 5 jest. Lab şeridindeki İŞLER bağlantısı bir atlama olarak kalıyor.
   - **Yedek hazır:** `CS_REVEAL = 'fade'` (rota DEPTH altında değişir, kanvas solar). Hazır olmayan bir çalışma
     ortamında Lab'dan yukarı jest DEPTH'e kesmeyle varıyor; atlama yok.
+- **C3 onaylandı (2026-10-04)** (masaüstü ve iPhone). R10 kapandı.
+- **Faz C, C4 + C5 (2026-10-04, son kapıyı ve entegrasyon onayını bekliyor).** Ayrıntı `docs/CROSS-SECTION.md`'de.
+  - **Masaüstünde panjur.** Masaüstündeki lameller zaten telefondakilerle aynı CSS piksel boyundaydı (~20 px); fark
+    sayıdaydı: masaüstünde 45, telefonda 29. Panjurun kendi lamelleri artık alanın en az %3,5'i (telefonun payı):
+    1920×991'de 5 satır, 33 px, 27 lamel. Telefon onaylandığı gibi kalıyor. Dikiş ölçümleri 0 px.
+  - **Telefonu çevirmek.** SURFACE'ta, bantta, DEPTH'te, lameller dönerken ve panjur sırasında konum korunuyor;
+    yeni görünümü gören ilk karede yeni boyutta çiziliyor (Chrome ve WebKit). Önceden panjur sırasında hiç yeniden
+    çizilmiyordu.
+  - **Yatay telefon kuralı:** 520 px altında satırlar 5,2 px'ten sık değil (844×390'da 19 lamel); EDGE yükseklikten.
+  - **Hareketi azaltılmış mod:** her konum bir kesme; bantta EDGE anı durağan bir resim olarak (bakır çubuklar,
+    çizgi, EDGE).
+  - **Bayrak kapalı build:** canlı paketle aynı JavaScript ve CSS.
 - **Dosyalar:**
   - `engine/c2/main.js`: `startBridge`, `A.mode === 'bridge'`
   - `engine/c2/states.js`

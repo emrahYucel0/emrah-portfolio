@@ -10,7 +10,7 @@
  *
  * Imported only where __CROSS__ is true.
  */
-import { CS_Z0, CS_Z1, bandStops, ease, layout, louverClock, pose, revealPose, sides, wordAngle } from './slats.js'
+import { CS_SHORT_H, CS_THICK, CS_Z0, CS_Z1, bandStops, ease, layout, louverClock, pose, revealLayout, revealPose, sides, wordAngle } from './slats.js'
 import { EDGE_WORD, faceState } from './state.js'
 import { createMesh } from './mesh.js'
 import { FAMILY } from '../states.js'
@@ -31,6 +31,8 @@ const CSS = `
 .cs-word{position:absolute;left:0;top:0;white-space:nowrap;opacity:0;will-change:transform,opacity;
   font:900 clamp(46px,9.5vw,150px)/.8 ${FAMILY};letter-spacing:-.01em;color:#f3dcbd}
 .cs-dom.warm .cs-word{text-shadow:0 0 34px rgba(255,187,108,.28)}
+.cs-still{position:absolute;left:0;right:0;z-index:0;display:none;background-color:#111215}
+.cs-still.on{display:block}
 html[data-c2='cs'] body #surface{display:block;z-index:60}
 html[data-c2='cs'] body #ui{display:block;z-index:61}
 html[data-c2='cs'] body #ui,html[data-c2='cs'] body #ui *{pointer-events:none!important}
@@ -54,23 +56,87 @@ html[data-c2='cs'] body[data-tone=media] #ui{--fg:var(--paper);--act:var(--paper
  * blinds open onto the page or close over it. Neither scrolls meanwhile. These rules ship only with the flag.
  */
 
-export function createCross(surface, { atmosphere = CS_GLOW, breakName = null } = {}) {
-  const gl = surface.gl
-  const mesh = createMesh(gl, { leak: breakName === 'leakgl' })
-  let V = null, L = null, front = null, back = null, Q = null, count = 0
-  let atmo = atmosphere
-
-  // ── the DOM: the line and the word ─────────────────────────────────────────────────────────────────────────
+/*
+ * ── THE LINE, THE WORD AND (IN REDUCED MOTION) THE EDGE STILL ──────────────────────────────────────────────────────
+ *
+ * The DOM half of the scene, apart from WebGL, so reduced motion has it too. Reduced motion draws the surface in 2D
+ * (flat.js) and shows each position as a cut (R14 decision 2); its band positions are the EDGE moment as a STILL: the
+ * louvers seen edge-on as straight copper bars, one at the middle of every louver, on the dark ground under the warm
+ * glow, with the copper line and EDGE where that stop puts it. Nothing in it moves.
+ */
+export function createCrossDom({ atmosphere = CS_GLOW } = {}) {
   const dom = document.createElement('div')
   dom.className = 'cs-dom'
   dom.setAttribute('aria-hidden', 'true')
+  const still = document.createElement('div'); still.className = 'cs-still'
   const line = document.createElement('div'); line.className = 'cs-line'
   const word = document.createElement('div'); word.className = 'cs-word'; word.textContent = EDGE_WORD
-  dom.append(line, word)
+  dom.append(still, line, word)
   if (!document.getElementById('cs-css')) {
     const st = document.createElement('style'); st.id = 'cs-css'; st.textContent = CSS
     document.head.appendChild(st)
   }
+  let V = null
+  const D = {
+    dom, line, word, still,
+    setAtmosphere(on) { dom.classList.toggle('warm', !!on) },
+    /** lay the DOM out for this viewport and these louvers */
+    layoutTo(v, L) {
+      V = v
+      line.style.top = `${V.strip}px`; line.style.bottom = `${V.strip}px`
+      // on a short screen (a phone on its side) EDGE is sized from the field's height, at the share it has on a desktop
+      // (0.17), so it keeps its proportion to SURFACE and DEPTH, which are sized from the height already (state.js)
+      word.style.fontSize = V.H < CS_SHORT_H ? `${Math.round(Math.min(0.095 * V.W, 0.17 * (V.H - 2 * V.strip)))}px` : ''
+      // the still: a copper bar at the middle of every louver (R2's copper, shaped as the edge is in mesh.js)
+      const t = CS_THICK, pitch = L.pitch, c = pitch / 2
+      still.style.top = `${V.strip}px`; still.style.height = `${L.h}px`
+      still.style.backgroundImage = [
+        `radial-gradient(${(0.65 * 0.68 * L.W).toFixed(0)}px ${(0.52 * 0.68 * L.h).toFixed(0)}px at 54% 48%, rgba(180,120,65,${atmosphere ? 0.18 : 0}), rgba(180,120,65,0))`,
+        `repeating-linear-gradient(to bottom, transparent 0, transparent ${(c - t / 2).toFixed(2)}px, #3c2316 ${(c - t / 2).toFixed(2)}px, #b8622f ${(c - t * 0.16).toFixed(2)}px, #d4875a ${c.toFixed(2)}px, #b8622f ${(c + t * 0.16).toFixed(2)}px, #3c2316 ${(c + t / 2).toFixed(2)}px, transparent ${(c + t / 2).toFixed(2)}px, transparent ${pitch.toFixed(2)}px)`,
+      ].join(',')
+    },
+    /*
+     * THE WORD AT THE EDGE, the reference's own geometry: it arrives behind the copper line, circles it in stops
+     * and lands in front, then turns edge-on and becomes the line. Positions are in screen px. `showStill`: reduced
+     * motion's EDGE still under it.
+     */
+    at(p, { showStill = false } = {}) {
+      if (!V) return
+      still.classList.toggle('on', showStill)
+      const W = V.W, H = V.H, cx = W / 2
+      const ps = louverClock(p)
+      const peak = Math.pow(Math.max(0, 1 - Math.abs(ps - 0.5) / 0.28), 1.4)
+      line.style.opacity = String(peak * peak * 0.85)
+      const ZS = bandStops()
+      const z = clamp((p - CS_Z0) / (CS_Z1 - CS_Z0))
+      const R = Math.min(W * (W < 700 ? 0.36 : 0.3), H * 0.5), tilt = 0.16, cy = H / 2 - R * tilt
+      const inWord = ease(z, 0, ZS[0]), turnOff = ease(z, ZS[ZS.length - 1], 1)
+      const deg = wordAngle(z), land = 1 - deg / 180
+      const th = (deg * Math.PI) / 180
+      const sx = Math.sin(th), cz = Math.cos(th)
+      const persp = 1 / (1 - cz * 0.28)
+      const x = cx + R * sx, y = cy + R * tilt * cz
+      const wBox = word.offsetWidth || 1, hBox = word.offsetHeight || 1
+      const sc = (0.55 + 0.45 * land) * persp
+      const edgeOn = Math.max(0.001, 1 - turnOff)
+      word.style.transform = `translate(${(x - wBox / 2).toFixed(1)}px,${(y - hBox / 2).toFixed(1)}px) scale(${(sc * edgeOn).toFixed(3)},${sc.toFixed(3)})`
+      word.style.opacity = (z > 0 && z < 1 ? inWord * (cz < 0 ? 0.45 : 1) : 0).toFixed(3)
+      word.style.zIndex = cz < 0 ? '1' : '4'
+    },
+  }
+  D.setAtmosphere(atmosphere)
+  return D
+}
+
+export function createCross(surface, { atmosphere = CS_GLOW, breakName = null, revealRows = 0, revealThick = 0 } = {}) {
+  const gl = surface.gl
+  const mesh = createMesh(gl, { leak: breakName === 'leakgl' })
+  let V = null, L = null, RL = null, front = null, back = null, Q = null, count = 0
+  let atmo = atmosphere
+
+  // ── the DOM: the line and the word (createCrossDom) ────────────────────────────────────────────────────────
+  const D = createCrossDom({ atmosphere })
+  const dom = D.dom
 
   // C2 draws a state, flat, into whatever framebuffer is bound: the face a louver carries is C2's own picture
   const flat = (st) => {
@@ -91,6 +157,7 @@ export function createCross(surface, { atmosphere = CS_GLOW, breakName = null } 
     dom,
     mesh,
     get layout() { return L },
+    get revealLayout() { return RL },
     get pose() { return Q },
     get front() { return front },
     get back() { return back },
@@ -101,9 +168,11 @@ export function createCross(surface, { atmosphere = CS_GLOW, breakName = null } 
       V = v
       for (const st of [front, back]) if (st) surface.release(st)
       L = layout(V)
+      // the reveal's own slats (slats.js): on a wide screen fewer and taller than the crossing's, and as much thicker
+      RL = revealLayout(L, V, { rows: revealRows })
       front = faceState(V, L, 0)
       back = faceState(V, L, 1)
-      line.style.top = `${V.strip}px`; line.style.bottom = `${V.strip}px`
+      D.layoutTo(V, L)
       // the debug entry draws both faces now; on the site they are taken from the canvas and drawn in bands (place.js)
       if (!faces) return api
       const bw = gl.drawingBufferWidth, bh = gl.drawingBufferHeight
@@ -134,34 +203,11 @@ export function createCross(surface, { atmosphere = CS_GLOW, breakName = null } 
       // stand on one ground; the reference's night was #0e0f11
       return [239 + (17 - 239) * d, 238 + (18 - 238) * d, 233 + (21 - 233) * d].map((c) => Math.round(c) / 255)
     },
-    /*
-     * THE WORD AT THE EDGE, the reference's own geometry: it arrives behind the copper line, circles it in stops
-     * and lands in front, then turns edge-on and becomes the line. Positions are in screen px.
-     */
-    domAt(p) {
-      const W = V.W, H = V.H, cx = W / 2
-      const ps = louverClock(p)
-      const peak = Math.pow(Math.max(0, 1 - Math.abs(ps - 0.5) / 0.28), 1.4)
-      line.style.opacity = String(peak * peak * 0.85)
-      const ZS = bandStops()
-      const z = clamp((p - CS_Z0) / (CS_Z1 - CS_Z0))
-      const R = Math.min(W * (W < 700 ? 0.36 : 0.3), H * 0.5), tilt = 0.16, cy = H / 2 - R * tilt
-      const inWord = ease(z, 0, ZS[0]), turnOff = ease(z, ZS[ZS.length - 1], 1)
-      const deg = wordAngle(z), land = 1 - deg / 180
-      const th = (deg * Math.PI) / 180
-      const sx = Math.sin(th), cz = Math.cos(th)
-      const persp = 1 / (1 - cz * 0.28)
-      const x = cx + R * sx, y = cy + R * tilt * cz
-      const wBox = word.offsetWidth || 1, hBox = word.offsetHeight || 1
-      const sc = (0.55 + 0.45 * land) * persp
-      const edgeOn = Math.max(0.001, 1 - turnOff)
-      word.style.transform = `translate(${(x - wBox / 2).toFixed(1)}px,${(y - hBox / 2).toFixed(1)}px) scale(${(sc * edgeOn).toFixed(3)},${sc.toFixed(3)})`
-      word.style.opacity = (z > 0 && z < 1 ? inWord * (cz < 0 ? 0.45 : 1) : 0).toFixed(3)
-      word.style.zIndex = cz < 0 ? '1' : '4'
-    },
+    /** the line and the word where the scene puts them (createCrossDom) */
+    domAt(p) { D.at(p) },
     /** the blinds opening onto the bench (C3): r = 0 is DEPTH, flat; r = 1 is nothing left over the page */
     revealAt(r) {
-      Q = revealPose(L, clamp(r))
+      Q = revealPose(RL, clamp(r), (revealThick || CS_THICK * (RL.pitch / L.pitch)) / 2)
       count = mesh.geometry(L, Q, sides, V.strip, V.H, V.dpr * (V.u || 1))
       api.domAt(1)
       return Q

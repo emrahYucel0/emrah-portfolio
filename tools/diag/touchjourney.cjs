@@ -70,6 +70,8 @@ const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'F
   const leaveBench = async (dy) => {
     for (let i = 1; i <= STUDIES + 1; i++) {
       await swipe(dy, undefined, 2200)
+      // (with Cross Section a seam to or from the bench runs for over a second: it is waited out before anything is read)
+      await p.waitForFunction(() => document.documentElement.dataset.c2 !== 'cs' && !(window.__lab && window.__lab.A.csHeld), null, { timeout: 15000 }).catch(() => {})
       if (!(await st()).bench) { await sleep(3800); return i }   // settle the arrival as a 6 s swipe used to
     }
     return null
@@ -82,6 +84,8 @@ const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'F
   // asked there (see stops.cjs)
   await goSite()
   const STOP = await stopsOf(p)
+  // above the bench: Work, or — with Cross Section on the spine (R14) — the passage, entered at DEPTH
+  const UP = STOP.cross ?? STOP.work, UPN = STOP.cross != null ? 'Cross Section (DEPTH)' : 'Work'
   const SPINE = await p.evaluate(() => window.__lab.SPINE || null).catch(() => null)
   // An older artifact does not expose it. The stops are still resolved — that fallback IS the spine such a build
   // has — but it is said out loud, because a harness that quietly measures something else is how this rotted.
@@ -99,7 +103,7 @@ const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'F
   await p.evaluate(() => document.querySelector('#ui [data-go="work"]').click()); await sleep(4500)
   await p.evaluate(() => document.querySelector('#ui [data-go="lab"]').click())
   await p.waitForFunction(() => /\/lab$/.test(location.pathname), null, { timeout: 30000 }).catch(() => {}); await sleep(1600)
-  ok((await st()).bench, 'Work → Lab (bridge)')
+  ok((await st()).bench, STOP.cross != null ? 'Work → Lab (the strip, past Cross Section)' : 'Work → Lab (bridge)')
   // the rule itself, stated once and directly: ONE swipe moves the bench ONE study and does not leave it
   const b0 = await st()
   await swipe(-260, undefined, 2200)
@@ -121,7 +125,7 @@ const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'F
   ok((await st()).benchStudy === 3, 'up out of the finale, the bench stands on 03', `study ${(await st()).benchStudy}`)
   n = await leaveBench(260)
   s = await st()
-  ok(s.path === '/tr' && s.base === STOP.work, `Lab → Work (${n} gestures)`, `${s.path} base ${s.base} (Work is ${STOP.work})`)
+  ok(s.path === '/tr' && s.base === UP, `Lab → ${UPN} (${n} gestures)`, `${s.path} base ${s.base} (${UPN} is ${UP})`)
 
   // Work → Lab → Work
   // every other way in the bench opens on 01, so upward it leaves on the first gesture
@@ -129,7 +133,7 @@ const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'F
   ok((await st()).benchStudy === 1, 'entered afresh, the bench stands on 01', `study ${(await st()).benchStudy}`)
   n = await leaveBench(260)
   s = await st()
-  ok(s.path === '/tr' && s.base === STOP.work && n === 1, `Lab → Work again (${n} gesture)`, `${s.path} base ${s.base}`)
+  ok(s.path === '/tr' && s.base === UP && n === 1, `Lab → ${UPN} again (${n} gesture)`, `${s.path} base ${s.base}`)
 
   // Lab → STUDY → Lab → destination, for each study
   for (const [rec, name, dy, want] of [[0, 'WEIGHT', -260, 'rest'], [1, 'LINE', 260, 'work'], [2, 'TONE', -260, 'rest']]) {
@@ -147,7 +151,7 @@ const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'F
     n = await leaveBench(dy)
     s = await st()
     if (want === 'rest') ok(atContact(s), `Lab → the Contact finale after ${name} (${n} gestures)`, contactSaid(s))
-    else ok(s.path === '/tr' && s.base === STOP.work, `Lab → Work after ${name} (${n} gestures)`, `${s.path} base ${s.base}`)
+    else ok(s.path === '/tr' && s.base === UP, `Lab → ${UPN} after ${name} (${n} gestures)`, `${s.path} base ${s.base}`)
   }
   await b.close()
   console.log(`TOUCH JOURNEYS: ${fails === 0 ? 'PASS' : `FAIL (${fails})`}`)

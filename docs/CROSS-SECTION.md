@@ -684,6 +684,145 @@ reliably.
   (one Playwright round trip per wheel event, KNOWN-ISSUES). The `.hint` sample flips the way `.state`'s did, read
   mid-fade. **A clean gate needs a quiet machine.** The other sessions' processes are not this session's to stop.
 
+### C3 approved (2026-10-04)
+
+The user checked on desktop and iPhone, with recordings. Forward and back both pass through Cross Section, and the
+blinds open and close cleanly. **The bench seam is approved.**
+- **R10 is closed.** On the iPhone, SURFACE, EDGE, DEPTH and the hero name are heavy, as intended. WebKit's thin cut
+  in Playwright is an artefact of Playwright's WebKit build, not of Safari. Nothing in the font loading changes.
+- **C4 + C5 were asked for,** with two additions to C4:
+  1. **The blinds on desktop.** On the phone the slats are read one by one as they turn. On desktop the same moment
+     read as a quick dissolve through fine lines, about 0.7 s in the user's recording. Make the desktop reveal feel
+     like the phone's, show the two side by side at matched progress, and keep the seam at 0 px.
+  2. **Turning the phone mid-passage** (on SURFACE, in the band, on DEPTH, during the blinds) must keep the position
+     and redraw cleanly, with no frozen or empty frame.
+- **Before the final full gate,** tell the user, so the machine can be made quiet. Then STOP for integration approval.
+
+### C4: the desktop blinds, rotation, the landscape rule, reduced motion (built)
+
+**The desktop blinds** (`slats.js`, `revealLayout`).
+- **Measured first.** The slats already matched the phone in CSS pixels: 19.9 px on desktop, 20.2 on the phone. So
+  "match the phone in CSS px" changes nothing. What differs is how many there are: **45 across a 991 px field
+  (2.2% of it each) against the phone's 29 across 572 (3.5%)**.
+- **The timing is the same on both:** one 1.15 s clock. The ~0.7 s the user saw is the window in which the slats turn
+  (r 0.04 to about 0.7), the same on the phone, so the duration is unchanged.
+- **The rule.** The reveal has its own slats. On a wide screen a reveal slat is as many of the crossing's rows as it
+  takes to be at least **3.5% of the field** (`CS_REVEAL_SHARE`, the phone's share). Its ink edge thickens with it
+  (7.5 px for 5 rows instead of 4.5), so a slat keeps the phone's proportions.
+  - 1920×991: 5 rows, 33 px, 27 slats. 1440×900: 5 rows, 25 slats.
+  - Phones keep exactly the 3 rows that were approved.
+  - The crossing keeps its own louvers.
+- **The edge opacity** is unchanged (45% ink at edge-on). Raising it would change the approved phone too.
+- **Side by side:** `tools/diag/out/cross/bench/pair-phone-vs-desktop-open.png` shows the phone (390×660), the
+  desktop now and the desktop before, at r 0.1–0.7, made by `csbenchshot.cjs` and `csbenchpair.cjs`. Development
+  overrides for trying other slats: `?csrevealrows=N`, `?csrevealthick=px`.
+
+**Rotation mid-passage** (`main.js`, `csResize`; `tools/diag/csrotate.cjs`).
+- **Measured before the fix** at 390×844 ⇄ 844×390:
+  - on SURFACE, in the band, on DEPTH and while the louvers turned, the position was kept and nothing was empty, but
+    the old picture stayed on screen, stretched, for **155–162 ms**. That is the site-wide 140 ms debounce before a
+    rebuild;
+  - during the blinds (opening, closing, held over the route change) the canvas was **never redrawn at the new
+    size**. The resize handler ignored the screen while `'cs'` held it, and a held canvas was never drawn again.
+- **The fix.**
+  - On the place and in `'cs'`, the resize is taken at once. The event arrives in the frame of the new viewport, and
+    that frame draws at the new size. The works' previews for the new shape follow, as at boot.
+  - The held canvas draws the closed blinds again whenever its size changes.
+  - **The frame loop also checks the viewport itself.** WebKit can deliver the resize event frames after the viewport
+    has changed (127–155 ms in the first WebKit run), so on the place or in `'cs'` a frame that finds the viewport
+    changed rebuilds before it draws.
+  - The rest of the site keeps its debounce. Ordinary places still show the old picture for 150–240 ms; that is
+    unchanged.
+- **Measured after, in Chrome and WebKit (WebKit run twice).** In every case, the first animation-frame tick that sees
+  the new viewport draws at the new size. The position is kept, no frame is empty, and every frame after the redraw
+  has the settled tone (worst 1.8 levels).
+  - The measure counts ticks: each draw to the canvas is stamped with its tick and buffer size.
+  - Sampling by time had read the order of callbacks within a tick, and headless WebKit's ~140 ms between ticks, as
+    stale pictures that were never presented.
+- **How the measure was made honest:**
+  - **controls first:** the same turns at the name and at Work;
+  - **the browser's own frames are counted, not read.** Chrome's emulated resize presents frames of the wrong shape,
+    and a frame or two of the old layout after the page has already drawn the new one, at ordinary places too;
+  - **the held case** is read against the DEPTH that follows the hold, because a fault lasting the whole hold also
+    lasts the whole window;
+  - **only draws that reach the canvas** count as a redraw.
+- **Calibrated both ways:**
+  - `--q=csbreak=noresizenow` (the debounce put back) FAILS at 153–167 ms;
+  - `--q=csbreak=noheldredraw` (the held canvas left empty after a turn) FAILS: never redrawn, and 151–160 levels
+    from the DEPTH it should hold.
+- **WebKit has no screencast,** so the held case's tone against DEPTH is not measured there, and says so.
+
+**The landscape rule** (`slats.js`, `layout`). Below 520 px of height, rows are no finer than the site's phone pitch
+of 5.2 px.
+- 844×390: 19 louvers with rows 5.23 px apart, where it was 25 at 3.97.
+- 667×375: 18. 932×430: 22.
+- SURFACE and DEPTH were already sized from the field's height (0.46 of it).
+- EDGE on a short screen takes the same share of the field height it has on a desktop (0.17): 49 px at 844×390, in
+  proportion to the words.
+- Nothing changes above 520 px.
+
+**Reduced motion** (`runtime.js`, `createCrossDom`; `place.js`). Each position is still a cut (decision 2).
+- The band positions now show **the EDGE moment as a still**: the louvers edge-on as straight copper bars at every
+  louver, the dark ground under the warm glow, the copper line, and EDGE behind, beside or in front.
+- It is DOM, because reduced motion draws the surface in 2D. The line and the word are the same DOM the moving scene
+  uses, now made apart from WebGL.
+- Forward, the bench opens as a cut. Up from the bench, the route arrives at DEPTH.
+- Stills: `tools/diag/out/cross/places/reduced-*.png`.
+
+### C5: the harnesses (built)
+
+- **`cross.cjs`** adds:
+  - REDUCED: the still is shown in the band and not at the ends; a key moves one position as a cut; the bench and
+    back go by route, with no `'cs'` frame;
+  - LANDSCAPE: the row rule, and EDGE from the height;
+  - REVEAL: the reveal's slats per size.
+
+  `--dpr=1` runs the desktop at DPR 1.
+- **`csrotate.cjs`** (new): the rotation checks above.
+- **`csplaces.cjs`** (new): stills of every position, normal or reduced.
+- **The site harnesses that assumed the bridge** now read the spine and take the passage into account when it is
+  there. With the flag off, nothing about them changes.
+  - `spine.cjs` and `touchjourney.cjs`: the way up from the bench expects the place above it, which is Work or
+    Cross Section at DEPTH. With the flag on, Work → bench is five swipes.
+  - `journey.cjs`: the strip's LAB is a jump past the passage, and up from 01 is DEPTH.
+  - `labflash.cjs`: the label only.
+  - `spinetime.cjs`: the Lab control travels instead of starting the bridge, and up from the bench lands on Cross
+    Section.
+  - `proof1.cjs` tests the retired engraved proof (`.proof-track` is no longer in the app) and is not in the gate.
+    It is left as it is.
+
+**Measured (C4 + C5),** on the dev server with the flag on, each harness run alone. Every harness fails on any console
+or WebGL warning.
+- **`cross.cjs`:** PASS in Chrome at DPR 2 and DPR 1, and in WebKit. This covers every section from C1 to C4.
+- **`csbenchseam.cjs`** at 8 sizes in Chrome, with the new reveal slats:
+  - every screen boundary is **0 px**: under DEPTH, the release, the take-over and the hand-over;
+  - the blinds' last frame is 0 lit;
+  - identity and the landing up are **0 px at 1920×991@1** (≤1 level before the taller slats), at 1440×900 @2 and
+    @1, and ≤1 level elsewhere, landscape included.
+
+  WebKit (1440×900@2, 390×660@3): PASS.
+- **`csseam.cjs`** (the Work seam) at 1440×900@2, 1920×991@1, 390×844@3, and **844×390@3 under the new row rule**:
+  every landing 0 px, the first louver frame and the landing on DEPTH 0 px, no blank frame.
+- **`csrotate.cjs`:** PASS in Chrome and WebKit.
+- **With the flag on, the site harnesses** `spine.cjs` (normal and reduced), `journey.cjs` (TR normal, EN reduced),
+  `touchjourney.cjs` and `labflash.cjs` all PASS.
+- **`spinetime.cjs`, median of 3:**
+  - Work → Lab by the strip's LAB: 1,445 ms. The strip jumps past the passage.
+  - Lab → Cross Section by one notch: 1,229 ms, the blinds closing plus the route. The runtime is at DEPTH 26 ms
+    after the notch.
+- **Films:**
+  - `tools/diag/out/cross/film/benchseam-chrome-1920x991@1.webm` and `…-390x660@3.webm`: the reveal on the user's
+    desktop and on the phone, both ways;
+  - `headed-1920x991.webm`: the whole way in a real headed Chrome on this machine (DPR 1, Intel UHD), 99 seam frames.
+    Console clean.
+- **Flag off.** `npm run generate`, compared with the live `1e663bd` package:
+  - 27 JavaScript files and 12 CSS files are byte-identical;
+  - nothing else differs beyond the build ID, the timestamp and the config script's CSP hash;
+  - 0 Cross Section markers.
+
+  `npx nuxt typecheck`: clean.
+- **Not run yet: the final full gate.** As agreed, the user is told first, so the machine can be made quiet.
+
 ## Working rules for this worktree
 
 - **Own ports, build folder and gate log:** `SERVE_PORTS`, `BUILD_DIR=../builds/cross-section`,

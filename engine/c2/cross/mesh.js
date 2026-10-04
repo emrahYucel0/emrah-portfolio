@@ -24,7 +24,7 @@
 import { CS_THICK } from './slats.js'
 import { saveGL } from './glstate.js'
 
-const HALF = CS_THICK / 2
+const HALF0 = CS_THICK / 2
 
 const BG_VS = `#version 300 es
 in vec2 aPos;
@@ -306,9 +306,11 @@ export function createMesh(gl, { leak = false } = {}) {
       }
       const quad = (c) => { for (const k of [0, 1, 2, 0, 2, 3]) put(...c[k]) }
       const W = Wq, uMax = 1
+      // a louver's thickness: the reveal's slats may be thicker than the crossing's (slats.js, revealLayout)
+      const HALF = Q.half ?? HALF0
       for (let i = 0; i < n; i++) {
         const l = Q.louvers[i], M = l.M, top = l.top, hl = l.hl
-        const sd = sides(l.Minv, Q.eye, top, hl)
+        const sd = sides(l.Minv, Q.eye, top, hl, HALF)
         // the image a face carries is the screen's own: v is the GL texture row of screen y (y up)
         const vy = (sy) => 1 - ((strip + sy) * dpr) / bh
         if (sd.face > 0) {

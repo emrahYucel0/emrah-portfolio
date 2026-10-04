@@ -72,7 +72,8 @@ const LITERAL = /\b(undefined|null|NaN|\[object Object\])\b/
   await step('Creative', () => click('#ui [data-go="creative"]'), (s) => s.base === STOP.creative)
   await step('Full-Stack', () => click('#ui [data-go="system"]'), (s) => s.base === STOP.system)
   await step('Work', () => click('#ui [data-go="work"]'), (s) => s.base === STOP.work)
-  await step('→ Lab (bridge)', async () => {
+  // with Cross Section on the spine (R14) the strip's LAB is a jump past the passage, as it was past the bridge
+  await step(STOP.cross != null ? '→ Lab (the strip, past Cross Section)' : '→ Lab (bridge)', async () => {
     await click('#ui [data-go="lab"]')
     await p.waitForFunction(() => /\/lab$/.test(location.pathname), null, { timeout: 25000 }).catch(() => {})
   }, (s) => s.bench)
@@ -90,7 +91,9 @@ const LITERAL = /\b(undefined|null|NaN|\[object Object\])\b/
   // R7: the bench browses — up out of the finale it stands on 03, and the way up to Work is 02, 01, then Work
   await step('Lab: 02', () => p.mouse.wheel(0, -130), (s) => s.bench && s.benchStudy === 2)
   await step('Lab: 01', () => p.mouse.wheel(0, -130), (s) => s.bench && s.benchStudy === 1)
-  await step('→ Work', () => p.mouse.wheel(0, -130), (s) => s.c2 === 'on' && s.base === STOP.work)
+  // and up from 01 is the place above the bench: Work, or — with Cross Section — the passage, entered at DEPTH
+  if (STOP.cross != null) await step('→ Cross Section (DEPTH)', () => p.mouse.wheel(0, -130), (s) => s.c2 === 'on' && s.base === STOP.cross)
+  else await step('→ Work', () => p.mouse.wheel(0, -130), (s) => s.c2 === 'on' && s.base === STOP.work)
   await step('→ About', () => click('#ui [data-go="about"]'), (s) => s.c2 === 'on')
   await step('→ back to Hero', () => click('#ui [data-go="name"]'), (s) => s.base === STOP.name)
 

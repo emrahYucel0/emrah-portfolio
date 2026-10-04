@@ -66,9 +66,19 @@ export const CS_ROW_PHASE = (128 / 255 - 0.5) * 160
  * reference's own (h / count / 3), and the louvers are stacked down from the strip. Whatever height is left over at
  * the bottom is one shorter louver.
  */
+/*
+ * THE LANDSCAPE RULE (Phase C decision, 2026-10-03; built in C4). A phone on its side has less height than any laptop:
+ * 844×390 leaves a 290 px field, and the reference's count rule (never fewer than 25 louvers) ruled it every 3.97 px,
+ * too fine to carry the words. Below CS_SHORT_H of height the rows are no finer than the site's own phone pitch, 5.2 px,
+ * so the louvers are as many as that allows (19 at 844×390). Everywhere else the rule is untouched.
+ */
+export const CS_SHORT_H = 520
+export const CS_ROW_MIN = 5.2
 export function layout(V) {
   const W = V.W, h = Math.max(1, V.H - V.strip * 2)
-  const target = h / Math.max(25, Math.min(50, Math.round(h / (W < 700 ? 20 : 21)))) / 3
+  let n = Math.max(25, Math.min(50, Math.round(h / (W < 700 ? 20 : 21))))
+  if (V.H < CS_SHORT_H) n = Math.max(1, Math.min(n, Math.floor(h / (CS_ROW_MIN * 3))))
+  const target = h / n / 3
   const N = Math.max(1, Math.round((V.strip - CS_ROW_PHASE) / target - 0.5))
   const spacing = (V.strip - CS_ROW_PHASE) / (N + 0.5)
   const pitch = spacing * 3
@@ -163,7 +173,33 @@ export function pose(L, p) {
  * is nothing at all over the bench. The edges at this second edge-on are ink, not copper: copper is the crossing's.
  */
 export const CS_REVEAL_S = 1.15
-export function revealPose(L, r) {
+/*
+ * THE BLINDS ARE READ ONE SLAT AT A TIME, OR NOT AT ALL (user review, 2026-10-04). On the phone the reveal reads as
+ * blinds: a slat is 3.5% of the field (390×660: 29 slats of 20 px). On a desktop the same 20 px slats are 45 across a
+ * 991 px field, 2.2% each, and the same moment read as a quick dissolve through fine lines. Matching the phone in CSS
+ * pixels changes nothing (they already match), so the reveal matches the phone's SHARE of the field instead: on a
+ * wider screen a reveal slat is as many of the crossing's rows as it takes to be at least CS_REVEAL_SHARE of the
+ * field. The crossing keeps its own louvers, and a phone keeps exactly the slats that were approved on it.
+ *
+ * Only the reveal is laid out this way, and a reveal slat is still a whole number of C2's rows starting half a row off
+ * its grid, like every louver, so at r = 0 it is still DEPTH exactly.
+ */
+export const CS_REVEAL_SHARE = 0.035
+export function revealLayout(L, V, { rows = 0 } = {}) {
+  const m = rows || (V.W < 700 ? 3 : Math.max(3, Math.ceil((CS_REVEAL_SHARE * L.h) / L.spacing - 1e-6)))
+  if (m === 3) return { ...L, rows: 3 }
+  const pitch = m * L.spacing
+  const whole = Math.floor(L.h / pitch + 1e-6)
+  const spans = Array.from({ length: whole }, (_, i) => [i * pitch, pitch])
+  if (L.h - whole * pitch > 0.5) spans.push([whole * pitch, L.h - whole * pitch])
+  const count = spans.length
+  const louvers = spans.map(([top, height], i) => {
+    const y = count > 1 ? i / (count - 1) : 0.5
+    return { top, hl: height + 0.45, y, wave: Math.sin(y * Math.PI * 2.25), cw: Math.pow(Math.max(0, 1 - Math.abs(y - 0.49) * 1.9), 1.4) }
+  })
+  return { ...L, count, pitch, louvers, rows: m }
+}
+export function revealPose(L, r, half = HALF) {
   const { W, h, louvers } = L
   const P = Math.max(640, W * 1.09)
   const O = [W * 0.52, h / 2]
@@ -172,7 +208,7 @@ export function revealPose(L, r) {
     const phase = 0.035 * wave + 0.04 * (1 - cw)
     const rot = 180 + 90 * ease(r, 0.04 + phase, 0.7 + phase)
     const o = [W / 2, top + hl / 2]
-    const M = chain(T(o[0], o[1], -HALF), RX(rot), T(-o[0], -o[1], 0))
+    const M = chain(T(o[0], o[1], -half), RX(rot), T(-o[0], -o[1], 0))
     const ev = Math.pow(Math.abs(Math.sin(rot * DEG)), 1.35) * 0.45
     return { M, Minv: inverse(M), top, hl, rot, ev, bright: 1 }
   })
@@ -182,14 +218,14 @@ export function revealPose(L, r) {
    * The runtime's words go first, while its dark paper still covers the bench's strip; then the paper thins and the
    * bench's strip, words and all, is simply there. Going back up it is the same in reverse.
    */
-  return { p: 1, ps: 1, peak: 0, P, O, louvers: out, dark: 1, eye: [O[0], O[1], P], fade: 1 - ease(r, 0.62, 0.97), words: 1 - ease(r, 0.06, 0.3), strip: 1 - ease(r, 0.3, 0.7) }
+  return { p: 1, ps: 1, peak: 0, P, O, louvers: out, dark: 1, eye: [O[0], O[1], P], half, fade: 1 - ease(r, 0.62, 0.97), words: 1 - ease(r, 0.06, 0.3), strip: 1 - ease(r, 0.3, 0.7) }
 }
 
 /**
  * Which faces the eye can see. A louver is a thin box, so the eye is always on one side of each pair of
  * opposite faces: +1 front, -1 back; and of its two edges, -1 the top one, +1 the bottom one, 0 neither.
  */
-export function sides(Minv, eye, top, hl) {
+export function sides(Minv, eye, top, hl, half = HALF) {
   const e = apply(Minv, eye[0], eye[1], eye[2])
-  return { face: e[2] > HALF ? 1 : e[2] < -HALF ? -1 : 0, edge: e[1] < top ? -1 : e[1] > top + hl ? 1 : 0 }
+  return { face: e[2] > half ? 1 : e[2] < -half ? -1 : 0, edge: e[1] < top ? -1 : e[1] > top + hl ? 1 : 0 }
 }

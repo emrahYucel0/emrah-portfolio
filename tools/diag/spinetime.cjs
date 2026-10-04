@@ -85,8 +85,15 @@ const INSTALL = ({ marks, kind }) => {
   console.log(`   spine ${SPINE ? SPINE.join(' · ') : '(not exposed — stops from the historical fallback)'}  ·  Work is stop ${STOP.work}`)
 
   const W = STOP.work
+  /*
+   * WITH CROSS SECTION ON THE SPINE (R14) the strip's LAB from Work no longer starts the bridge: it travels past the
+   * passage to the Lab stop, which opens the bench — so the first mark is the runtime setting out for the Lab. And one
+   * notch up on the bench is the passage, entered at DEPTH, not Work.
+   */
+  const CROSS = STOP.cross != null
+  const UP = CROSS ? STOP.cross : W
   const TO_LAB = [
-    ['bridge', "A && A.mode === 'bridge'"],
+    CROSS ? ['travel', `A && A.base === ${STOP.lab}`] : ['bridge', "A && A.mode === 'bridge'"],
     ['route', "location.pathname === '/tr/lab'"],
     ['bench', "!!document.querySelector('.lab-stage')"],
     ['c2off', "document.documentElement.dataset.c2 !== 'on'"],
@@ -94,8 +101,8 @@ const INSTALL = ({ marks, kind }) => {
   const TO_WORK = [
     ['route', "location.pathname === '/tr'"],
     ['c2on', "document.documentElement.dataset.c2 === 'on'"],
-    ['base', `A && A.base === ${W}`],
-    ['settled', `A && A.base === ${W} && Math.abs(A.p - ${W}) < 0.02 && Math.abs(A.pT - ${W}) < 0.02 && !A.busy`],
+    ['base', `A && A.base === ${UP}`],
+    ['settled', `A && A.base === ${UP} && Math.abs(A.p - ${UP}) < 0.02 && Math.abs(A.pT - ${UP}) < 0.02 && !A.busy`],
   ]
   const run = async (marks, kind, trigger) => {
     await p.evaluate(INSTALL, { marks, kind })
@@ -152,7 +159,7 @@ const INSTALL = ({ marks, kind }) => {
     return stat(totals).med
   }
   const mLab = report(`Work -> Lab   (trigger: the strip's LAB control = startBridge)`, rows.toLab, TO_LAB)
-  const mWork = report(`Lab -> Work   (trigger: one wheel notch up on the bench)`, rows.toWork, TO_WORK)
-  console.log(`\nSPINE TIMING ${label}: Work->Lab median ${mLab} ms · Lab->Work median ${mWork} ms${errs.length ? `  ·  ${errs.length} page errors: ${errs.slice(0, 2).join(' | ')}` : ''}`)
+  const mWork = report(`Lab -> ${CROSS ? 'Cross Section' : 'Work'}   (trigger: one wheel notch up on the bench)`, rows.toWork, TO_WORK)
+  console.log(`\nSPINE TIMING ${label}: Work->Lab median ${mLab} ms · Lab->${CROSS ? 'Cross Section' : 'Work'} median ${mWork} ms${errs.length ? `  ·  ${errs.length} page errors: ${errs.slice(0, 2).join(' | ')}` : ''}`)
   await b.close()
 })().catch((e) => { console.error(String(e).slice(0, 700)); process.exit(1) })

@@ -261,7 +261,7 @@ const A = {
 // published build does not carry even the names.
 // csRv: the seam to the bench is being drawn (1 opening onto it, -1 closing over it, 0 not); csHeld: closed, and the
 // canvas is held over the route change until the host hands the screen back (C3)
-if (CROSS) Object.assign(A, { csLeg: false, csAcc: 0, csRv: 0, csRvAt: 0, csRvDone: null, csHeld: false, csLastIn: -1e9 })
+if (CROSS) Object.assign(A, { csLeg: false, csAcc: 0, csRv: 0, csRvAt: 0, csRvDone: null, csHeld: false, csHeldAt: '', csLastIn: -1e9 })
 const ptr = { x: -1e4, y: -1e4, vx: 0, vy: 0, t: 0, hover: false, touch: false, down: false, downT: 0, sx: 0, sy: 0, moved: 0, axis: null, rub: 0, ui: false }
 const touches = new Map()
 
@@ -1092,7 +1092,13 @@ const csFrame = CROSS ? (now, et) => {
   const root = document.documentElement
   const cs = root.dataset.c2 === 'cs'
   if (A.csHeld) {
-    if (cs) return true
+    if (cs) {
+      // a turn of the screen while it is held: the closed blinds are drawn again, at the new size (a resized canvas is empty)
+      const k = `${canvas.width}x${canvas.height}`
+      // (the calibration break `noheldredraw` leaves it empty, so the harness can be shown to fail)
+      if (k !== A.csHeldAt && CS.breakName !== 'noheldredraw') { CS.revealRender(); A.csHeldAt = k }
+      return true
+    }
     // the host has the screen back ('on'): C2 draws DEPTH now, and what is left of the gesture that closed the
     // blinds is spent, not obeyed
     A.csHeld = false
@@ -1124,7 +1130,7 @@ const csFrame = CROSS ? (now, et) => {
     return true
   }
   // closed: DEPTH is opaque on the canvas. The host changes the route under it; the canvas is held until it is done
-  A.csRv = 0; A.csHeld = true
+  A.csRv = 0; A.csHeld = true; A.csHeldAt = `${canvas.width}x${canvas.height}`
   canvas.style.opacity = ''; ui.style.opacity = ''
   const res = A.csRvDone; A.csRvDone = null
   res?.(true)
@@ -2346,6 +2352,9 @@ function frame(now) {
   // `dt` keeps its 50 ms cap for hold load and the Lab rooms.
   const et = Math.min(STALL, Math.max(0, (now - last) / 1000))
   const dt = Math.min(0.05, et)
+  // CROSS SECTION is redrawn in the frame the screen turns, whenever the browser delivers its resize event: WebKit can
+  // deliver it frames after the viewport has changed (measured 127-155 ms), so the frame itself looks (csResize)
+  if (CROSS && CS && booted && (Math.abs(innerWidth - V.W * V.u) > 1 || Math.abs(innerHeight - V.H * V.u) > 1)) csResize()
   last = now
   // positions land exactly on their stop: a place that has arrived is still, so it is not drawn again
   if (A.mode === 'index') { snap('pT', 'base', now, et); A.p = damp(A.p, A.pT, 3.4 * RM, et); if (Math.abs(A.p - A.pT) < 5e-4 && A.pT === A.base) A.p = A.pT }
@@ -2770,12 +2779,32 @@ window.__lab = { CONTACT_STOP, A, V, ptr, phys, surface, works, STOP, SPINE,
     csIdentity: () => { const r = CS?.identity(); lastSig = ''; return r },
     csRevealIdentity: () => { const r = CS?.revealIdentity(); lastSig = ''; return r },
     csRevealFreeze: (r) => CS?.revealFreeze(r),
+    csLayout: () => CS?.layouts() ?? null,
     csSeam: () => ({ rv: A.csRv, held: A.csHeld, c2: document.documentElement.dataset.c2 ?? null }),
   } : {}),
   configure, routeChanged, setLocale, locale: () => TXT,  previewOf, go, forcedPress, navigate, exit, expandAbout, collapseAbout, startBridge, openLab, arriveAt, replayIntro: playIntro, IDX: () => IDX, WORKS: () => WORKS, WORLD: () => WORLD, frames: framesOf, touches, sig: () => lastSig, redraw: () => { lastSig = '' } }
 let rt = 0, booted = false
 // a resize before the surface exists (a phone's URL bar settling during load) is picked up once start() finishes
-addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(async () => { if (!booted) return; if (!owns()) { resizedWhileAway = true; return } measure(); await ensurePreviews(); rebuild() }, 140) })
+/*
+ * CROSS SECTION IS REDRAWN IN THE FRAME THE SCREEN TURNS (C4, user requirement 2026-10-04). Everywhere else a resize
+ * waits 140 ms for a phone's URL bar to settle, and for those 140 ms the browser stretches the old picture: on the
+ * passage that read as a frozen frame (measured 155-162 ms). And while the blinds held the screen ('cs') the runtime did
+ * not measure at all: it went on drawing the old size, stretched, until the end of the seam. So on the place, and in
+ * 'cs', the resize is taken at once: the event arrives in the same frame as the new viewport, and the frame that follows
+ * draws at the new size. The works' previews for the new shape follow, and what was built without them is drawn again
+ * with them, exactly as at boot.
+ */
+const csResize = CROSS ? () => {
+  // (the calibration break `noresizenow` puts back the debounce, so the harness can be shown to fail)
+  if (!booted || !CS || CS.breakName === 'noresizenow') return false
+  const cs = document.documentElement.dataset.c2 === 'cs'
+  if (!cs && !(owns() && A.mode === 'index' && (A.base === CXS || Math.round(A.p) === CXS))) return false
+  clearTimeout(rt)
+  measure(); rebuild()
+  ensurePreviews().then(() => { for (const st of [...WORKS, ...Object.values(WORLD).flat()]) if (st && !st.dead) surface.release(st); lastSig = '' }, () => {})
+  return true
+} : null
+addEventListener('resize', () => { if (CROSS && csResize()) return; clearTimeout(rt); rt = setTimeout(async () => { if (!booted) return; if (!owns()) { resizedWhileAway = true; return } measure(); await ensurePreviews(); rebuild() }, 140) })
 
 /**
  * THE BOOT, IN TWO HALVES. prepare() is everything that takes time and shows nothing: the fonts, the measure, the

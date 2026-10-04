@@ -242,6 +242,9 @@ export function useC2Engine() {
       const ok = !forced && await Promise.race([ready, new Promise<boolean>((r) => setTimeout(() => r(false), RISE_WAIT))])
       const cross = (globalThis as { __c2Cross?: { rise: () => Promise<boolean> } }).__c2Cross
       const closed = ok && cross ? await cross.rise().catch(() => false) : false
+      // (development only: a harness may hold the closed canvas a while before the route changes, to turn the phone in it)
+      const hold = import.meta.dev ? Number((globalThis as { __csHoldMs?: number }).__csHoldMs || 0) : 0
+      if (hold) await new Promise((r) => setTimeout(r, hold))
       await router.push({ path: path('/'), state: closed ? {} : { [C2_ARRIVE]: 'cross' } })
     }
   }

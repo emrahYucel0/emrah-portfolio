@@ -27,9 +27,9 @@
  *
  * Imported only where __CROSS__ is true.
  */
-import { CS_ORBIT_STEPS, CS_REVEAL_S, CS_Z0, CS_Z1, bandStops, louverClock } from './slats.js'
+import { CS_ORBIT_STEPS, CS_REVEAL_S, CS_Z0, CS_Z1, bandStops, layout, louverClock } from './slats.js'
 import { CS_BAND_K, CS_FREE_K, CS_FREE_RATE } from './input.js'
-import { createCross } from './runtime.js'
+import { createCross, createCrossDom } from './runtime.js'
 import { faceState } from './state.js'
 import { GL_DEV, checkGL, drainGL } from './glstate.js'
 
@@ -57,7 +57,11 @@ export function createPlace(surface, { reduced = false } = {}) {
   const LAST = P.length - 1
   // development only: a calibration break named in the address (?csbreak=leakgl, see mesh.js) — never in a build
   const breakName = GL_DEV && typeof location !== 'undefined' ? new URLSearchParams(location.search).get('csbreak') : null
-  const scene = reduced ? null : createCross(surface, { breakName })
+  // (development only: ?csrevealrows=N and ?csrevealthick=px try other reveal slats, for the side-by-side review)
+  const devQ = GL_DEV && typeof location !== 'undefined' ? new URLSearchParams(location.search) : null
+  const scene = reduced ? null : createCross(surface, { breakName, revealRows: Number(devQ?.get('csrevealrows') || 0), revealThick: Number(devQ?.get('csrevealthick') || 0) })
+  // reduced motion has no WebGL (flat.js draws the surface in 2D): it gets the DOM half alone, and its EDGE still
+  const still = reduced ? createCrossDom() : null
   const gl = scene ? surface.gl : null
   let front = null, back = null, pass = null, V = null
   let x = 0, p = 0, back2work = false, turnPending = false
@@ -107,7 +111,7 @@ export function createPlace(surface, { reduced = false } = {}) {
     STEP: CS_STEP,
     LAST,
     positions: P,
-    dom: scene ? scene.dom : null,
+    dom: scene ? scene.dom : still ? still.dom : null,
     get x() { return x },
     get p() { return p },
     get target() { return P[x] },
@@ -122,6 +126,10 @@ export function createPlace(surface, { reduced = false } = {}) {
     /** the physics must stand still while the louvers are the picture, and for the one frame after it, when C2 takes over */
     get holdPhysics() { return rvOn || rvHold || (!reduced && !broken && ((p > 0 && p < 1) || p !== P[x] || wasMoving)) },
     get broken() { return broken },
+    /** the calibration break named in the address, development only (null in a build) */
+    get breakName() { return breakName },
+    /** harness only: the louvers' layout and the reveal's (null in reduced motion) */
+    layouts() { const L = scene ? scene.layout : null, R = scene ? scene.revealLayout : null; return L ? { count: L.count, pitch: L.pitch, rows: L.spacing, h: L.h, reveal: R ? { count: R.count, rows: R.rows, pitch: R.pitch } : null } : null },
     build(v) {
       V = v
       for (const st of [front, back, pass]) if (st) surface.release(st)
@@ -132,10 +140,14 @@ export function createPlace(surface, { reduced = false } = {}) {
         // reduced motion: the two ends as ordinary states, with nothing to turn
         const L = { W: V.W, h: V.H - V.strip * 2, strip: V.strip, spacing: V.P ? 5.2 : 7 }
         front = faceState(V, L, 0); back = faceState(V, L, 1)
+        // the EDGE still is ruled by the louvers the motion would have had
+        still.layoutTo(V, layout(V))
       }
       // the place as scenery: what a header jump crosses on its way past is the ground, without a word on it
       pass = faceState(V, scene ? scene.layout : { W: V.W, h: V.H - V.strip * 2, strip: V.strip, spacing: front.spacing }, 0, { word: false })
       held = -1; valid = [false, false]; bandsLeft = 0; drawnAt = -1; waited = 0
+      // (a fade in progress draws its DEPTH again at the new size)
+      rvFadeDrawn = false
       return front
     },
     /** the state the spine shows for this place: its own while it is an end of the visitor's leg, the ground otherwise */
@@ -245,7 +257,11 @@ export function createPlace(surface, { reduced = false } = {}) {
     /** in development: check whatever C2 has just drawn of this place (main.js calls it after C2's render) */
     check(pass) { if (GL_DEV && gl) checkGL(gl, pass) },
     /** the line and the word, where the scene puts them; hidden whenever the visitor is not on the place */
-    domAt(on) { if (scene) { scene.dom.style.visibility = on ? 'visible' : 'hidden'; if (on) scene.domAt(p) } },
+    domAt(on) {
+      if (scene) { scene.dom.style.visibility = on ? 'visible' : 'hidden'; if (on) scene.domAt(p) }
+      // reduced motion: in the band the EDGE still, the line and the word, shown as a cut at each position
+      else if (still) { still.dom.style.visibility = on ? 'visible' : 'hidden'; if (on) still.at(p, { showStill: p > 0 && p < 1 }) }
+    },
     probe: () => ({ x, p, target: P[x], held, valid: valid.slice(), bandsLeft, turnPending, back2work, broken, positions: P, reveal: { on: rvOn, r: rv, target: rvT, wait: rvWait, hold: rvHold, mode: rvMode } }),
     audit(on) { audit = !!on; landings.length = 0 },
     landings: () => landings.slice(),

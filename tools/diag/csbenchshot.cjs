@@ -1,6 +1,6 @@
 // CROSS SECTION — STILLS OF THE SEAM TO THE BENCH (C3), with the real bench mounted underneath.
 //
-//   node csbenchshot.cjs <port> [--sizes=1440x900@2,1920x991@1,390x844@3] [--engine=chrome|webkit]
+//   node csbenchshot.cjs <port> [--sizes=1440x900@2,1920x991@1,390x844@3] [--engine=chrome|webkit] [--q=... --tag=...] [--rs=0,0.2,...]
 //
 // Takes the place to DEPTH, opens the blinds onto the bench with the reveal's clock held (__lab.csRevealFreeze) at
 // each r, photographs it, lets it finish; then closes them again from the bench the same way. Development only.
@@ -12,8 +12,10 @@ const args = process.argv.slice(2)
 const port = args.find((a) => /^\d+$/.test(a)) || '4960'
 const opt = (k, d) => { const a = args.find((x) => x.startsWith(`--${k}=`)); return a ? a.slice(k.length + 3) : d }
 const engine = opt('engine', 'chrome')
+// --q=csrevealrows=5 etc.: a variant, named by --tag in the file names
+const Q = opt('q', ''), TAG = opt('tag', '')
 const SIZES = opt('sizes', '1440x900@2,1920x991@1,390x844@3').split(',').map((s) => { const [wh, d] = s.split('@'); const [w, h] = wh.split('x').map(Number); return { w, h, dpr: Number(d || 1) } })
-const RS = [0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1]
+const RS = (opt('rs', '') ? opt('rs', '').split(',').map(Number) : [0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1])
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 ;(async () => {
@@ -21,11 +23,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
   const b = engine === 'webkit' ? await pw.webkit.launch() : await pw.chromium.launch({ channel: 'chrome' })
   let bad = 0
   for (const S of SIZES) {
-    const tag = `${engine === 'webkit' ? 'wk-' : ''}${S.w}x${S.h}@${S.dpr}`
+    const tag = `${engine === 'webkit' ? 'wk-' : ''}${TAG ? TAG + '-' : ''}${S.w}x${S.h}@${S.dpr}`
     const ctx = await b.newContext({ viewport: { width: S.w, height: S.h }, deviceScaleFactor: S.dpr })
     const p = await ctx.newPage()
     const W = watch(p, tag)
-    await p.goto(`http://127.0.0.1:${port}/tr`, { waitUntil: 'load', timeout: 180000 })
+    await p.goto(`http://127.0.0.1:${port}/tr${Q ? '?' + Q : ''}`, { waitUntil: 'load', timeout: 180000 })
     await p.waitForFunction(() => window.__lab && window.__lab.A.mode === 'index' && window.__lab.csState, null, { timeout: 120000 })
     await sleep(800)
     const STOP = await p.evaluate(() => window.__lab.STOP)

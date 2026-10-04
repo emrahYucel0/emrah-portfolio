@@ -2,7 +2,7 @@
 //
 //   node cross.cjs <port> [--engine=chrome|webkit] [--only=<section,...>] [--dpr=1|2] [--q=csbreak=...]
 //
-// Sections (C1 + C2 + C3; C4 adds REDUCED, LANDSCAPE):
+// Sections (C1 + C2 + C3 + C4):
 //   ENTER    one gesture off Work's last work enters the place and the same gesture turns the louvers to the band's
 //            first position (EDGE behind the line) — for a notch, a 60 Hz swipe, and a hard 120 Hz flick, whose tail
 //            must never carry past that position
@@ -19,6 +19,10 @@
 //            Work at any frame (going up from the Lab must not skip Cross Section), and the flick's tail stays there
 //   WAY      (C3) the way is five gestures each way: Work's last work to the bench in five, and back in five
 //   BHEADER  (C3) the strip's WORK on the bench is a jump: it goes to Work and does not play the passage
+//   REDUCED  (C4) reduced motion: each position is a cut; the band shows the EDGE still (copper bars, the line, the
+//            word where the stop puts it) and the ends do not; the bench opens as a cut and the way up arrives at DEPTH
+//   LANDSCAPE (C4) 844×390: rows no finer than 5.2 px (19 louvers), EDGE sized from the height
+//   REVEAL   (C4) the blinds' slats: on a desktop at least 3.5% of the field (the phone's share), on a phone the approved 3 rows
 //   COLD     (C3) the bench landed on cold (the runtime not loaded yet): the gesture up still arrives at DEPTH (the
 //            fallback, a cut by the route); once the runtime is warm, the same gesture closes the blinds
 //
@@ -315,6 +319,68 @@ async function toBench(p) { await atCross(p, 4); await p.keyboard.press('ArrowDo
       check(s.base === STOP.cross && s.x === 4 && (!warm || seen > 15) && (!route || seen === 0), `${route ? 'fallback forced' : warm ? 'warm' : 'cold'} (runtime ${was ? 'ready' : 'not loaded'}): one gesture up arrives at DEPTH (base ${s.base}, x ${s.x}, ${seen ? `blinds over ${seen} frames` : 'by the route, a cut'})`)
       const v = await q.__watch.verdict(q)
       check(v.length === 0, `console clean (${v.length})${v.length ? '\n        ' + v.slice(0, 6).join('\n        ') : ''}`)
+      await ctx.close()
+    }
+  }
+
+  if (want('reduced')) {
+    console.log('\n REDUCED (C4)')
+    const q = await open(b, 1440, 900, { reducedMotion: 'reduce' })
+    const stillOn = () => q.evaluate(() => { const s = document.querySelector('.cs-still'), w = document.querySelector('.cs-word'), d = document.querySelector('.cs-dom'); return { still: !!s && getComputedStyle(s).display !== 'none', word: w ? +getComputedStyle(w).opacity : 0, dom: d ? getComputedStyle(d).visibility : 'none' } })
+    await q.evaluate((s) => window.__lab.go(s.cross), STOP); await sleep(2500)
+    const seen = []
+    for (const x of [0, 1, 2, 3, 4]) {
+      await q.evaluate((i) => window.__lab.csSet(i), x); await sleep(700)
+      seen.push({ x, ...(await stillOn()) })
+    }
+    const band = seen.filter((v) => v.x >= 1 && v.x <= 3), ends = seen.filter((v) => v.x === 0 || v.x === 4)
+    check(band.every((v) => v.still && v.word > 0.3 && v.dom === 'visible') && ends.every((v) => !v.still), `the EDGE still in the band, not at the ends (${seen.map((v) => `${v.x}:${v.still ? 'still' : '—'}`).join(' ')})`)
+    // a key is one position, and it is a cut: the place is at the new position on the next frame
+    await q.evaluate(() => window.__lab.csSet(1)); await sleep(500)
+    const cut = await q.evaluate(() => new Promise((res) => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })); requestAnimationFrame(() => requestAnimationFrame(() => { const c = window.__lab.csState(); res({ x: c.x, p: c.p, target: c.target }) })) }))
+    check(cut.x === 2 && cut.p === cut.target, `ArrowDown in the band: one position, shown at once (x ${cut.x}, p ${cut.p} = target ${cut.target})`)
+    // on to the bench, and up again: the cut and the route, no seam
+    await q.evaluate(() => window.__lab.csSet(4)); await sleep(600)
+    await q.evaluate(() => { window.__sawCs = 0; const t = () => { if (document.documentElement.dataset.c2 === 'cs') window.__sawCs++; requestAnimationFrame(t) }; requestAnimationFrame(t) })
+    await q.keyboard.press('ArrowDown')
+    await q.waitForFunction(() => /\/lab$/.test(location.pathname) && document.querySelector('.lab-stage .rec[aria-current]'), null, { timeout: 20000 }).catch(() => {})
+    await sleep(1500)
+    const onBench = await q.evaluate(() => /\/lab$/.test(location.pathname))
+    await q.evaluate(() => window.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, cancelable: true })))
+    await q.waitForFunction(() => !location.pathname.includes('/lab') && window.__lab && document.documentElement.dataset.c2 === 'on', null, { timeout: 20000 }).catch(() => {})
+    await sleep(1500)
+    const up = await st(q)
+    const sawCs = await q.evaluate(() => window.__sawCs)
+    check(onBench && up.base === STOP.cross && up.x === 4 && sawCs === 0, `DEPTH → the bench → up: DEPTH again, as cuts (bench ${onBench}, base ${up.base}, x ${up.x}, 'cs' frames ${sawCs})`)
+    const v = await q.__watch.verdict(q)
+    check(v.length === 0, `console clean in reduced motion (${v.length})${v.length ? '\n        ' + v.slice(0, 6).join('\n        ') : ''}`)
+    await q.context().close()
+  }
+  if (want('landscape')) {
+    console.log('\n LANDSCAPE (C4)')
+    const q = await open(b, 844, 390, { hasTouch: true, isMobile: engine !== 'webkit' ? true : undefined })
+    await q.evaluate((s) => window.__lab.go(s.cross), STOP); await sleep(2800)
+    await q.evaluate(() => window.__lab.csSet(3)); await sleep(1200)
+    const L = await q.evaluate(() => window.__lab.csLayout())
+    const fs = await q.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.cs-word')).fontSize))
+    check(L && L.rows >= 5.2 && L.count <= 20, `844×390: rows ${L?.rows.toFixed(2)} px (no finer than 5.2), ${L?.count} louvers`)
+    check(Math.abs(fs - 0.17 * L.h) <= 1, `844×390: EDGE sized from the field's height (${fs}px = 0.17 × ${L?.h}px)`)
+    const v = await q.__watch.verdict(q)
+    check(v.length === 0, `console clean in landscape (${v.length})${v.length ? '\n        ' + v.slice(0, 6).join('\n        ') : ''}`)
+    await q.context().close()
+  }
+  if (want('reveal')) {
+    console.log('\n REVEAL SLATS (C4)')
+    for (const [w, h, dpr] of [[1920, 991, 1], [1440, 900, 2], [390, 660, 3], [390, 844, 3]]) {
+      const ctx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: dpr })
+      const q = await ctx.newPage()
+      await q.goto(`http://127.0.0.1:${port}/tr`, { waitUntil: 'load', timeout: 180000 })
+      await q.waitForFunction(() => window.__lab && window.__lab.csLayout, null, { timeout: 120000 })
+      await q.evaluate((s) => window.__lab.go(s.cross), STOP); await sleep(2500)
+      const L = await q.evaluate(() => window.__lab.csLayout())
+      const share = L.reveal.pitch / L.h
+      const ok = w < 700 ? L.reveal.rows === 3 : share >= 0.035 - 1e-6
+      check(ok, `${w}×${h}: reveal slats ${L.reveal.rows} rows, ${L.reveal.pitch.toFixed(1)} px, ${L.reveal.count} across the field (${(share * 100).toFixed(2)}% each; ${w < 700 ? 'a phone keeps 3 rows' : 'at least 3.5%'})`)
       await ctx.close()
     }
   }

@@ -95,7 +95,8 @@ const WATCH = () => {
     await sleep(settle)
     return report(label)
   }
-  const c = await leave(-130, 'C Lab → Work')
+  // (with Cross Section on the spine the way up from the bench is the passage, entered at DEPTH)
+  const c = await leave(-130, (await p.evaluate(() => !!window.__lab?.STOP?.cross).catch(() => false)) ? 'C Lab → Cross Section' : 'C Lab → Work')
   const d = await leave(130, 'D Lab → Contact')
 
   // keep evidence of the worst case

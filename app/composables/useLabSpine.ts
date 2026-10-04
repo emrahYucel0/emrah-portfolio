@@ -24,6 +24,8 @@ const SWIPE = 56        // px of vertical travel: the index's own swipe distance
  */
 const STREAM = 120
 const REST_STREAM = 340
+/** replaced at transform time by the bundler; see the note in nuxt.config.ts */
+declare const __CROSS__: boolean
 
 export function useLabSpine() {
   if (!import.meta.client) return
@@ -59,6 +61,12 @@ export function useLabSpine() {
   const go = (to: LabExit | 'contact') => {
     if (leaving) return
     leaving = true
+    // with Cross Section (R14, C3) the way up is the passage, entered at DEPTH: the blinds close over the bench
+    // (development only: the calibration break `skipup`, set by a harness, puts back the skip to Work so it can fail)
+    if (__CROSS__ && to === 'work' && !(import.meta.dev && (globalThis as { __csBreak?: string }).__csBreak === 'skipup')) {
+      const rise = (globalThis as { __c2Rise?: () => Promise<void> }).__c2Rise
+      if (rise) { void rise(); return }
+    }
     // down is the Contact finale: the bench clears itself to the bare field the finale opens on, then hands over
     if (to === 'contact') {
       const exit = benchSeam.exit ? benchSeam.exit() : Promise.resolve()
@@ -81,6 +89,15 @@ export function useLabSpine() {
   // the gesture being read: its sum, when its last event came, the narrowest gap it showed, whether it has moved
   let acc = 0, at = -1e9, minGap = Infinity, spentDir = 0
   const onWheel = (e: WheelEvent) => {
+    if (__CROSS__ && document.documentElement.dataset.c2 === 'cs') {
+      // Cross Section's blinds are over the bench (R14, C3): what arrives is the gesture that moved them, spent here
+      // too, so its tail cannot also move a study once they have opened
+      e.preventDefault()
+      const t = performance.now()
+      minGap = Math.min(minGap, t - at); at = t; acc = 0
+      spentDir = spentDir || Math.sign(e.deltaY) || 1
+      return
+    }
     if (leaving || e.ctrlKey || zoomed()) return
     // nothing on the bench scrolls, so the gesture is the site's: it is taken, not passed to the document
     e.preventDefault()
@@ -113,6 +130,7 @@ export function useLabSpine() {
   }
   const onMove = (e: PointerEvent) => {
     if (leaving || pinch || moved || e.pointerId !== id) return
+    if (__CROSS__ && document.documentElement.dataset.c2 === 'cs') return
     const dx = e.clientX - sx, dy = e.clientY - sy
     if (Math.abs(dy) < SWIPE || Math.abs(dy) < Math.abs(dx) * 1.3) return
     moved = true

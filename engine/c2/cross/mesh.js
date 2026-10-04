@@ -42,7 +42,12 @@ out vec4 o;
 void main() {
   vec2 p = vec2(gl_FragCoord.x, uRes.y * uDpr - gl_FragCoord.y) / uDpr;
   vec2 sp = vec2(p.x, p.y - uScene.x);
-  if (uScene.w < 0.5) {
+  if (uScene.w > 1.5) {
+    // the reveal (C3): the scene is open — nothing of the canvas there but the louvers — and the strips, the DEPTH
+    // side's own paper, thin away over the bench's own (premultiplied: the page underneath shows through)
+    float inScene = step(0.0, sp.y) * step(sp.y, uScene.y);
+    o = vec4(uGap, 1.0) * uAtmo.w * (1.0 - inScene);
+  } else if (uScene.w < 0.5) {
     vec2 ac = (sp - vec2(0.54 * uScene.z, 0.48 * uScene.y)) / vec2(0.65 * uScene.z, 0.52 * uScene.y);
     float air = (1.0 - clamp(length(ac) / 0.68, 0.0, 1.0)) * uAtmo.x;
     float inScene = step(0.0, sp.y) * step(sp.y, uScene.y);
@@ -85,6 +90,7 @@ const LV_FS = `#version 300 es
 precision highp float;
 uniform sampler2D uFace0;   // SURFACE
 uniform sampler2D uFace1;   // DEPTH
+uniform vec2 uFade;         // how much of the louvers is left (1 but in the reveal), and ink (1) or copper (0) edges
 in vec2 vUV;
 in float vSide;
 in float vKind;
@@ -102,10 +108,11 @@ void main() {
   if (vKind < 0.5) {
     o = vSide < 0.5 ? texture(uFace0, vUV) : texture(uFace1, vUV);
     o.a = 1.0;
+    o *= uFade.x;
   } else {
     // premultiplied: the edge lies over what is behind it at the reference's opacity
-    vec3 c = copper(vUV.x) * vEdge.y;
-    o = vec4(c * vEdge.x, vEdge.x);
+    vec3 c = mix(copper(vUV.x) * vEdge.y, vec3(0.0706), uFade.y);
+    o = vec4(c * vEdge.x, vEdge.x) * uFade.x;
   }
 }`
 
@@ -333,14 +340,17 @@ export function createMesh(gl, { leak = false } = {}) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, msFbo)
       gl.viewport(0, 0, bw, bh)
       gl.disable(gl.BLEND); gl.disable(gl.DEPTH_TEST); gl.disable(gl.SCISSOR_TEST)
+      gl.colorMask(true, true, true, true)
       gl.clearDepth(1); gl.clear(gl.DEPTH_BUFFER_BIT)
+      // the reveal (C3) draws over a canvas that lets the page through: the ground is open, the strips thin away
+      const rv = look.reveal || null
       // the ground
       gl.useProgram(bg.p)
       gl.bindVertexArray(bgVao)
       gl.uniform2f(bg.u('uRes'), bw / r, bh / r); gl.uniform1f(bg.u('uDpr'), r)
-      gl.uniform4f(bg.u('uScene'), V.strip, V.H - 2 * V.strip, V.W, 0)
+      gl.uniform4f(bg.u('uScene'), V.strip, V.H - 2 * V.strip, V.W, rv ? 2 : 0)
       gl.uniform3f(bg.u('uGap'), look.gap[0], look.gap[1], look.gap[2])
-      gl.uniform4f(bg.u('uAtmo'), look.atmo, look.light, look.warm, 0)
+      gl.uniform4f(bg.u('uAtmo'), look.atmo, look.light, look.warm, rv ? rv.strip : 0)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
       // the louvers, inside the scene only: the material never crosses into a strip
       gl.enable(gl.SCISSOR_TEST)
@@ -353,11 +363,15 @@ export function createMesh(gl, { leak = false } = {}) {
       gl.uniform3f(lv.u('uView'), bw / r, bh / r, V.strip)
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, faces[0]); gl.uniform1i(lv.u('uFace0'), 0)
       gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, faces[1]); gl.uniform1i(lv.u('uFace1'), 1)
+      gl.uniform2f(lv.u('uFade'), rv ? rv.fade : 1, rv ? 1 : 0)
       gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true)
+      // in the reveal what the louvers leave is blended over the open ground, premultiplied, as the page will see it
+      if (rv) { gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA) }
       gl.drawArrays(gl.TRIANGLES, 0, count)
+      if (rv) gl.disable(gl.BLEND)
       gl.disable(gl.DEPTH_TEST)
       // the light, as a screen blend over everything in the scene
-      if (look.light > 0.001) {
+      if (look.light > 0.001 && !rv) {
         gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_COLOR)
         gl.useProgram(bg.p)
         gl.bindVertexArray(bgVao)

@@ -461,7 +461,8 @@ function frame(now: number) {
     const step = dt / (S.veilT > S.veil ? VEIL_OUT : VEIL_IN)
     S.veil = REDUCED ? S.veilT : S.veilT > S.veil ? Math.min(S.veilT, S.veil + step) : Math.max(S.veilT, S.veil - step)
   }
-  stepWeight(dt)
+  // (development only: a harness measuring a seam over the bench may hold its breathing, so that its floor is zero)
+  if (!(import.meta.dev && (globalThis as { __benchStill?: boolean }).__benchStill)) stepWeight(dt)
   const c = ctx
   c.fillStyle = '#efeee9'; c.fillRect(0, 0, W, H)
   const off = S.reg * (L.spacing * 2.2)

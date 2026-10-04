@@ -259,7 +259,9 @@ const A = {
 // CROSS SECTION: whether the passage is an end of the visitor's leg (its own state, words and all) or scenery on the
 // way past, and the travel a gesture has put towards its next position. Declared only where the flag is on, so a
 // published build does not carry even the names.
-if (CROSS) Object.assign(A, { csLeg: false, csAcc: 0 })
+// csRv: the seam to the bench is being drawn (1 opening onto it, -1 closing over it, 0 not); csHeld: closed, and the
+// canvas is held over the route change until the host hands the screen back (C3)
+if (CROSS) Object.assign(A, { csLeg: false, csAcc: 0, csRv: 0, csRvAt: 0, csRvDone: null, csHeld: false, csLastIn: -1e9 })
 const ptr = { x: -1e4, y: -1e4, vx: 0, vy: 0, t: 0, hover: false, touch: false, down: false, downT: 0, sx: 0, sy: 0, moved: 0, axis: null, rub: 0, ui: false }
 const touches = new Map()
 
@@ -630,7 +632,7 @@ function scrollBy(d, touch = false) {
         A.csAcc = 0
         A.gSpent = true
         A.gesture = false
-        if (CS.step(dir) === 'lab') { A.base = A.pT = STOP.lab; A.labArmed = true; A.leftWork = now }
+        if (CS.step(dir) === 'lab') csToBench(now)
       }
       A.lastInput = now
       return
@@ -863,7 +865,7 @@ addEventListener('keydown', (e) => {
     if (CROSS && CS && settledAt(CXS)) {
       const now = performance.now()
       resetGesture(); forgetStream()
-      if (CS.step(step) === 'lab') { A.base = A.pT = STOP.lab; A.labArmed = true; A.leftWork = now }
+      if (CS.step(step) === 'lab') csToBench(now)
       A.lastInput = now
       return
     }
@@ -1061,6 +1063,84 @@ function openLab() {
   HOST.push(LAB_URL, { c2: 'lab' })
 }
 
+/*
+ * ── CROSS SECTION ⇄ THE BENCH (R14, C3) ──────────────────────────────────────────────────────────────────────
+ *
+ * DEPTH IS THE LAST THING THE RUNTIME SHOWS, AND THE BENCH IS UNDER IT BEFORE IT OPENS. The gesture past DEPTH takes
+ * the screen into a third state of ownership, 'cs': the canvas stays up, on top, over a page the runtime does not own
+ * (the CSS is cross/runtime.js's). The route changes at once, under opaque DEPTH, and the bench mounts underneath and
+ * paints its first frame there; only then do the blinds open onto it (place.js: the reveal). Their last frame is
+ * nothing at all — the canvas lets every pixel of the bench through — and only then is the screen handed back.
+ *
+ * Up from the bench it is the same seam closed: the host asks for it (__c2Cross.rise), the runtime takes the screen
+ * in 'cs' with the blinds open, closes them, and the host changes the route under opaque DEPTH. The canvas is HELD
+ * over that change, drawn by nothing and cleared by nothing, until the host gives the screen back; C2 then draws DEPTH
+ * itself — the frame the closed blinds showed — and the visitor stands at DEPTH, four gestures from Work.
+ *
+ * Reduced motion keeps its cuts (R14 decision 2): the bench opens as it always has, and the way up arrives at DEPTH.
+ */
+const csToBench = CROSS ? (now) => {
+  A.gSpent = true; A.gesture = false; A.leftWork = now
+  if (REDUCED) { A.base = A.pT = STOP.lab; A.labArmed = true; return }
+  CS.revealBegin(1)
+  A.csRv = 1; A.csRvAt = now
+  document.documentElement.dataset.c2 = 'cs'
+  openLab()
+} : null
+/** one frame of the seam; true when it has drawn (or deliberately held) the frame, false to let C2 draw as usual */
+const csFrame = CROSS ? (now, et) => {
+  const root = document.documentElement
+  const cs = root.dataset.c2 === 'cs'
+  if (A.csHeld) {
+    if (cs) return true
+    // the host has the screen back ('on'): C2 draws DEPTH now, and what is left of the gesture that closed the
+    // blinds is spent, not obeyed
+    A.csHeld = false
+    CS.revealRelease()
+    lastSig = ''
+    // (only while it is still coming: a tail runs on without a pause, a new gesture comes after one — hushTail's rule)
+    if (owns()) { const t = performance.now(); if (t - A.csLastIn < 140) A.hush = t + 140; resetGesture(); forgetStream(); document.title = TITLE() }
+    return false
+  }
+  // somewhere else was asked for mid-reveal (Back, a link): the screen is the host's again and the reveal is dropped
+  if (!cs) { csDrop(); return false }
+  // forward, the blinds wait for the bench underneath — and not for ever, if it never comes
+  if (A.csRv > 0 && CS.reveal.wait && (document.querySelector('#__nuxt .lab-stage') || now - A.csRvAt > 3000)) CS.revealGo()
+  const done = CS.revealAdvance(et)
+  const o = CS.revealRender()
+  canvas.style.opacity = o.canvas < 1 ? String(o.canvas) : ''
+  ui.style.opacity = o.ui < 1 ? String(o.ui) : ''
+  noteFrame(true, et)
+  if (!done) return true
+  CS.revealEnd()
+  if (A.csRv > 0) {
+    // open: the bench is the page. The runtime leaves the place for the Lab stop quietly (nothing is announced over
+    // the bench) and hands the screen back; the canvas it leaves is empty, so nothing changes on the screen
+    A.csRv = 0
+    A.p = A.pT = A.base = A.prevBase = STOP.lab; A.csLeg = false
+    CS.leave()
+    canvas.style.opacity = ''; ui.style.opacity = ''
+    delete root.dataset.c2
+    return true
+  }
+  // closed: DEPTH is opaque on the canvas. The host changes the route under it; the canvas is held until it is done
+  A.csRv = 0; A.csHeld = true
+  canvas.style.opacity = ''; ui.style.opacity = ''
+  const res = A.csRvDone; A.csRvDone = null
+  res?.(true)
+  return true
+} : null
+// the input that arrives while the seam has the screen is the bench's or nobody's; only its time is kept, for the hush
+if (CROSS) addEventListener('wheel', () => { if (document.documentElement.dataset.c2 === 'cs') A.csLastIn = performance.now() }, { passive: true, capture: true })
+const csDrop = CROSS ? () => {
+  A.csRv = 0; A.csHeld = false
+  CS.revealEnd(); CS.revealRelease()
+  canvas.style.opacity = ''; ui.style.opacity = ''
+  lastSig = ''
+  const res = A.csRvDone; A.csRvDone = null
+  res?.(false)
+} : null
+
 /**
  * COMING BACK FROM THE LAB. The bench is the fifth destination and it lives on its own route, so the visitor who
  * gestures out of it upwards is asking for a place on this index — Work (Contact, below, is a route of its own and
@@ -1075,7 +1155,7 @@ function openLab() {
 function arriveAt(target) {
   // every place on the index except the Lab itself: the Lab is a route, not somewhere this index arrives
   // no 'rest': Contact is its own route now and is reached by openContact(), never by an arrival on the index
-  const stop = { name: STOP.name, creative: STOP.creative, system: STOP.system, work: STOP.work, ...(LINEFIELD ? { linefield: STOP.linefield } : {}) }[target]
+  const stop = { name: STOP.name, creative: STOP.creative, system: STOP.system, work: STOP.work, ...(LINEFIELD ? { linefield: STOP.linefield } : {}), ...(CROSS ? { cross: CXS } : {}) }[target]
   if (stop == null) return false
   endGesture()
   gsap.killTweensOf(A)
@@ -2485,6 +2565,8 @@ function frame(now) {
 
   domUpdate(from, to, front)
   mediaUpdate()
+  // CROSS SECTION's seam to the bench draws itself, over a page the runtime does not own (C3: csFrame)
+  if (CROSS && CS && (A.csRv || A.csHeld) && csFrame(now, et)) { requestAnimationFrame(frame); return }
   // while the work has the whole screen, the surface is not there at all — do not draw it
   const absent = !owns() || (A.mode === 'world' && !A.busy && ABSENT.has(framesOf(A.k)[clamp(Math.round(A.wp), 0, lastFrame())].g) && Math.abs(A.wp - Math.round(A.wp)) < 0.003)
   if (!absent) {
@@ -2686,6 +2768,9 @@ window.__lab = { CONTACT_STOP, A, V, ptr, phys, surface, works, STOP, SPINE,
     csAudit: (on) => CS?.audit(on),
     csLandings: () => CS?.landings(),
     csIdentity: () => { const r = CS?.identity(); lastSig = ''; return r },
+    csRevealIdentity: () => { const r = CS?.revealIdentity(); lastSig = ''; return r },
+    csRevealFreeze: (r) => CS?.revealFreeze(r),
+    csSeam: () => ({ rv: A.csRv, held: A.csHeld, c2: document.documentElement.dataset.c2 ?? null }),
   } : {}),
   configure, routeChanged, setLocale, locale: () => TXT,  previewOf, go, forcedPress, navigate, exit, expandAbout, collapseAbout, startBridge, openLab, arriveAt, replayIntro: playIntro, IDX: () => IDX, WORKS: () => WORKS, WORLD: () => WORLD, frames: framesOf, touches, sig: () => lastSig, redraw: () => { lastSig = '' } }
 let rt = 0, booted = false
@@ -2783,6 +2868,36 @@ async function start() {
   if (SOFTWARE_GL && !REDUCED) { startStaticHero(); return }
   if (REDUCED) { A.mode = 'index'; A.introReg = 0; A.nameAmp = 0; return }
   playIntro()
+}
+/*
+ * UP FROM THE BENCH (C3, see csToBench above). The host's way into the seam from the other side: resolves true once
+ * the blinds have closed over the bench and DEPTH is opaque (the host then changes the route under it), or false
+ * where it cannot (reduced motion, the louvers switched off, a seam already running), and the host arrives at DEPTH by
+ * the route instead. Behind the flag; a published build without it has no such object.
+ */
+if (CROSS) {
+  globalThis.__c2Cross = {
+    async rise() {
+      await prepare()
+      if (!CS || REDUCED || CS.broken || A.csRv || A.csHeld) return false
+      const fresh = !begun
+      begun = true
+      // prepared a while ago, or resized while the bench had the screen: the screen it rises over is measured now
+      if (resizedWhileAway || Math.abs(innerWidth - V.W * V.u) > 1 || Math.abs(innerHeight - V.H * V.u) > 1) { resizedWhileAway = false; measure(); await ensurePreviews(); rebuild() }
+      if (fresh) { A.from = A.to = IDX[STOP.name]; A.front = 1 }
+      // the place is arrived at as any arrival from the Lab is; but the bench is still the page, and keeps its title
+      const title = document.title
+      arriveAt('cross')
+      document.title = title
+      CS.revealBegin(-1)
+      A.csRv = -1; A.csRvAt = performance.now()
+      const done = new Promise((res) => { A.csRvDone = res })
+      document.documentElement.dataset.c2 = 'cs'
+      // the loop: begun now, or woken from where it parked while the bench had the screen
+      if (fresh || parked) { parked = false; notOwnedSince = 0; requestAnimationFrame((t) => { last = t; frame(t) }) }
+      return done
+    },
+  }
 }
 export { start as mountC2, prepare as warmC2 }
 if (!globalThis.__c2Hosted) start()

@@ -222,7 +222,28 @@ export function useC2Engine() {
     active = on
     // returning to a locale route hands the screen back at once — the runtime is already on it
     if (on) { if (presented) document.documentElement.dataset.c2 = 'on' }
-    else delete document.documentElement.dataset.c2
+    // Cross Section's seam to the bench (C3) holds the screen over this very change: the runtime hands it back itself
+    else if (!(__CROSS__ && document.documentElement.dataset.c2 === 'cs')) delete document.documentElement.dataset.c2
+  }
+
+  /*
+   * UP FROM THE BENCH INTO CROSS SECTION (R14, C3). The bench's upward gesture at 01 enters the passage at DEPTH: the
+   * runtime closes its blinds over the bench (engine/c2/main.js, __c2Cross.rise) and the route changes under opaque
+   * DEPTH. A runtime that cannot be ready within RISE_WAIT, on a cold visit to the Lab, is not waited for: the route
+   * changes at once and the runtime arrives at DEPTH from the history entry, as a cut (the fallback). Behind the flag.
+   */
+  if (__CROSS__ && import.meta.client) {
+    const RISE_WAIT = 1200
+    ;(globalThis as Record<string, unknown>).__c2Rise = async () => {
+      host()
+      const ready = loadModule().then(async (m) => { m.configure(options()); await m.warmC2(); return true }).catch(() => false)
+      // (development only: `csrise=route` takes the fallback whatever the runtime's state, so the harness can test it)
+      const forced = import.meta.dev && location.search.includes('csrise=route')
+      const ok = !forced && await Promise.race([ready, new Promise<boolean>((r) => setTimeout(() => r(false), RISE_WAIT))])
+      const cross = (globalThis as { __c2Cross?: { rise: () => Promise<boolean> } }).__c2Cross
+      const closed = ok && cross ? await cross.rise().catch(() => false) : false
+      await router.push({ path: path('/'), state: closed ? {} : { [C2_ARRIVE]: 'cross' } })
+    }
   }
 
   return { start, warm, syncRoute, setActive, locale }

@@ -517,6 +517,146 @@ and back, at 1440×900, 390×844 and 375×560.
 
 **Still owed:** the user's own machine is the test the harnesses missed. C3 waits until the scene draws there.
 
+### C2 approved (2026-10-04)
+
+On the user's desktop, after a hard reload, the scene draws all the way through: the slats, the copper edges, the line,
+EDGE and black DEPTH, with a clean console. **The Work seam is approved.**
+- The user's `devicePixelRatio` is 1 on that machine at the moment. They had read 2 earlier, probably on another
+  display or at another scaling setting. This is recorded under R9 in `KNOWN-ISSUES.md`, and the Cross Section checks
+  now run at both DPR 1 and 2.
+- **Seen by the user:** going up from the Lab jumped straight to Work and skipped Cross Section. As expected, the
+  bench's upward gesture was still today's `leave('work')`; the reverse entry was planned for C3. C3 must make the way
+  back the same five gestures as the way forward, and a harness must check that going up from the Lab never skips
+  Cross Section with the flag on.
+- **Standing rule:** never take a desktop-level screenshot or capture. Use only the browser's own capture of the test
+  window.
+
+### C3: the DEPTH ⇄ bench seam (built)
+
+**What the visitor sees.**
+- **Forward.** At DEPTH, one more gesture opens the blinds onto the bench. The louvers carry on turning from 180° to
+  270°, edge-on again, in the same wave as the crossing, with no lift or swing. The bench shows between them, and at the
+  end nothing of the canvas is left. The bench opens on 01.
+- **Back.** On the bench at 01, the upward gesture closes the blinds over the bench into DEPTH. The visitor stands at
+  DEPTH, and four more gestures go back through EDGE in front, beside and behind, to Work's last work. **Five gestures
+  each way.**
+- **The edges** at this second edge-on are ink, not copper: copper belongs to the crossing.
+- **The strips change hands one layer at a time.** A first version crossfaded them, and the runtime's light strip
+  words and the bench's dark ones showed together, doubled, on a grey band. Now the runtime's words go first, while its
+  dark paper still covers the bench's strip; then the paper thins and the bench's own strip is simply there.
+
+**How (the `'cs'` ownership state).**
+- `data-c2` has a third value. `'on'` is the runtime's screen; no value is the host's; **`'cs'`** is both. The page
+  the host has mounted underneath is shown, and the canvas and the runtime's strip lie on top of it, take no pointer,
+  and nothing scrolls. The CSS is injected by `cross/runtime.js`, so it ships only with the flag.
+- **Forward** (`csToBench`, `main.js`):
+  1. The gesture past DEPTH sets `'cs'` and pushes the Lab route at once, under opaque DEPTH.
+  2. `setActive(false)` leaves `'cs'` alone.
+  3. The bench mounts underneath and paints its first frame there.
+  4. The blinds wait for it (`#__nuxt .lab-stage`, at most 3 s), then open.
+  5. On their last frame the canvas is empty. The runtime moves quietly to the Lab stop, with nothing announced over
+     the bench, and drops `'cs'`.
+- **Back** (`__c2Rise` in `useC2Engine`, `__c2Cross.rise` in `main.js`):
+  1. `useLabSpine` at 01 asks for the rise. LabChrome's WORK link is a header jump and still skips the passage.
+  2. The runtime is loaded and prepared if it is not already, within 1.2 s (`RISE_WAIT`).
+  3. It arrives at DEPTH, takes `'cs'` with the blinds open (an empty canvas), and closes them.
+  4. Once DEPTH is opaque, the host pushes `/` under it. The canvas is **held**, drawn and cleared by nothing, until
+     the host hands the screen back.
+  5. C2 then draws DEPTH itself: the frame the closed blinds showed.
+- **The fallback is ready** (R14 decision 5). `CS_REVEAL = 'fade'` in `place.js` (`?csreveal=fade` in development)
+  still switches the route under opaque DEPTH, then fades the canvas and the runtime's strip over the bench, or in over
+  it going back. It is also what a context whose louvers were switched off uses.
+- **A runtime that is not ready in time** (a cold landing on the Lab, a slow link): the route changes at once and the
+  runtime arrives at DEPTH from the history entry, as a cut. Cross Section is never skipped.
+- **Gesture tails.**
+  - **Forward:** while `'cs'` holds the screen, the bench absorbs the stream as a spent gesture. A trackpad's tail
+    cannot also move a study.
+  - **Back:** at the hand-over the runtime is hushed only if input is still arriving (the last event under 140 ms
+    ago: `hushTail`'s rule).
+  - The first version hushed for a fixed 420 ms. In WebKit it ate a deliberate gesture made right after DEPTH
+    appeared, so the way up took six.
+- **Reduced motion** keeps its cuts (decision 2). Forward, the bench opens as before; back, the runtime arrives at
+  DEPTH. C4 covers the rest.
+- **Flag off.** Every addition sits behind `CROSS`/`__CROSS__`, plus three development-only harness hooks
+  (`__benchStill`, `__csBreak`, `csrise=route`) behind `import.meta.dev`.
+
+**Measured** (dev server, flag on; every harness fails on any console error or WebGL warning):
+
+`tools/diag/csbenchseam.cjs`, controls first. The bench breathes (WEIGHT's rules move every frame), and its floor
+wandered between about 7,700 and 8,900 px from run to run, too coarse to decide anything. So by default the harness
+holds it still (`__benchStill`, development only), and every boundary must then be exactly nothing. The strips are
+also measured finely, more than 2 levels inside the parts both pages keep still, because a film left over the bench
+moves its pixels by less than the 8 levels that count as changed.
+
+| Chrome | 1440×900@2 | 1440×900@1 | 1920×991@1 | 1920×1080@2 | 390×844@3 | 390×660@3 | 375×560@3 | 844×390@3 |
+|---|---|---|---|---|---|---|---|---|
+| controls: still DEPTH / still bench / its strips | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 |
+| identity: the blinds' first frame vs C2's DEPTH | **0** | **0** | ≤1 level | ≤1 level | ≤1 level | ≤1 level | ≤1 level | **0** |
+| the blinds' last frame: px not fully transparent | **0** | **0** | **0** | **0** | **0** | **0** | **0** | **0** |
+| landing up: closed blinds vs C2's DEPTH | **0** | **0** | ≤1 level | ≤1 level | ≤1 level | ≤1 level | ≤1 level | **0** |
+| under DEPTH while the route changes (frames, worst px) | 16, **0** | 10, **0** | 12, **0** | 17, **0** | 13, **0** | 14, **0** | 14, **0** | 13, **0** |
+| the release onto the bench (whole / strips) | **0 / 0** | **0 / 0** | **0 / 0** | **0 / 0** | **0 / 0** | **0 / 0** | **0 / 0** | **0 / 0** |
+| the runtime takes the screen over the bench | **0 / 0** | **0 / 0** | **0 / 0** | **0 / 0** | **0 / 0** | **0 / 0** | **0 / 0** | **0 / 0** |
+| the hand-over to C2's own DEPTH | **0** | **0** | **0** | **0** | **0** | **0** | **0** | **0** |
+
+- **WebKit** (1440×900@2, 1440×900@1, 390×660@3, 375×560@3): identity and the landing are at most 1 level (0 at
+  375×560), the blinds' last frame is 0, and the path DEPTH → bench → DEPTH works. The screen-level steps are **not
+  measured** in WebKit, which has no CDP screencast.
+- **Calibrated.** `--q=csbreak=revealleft` leaves a tenth of the dark strips on the canvas, and the release and the
+  take-over FAIL (129,591 px in the strips). Two fixes came out of calibrating:
+  - a single screencast pair missed the film, because the two clocks are a frame apart, so each boundary is now a
+    window of steps;
+  - on phones the "still" bench was not still: its hint arrived and the foot faded its status out. The harness holds
+    those too.
+- **The fade fallback** (`--q=csreveal=fade`), 1440×900@2 and 390×844@3: every boundary 0, and the landing 0 / ≤1
+  level. `cross.cjs` BENCH, UP and WAY pass with it.
+- **A first version failed under DEPTH: 4,866 px, the strip's words.** The runtime's type and custom properties are
+  declared on `html[data-c2='on']`, so in `'cs'` the words fell back to the host's. `#ui` now carries the same values
+  in `'cs'`, scoped to `#ui` alone.
+
+`tools/diag/cross.cjs`, all sections, **Chrome PASS (31 checks) and WebKit PASS (27; touch is Chrome only)**. New:
+- **BENCH:** DEPTH → bench for a notch and a flick: the bench is on 01, and the flick's tail does not move it.
+- **UP:** going up from the Lab never skips Cross Section, for a notch and a flick: DEPTH, 0 frames on Work. With the
+  calibration break `--q=csbreak=skipup` (today's skip put back) it FAILS: base Work, 0 closing frames, 153 and 294
+  frames on Work.
+- **WAY:** five gestures each way.
+- **BHEADER:** LabChrome's WORK still jumps, with 0 seam frames.
+- **COLD:** cold, warm and the fallback forced all arrive at DEPTH.
+- **TOUCH:** a swipe on from DEPTH reaches the bench on 01; a swipe back down reaches DEPTH, not Work.
+
+**Two harness mistakes, found and fixed:**
+- the bench's records come from the server already marked, so a check waited only for the HTML and sent its gesture
+  before the bench listened. It now waits for the mounted bench;
+- headless WebKit draws at about 20 fps, so a fixed wait counted a seam still in progress. Its sixth gesture was
+  absorbed, which is right, and the harness now waits the seam out.
+
+**The Work seam, re-run** (`csseam.cjs`, 1440×900@2 and @1, 1920×991@1, 390×844@3): identity and landings 0 / ≤1 level,
+the first louver frame and the landing on DEPTH 0 px, no blank frames. **Not decisive:** the worst single step of the
+C2 travel into SURFACE against an ordinary travel into Work. It measured 147k, 414k and 279k px at 1440×900@2 in three
+runs; the control varied with it, and the comparison flipped between runs. It is a frame-pacing reading, uncalibrated,
+and C3 does not touch that travel. The earlier statement that it stays below the control at every size does not hold
+reliably.
+
+**Headed, at the user's configuration** (`csheaded.cjs`): installed Chrome 154, 1920×991 at DPR 1, Intel UHD (D3D11).
+- Work's last work → DEPTH in four gestures (1,175 louver frames).
+- One more: the blinds open onto the bench, on 01. One up: the blinds close, DEPTH (95 seam frames both ways).
+- Four back to Work. Console clean.
+- Film `tools/diag/out/cross/film/headed-1920x991.webm`, Chrome's own recording of its window. Stills
+  `tools/diag/out/cross/headed/`.
+
+**Stills of the seam** at each r, with the real bench underneath: `tools/diag/csbenchshot.cjs` and
+`csbenchsheet.cjs`, written to `tools/diag/out/cross/bench/`.
+
+**Flag off.** `npm run generate` with the flag unset, compared file by file with the live `1e663bd` package:
+- **every JavaScript file is byte-identical**, with 0 Cross Section markers;
+- the HTML and payloads differ only by the build ID and timestamp;
+- `.htaccess` differs only by the CSP hash of Nuxt's inline config script, which carries the build ID (proven by
+  hashing it).
+
+`npx nuxt typecheck`: clean.
+
+**Not run: the full flag-off gate (`run6.sh`).** It is asked for first, as agreed.
+
 ## Working rules for this worktree
 
 - **Own ports, build folder and gate log:** `SERVE_PORTS`, `BUILD_DIR=../builds/cross-section`,

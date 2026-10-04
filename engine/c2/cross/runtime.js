@@ -10,7 +10,7 @@
  *
  * Imported only where __CROSS__ is true.
  */
-import { CS_Z0, CS_Z1, bandStops, ease, layout, louverClock, pose, sides, wordAngle } from './slats.js'
+import { CS_Z0, CS_Z1, bandStops, ease, layout, louverClock, pose, revealPose, sides, wordAngle } from './slats.js'
 import { EDGE_WORD, faceState } from './state.js'
 import { createMesh } from './mesh.js'
 import { FAMILY } from '../states.js'
@@ -31,7 +31,28 @@ const CSS = `
 .cs-word{position:absolute;left:0;top:0;white-space:nowrap;opacity:0;will-change:transform,opacity;
   font:900 clamp(46px,9.5vw,150px)/.8 ${FAMILY};letter-spacing:-.01em;color:#f3dcbd}
 .cs-dom.warm .cs-word{text-shadow:0 0 34px rgba(255,187,108,.28)}
+html[data-c2='cs'] body #surface{display:block;z-index:60}
+html[data-c2='cs'] body #ui{display:block;z-index:61}
+html[data-c2='cs'] body #ui,html[data-c2='cs'] body #ui *{pointer-events:none!important}
+html[data-c2='cs'],html[data-c2='cs'] body{overflow:hidden;overscroll-behavior:none}
+html[data-c2='cs'] body #ui{--paper:#e7e6e0;--ink:#121212;--night:#0e0f11;--fg:var(--ink);
+  --mono:'Geist Mono',ui-monospace,monospace;--sans:'Geist Variable','Geist',system-ui,sans-serif;
+  --act-text:#9a4f22;--act-mark:#b8622f;--act-night:#d4875a;--act:var(--act-text);--act-rule:var(--act-mark);
+  font-family:var(--sans);-webkit-font-smoothing:antialiased;font-feature-settings:'ss01' on;-webkit-user-select:none;user-select:none}
+html[data-c2='cs'] body[data-tone=dark] #ui{--fg:var(--paper);--act:var(--act-night);--act-rule:var(--act-night)}
+html[data-c2='cs'] body[data-tone=media] #ui{--fg:var(--paper);--act:var(--paper);--act-rule:var(--paper)}
 `
+/*
+ * (The runtime's type and its custom properties are declared on html[data-c2='on'], engine/c2/style.css, so in 'cs'
+ * the strip's words fell back to the host's and changed face under opaque DEPTH: measured, 4866 px at 1440×900. The
+ * same values are given to #ui alone here — not to the page, whose bench must not change — and must follow style.css.)
+ */
+/*
+ * THE SEAM TO THE BENCH OWNS THE SCREEN A THIRD WAY (C3). 'on' is the runtime's screen and nothing else is shown; with
+ * no data-c2 at all it is the host's, and the runtime's DOM is hidden (base.css). 'cs' is both: the page the host has
+ * mounted underneath — the bench — and the canvas and the runtime's strip on top of it, taking no pointer, while the
+ * blinds open onto the page or close over it. Neither scrolls meanwhile. These rules ship only with the flag.
+ */
 
 export function createCross(surface, { atmosphere = CS_GLOW, breakName = null } = {}) {
   const gl = surface.gl
@@ -138,10 +159,18 @@ export function createCross(surface, { atmosphere = CS_GLOW, breakName = null } 
       word.style.opacity = (z > 0 && z < 1 ? inWord * (cz < 0 ? 0.45 : 1) : 0).toFixed(3)
       word.style.zIndex = cz < 0 ? '1' : '4'
     },
-    /** draw one frame of the pose set by at() */
+    /** the blinds opening onto the bench (C3): r = 0 is DEPTH, flat; r = 1 is nothing left over the page */
+    revealAt(r) {
+      Q = revealPose(L, clamp(r))
+      count = mesh.geometry(L, Q, sides, V.strip, V.H, V.dpr * (V.u || 1))
+      api.domAt(1)
+      return Q
+    },
+    /** draw one frame of the pose set by at() or revealAt() */
     render() {
       // the reference: atmosphere at 0.8 of the peak, the light at 0.78; without the warm glow, neither is warm
-      mesh.draw(V, Q, count, { gap: api.gap(), atmo: atmo ? Q.peak * 0.8 : 0, light: Q.peak * 0.78, warm: atmo ? 1 : 0 })
+      const reveal = Q.fade != null ? { fade: Q.fade, strip: Q.strip } : null
+      mesh.draw(V, Q, count, { gap: api.gap(), atmo: atmo ? Q.peak * 0.8 : 0, light: Q.peak * 0.78, warm: atmo ? 1 : 0, reveal })
     },
   }
   api.setAtmosphere(atmo)

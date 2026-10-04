@@ -39,7 +39,7 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
 | R10 | Safari'de adın ince kesimle çizilmesi | P1 | Önce gerçek iPhone | R22 |
 | R11 | Yavaş ağda ilk kare (8,9 sn) | P2 | Önce değerlendirme | — |
 | R13 | Gövde metni ve tipografik hiyerarşi | P1 | Karar bekliyor (ölçek) | — |
-| R14 | Cross Section (İşler → Lab köprüsünün yerine) | P1 | **Sürüyor** (Faz B; `feature/cross-section`) | R2, R15 |
+| R14 | Cross Section (İşler → Lab köprüsünün yerine) | P1 | **Sürüyor** (Faz C, C3 onay bekliyor; `feature/cross-section`) | R2, R15 |
 | R15 | Tempo, ilerleme göstergesi, performans bütçesi | P2 | Karar bekliyor | R14 |
 | R17 | Yayın (DEPLOYMENT.md, CSP, canlı yedeği) | P0 | **Bitti** (2026-10-03, `b8918dc` canlıda) | — |
 | R18 | Awwwards başvurusu (Developer Award) | P0 | Karar bekliyor (tarih) | R17, R9, R22, R23 |
@@ -168,7 +168,7 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
   - **Yörünge halkası yok.**
   - **Sert bir fiske o anı asla atlamaz**: kesit anı tek bir hareketle geçilemez (R24 ve bir-hareket-bir-durak
     kuralıyla aynı aile; Cross Section'ın kendi kapısında ayrıca sınanır).
-- **Durum: sürüyor (2026-10-03).** Dal `feature/cross-section`, worktree `emrah-portfolio-cross`. Faz A (yalnız
+- **Durum: sürüyor (2026-10-04: Faz C, C3 onay bekliyor).** Dal `feature/cross-section`, worktree `emrah-portfolio-cross`. Faz A (yalnız
   okuma, plan) onaylandı; Faz B (sahne, `?cross=1` arkasında, yalnız geliştirmede) başladı. Kaynak belge:
   `docs/CROSS-SECTION.md`. Referans demo: `docs/reference/cross-section-v2.html`.
 - **Karar (2026-10-03, Faz A onayı):**
@@ -215,6 +215,16 @@ tamamlandı; R26 kararla kapandı). Kalan her madde bir karar, gerçek cihaz ya 
   - **Bayrak kapalı build.** Canlı paketle bayt bayt aynı JavaScript.
   - **Bench çıkışı şimdilik yolculukla** (C3 perde açılmasını getirecek).
   - **Açık:** iPhone'daki ince sözcük sonucu bildirilmedi (R10).
+- **C2 onaylandı (2026-10-04).** Kullanıcının masaüstünde, sert yenilemeden sonra sahne baştan sona çiziliyor. İş
+  dikişi onaylandı. Kullanıcının DPR'si şu an 1; Cross Section kontrolleri DPR 1 ve 2'de koşuyor (KNOWN-ISSUES, R9).
+  Masaüstü düzeyinde ekran görüntüsü ya da kayıt asla alınmaz.
+- **Faz C, C3 (2026-10-04, onay bekliyor): DEPTH ⇄ bench dikişi.** Ayrıntı `docs/CROSS-SECTION.md`'de.
+  - **İleri.** DEPTH'ten bir jest daha: panjur canlı bench'in üstünde açılıyor. Rota opak DEPTH'in altında değişiyor
+    (`'cs'` ekran sahipliği); bench 01'de açılıyor.
+  - **Geri.** Bench'te 01'deyken yukarı jest panjuru kapatıyor, DEPTH'e varılıyor. Lab'dan yukarı çıkış artık
+    Cross Section'ı atlamıyor; yol iki yönde de 5 jest. Lab şeridindeki İŞLER bağlantısı bir atlama olarak kalıyor.
+  - **Yedek hazır:** `CS_REVEAL = 'fade'` (rota DEPTH altında değişir, kanvas solar). Hazır olmayan bir çalışma
+    ortamında Lab'dan yukarı jest DEPTH'e kesmeyle varıyor; atlama yok.
 - **Dosyalar:**
   - `engine/c2/main.js`: `startBridge`, `A.mode === 'bridge'`
   - `engine/c2/states.js`

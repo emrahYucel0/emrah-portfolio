@@ -5,6 +5,27 @@ attempt does not start from zero.
 
 ---
 
+## R9 (row shimmer on dark grounds): the user's desktop display is DPR 1, not 2 — measurements that assumed 2
+
+**Reported by the user, 2026-10-04.** On their desktop (Windows, Chrome, Intel UHD) `devicePixelRatio` reads **1**
+right now, at a 1920×991 window. Earlier they had read 2, most likely on another display or at another Windows scaling
+setting. The ratio follows the display and its scaling, so the same machine can be either.
+
+**Why it matters for R9.** The shimmer is still unexplained (ROADMAP R9). The strongest relation found so far is the
+row spacing measured in backing-store pixels at draw time, and that depends directly on the ratio. Several shimmer
+measurements so far assumed DPR 2, among them the Linefield session's MacBook figures and Cross Section's Phase B stills
+at 1440×900@2. A visitor at DPR 1 draws different backing-store spacings: at 1 the desktop cap of 1.5 (`main.js`,
+`V.dpr`) never applies, so the 7 px rows are exactly 7 device px.
+
+**What follows.**
+- R9's measurements are to be read with the DPR they were taken at, and repeated at DPR 1 before any conclusion.
+- **The Cross Section checks run at both DPR 1 and 2** (user decision 2026-10-04): `csbenchseam.cjs`, `csseam.cjs`
+  and `cross.cjs` include 1440×900@1 and 1920×991@1 beside the @2 sizes, and `csheaded.cjs` records at the display's
+  own ratio (1 on this machine as it stands).
+- Nothing is changed in the engine for this. It is a measuring rule, not a fix.
+
+---
+
 ## İstanbul Şehir İçi — the heading is printed twice during the opening reveal
 
 **Where** Entering the first project on a phone. For roughly the first third of a second of the release, the

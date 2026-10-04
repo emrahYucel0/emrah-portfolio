@@ -27,7 +27,7 @@
  *
  * Imported only where __CROSS__ is true.
  */
-import { CS_ORBIT_STEPS, CS_Z0, CS_Z1, bandStops, louverClock } from './slats.js'
+import { CS_ORBIT_STEPS, CS_REVEAL_S, CS_Z0, CS_Z1, bandStops, louverClock } from './slats.js'
 import { CS_BAND_K, CS_FREE_K, CS_FREE_RATE } from './input.js'
 import { createCross } from './runtime.js'
 import { faceState } from './state.js'
@@ -42,6 +42,13 @@ export const CS_BANDS = 3
 const NIGHT_AT = 0.42
 /** how many frames the louvers wait at an end for C2's own frame of it before C2 is asked to draw that face directly */
 const CS_WAIT = 2
+/*
+ * THE SEAM TO THE BENCH (C3, R14 decision 5). 'blinds' is the target: past DEPTH the louvers open onto the bench, which
+ * is already mounted underneath, and close over it on the way back. 'fade' is the fallback, ready if the blinds prove
+ * fragile on a phone or in the gate: the route still changes under opaque DEPTH, and the canvas then fades over the
+ * bench (or in over it, going back). Never a hard cut either way. A context whose louvers were switched off uses it.
+ */
+export const CS_REVEAL = 'blinds'
 
 export function createPlace(surface, { reduced = false } = {}) {
   const ZS = bandStops(CS_ORBIT_STEPS)
@@ -71,6 +78,14 @@ export function createPlace(surface, { reduced = false } = {}) {
    * as cuts, the way reduced motion does — never a frozen picture. In development every pass is checked.
    */
   let broken = false, probed = false
+  /*
+   * THE REVEAL'S OWN CLOCK. `rv` 0 is DEPTH, closed; 1 is open — nothing of the canvas left over the bench. `rvWait`
+   * holds it at its start until main.js has seen the bench mounted underneath (forward) — opening onto a page that is
+   * not there yet would show whatever is. `rvHold` keeps the material still from the moment the blinds start closing
+   * until C2 has drawn DEPTH itself, so that frame is the one the closed louvers showed.
+   */
+  let rv = 0, rvT = 0, rvOn = false, rvWait = false, rvHold = false, rvMode = CS_REVEAL, rvClosed = null, rvFrozen = null, rvFadeDrawn = false
+  const revealName = GL_DEV && typeof location !== 'undefined' ? new URLSearchParams(location.search).get('csreveal') : null
   /*
    * THE AUDIT (harnesses only, off unless asked for). The seams are built rather than tuned, and this is how that is
    * checked rather than assumed: on every landing, the face the louvers carried is compared with the frame C2 then
@@ -105,7 +120,7 @@ export function createPlace(surface, { reduced = false } = {}) {
     /** and a louver frame is due: they moved, or the frame on the canvas is not of where they are */
     get due() { return p !== drawnAt || bandsLeft > 0 },
     /** the physics must stand still while the louvers are the picture, and for the one frame after it, when C2 takes over */
-    get holdPhysics() { return !reduced && !broken && ((p > 0 && p < 1) || p !== P[x] || wasMoving) },
+    get holdPhysics() { return rvOn || rvHold || (!reduced && !broken && ((p > 0 && p < 1) || p !== P[x] || wasMoving)) },
     get broken() { return broken },
     build(v) {
       V = v
@@ -195,6 +210,8 @@ export function createPlace(surface, { reduced = false } = {}) {
       const carried = landing ? scene.mesh.read(side) : null
       scene.mesh.capture(side)
       if (landing && carried) landings.push({ side, at: performance.now(), ...compare(carried, scene.mesh.read(side)) })
+      // up from the bench: the closed blinds' last frame against the first frame C2 draws of DEPTH
+      if (rvClosed && side === 1) { landings.push({ side, kind: 'bench', at: performance.now(), ...compare(rvClosed, scene.mesh.read(1)) }); rvClosed = null }
       held = side
       valid[side] = true
       valid[1 - side] = false
@@ -229,7 +246,7 @@ export function createPlace(surface, { reduced = false } = {}) {
     check(pass) { if (GL_DEV && gl) checkGL(gl, pass) },
     /** the line and the word, where the scene puts them; hidden whenever the visitor is not on the place */
     domAt(on) { if (scene) { scene.dom.style.visibility = on ? 'visible' : 'hidden'; if (on) scene.domAt(p) } },
-    probe: () => ({ x, p, target: P[x], held, valid: valid.slice(), bandsLeft, turnPending, back2work, broken, positions: P }),
+    probe: () => ({ x, p, target: P[x], held, valid: valid.slice(), bandsLeft, turnPending, back2work, broken, positions: P, reveal: { on: rvOn, r: rv, target: rvT, wait: rvWait, hold: rvHold, mode: rvMode } }),
     audit(on) { audit = !!on; landings.length = 0 },
     landings: () => landings.slice(),
     /**
@@ -241,6 +258,83 @@ export function createPlace(surface, { reduced = false } = {}) {
       const face = scene.mesh.read(held)
       scene.at(p); scene.render(); drawnAt = -1
       return { side: held, ...compare(face, scene.mesh.readCanvas()) }
+    },
+    // ── the seam to the bench (C3) ──────────────────────────────────────────────────────────────────────────
+    get revealing() { return rvOn },
+    get reveal() { return { on: rvOn, r: rv, target: rvT, wait: rvWait, hold: rvHold, mode: rvMode } },
+    /**
+     * Begin the reveal: dir +1 opens DEPTH onto the bench (held until revealGo(): the bench must be underneath first),
+     * dir -1 closes the blinds over it, from nothing at all to DEPTH. The place stands at DEPTH either way.
+     */
+    revealBegin(dir) {
+      rvMode = reduced || broken || !scene || revealName === 'fade' || CS_REVEAL === 'fade' ? 'fade' : 'blinds'
+      rvOn = true; rvWait = dir > 0; rvHold = true; rvClosed = null; rvFadeDrawn = false
+      if (dir > 0) { rv = 0; rvT = 1 } else { rv = 1; rvT = 0 }
+      x = LAST; p = 1; turnPending = false; back2work = false
+    },
+    revealGo() { rvWait = false },
+    /** harness only: hold the reveal at r (a still of the seam with the real page underneath), or let it run on (null) */
+    revealFreeze(r) { rvFrozen = r == null ? null : clamp(r) },
+    /** the clock; true on the frame the reveal reaches its end (that frame is still drawn by revealRender) */
+    revealAdvance(et) {
+      if (!rvOn || rvWait) return false
+      if (rvFrozen != null) { rv = rvFrozen; return false }
+      const k = Math.min(et, 1 / 20) / CS_REVEAL_S
+      rv = rvT > rv ? Math.min(rvT, rv + k) : Math.max(rvT, rv - k)
+      return rv === rvT
+    },
+    /**
+     * One frame of the reveal. Returns how opaque the runtime's own DOM (the strip's words) and the canvas element are
+     * to be: the blinds thin the strips with the louvers and keep the canvas; the fade takes both together.
+     */
+    revealRender() {
+      const smooth = (t) => t * t * (3 - 2 * t)
+      if (rvMode === 'fade') {
+        // going up, the canvas fades in over the bench, so it must hold DEPTH first: the closed blinds, drawn once
+        // (forward it still holds the frame C2 drew at DEPTH, and is only faded)
+        if (rvT === 0 && scene && !broken && !rvFadeDrawn) {
+          if (!valid[1]) faceNow(1, 'cross:face (fade)')
+          scene.revealAt(0); scene.render(); drawnAt = -1
+          rvFadeDrawn = true
+          // (the audit reads it now: the canvas holds it only until the browser has taken this frame)
+          if (audit) rvClosed = scene.mesh.readCanvas()
+          if (GL_DEV && checkGL(gl, 'cross:reveal (fade)').length) breakOff('a WebGL error in the fade')
+        }
+        const a = 1 - smooth(rv)
+        return { ui: a, canvas: a }
+      }
+      if (GL_DEV) checkGL(gl, 'before cross:reveal (C2 or the page)')
+      // the face the blinds carry is DEPTH: kept from C2's frame at rest going forward, drawn by C2 now going back
+      if (!valid[1]) faceNow(1, 'cross:face (reveal)')
+      const Q = scene.revealAt(rv)
+      // (the calibration break `revealleft` leaves a tenth of the dark strips on the canvas when it is handed back)
+      if (breakName === 'revealleft') Q.strip = Math.max(Q.strip, 0.12)
+      scene.render()
+      drawnAt = -1
+      // the audit: the closed blinds' last frame, against the frame C2 then draws at DEPTH (capture() compares)
+      if (audit && rv === 0 && rvT === 0) rvClosed = scene.mesh.readCanvas()
+      if (GL_DEV && checkGL(gl, 'cross:reveal').length) breakOff('a WebGL error in the reveal')
+      return { ui: Q.words, canvas: 1 }
+    },
+    /** the reveal has finished: forward, the place is left for the Lab; back, it rests at DEPTH (the hold ends later) */
+    revealEnd() { rvOn = false; rvWait = false; if (rvT === 1) { rvHold = false; x = LAST; p = 1 } },
+    /** C2 has the screen again after the blinds closed: the material may move */
+    revealRelease() { rvHold = false },
+    /**
+     * Harness only, at DEPTH at rest: the blinds' first frame against the frame C2 drew there (which face 1 holds), and
+     * their last frame — every pixel of it should let the bench through.
+     */
+    revealIdentity() {
+      if (!scene || held !== 1 || p !== 1) return null
+      const face = scene.mesh.read(1)
+      scene.revealAt(0); scene.render()
+      const first = compare(face, scene.mesh.readCanvas())
+      scene.revealAt(1); scene.render()
+      const last = scene.mesh.readCanvas()
+      let lit = 0
+      for (let i = 3; i < last.length; i += 4) if (last[i] !== 0) lit++
+      drawnAt = -1
+      return { first, last: { px: last.length / 4, lit } }
     },
     /** a harness holds the passage at a position, as a gesture would have left it */
     set(i) { x = clamp(Math.round(i), 0, LAST); p = P[x]; turnPending = false; back2work = false },

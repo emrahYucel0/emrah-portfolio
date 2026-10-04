@@ -153,6 +153,38 @@ export function pose(L, p) {
   return { p, ps, peak, P, O, louvers: out, dark, eye: [O[0], O[1], P] }
 }
 
+/*
+ * THE BLINDS OPEN ONTO THE BENCH (C3, R14 decision 5). Past DEPTH the louvers carry on turning — 180° to 270°, edge-on
+ * again — in the same wave down the field, and what shows between them is the page underneath: the bench, already
+ * mounted. Nothing lifts or swings here (no peak): the passage is over and this is only the blinds opening. At r = 0
+ * the pose is pose(L, 1) exactly — DEPTH, flat — so the reveal begins from the frame the visitor was looking at.
+ *
+ * `fade` is how much of the louvers is left: they thin to their edges and then the edges go too, so the last frame
+ * is nothing at all over the bench. The edges at this second edge-on are ink, not copper: copper is the crossing's.
+ */
+export const CS_REVEAL_S = 1.15
+export function revealPose(L, r) {
+  const { W, h, louvers } = L
+  const P = Math.max(640, W * 1.09)
+  const O = [W * 0.52, h / 2]
+  const out = louvers.map(({ top, hl, y, wave, cw }) => {
+    // the same stagger as the crossing's: the wave and the centre lead, so the field opens as it closed
+    const phase = 0.035 * wave + 0.04 * (1 - cw)
+    const rot = 180 + 90 * ease(r, 0.04 + phase, 0.7 + phase)
+    const o = [W / 2, top + hl / 2]
+    const M = chain(T(o[0], o[1], -HALF), RX(rot), T(-o[0], -o[1], 0))
+    const ev = Math.pow(Math.abs(Math.sin(rot * DEG)), 1.35) * 0.45
+    return { M, Minv: inverse(M), top, hl, rot, ev, bright: 1 }
+  })
+  /*
+   * THE STRIPS CHANGE HANDS ONE LAYER AT A TIME. The runtime's strip words (light on its dark paper) and the bench's
+   * (dark on cream) sit almost on top of each other, so a crossfade of the two showed both, doubled, on a grey band.
+   * The runtime's words go first, while its dark paper still covers the bench's strip; then the paper thins and the
+   * bench's strip, words and all, is simply there. Going back up it is the same in reverse.
+   */
+  return { p: 1, ps: 1, peak: 0, P, O, louvers: out, dark: 1, eye: [O[0], O[1], P], fade: 1 - ease(r, 0.62, 0.97), words: 1 - ease(r, 0.06, 0.3), strip: 1 - ease(r, 0.3, 0.7) }
+}
+
 /**
  * Which faces the eye can see. A louver is a thin box, so the eye is always on one side of each pair of
  * opposite faces: +1 front, -1 back; and of its two edges, -1 the top one, +1 the bottom one, 0 neither.

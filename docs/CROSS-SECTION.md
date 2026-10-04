@@ -852,8 +852,8 @@ cleanly. Before the release, a responsive pass was asked for, like Linefield's.
 
 ### The responsive pass (2026-10-04)
 
- runs quick checks on the real runtime at every size, in four groups.  makes an
-overview of SURFACE, EDGE beside and DEPTH per size (). At each size:
+`tools/diag/csresp.cjs` runs quick checks on the real runtime at every size, in four groups. `csrespsheet.cjs` makes an
+overview of SURFACE, EDGE beside and DEPTH per size (`tools/diag/out/cross/resp/<group>-overview.png`). At each size:
 - SURFACE and DEPTH's ink, as C2 sets it, at least 8 px clear of the strips and the edges;
 - the louvers' row pitch no finer than 5.2 px;
 - the blinds' slats at about the phone's 3.5% share;
@@ -904,11 +904,11 @@ overview of SURFACE, EDGE beside and DEPTH per size (). At each size:
    louver, so it holds for the turned-over back too). 1536×864@1.25 is now **0 px** at both ends. Integer ratios
    are unchanged, and the phones at 1.75 measure the same or better.
 
-Regression after both: ,  (1536×864@1.25, 375×667@2, 1920×991@1, 390×844@3),
- (1536×864@1.25, 375×667@2) and  all PASS.
+Regression after both: `cross.cjs`, `csbenchseam.cjs` (1536×864@1.25, 375×667@2, 1920×991@1, 390×844@3),
+`csseam.cjs` (1536×864@1.25, 375×667@2) and `csrotate.cjs` all PASS.
 
-**Frame cost at the largest sizes** (, the GPU's own timer, this machine's Intel UHD, median ms). The debug
-entry now composes as the site does past 1920×1080, and  applies R20's proposed ceiling.
+**Frame cost at the largest sizes** (`csperf.cjs`, the GPU's own timer, this machine's Intel UHD, median ms). The debug
+entry now composes as the site does past 1920×1080, and `?cspxcap=` applies R20's proposed ceiling.
 
 | size (backing store) | the passage | an ordinary place |
 |---|---|---|

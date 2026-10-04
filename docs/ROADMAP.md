@@ -35,7 +35,7 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 | R1 | Birleştirme: düzeltme turu 2 → `main`, yayın dalı | P0 | **Bitti** (2026-10-02, `4d64ac8`) | — |
 | R4 | Özel imleç | P2 | Kısmen: halkanın boyutu ve rengi bekliyor | — (R2 bitti) |
 | R6 | Lab bench girişleri: okunur boyut, üzerine gelince ön gösterim | P2 | Kısmen: ön gösterimin biçimi bekliyor | — |
-| R9 | Koyu zeminlerde satır titreşimi | **P0** (R18 için) | **Sürüyor** (`feature/image-quality`): aday mekanizma ölçülüyor | — |
+| R9 | Koyu zeminlerde satır titreşimi | **P0** (R18 için) | **Sürüyor** (`feature/image-quality`): adım 1 bitti, model tutuyor; adım 2 (prototip) onay bekliyor | — |
 | R10 | Safari'de adın ince kesimle çizilmesi | P1 | **Kapandı** (2026-10-04: iPhone'da kalın; Playwright WebKit artefaktı) | R22 |
 | R11 | Yavaş ağda ilk kare (8,9 sn) | P2 | Önce değerlendirme | — |
 | R13 | Gövde metni ve tipografik hiyerarşi | P1 | Karar bekliyor (ölçek) | — |
@@ -119,8 +119,20 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
   - **Adım 1 (kullanıcı kararı 2026-10-04):** yalnız ölçüm, motor değişmez. Model gerçek build'de DPR 1, 1,5 ve
     2'de; Full-Stack, bir işin içi, Linefield'ın koyu yarısı ve krem bir kontrol üzerinde sınanır. Model tutmazsa
     durulur ve rapor edilir.
+  - **Adım 1 bitti (2026-10-04): model tutuyor** (arka bellekte). Ayrıntı ve tablo: `docs/IMAGE-QUALITY.md`;
+    harness `tools/diag/iqrows.cjs`.
+    - Serbest parametre yok: her satırın kalınlığı durumun kendi dokusundan okunuyor.
+    - Sınanabilen her yapılandırmada sapma en çok %0,7. Bu yapılandırmalar: dört sahne DPR 1,5 ve 2'de ve
+      2560×1440@1'de, krem kontrol her yerde.
+    - Komşu satırların ışığı koyu zeminde 1,37–2,33 kat farklı (Linefield'ın koyu yarısı 2,33), kremde 1,04–1,22
+      kat. Linefield'ın 73,5'i açıklandı: oran 1,5'te 10,5 px aralık.
+    - DPR 1, 1920×991'de koyu zeminlerin satırları dururken tek bir konumda; satırlar düzgün görünüyor, kareden
+      kareye ışık değişimi yaklaşık %1,5. Büyük fark oran 1,5'te, `V.u` > 1 olan büyük ekranlarda ve satırlar
+      hareket ederken çıkıyor. **Hareket ölçülmedi.**
+    - Açık kalanlar: kesirli cihaz boyutunda (1920×991@1,5) ekranın görüntüsü yeniden örnekleniyor; DPR 2'deki
+      1,5 → 2 büyütmenin modeli tam değil; algı ve gerçek cihaz kullanıcının gözünde.
   - "Satır aralığını tamsayıya kilitlemek" adayı bırakıldı: dalgalanan satırları düzeltmiyor, `V.u` ve R20 ile
-    çakışıyor.
+    çakışıyor. Ölçüm bunu doğruladı: DPR 1'de satırlar dururken zaten düzgün, hareket edince fark geri geliyor.
 - **Dosyalar:** `engine/c2/main.js` (`V.dpr`, `measure`), `engine/c2/surface.js` (shader, `resize`),
   `engine/c2/linefield/` (kendi aralık hesabı), `docs/LINEFIELD.md` (ölçümler).
 - **Bağımlılık:** yok. Gerçek MacBook ekranında görsel onay gerekiyor (R22). R20 ile birlikte ölçülmeli.

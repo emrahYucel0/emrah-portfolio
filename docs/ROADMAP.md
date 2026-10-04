@@ -35,7 +35,7 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 | R1 | Birleştirme: düzeltme turu 2 → `main`, yayın dalı | P0 | **Bitti** (2026-10-02, `4d64ac8`) | — |
 | R4 | Özel imleç | P2 | Kısmen: halkanın boyutu ve rengi bekliyor | — (R2 bitti) |
 | R6 | Lab bench girişleri: okunur boyut, üzerine gelince ön gösterim | P2 | Kısmen: ön gösterimin biçimi bekliyor | — |
-| R9 | Koyu zeminlerde satır titreşimi | **P0** (R18 için) | **Sürüyor** (`feature/image-quality`): adım 1 bitti, model tutuyor; adım 2 (prototip) onay bekliyor | — |
+| R9 | Koyu zeminlerde satır titreşimi | **P0** (R18 için) | **Sürüyor** (`feature/image-quality`): adım 2 (prototip A/B/C) kuruldu ve ölçüldü; kullanıcının görsel karşılaştırmasını bekliyor | — |
 | R10 | Safari'de adın ince kesimle çizilmesi | P1 | **Kapandı** (2026-10-04: iPhone'da kalın; Playwright WebKit artefaktı) | R22 |
 | R11 | Yavaş ağda ilk kare (8,9 sn) | P2 | Önce değerlendirme | — |
 | R13 | Gövde metni ve tipografik hiyerarşi | P1 | Karar bekliyor (ölçek) | — |
@@ -133,6 +133,22 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
       1,5 → 2 büyütmenin modeli tam değil; algı ve gerçek cihaz kullanıcının gözünde.
   - "Satır aralığını tamsayıya kilitlemek" adayı bırakıldı: dalgalanan satırları düzeltmiyor, `V.u` ve R20 ile
     çakışıyor. Ölçüm bunu doğruladı: DPR 1'de satırlar dururken zaten düzgün, hareket edince fark geri geliyor.
+  - **Kullanıcının gözlemi (2026-10-04):** DPR 1'de koyu zeminler dururken sakin; titreşim yalnız satırlar hareket
+    ederken (geçiş, kaydırma, imleç dalgası, Linefield pasajı). Ekran DPR 2 iken dururken de vardı. Model bunu
+    söylüyor.
+  - **Adım 2 (2026-10-04): prototip kuruldu ve ölçüldü; kullanıcının görsel karşılaştırmasını bekliyor.**
+    Ayrıntı ve tablolar: `docs/IMAGE-QUALITY.md`.
+    - `?r9=a` (üçgen süzgeç), `=b` (+ doğrusal ışıkta karıştırma), `=c` (doğrusal karıştırma yalnız koyu
+      zeminde). Her biri zeminin ortalama parlaklığını korur.
+    - Anahtarsız build, 8da676c ile piksel piksel aynı (`r9ident.cjs`).
+    - Hareket halinde, hareket eden satırların ışığının kareden kareye değişimi (p50), DPR 1'de, off → B:
+      geçiş %32,9 → %0,8; kaydırma %12,9 → %0,4; imleç dalgası %24,1 → %1,6; pasaj %24,1 → %1,7.
+    - A ancak üçte birine indiriyor. C koyu zeminde B ile aynı; kremde ve pasajın krem yarısında A gibi.
+    - Dururken Linefield'ın 2,33'ü (eski 73,5) B ve C'de 1,00 oluyor.
+    - Parlaklık her yerde %4 içinde. İstisna: Linefield'ın koyu yarısı B ve C'de %8 koyu; seçimden sonra
+      ayarlanabilir.
+    - Önizleme: bu bilgisayarda `127.0.0.1:4971/tr?r9=b`, iPhone'da `192.168.1.5:4972/tr?r9=b`. Sağ üstte kırmızı
+      rozet var; rozet yoksa yayındaki shader.
 - **Dosyalar:** `engine/c2/main.js` (`V.dpr`, `measure`), `engine/c2/surface.js` (shader, `resize`),
   `engine/c2/linefield/` (kendi aralık hesabı), `docs/LINEFIELD.md` (ölçümler).
 - **Bağımlılık:** yok. Gerçek MacBook ekranında görsel onay gerekiyor (R22). R20 ile birlikte ölçülmeli.

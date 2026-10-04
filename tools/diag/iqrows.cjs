@@ -45,6 +45,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const args = process.argv.slice(2)
 const port = args[0]
 const loc = args[1] && !args[1].startsWith('--') ? args[1] : 'tr'
+// where the scenes are entered, and with which query: iqr9.cjs points this at another port and adds ?r9=…
+const site = { origin: 'http://127.0.0.1:' + port, loc, q: '' }
 const only = (args.find((a) => a.startsWith('--only=')) || '').slice(7)
 const cfgArg = (args.find((a) => a.startsWith('--cfg=')) || '').slice(6)
 const OUT = 'out/iq/rows'
@@ -279,7 +281,7 @@ const decodeCol = (b64) => {
 
 async function enter(p, scene, STOP) {
   if (scene.key === 'work') {
-    await p.goto('http://127.0.0.1:' + port + '/' + loc + '/work/ege', { waitUntil: 'networkidle', timeout: 120000 })
+    await p.goto(site.origin + '/' + site.loc + '/work/ege' + site.q, { waitUntil: 'networkidle', timeout: 120000 })
     await p.waitForFunction(() => window.__lab && window.__lab.A.mode === 'world' && !window.__lab.A.busy, null, { timeout: 90000 })
     await sleep(2600)
     // the first frame the surface actually draws, with rows over most of its height
@@ -295,7 +297,7 @@ async function enter(p, scene, STOP) {
     }
     throw new Error('no drawn frame in the work')
   }
-  await p.goto('http://127.0.0.1:' + port + '/' + loc, { waitUntil: 'networkidle', timeout: 120000 })
+  await p.goto(site.origin + '/' + site.loc + site.q, { waitUntil: 'networkidle', timeout: 120000 })
   await p.waitForFunction(() => window.__lab && window.__lab.A.mode === 'index', null, { timeout: 90000 })
   await sleep(2800)
   const place = scene.key === 'fullstack' ? 'system' : scene.key === 'creative' ? 'creative' : 'linefield'
@@ -383,7 +385,10 @@ function groundAt(st, T, x, y) {
 const hwOf = (st, tone) => st.thick * (0.5 + tone * 1.15 * st.wgain)
 const outside = (boxes, x, y) => !boxes.some((b) => x >= b[0] && x <= b[2] && y >= b[1] && y <= b[3])
 
-;(async () => {
+// the pieces iqr9.cjs reuses, so both harnesses find and judge rows the same way
+module.exports = { site, rowsOf, groundAt, hwOf, outside, readBacking, decodeCol, enter, stateOf, BINS }
+
+if (require.main === module) (async () => {
   const b = await pw.chromium.launch({ channel: 'chrome' })
   const results = []
   console.log('== R9 STEP 1: the sub-pixel model against the real build, http://127.0.0.1:' + port + '/' + loc)

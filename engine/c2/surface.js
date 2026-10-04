@@ -35,6 +35,7 @@ precision highp sampler2D;
 
 uniform vec2 uRes;
 uniform float uDpr;
+uniform int uR9;        // R9 PROTOTYPE (?r9=a|b|c): 0 = the shipped coverage and mixing, untouched
 uniform float uTime;
 uniform float uShiver;
 uniform sampler2D uPhys;
@@ -113,6 +114,25 @@ float hash(float n) { return fract(sin(n * 12.9898 + 4.1414) * 43758.5453); }
 #define VARIANT_ROW(a, r, sol) (a)
 #endif
 
+/*
+ * R9 PROTOTYPE — HOW MUCH OF A PIXEL A ROW COVERS (docs/IMAGE-QUALITY.md).
+ *
+ * The shipped answer is a smoothstep across the row's edge. It does not preserve area: a row narrower than a pixel
+ * gives off a different amount of ink depending on where its centre falls inside the pixel, and on a dark ground
+ * that swing is up to 3x. The prototypes integrate the row (a band 2·hw wide) against a tent one backing pixel in
+ * radius instead. Tents one pixel apart sum to exactly one, so the ink a row lays down is the same at every phase.
+ */
+float tentCdf(float x, float r) {
+  if (x <= -r) return 0.0;
+  if (x >= r) return 1.0;
+  return x < 0.0 ? 0.5 * (x + r) * (x + r) / (r * r) : 1.0 - 0.5 * (r - x) * (r - x) / (r * r);
+}
+float cover(float dist, float hw, float aa) {
+  if (uR9 == 0) return smoothstep(hw + aa, hw - aa, dist);
+  float r = 1.0 / uDpr;
+  return tentCdf(hw - dist, r) - tentCdf(-hw - dist, r);
+}
+
 float rows(float x, float m, vec2 gm, sampler2D C, sampler2D D, vec4 R, vec4 K, vec4 G, vec4 H, vec4 M, vec4 J,
            float dev, float mem, float disturb, out float order) {
   float s = R.x, f = R.y, wt = R.z, th = R.w;
@@ -161,6 +181,10 @@ float rows(float x, float m, vec2 gm, sampler2D C, sampler2D D, vec4 R, vec4 K, 
     // the variant is told whether this sample is inside a letter: type and ground are different materials, and
     // a perspective that thins one must not thin the other
     hw = VARIANT_HW(hw, glen, solid);
+    // R9 PROTOTYPE: each variant keeps the ground's average brightness where it was (G.w, computed in JS per state
+    // and ratio). Thin rows are scaled; anything wider than a bare row is moved by the same amount, so type keeps
+    // its weight.
+    if (uR9 > 0) { float ref = th * 0.5; hw = hw <= ref ? hw * G.w : hw + (G.w - 1.0) * ref; }
     // static saturation tapers row by row along its ramp: a clean edge, not a saw
     float rfs = smoothstep(0.15, 0.95, TS.a + 0.04 * sin(r * 0.73));
     // dynamic saturation starts where information is densest: type first, then tone, then bare rows
@@ -172,7 +196,7 @@ float rows(float x, float m, vec2 gm, sampler2D C, sampler2D D, vec4 R, vec4 K, 
     float spr = s / glen;
     hw = mix(hw, max(hw, 0.62 * spr), smoothstep(2.1, 1.3, spr * uDpr) * step(0.001, hw) * VARIANT_FUSE);
     float aa = 0.75 / uDpr;
-    float a = smoothstep(hw + aa, hw - aa, dist) * clamp(hw * 4.0, 0.0, 1.0);
+    float a = cover(dist, hw, aa) * clamp(hw * 4.0, 0.0, 1.0);
     float keep = VARIANT_ROW(1.0, r, solid);
     a *= keep;
     if (a > ink) ink = a;
@@ -233,6 +257,19 @@ float opening(float px, vec4 F, vec4 FG, vec4 FK, inout float m, inout vec2 gm, 
   m = F.y + sg * md;
   rim = max(rim, le * clamp(h / 20.0, 0.0, 1.0) * (1.0 - inV));
   return inV;
+}
+
+/*
+ * R9 PROTOTYPE — WHERE INK AND PAPER ARE MIXED. Shipped: as sRGB values, which is what makes a thin pale row on a
+ * dark ground lose most of its light when it falls across two pixels. B mixes in linear light everywhere, C only
+ * on a dark ground; both write sRGB back, so everything downstream (the sweep between faces, beneath, the pen, the
+ * page) sees what it always saw.
+ */
+vec3 toLin(vec3 c) { return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(0.04045, c)); }
+vec3 toSrgb(vec3 c) { return mix(c * 12.92, 1.055 * pow(max(c, vec3(0.0)), vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c)); }
+vec3 shade(vec3 pap, vec3 ink, float a) {
+  bool lin = uR9 == 2 || (uR9 == 3 && dot(pap, vec3(0.2126, 0.7152, 0.0722)) < 0.5);
+  return lin ? toSrgb(mix(toLin(pap), toLin(ink), a)) : mix(pap, ink, a);
 }
 
 void main() {
@@ -332,11 +369,11 @@ void main() {
   if (uOverlay > 0.5) {
     inkAmt = max(iA, iB);
     inkCol = iA > iB ? inkA : inkB;
-    col = mix(uPap1, inkCol, inkAmt);
+    col = shade(uPap1, inkCol, inkAmt);
   } else {
     inkAmt = mix(iA, iB, b);
     inkCol = mix(inkA, inkB, b);
-    col = mix(mix(uPap0, inkA, iA), mix(uPap1, inkB, iB), b);
+    col = mix(shade(uPap0, inkA, iA), shade(uPap1, inkB, iB), b);
     bgc = mix(uBg0, uBg1, b);
   }
 
@@ -351,7 +388,7 @@ void main() {
       groundN *= 1.0 - inV;
     }
     float iN = rows(p.x, mb, gb, uC2, uD2, uR2, uK2, uG2, uH2, uM2, uJ2, 0.0, 0.0, 0.0, oN) * clip;
-    col = mix(col, mix(uPap2, uInk2, iN), beneath);
+    col = mix(col, shade(uPap2, uInk2, iN), beneath);
     ground = mix(ground, groundN, beneath);
     inkVis *= 1.0 - beneath;
     bgc = mix(bgc, uBg2, beneath);
@@ -376,6 +413,65 @@ void main() {
 const hex = (h) => [1, 3, 5].map((i) => Number.parseInt(h.slice(i, i + 2), 16) / 255)
 export { hex }
 
+/*
+ * R9 PROTOTYPE — THE VARIANT, AND THE BRIGHTNESS IT HAS TO KEEP (docs/IMAGE-QUALITY.md, step 2).
+ *
+ *   ?r9=a   tent coverage, ink and paper mixed as sRGB, as now
+ *   ?r9=b   tent coverage, mixed in linear light everywhere
+ *   ?r9=c   tent coverage, mixed in linear light on a dark ground only
+ *
+ * Without the key nothing changes. The choice is read once, when the page loads, and kept for the session, so a
+ * navigation inside the site keeps it; ?r9=off clears it.
+ *
+ * Each variant changes how bright a field of rows looks on average, not only how even it is: B makes pale rows on a
+ * dark ground about half as bright again, and dark rows on cream lighter. That would make the comparison about
+ * brightness rather than shimmer, so each variant scales a bare row's width until the ground's average light is
+ * what it is now: per state, at the current ratio (`r9Gain`). The same calculation as tools/diag/iqrows.cjs.
+ */
+const R9_MODES = { a: 1, b: 2, c: 3 }
+function r9Mode() {
+  try {
+    const q = new URLSearchParams(location.search).get('r9')
+    if (q === 'off') sessionStorage.removeItem('r9')
+    else if (q && R9_MODES[q]) sessionStorage.setItem('r9', q)
+    return R9_MODES[sessionStorage.getItem('r9')] || 0
+  } catch { return 0 }
+}
+const sstep = (e0, e1, x) => { const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t) }
+const lin1 = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4))
+const srgb1 = (l) => (l <= 0.0031308 ? l * 12.92 : 1.055 * Math.pow(Math.max(l, 0), 1 / 2.4) - 0.055)
+const lumLin = (c) => 0.2126 * lin1(c[0]) + 0.7152 * lin1(c[1]) + 0.0722 * lin1(c[2])
+const tentCdf = (x, r) => (x <= -r ? 0 : x >= r ? 1 : x < 0 ? 0.5 * (x + r) * (x + r) / (r * r) : 1 - 0.5 * (r - x) * (r - x) / (r * r))
+/** the light one bare row gives off, averaged over every phase it can have, as the shader would draw it */
+function rowLight(mode, linear, hw, R, ink, pap) {
+  const gp = lumLin(pap)
+  const edge = Math.min(1, Math.max(0, hw * 4))
+  let s = 0
+  for (let i = 0; i < 32; i++) {
+    const ph = i / 32
+    for (let j = -4; j <= 4; j++) {
+      const d = Math.abs(j - ph) / R
+      const a = (mode === 0 ? sstep(hw + 0.75 / R, hw - 0.75 / R, d) : tentCdf(hw - d, 1 / R) - tentCdf(-hw - d, 1 / R)) * edge
+      const c = [0, 1, 2].map((k) => (linear ? srgb1(lin1(pap[k]) + (lin1(ink[k]) - lin1(pap[k])) * a) : pap[k] + (ink[k] - pap[k]) * a))
+      s += Math.abs(lumLin(c) - gp)
+    }
+  }
+  return s / 32
+}
+const darkPaper = (p) => 0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2] < 0.5
+function r9Gain(mode, st, R) {
+  if (!mode) return 1
+  const key = mode + '|' + R
+  if (st._r9 && st._r9.key === key) return st._r9.k
+  const linear = mode === 2 || (mode === 3 && darkPaper(st.paper))
+  const hw = 0.5 * st.thick
+  const target = rowLight(0, false, hw, R, st.ink, st.paper)
+  let lo = 0.2, hi = 3
+  for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (rowLight(mode, linear, hw * m, R, st.ink, st.paper) < target) lo = m; else hi = m }
+  st._r9 = { key, k: (lo + hi) / 2 }
+  return st._r9.k
+}
+
 export function createSurface(canvas) {
   const gl = canvas.getContext('webgl2', { antialias: false, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance' })
   if (!gl) throw new Error('WebGL2 unavailable')
@@ -393,6 +489,15 @@ export function createSurface(canvas) {
   }
   const prog = link(VERT, FRAG)
   const cprog = link(VERT, COMPOSE)
+  const r9 = r9Mode()
+  // which variant is on screen, in a corner, so a screenshot or a phone can never be read as the wrong one
+  if (r9 && typeof document !== 'undefined') {
+    const tag = document.createElement('div')
+    tag.textContent = 'R9 ' + 'ABC'[r9 - 1]
+    tag.setAttribute('aria-hidden', 'true')
+    tag.style.cssText = 'position:fixed;right:6px;top:6px;z-index:2147483647;font:600 11px/1 ui-monospace,monospace;padding:3px 5px;background:#c0392b;color:#fff;pointer-events:none'
+    document.body.appendChild(tag)
+  }
   /*
    * VARIANTS — the same shader with one hook filled in.
    *
@@ -608,6 +713,7 @@ export function createSurface(canvas) {
       gl.useProgram(active)
       gl.uniform2f(L('uRes'), W.w, W.h)
       gl.uniform1f(L('uDpr'), W.dpr)
+      gl.uniform1i(L('uR9'), r9)
       gl.uniform1f(L('uTime'), api.time)
       gl.uniform1f(L('uShiver'), api.shiver)
       gl.uniform1f(L('uFront'), front)
@@ -622,7 +728,7 @@ export function createSurface(canvas) {
         const r = st.reg
         gl.uniform4f(L(`uR${i}`), st.spacing, st.freq, st.wave, st.thick)
         gl.uniform4f(L(`uK${i}`), st.fuse, st.total, st.texH, st.offY)
-        gl.uniform4f(L(`uG${i}`), r.a0, r.a1, st.lod ?? 0, 0)
+        gl.uniform4f(L(`uG${i}`), r.a0, r.a1, st.lod ?? 0, r9 ? r9Gain(r9, st, W.dpr) : 0)
         gl.uniform4f(L(`uJ${i}`), r.va0, r.va1, st.split ? 1 : 0, st.fill ?? 0)
         gl.uniform4f(L(`uH${i}`), r.holdA, st.toneThick ?? 1, r.phase, st.amp * (st.ampK ?? 1))
         gl.uniform4f(L(`uM${i}`), st.memThick ?? 0.5, st.memTone ?? 0.1, st.flash ?? 0, st.vis ?? 1)

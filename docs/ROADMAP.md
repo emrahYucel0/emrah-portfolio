@@ -22,7 +22,7 @@ belgedeyse (AUDIT-01, LINEFIELD.md, DEPLOYMENT.md…) burada ona bağlantı veri
 - **Karar bekliyor:** neyin beklendiği yazılı.
 - **Önce inceleme:** mevcut davranış ölçülmeden tasarlanmayacak.
 
-Son güncelleme: 2026-10-05, `feature/image-quality` (worktree `../emrah-portfolio-iq`, 8da676c'den): R9 onaylandı, R29 yapıldı, R19 iki yüzde varsayılan (onaylandı); hareketi azaltılmış modun boyaması için seçenek 1 ve 2 yapıldı; R20 prototip olarak ölçüldü, kullanıcının kararı bekleniyor. Canlıda
+Son güncelleme: 2026-10-05, `feature/image-quality` (worktree `../emrah-portfolio-iq`, 8da676c'den): R9 onaylandı, R29 yapıldı, R19 iki yüzde varsayılan (onaylandı); hareketi azaltılmış modun boyaması için seçenek 1 ve 2 yapıldı, ardından Work ile Cross Section'da kesme başına tek boyama (b, c); R20: 4K tavanı varsayılan, uyarlanır oran kodda ama kapalı (taban 1,28), RTX 4050'de ölçüldü; R21'den önce durdu. Canlıda
 df5ab32. Görüntü kalitesi turu başladı: R9, R19, R20, R21. Sıra: R9 ölçümü → R9 düzeltmesi → R19 → R20 → R21.
 Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 
@@ -47,7 +47,7 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 | R27 | Harness'lar izlenen `docs/` yollarına yazıyor | P2 | **Bitti** (2026-10-03) | — |
 | R28 | Mac dokunmatik yüzeyinde ikinci kaydırmanın yutulması (120 Hz) | **P0** | **Canlıda (`1e663bd`); gerçek MacBook onayı bekliyor** | R22 |
 | R29 | Hareketi azaltılmış modda ton satırları kalınlaştırmıyor (R9'dan önce de var) | P2 | **Yapıldı** (2026-10-05, abfe37a; dalda) | R9 |
-| R20 | Arka belleğe piksel sayısı tavanı ve uyarlanır çizim oranı | P1 | **Prototip ölçüldü** (2026-10-05, `?r20=on`; dalda): varsayılan yapmak için kullanıcı kararı bekliyor (taban, eşik) | R9 |
+| R20 | Arka belleğe piksel sayısı tavanı ve uyarlanır çizim oranı | P1 | **Tavan varsayılan** (2026-10-05, f83a74e; dalda). Uyarlanır oran kodda, kapalı (taban 1,28); RTX'te hiç adım atmıyor, gerekip gerekmediği kullanıcının kararı | R9 |
 | R21 | Büyük ekranlarda büyük harf başına satır sayısına üst sınır | P2 | Karar bekliyor (sanat yönetimi) | — |
 | R22 | Gerçek cihaz testi (iPad, Mac'te Safari, Android telefon) | P0 | Karar verildi | — |
 | R23 | Awwwards başvuru malzemesi (ekran görüntüleri, kısa video, başlık, açıklama) | P0 | Karar bekliyor (içerik) | R9 |
@@ -489,7 +489,19 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
   Adımlar dururken geliyor; adımın kendisi 5–8 ms, takılma yok. Taban R = 1'de görüntü belirgin biçimde yumuşuyor
   (`out/iq/r20/R20-SHEET.png`).
 
-  **Açık:** tabanın ve eşiğin değeri; tavanın tek başına varsayılan olup olmayacağı.
+  **Açık (kapandı):** kullanıcı kararı aşağıda.
+- **Karar (2026-10-05, kullanıcı):**
+  - Yalnız güvenlik tavanı varsayılan: arka bellek en çok bir 4K ekranın pikseli.
+  - Uyarlanır oran kodda kalır ama kapalıdır (`adaptive: false`); tabanı 1,00'dan 1,28'e çıkarıldı.
+  - `?r20=` anahtarları ve rozet kaldırıldı.
+  - Uyarlanır oranın gerekip gerekmediğine RTX 4050 ölçümünden sonra karar verilecek.
+- **RTX 4050'de (2026-10-06; `docs/IMAGE-QUALITY.md`):** kare başına GPU süresi:
+  - 2560×1440@1: 0,9–1,1 ms;
+  - 2560×1440@2: 2,4–3,1 ms;
+  - 3840×2160@2: tavansız 4,1 ms, tavanla 2,6 ms.
+
+  Intel UHD'de aynı boyutlarda 35, 83 ve 184 / 82 ms. Uyarlanır oran açıkken RTX'te hiçbir boyutta adım atmadı.
+  Ekranın hızından düşen tek durum 3840×2160@2'nin tavansız hâliydi (8,1 ms); tavan onu düzeltiyor.
 - **Karar (2026-10-04, önceki):** Cross Section yayınında yok. Görüntü kalitesi turunda R9 ve R19 ile birlikte kendi adımı
   olacak. Ölçüm (`docs/CROSS-SECTION.md`, duyarlı tarama): 3840×2160@2'de arka bellek 18,7 Mpx. Bu Intel UHD'de
   sıradan bir yer 101 ms, Cross Section 74 ms; 8,3 Mpx tavanla ikisi de yaklaşık yarıya iniyor (45 ms ve 34 ms).

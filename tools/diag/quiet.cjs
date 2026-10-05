@@ -56,6 +56,9 @@ async function waitQuiet(label) {
   }
 }
 async function guarded(label, fn, tries = 6) {
+  // QUIET=gpu: for a measure read from the GPU's own timer, which the CPU's other work does not touch — the run goes ahead
+  // under load and says so (its CPU-side numbers, such as frame intervals, are then not clean)
+  if (process.env.QUIET === 'gpu') { console.log(`   (${label}: run under the machine's current load — load ${load()}%; GPU timer only)`); return fn() }
   for (let t = 0; t < tries; t++) {
     await waitQuiet(label)
     if (process.platform !== 'win32') return fn()

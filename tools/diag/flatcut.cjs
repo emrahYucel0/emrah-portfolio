@@ -69,6 +69,13 @@ async function run(b, port, W, H, dpr) {
 const med = (a) => [...a].sort((x, y) => x - y)[a.length >> 1]
 ;(async () => {
   const b = await pw.chromium.launch({ channel: 'chrome' })
+  {
+    // the GPU this browser draws with, so every number is labelled with it (the machine has an Intel UHD and an RTX 4050)
+    const p = await b.newPage()
+    const gpu = await p.evaluate(() => { const gl = document.createElement('canvas').getContext('webgl2'); const d = gl && gl.getExtension('WEBGL_debug_renderer_info'); return d ? gl.getParameter(d.UNMASKED_RENDERER_WEBGL) : 'unknown' })
+    console.log(`GPU: ${gpu}`)
+    await p.close()
+  }
   for (const [W, H, dpr] of CONFIGS) {
     console.log(`== ${W}x${H}@${dpr}   (ms: shown / settled, and the paints the cut caused)`)
     for (let round = 0; round < ROUNDS; round++) for (const port of ports) {

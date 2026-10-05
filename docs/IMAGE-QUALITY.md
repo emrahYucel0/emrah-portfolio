@@ -823,3 +823,103 @@ What the sheet shows:
 
 `node tools/diag/r20.cjs 4971 4977 [--cfg=…]` (today's build against `builds/iq-r20`), and
 `node tools/diag/out/iq/r20sheet.cjs` for the sheet.
+
+## One paint per cut, and the 4K cap as the default (2026-10-05, f83a74e)
+
+User decisions after the reduced-motion paint and R20's prototype:
+1. Reduced motion: (b) and (c), one paint for Work and one for Cross Section, with the same final picture as
+   today; skip (a); re-measure every cut, including the time until the picture settles.
+2. R20: the safety cap alone as the default. The adaptive ratio stays in the code, off, with its floor raised to
+   1.28. The R20 frame-time table is to be repeated on the RTX 4050 once the user has switched Chrome to it.
+
+### What changed
+
+- **Work (`main.js`).**
+  - In reduced motion, `lockWork` and `unlockWork` set their tweens' end values at once (lod 0, fill 1, flash 0;
+    and back). The cut no longer paints the work half-resolved and then again as the tweens moved.
+  - `prePocket(k)`: from the place next to Work, the block is filled with the work the field will show and its
+    lines are measured. That is the first work coming from below and the last from above, as `onArrive` sets it.
+    The block's layer is hidden and its `on` is held only for the measurement, so the position is the shown one.
+    The state's masks are then warmed with the pocket in them, and the arrival no longer releases and repaints them.
+- **Cross Section (`cross/place.js` `arrive`).** In reduced motion the arrival from Work goes straight to the band
+  (`x = 1`, `p = P[1]`), where the turn would end, instead of painting SURFACE and then the band.
+- **R20 (`main.js` `RATIO`).**
+  - `on: true`: the backing store is at most 3840×2160 pixels.
+  - `adaptive: false`, `floor: 1.28`; a step that would change the ratio by under a tenth is not taken.
+  - The `?r20=` keys and the badge are gone. `__lab.ratioAdaptive(on)` switches the adaptive ratio on for a
+    harness, and `__lab.ratioStep()` forces a step.
+
+**Paints per cut now** (`out/iq/twopaint.cjs`, 1440×900@2): one each for Creative, Full-Stack, Linefield, Work (first
+visit and the return from Cross Section) and Cross Section. Before, Work painted 3 times and Cross Section twice.
+
+### The picture is the same (`out/iq/flatident.cjs`, fresh browser per load)
+
+- **35 of 36 places and sizes are byte-identical to the R19 build.**
+- **The 36th, Cross Section at 1366×768@1.25, varies from load to load on both builds.** Over 12 loads
+  (`out/iq/final2/dump/`), 11 gave today's picture exactly. One differed in 11 pixels out of 1.6 million, at most 3
+  levels, in a 2 px column (x 1206–1207). Today's build shows the same kind of variation: its own hash for this place
+  was 72865706… in one run and 82031733… in another. It is the mask text rasterising on the page, not the change.
+- **Normal motion:** the cap changes nothing up to 2560×1440@2 (`out/iq/r20probe.cjs`: same backing sizes as today
+  at 1920×991@1, 1440×900@2, 2560×1440@1 and @2, 390×844@3). At 3840×2160@2 it is 3840×2160 instead of 5760×3240.
+
+### The checks (`builds/iq-final2`, 4973 / 4974 `--lan --wk`; logs in `out/iq/final2/`)
+
+| check | result |
+|---|---|
+| `npx nuxt typecheck`, `compat-ios15`, `glslcheck` | PASS |
+| `cspboot` (4973; 4974 WebKit over the LAN; `--dir`) | PASS |
+| `r9webkit.cjs` | PASS |
+| `linefield.cjs` | **PASS, 180/180** |
+| `cross.cjs` Chrome @2 / @1 | 1 failed each: "fallback forced", as on 8da676c. The reduced-motion section passes (DEPTH → bench → up arrives at DEPTH, as cuts). |
+| `cross.cjs` WebKit | PASS |
+| `csseam.cjs` | PASS |
+| `csrotate.cjs` | "held → landscape" (2), as on 8da676c |
+
+### R20 on the RTX 4050, next to the Intel UHD (`r20.cjs --only=before,ladder,natural`, `out/iq/r20-rtx.log`)
+
+The user switched Chrome to the RTX 4050 before this round, and the harness browser draws on it too ("ANGLE (NVIDIA,
+NVIDIA GeForce RTX 4050 Laptop GPU) Direct3D11"). The earlier R20 table was taken on the Intel UHD.
+
+**Conditions.** The other project's Vite server kept about two CPU cores busy throughout, and no quiet window came in
+over an hour. These runs went ahead under load (`QUIET=gpu`).
+- **gpu**, the GPU's own timer, is not affected by the CPU's other work. It is the comparable figure.
+- **drawn** may be. Here it sits at the display's pace (144 Hz, 6.9 ms) almost everywhere.
+
+The cap is the build's default and the adaptive ratio is off; the levels below the cap are forced (`ratioStep()`) to
+the new floor of 1.28. "Today" is 8da676c+R19 without the cap.
+
+GPU time per frame, median of 40 (drawn interval in brackets):
+
+| size | ratio (backing) | **RTX 4050** | Intel UHD (earlier) |
+|---|---|---|---|
+| 2560×1440@1 | today 1.33 (3.7 Mpx) | **0.9–1.1 ms** (6.9) | 35.4 ms (63) |
+| | 1.28: not taken (a step under a tenth) | — | — |
+| 2560×1440@2 | today 2.00 (8.3 Mpx) | **2.4–3.1 ms** (6.9) | 82.9 ms (139) |
+| | 1.60 (5.3 Mpx) | 1.3 ms (7.0) | 53.5 ms (91–107) |
+| | 1.28 floor (3.4 Mpx) | 0.8 ms (6.9) | 32.8–45.6 ms (59–73) |
+| 3840×2160@2 | today 2.40 (18.7 Mpx) | **4.1 ms** (8.1, p90 10.3) | 184 ms (288) |
+| | 1.60, the cap (8.3 Mpx) | 2.6 ms (6.9) | 82.0 ms (148) |
+| | 1.28 floor (5.3 Mpx) | 1.7 ms (7.0) | 53.3 ms (97) |
+
+**With the adaptive ratio on** (`__lab.ratioAdaptive(true)`, a transition every 3.5 s), on the RTX: **no step at any
+size**. 2560×1440@1 stays at 1.33, 2560×1440@2 at 2.00 and 3840×2160@2 at the cap's 1.60. Every frame is far inside the
+22 ms threshold. On the Intel UHD every size stepped down to its floor.
+
+**What it says:**
+- The RTX is 30–45 times faster than the UHD here.
+- On it, the only size that missed the display's pace was 3840×2160@2 without the cap (8.1 ms, p90 10.3). The cap
+  brings that back to the display's pace.
+- The adaptive ratio only ever acts on the integrated GPU. On this laptop that is the GPU Chrome uses unless it is
+  told otherwise (Windows' default for a browser is often the power-saving one).
+
+### The cuts after (b) and (c): not yet measured on a quiet machine
+
+The cut measurement (`flatcut.cjs 4971,4973 --rounds=2`, now with the GPU in its output) has waited since 2026-10-05
+22:00 for a quiet machine. It needs 30 s with the load under 25% and other work under 0.35 s of CPU per second, and
+had not had it by 2026-10-06 01:30: the other project's Vite server and the desktop's Chrome kept the load at 50–90%.
+The reduced-motion paint runs on the CPU, so a timing taken under that load measures the load. It is still waiting
+and writes to `out/iq/final2/flatcut-rtx.log` when it runs.
+
+What is known without it (`out/iq/twopaint.cjs`): every cut now paints once. Work painted three times before (shown at
+about 60–100 ms, settled at 240–580 ms) and Cross Section twice (settled at 130–300 ms). So their settled time should
+now equal their shown time, about one paint: 60–110 ms on the Intel figures above.

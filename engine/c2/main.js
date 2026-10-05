@@ -1503,6 +1503,9 @@ function unlockWork(i) {
 // ─── stops: what happens on arrival ──────────────────────────────────────────
 function onArrive(stop, prev) {
   A.arrivedAt = performance.now()
+  // reduced motion moves by cuts: the places either side are made ready in idle time, so a cut to one only paints it
+  // (the passage is drawn as its two ends there, LF.reducedPair)
+  if (REDUCED) for (const i of [stop - 1, stop + 1]) queueWarm(LINEFIELD && LF && i === LFS ? [LF.back, LF.front] : [IDX[i]])
   // on the way to the About room the room itself is the destination; the name is only passed through
   if (!(stop === STOP.name && A.pending === 'about')) arrived(() => PLACE_HEADING[stop]?.(), PLACE_NAME[stop]?.())
   /*

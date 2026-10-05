@@ -181,6 +181,8 @@ export function paintFlat(ctx, st, o) {
   // where the ground has gone the state's paper is not there: the page shows through it — the page's own colour
   // on the index (fill), and on a project whatever lies under the surface, the work itself (the shader's
   // `bgc * (1 - al) * uFill`: with fill 0 an opening is transparent)
+  // with a mask, the picture is not read back at the end: everything but these rects is the paper (groundOf)
+  const ground = mask ? groundOf(ctx, st, Wd, Hd, dpr) : null
   if (fs.length) {
     ctx.fillStyle = st.bg
     for (let ix = 0; ix < XN; ix++) {
@@ -191,6 +193,7 @@ export function paintFlat(ctx, st, o) {
       for (let i = 0; i < runs.length; i += 2) {
         if (fill) ctx.fillRect(L, runs[i], w, runs[i + 1] - runs[i])
         else ctx.clearRect(L, runs[i], w, runs[i + 1] - runs[i])
+        if (ground) ground.mark(L, runs[i], L + w, runs[i + 1])
       }
     }
   }
@@ -288,8 +291,62 @@ export function paintFlat(ctx, st, o) {
       }
     }
   }
-  if (mask) mixRows(ctx, mask, st.ink)
+  if (mask) mixRows(ctx, mask, st.ink, ground)
 }
+
+/*
+ * THE GROUND UNDER THE ROWS, WITHOUT READING THE PICTURE BACK (2026-10-05, before R20). The reduced-motion paint
+ * used to read the whole canvas back to learn what lay under each row — a full-canvas getImageData, the largest
+ * single cost of a cut after R9. What lies there is known: the state's paper, which is opaque and covers the canvas,
+ * except where an opening's void was filled with the page's colour or cleared, and at the canvas's last column or row
+ * when the device size is not a whole number of pixels (that edge is only partly covered). Those places are marked
+ * as the paint draws them, a 32-pixel tile at a time with a pixel to spare for anti-aliasing, and only they are read
+ * back; every other pixel is the paper, written from its colour. The picture is the same to the byte.
+ */
+const TILE = 32
+function groundOf(ctx, st, Wd, Hd, dpr) {
+  const w = ctx.canvas.width, h = ctx.canvas.height
+  const tx = Math.ceil(w / TILE), ty = Math.ceil(h / TILE)
+  const tiles = new Uint8Array(tx * ty)
+  const mark = (x0, y0, x1, y1) => {
+    // in CSS pixels; a negative extent draws upwards, as fillRect does
+    const ax = Math.min(x0, x1) * dpr, bx = Math.max(x0, x1) * dpr, ay = Math.min(y0, y1) * dpr, by = Math.max(y0, y1) * dpr
+    const i0 = Math.max(0, Math.floor((ax - 1) / TILE)), i1 = Math.min(tx - 1, Math.floor((bx + 1) / TILE))
+    const j0 = Math.max(0, Math.floor((ay - 1) / TILE)), j1 = Math.min(ty - 1, Math.floor((by + 1) / TILE))
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) tiles[j * tx + i] = 1
+  }
+  if (Wd * dpr !== w) mark(Wd - 2 / dpr, 0, Wd, Hd)
+  if (Hd * dpr !== h) mark(0, Hd - 2 / dpr, Wd, Hd)
+  // a paper that is not a plain opaque #rrggbb is not assumed: the picture is then read back whole, as before
+  const p = st.paperHex
+  const paper = /^#[0-9a-f]{6}$/i.test(p) ? [1, 3, 5].map((i) => Number.parseInt(p.slice(i, i + 2), 16)) : null
+  return { tiles, tx, ty, mark, paper }
+}
+// the picture's pixels, as mixRows reads them: written from the ground where it is known, read back where it is not
+function pictureOf(ctx, ground, pack) {
+  const w = ctx.canvas.width, h = ctx.canvas.height
+  if (!ground?.paper) return ctx.getImageData(0, 0, w, h)
+  let img = OUT.get(ctx)
+  if (!img || img.width !== w || img.height !== h) { img = ctx.createImageData(w, h); OUT.set(ctx, img) }
+  const d32 = new Uint32Array(img.data.buffer)
+  d32.fill(pack(ground.paper[0], ground.paper[1], ground.paper[2], 255))
+  const { tiles, tx, ty } = ground
+  for (let j = 0; j < ty; j++) {
+    const y = j * TILE, th = Math.min(TILE, h - y)
+    for (let i = 0; i < tx; i++) {
+      if (!tiles[j * tx + i]) continue
+      let e = i
+      while (e + 1 < tx && tiles[j * tx + e + 1]) e++
+      const x = i * TILE, tw = Math.min((e + 1) * TILE, w) - x
+      const s32 = new Uint32Array(ctx.getImageData(x, y, tw, th).data.buffer)
+      for (let r = 0; r < th; r++) d32.set(s32.subarray(r * tw, r * tw + tw), (y + r) * w + x)
+      i = e
+    }
+  }
+  return img
+}
+// one picture buffer per canvas, reused from paint to paint (a full-size ImageData is tens of megabytes at DPR 2)
+const OUT = new WeakMap()
 
 // sRGB ↔ linear, as tables: one entry per byte one way, 4096 steps of linear light the other
 const TO_LIN = Float32Array.from({ length: 256 }, (_, i) => { const c = i / 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4) })
@@ -301,15 +358,15 @@ const TO_SRGB = Uint8ClampedArray.from({ length: 4096 }, (_, i) => { const l = i
  * mix is a table — for each ground colour met, the 256 colours its coverage levels give — built the first time that
  * ground is met and reused while the next pixel has the same one (almost every pixel is the same paper).
  */
-function mixRows(ctx, mask, ink) {
+function mixRows(ctx, mask, ink, ground) {
   const w = ctx.canvas.width, h = ctx.canvas.height
   const m32 = new Uint32Array(mask.getImageData(0, 0, w, h).data.buffer)
-  const img = ctx.getImageData(0, 0, w, h)
-  const d32 = new Uint32Array(img.data.buffer)
   const i8 = [Math.round(ink[0] * 255), Math.round(ink[1] * 255), Math.round(ink[2] * 255)]
   const iL = [TO_LIN[i8[0]], TO_LIN[i8[1]], TO_LIN[i8[2]]]
   const LE = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1
   const pack = (r, g, b, a) => (LE ? ((a << 24) | (b << 16) | (g << 8) | r) >>> 0 : ((r << 24) | (g << 16) | (b << 8) | a) >>> 0)
+  const img = pictureOf(ctx, ground, pack)
+  const d32 = new Uint32Array(img.data.buffer)
   const tables = new Map()
   const tableFor = (px) => {
     let t = tables.get(px)
@@ -362,7 +419,13 @@ export function createFlat(canvas) {
     phys() {},                      // the imprint is a physical memory of motion: reduced motion keeps none
     pair(a, b, f) { slots[0] = a; slots[1] = b; front = f },
     beneath(n) { slots[2] = n },
-    warm(st) { if (st && st.c?.draw) masksOf(st) },
+    // in idle time, everything a first paint of this state would otherwise build on the cut: its masks, and the
+    // brightness factor it is drawn with at this size (the same rowGain call render() makes, so the same cache key)
+    warm(st) {
+      if (!st) return
+      if (st.c?.draw) masksOf(st)
+      if (st.thick) rowGain(st, W.dpr, W.h, canvas.height, (st.toneAmp ?? st.amp) > 0.001)
+    },
     // the masks are dropped, not marked empty: the next render of this state reads them back again
     release(st) { for (const img of [st?.c, st?.d]) if (img && !img.shared) delete img._flat },
     probe: () => ({ status: true, err: 0, draw: true, out: [] }),

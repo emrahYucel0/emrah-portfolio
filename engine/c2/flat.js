@@ -126,7 +126,13 @@ export function paintFlat(ctx, st, o) {
 
   const s = st.spacing, thick = st.thick, texH = st.texH, offY = st.offY || 0
   const split = !!st.split, fillK = st.fill ?? 0, holdA = st.reg?.holdA ?? 1
-  const wgain = (st.toneThick ?? 1) > 1.01 ? (st.toneThick ?? 1) : Math.min(amp, 1)
+  /*
+   * TONE THICKENS A ROW IN REDUCED MOTION TOO (R29, 2026-10-05). The shader takes a row's tone weight from the
+   * ambient amplitude, and reduced motion stops that amplitude (ampK = 0) — which was right for the wave and wrong
+   * for the weight: Full-Stack came out 14% lighter than in normal motion at DPR 1, Creative 6–9%. The reduced
+   * renderer passes `toneAmp`, the amplitude the state was made with; the rows still lie straight.
+   */
+  const wgain = (st.toneThick ?? 1) > 1.01 ? (st.toneThick ?? 1) : Math.min(o.toneAmp ?? amp, 1)
   const tw = M?.tw ?? 2, th = M?.th ?? 2
   const sub = Wd < 700 ? 3 : 2
   const cols = Math.max(8, Math.round(tw * sub)), cw = Wd / cols
@@ -207,7 +213,7 @@ export function paintFlat(ctx, st, o) {
     mask.setTransform(dpr, 0, 0, dpr, 0, 0)
     mask.fillStyle = '#fff'
     // matched to how this place looks in normal motion, where its rows may wave (reduced motion stops them)
-    gain = rowGain(st, dpr, Hd, ctx.canvas.height, st.amp > 0.001)
+    gain = rowGain(st, dpr, Hd, ctx.canvas.height, (o.toneAmp ?? st.amp) > 0.001)
   }
   const ref = thick * 0.5
   ctx.fillStyle = st.inkHex
@@ -357,7 +363,7 @@ export function createFlat(canvas) {
       // at rest one state holds the screen; front only ever sits at an end in reduced motion
       const st = (front < 0.5 ? slots[0] : slots[1]) || slots[1] || slots[0]
       if (!st) return
-      paintFlat(ctx, st, { W: W.w, H: W.h, dpr: W.dpr, strip: api.strip, features: api.features || [], fill: api.fill, mask })
+      paintFlat(ctx, st, { W: W.w, H: W.h, dpr: W.dpr, strip: api.strip, features: api.features || [], fill: api.fill, mask, toneAmp: st.toneAmp ?? st.amp })
     },
   }
   return api

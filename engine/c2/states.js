@@ -56,6 +56,10 @@ export function mk(V, o) {
     texH, total: V.H / o.spacing + 2,
   }
   st.ink = hex(st.inkHex); st.paper = hex(st.paperHex); st.bgv = hex(st.bg)
+  // the amplitude the state was made with. main.js moves `amp` at run time (the name's settles in with the intro,
+  // reduced motion stops it), but tone's weight on a row is composition, not motion: the reduced-motion renderer
+  // reads it from here (flat.js, R29)
+  st.toneAmp = st.amp
   st.reg = { a0: 0, a1: 0, va0: 0, va1: 0, holdA: 1, phase: 0 }
   return st
 }

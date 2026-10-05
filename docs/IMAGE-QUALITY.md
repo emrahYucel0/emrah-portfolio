@@ -7,7 +7,9 @@ the plan, the measurements and what they mean.
 ## Order (user decision 2026-10-04)
 
 1. R9 step 1: measurement only, no engine change. **Done, below.**
-2. R9 fix prototype: A / B / C switchable, judged by eye on the user's DPR 1 screen and iPhone. **Built and measured, below; waiting for the user's visual comparison.**
+2. R9 fix prototype: A / B / C switchable, judged by eye on the user's DPR 1 screen and iPhone. **Done: the user
+   chose B (2026-10-05).** Then B as the default, Linefield's dark half back at today's brightness, and the
+   reduced-motion path: **done (step 3, below); stopped before R19.**
 3. R19: the conservation rule, after R9's fix.
 4. R20: safety cap and adaptive ratio, after R9 (constraints in ROADMAP R20).
 5. R21: a comparison sheet at four sizes, then the user's decision.
@@ -226,3 +228,152 @@ node r9ident.cjs                         # no key = the 8da676c build (needs 497
 ```
 
 The record above is `out/iq/r9/iqr9-2026-10-04T19-22-06-676Z.json`.
+
+## R9 step 3: B as the default (2026-10-05)
+
+**User decision (2026-10-05)**, after comparing A, B and C on their DPR 1 desktop and their iPhone: B. The shimmer in
+motion is gone, and the cream grounds look right. The brief:
+- make B the default;
+- bring Linefield's dark half (8% darker in B) back to today's brightness;
+- carry the change into the reduced-motion path if it applies;
+- run the prototype's checks and the Linefield and Cross Section checks;
+- stop before R19.
+
+### What changed
+
+`engine/c2/surface.js`:
+
+- **Coverage and mixing are B's, unconditionally.** The tent coverage and the linear-light mixing are the shader now.
+  The `?r9=` key, A, C and the badge are gone.
+- **The brightness rule (`rowGain`) has a better target.** Today's brightness is measured at the positions the rows
+  actually sit at.
+  - Linefield's "8% darker" was not an offset. Measured at five sizes, B against today was −8% at ratios 1 and 1.5
+    and +1–2% at 1.25 and 1.333. Before R9 a row's light depended on its position in the pixel, and at ratios 1
+    and 1.5 a still field's rows all sit at the bright positions. B had been matched to the average over every
+    position.
+  - So a still state is now matched at its own rest positions (pitch, ratio, the physics field's resting offset).
+    A waving state is still matched on the average, because its rows travel through every position.
+- **Letters get their own correction.** The prototype scaled thin rows and moved anything wider by a bare row's
+  amount. On a dark ground that made the pale words visibly bolder (Linefield's backend +6–9% in the words' block,
+  seen in magnified crops).
+  - A solid row changes only at its two soft edges, so `rowGain` also solves an edge shift for a row two pixels
+    wider than bare (`uE0`–`uE2`).
+  - The shader goes from the bare row's rule to the letter's over a pixel and a half: scaled up to a bare row,
+    moved by a bare row's amount just past it, moved by the letter's own amount from 1.5 px on.
+  - A first version scaled the in-between rows. That made Creative (rows thickened by its tone) 10% darker; moved,
+    it is +2%, as in the prototype.
+
+`engine/c2/flat.js`, the reduced-motion renderer:
+
+- **The change applies.** Before R9, reduced motion was much darker than normal motion on the dark grounds. Measured
+  on 8da676c at DPR 1: Full-Stack −46%, Linefield's dark half −57%, Ege −8%. At 1.5: Linefield −11%, Creative −16%.
+  - Canvas 2D blends partly covered pixels as sRGB, which is the same mechanism.
+  - Its rows also sit 0.31 px from the shader's (they leave out the physics field's resting offset), so at DPR 1
+    they straddle two pixels where the shader's sit on one.
+- **With a mask** (`createFlat`; the first-paint hero plate is unchanged):
+  - the rows' coverage goes into a mask and is mixed into the picture in linear light at the end, over whatever
+    each pixel holds (paper, the page's colour in an opening, or nothing);
+  - row widths use `rowGain`, with the normal-motion answer for whether the rows wave;
+  - the shader's thin-row fade (`clamp(hw * 4)`) applies;
+  - widths are quantised to 64ths, because the narrower rows moved by 6% at 16ths.
+- **Cost of one paint.** Full-Stack, median: 1920×991@1 63 → 73 ms, 1440×900@2 38 → 71 ms, 390×844@3 11 → 21 ms.
+  The first version took 234 ms at 1440×900@2; the mix is now one table per ground colour over 32-bit pixels.
+
+### Measured on the final build (`builds/iq-b`, 4973; 8da676c on 4970)
+
+**Brightness at rest, B against today** (`iqr9.cjs --ports=off@4970,b@4973 --rest-only`), swing in brackets:
+
+| | 1920×991@1 | 1440×900@1.5 | 2560×1440@1 | 1536×864@1.25 | 1280×800@1.75 |
+|---|---|---|---|---|---|
+| Linefield dark | +0.6% (1.00) | +0.6% (1.00) | 0.0% (1.01) | +0.3% (1.01) | +0.8% (1.00) |
+| Ege inside | −0.2% (1.00) | −0.1% (1.00) | 0.0% (1.00) | −0.1% (1.00) | +0.1% (1.00) |
+| Full-Stack | −2.1% (1.10) | −2.6% (1.09) | +0.6% (1.06) | +0.8% (1.07) | −2.9% (1.10) |
+| Creative | +2.1% (1.04) | −0.2% (1.06) | +0.1% (1.01) | +0.3% (1.02) | +0.5% (1.06) |
+
+The swing before R9 was up to 2.33 (Linefield dark at 1.5).
+
+**In motion** (`iqr9.cjs … --motion-only`): a moving row's light, frame to frame, p50 / p90, today → B. Healthy
+captures (39–94 frames), and the site's capacity governor never engaged:
+
+| | transition | scroll | ripple | passage |
+|---|---|---|---|---|
+| 1920×991@1 | 25.8 / 92.6% → **0.6** / 10.6% | 13.4 / 42.8% → **0.5 / 2.2%** | 22.5 / 53.5% → **1.9 / 3.9%** | 25.6 / 98.9% → **3.1** / 82.8% |
+| 1440×900@1.5 | 17.8 / 69.9% → **0.6** / 15.5% | 5.8 / 24.1% → **0.5 / 6.5%** | 9.2 / 23.8% → **2.2 / 3.9%** | 29.2 / 81.3% → **1.5** / 69.2% |
+| 1440×900@2 | 17.4 / 69.2% → **0.5** / 10.7% | 6.4 / 23.7% → **0.5 / 6.1%** | 10.0 / 24.6% → **2.2 / 4.0%** | 29.2 / 81.3% → **1.5** / 69.2% |
+
+The motion harness was changed during this step. It used to read 22 single columns per frame; the readbacks stalled
+the GPU enough that the site's own capacity governor (`A.constrained`) stopped redrawing, and some captures fell to 5
+frames. It now reads two full-height blocks, and reports how many frames ran constrained.
+
+**Reduced motion against normal motion** (`r9flat.cjs`, the same rows read the same way in both modes; before R9 → now):
+
+| | DPR 1 | DPR 1.5 |
+|---|---|---|
+| Ege | −8% → **+2%** | −5% → **+1%** |
+| Linefield dark | −57% → **+6%** | −11% → **+3%** |
+| Full-Stack | −46% → −14% | −4% → −4% |
+| Creative | −2% → −6% | −16% → −9% |
+
+- Rows are even in reduced motion now (swing 1.00–1.01; before, up to 1.95).
+- **What is left on Full-Stack and Creative is not R9's.** Reduced motion sets `ampK = 0`, and the 2D path takes its
+  tone-to-weight gain from the same amplitude (`wgain = min(amp, 1)`), so tone stops thickening rows. It is in the
+  ROADMAP as R29.
+
+**Linefield's words** (`out/iq/lfwords.cjs`, mean linear light in the words' block, B against today):
+- cream: 0.6343 / 0.6336;
+- dark, 1440×900: 0.1175 / 0.1170;
+- dark, 844×390: 0.1011 / 0.0969 (+4%).
+
+Under magnification B's letter rows have softer edges: the tent's one-pixel radius fills the 1–2 px gaps between them
+with a faint grey at small sizes.
+
+### The checks
+
+| check | B (final build) | 8da676c |
+|---|---|---|
+| `glslcheck`, `compat-ios15`, `npx nuxt typecheck` | PASS | — |
+| `cspboot` (4973, 4974 WebKit, `--dir`) | PASS | — |
+| `r9webkit.cjs` (WebKit 390×844@3 over the LAN, normal and reduced, index and a work) | PASS | — |
+| `linefield.cjs` | 146 ok, **2 failed** | 148 ok |
+| `cross.cjs` Chrome @2 / @1 | 1 failed each: "fallback forced (runtime not loaded)" | **the same 1 each** |
+| `cross.cjs` WebKit | PASS run alone; under load once a flick, once a swipe | fallback failed once |
+| `csseam.cjs` 1440×900@2, 1920×991@1, 390×844@3 | PASS | — |
+| `csbenchseam.cjs` on the production build | intermittent "release onto the bench" | **intermittent too** |
+| `csbenchseam.cjs` on the dev server (the documented way) | **PASS, every boundary 0 px at all four sizes** | — |
+| `csrotate.cjs` Chrome / WebKit | "held → landscape" (2 / 1) | **the same** |
+
+- **Linefield's 2 failures** ("the words are there — 0.0% of the frame is type", tr and en, 1440×900 frontend) are
+  the test, not the words. Type is found as pixels within 46 levels of the ink colour, in runs of at least
+  0.55 × pitch. With the tent a 4.3 px letter row is fully covered for about 3 px, not 4. The words' ink is
+  unchanged (above).
+  - "Within 46 levels" means a different coverage under linear mixing on cream (about 0.95) than on the dark half
+    (about 0.60), so no single new threshold keeps the old meaning. **The harness was not changed: the user's
+    decision.**
+  - The prototype also failed "no ink outside the cap line" at 844×390 (one 2 px run beside the label). The final
+    build passes it.
+- **The Cross Section failures B shares with today:** the fallback, held → landscape, and the WebKit gesture checks
+  under load. The WebKit gesture failures pass when run alone; the gate's record already lists the gesture flicks
+  as shared with live.
+- **The bench seam on a production build:** both builds fail it at times (today 1 of 6 runs at the phone sizes,
+  B 2 of 6). There the bench breathes and the floor is its own step, while at the release the blinds' last frame
+  is fully transparent (0 px, a separate check), so C2's rows are not in that step. On the dev server, which holds
+  the bench still, B is exactly 0.
+
+### Open, for the user
+
+- The Linefield harness's type test (above): change its threshold, or keep it and accept these 2 failures.
+- R29: tone-to-weight in reduced motion (Full-Stack −14% at DPR 1, Creative −6 / −9%). One line in `flat.js`; it
+  changes how reduced motion looks.
+- The LAN address is 192.168.1.102 again (DHCP). The preview is `http://192.168.1.102:4974/tr`.
+
+### Reproduce
+
+```
+cd tools/diag
+node sv.cjs ../../../builds/iq-base 4970 &      # today
+node sv.cjs ../../../builds/iq-b 4973 &         # B
+node sv.cjs ../../../builds/iq-b 4974 --lan --wk &
+node iqr9.cjs --ports=off@4970,b@4973            # rest + motion
+node r9flat.cjs 4973                             # reduced motion against normal
+node r9webkit.cjs http://192.168.1.102:4974
+```

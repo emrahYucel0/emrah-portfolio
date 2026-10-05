@@ -21,6 +21,8 @@
 // What is deliberately not drawn here: the ambient wave, the pen, the shiver, the crossfade between two states,
 // the press reveal and the physics imprint — all of them are motion, and reduced motion asks for none of it.
 
+import { rowGain } from './surface.js'
+
 const MAXF = 10
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v)
 const smoothstep = (e0, e1, x) => { const t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t) }
@@ -110,7 +112,7 @@ function bilinear(D, tw, th, fy, fx) {
 // The single drawing primitive: the reduced-motion surface and the software renderer's static hero plate are
 // both this call. `amp` is the tone gain the rows carry (the shader's ambient amplitude, 0 at rest).
 export function paintFlat(ctx, st, o) {
-  const { W: Wd, H: Hd, dpr, strip = 0, features = [], fill = 1 } = o
+  const { W: Wd, H: Hd, dpr, strip = 0, features = [], fill = 1, mask = null } = o
   const amp = o.amp ?? st.amp * (st.ampK ?? 1)
   const M = masksOf(st)
   ctx.setTransform(1, 0, 0, 1, 0, 0)
@@ -187,6 +189,27 @@ export function paintFlat(ctx, st, o) {
     }
   }
 
+  /*
+   * R9 — THE ROWS AS THE SHADER NOW DRAWS THEM (docs/IMAGE-QUALITY.md). With a `mask` (reduced motion, createFlat)
+   * the rows are not filled onto the picture in their ink. Canvas 2D would blend each partly covered pixel as sRGB
+   * values, so a thin pale row on a dark ground gave off much less light when it straddled two pixels than when it
+   * sat on one — measured before R9, reduced motion was up to 57% darker than normal motion on Linefield's dark half
+   * at DPR 1, partly because these rows sit 0.31 px from the shader's (the physics field's resting offset). Instead
+   * the rows' coverage is drawn into the mask (box-filtered by Canvas 2D, which preserves area exactly as the
+   * shader's tent does) and mixed into the picture in linear light at the end, and each bare row's width is scaled
+   * by the shader's own rowGain. Without a mask (the first-paint hero plate) nothing here changes.
+   */
+  const rowCtx = mask || ctx
+  let gain = null
+  if (mask) {
+    mask.setTransform(1, 0, 0, 1, 0, 0)
+    mask.clearRect(0, 0, mask.canvas.width, mask.canvas.height)
+    mask.setTransform(dpr, 0, 0, dpr, 0, 0)
+    mask.fillStyle = '#fff'
+    // matched to how this place looks in normal motion, where its rows may wave (reduced motion stops them)
+    gain = rowGain(st, dpr, Hd, ctx.canvas.height, st.amp > 0.001)
+  }
+  const ref = thick * 0.5
   ctx.fillStyle = st.inkHex
   for (let r = 0; r < rowsN; r++) {
     const vy = r * s
@@ -221,6 +244,11 @@ export function paintFlat(ctx, st, o) {
           hw = thick * (0.5 + info * 1.15 * wgain)
           hw += (s * 0.36 - hw) * solid
           hw = Math.max(hw, 0) * (1 - vd)
+          // the shader's rule, as it is written there: a bare row scaled, a letter's row moved at its edges
+          if (gain) {
+            if (hw <= ref) hw *= gain.k
+            else { const t = smoothstep(ref, ref + 1.5 / dpr, hw); hw = (hw + (gain.k - 1) * ref) * (1 - t) + (hw + gain.e) * t }
+          }
           // static saturation tapers row by row along its ramp, exactly as the shader's does
           const rfs = smoothstep(0.15, 0.95, sat + 0.04 * Math.sin(r * 0.73))
           const rfd = clamp((st.fuse || 0) * 1.9 - (1 - solid) * 0.3 - (1 - clamp(info * 2, 0, 1)) * 0.15, 0, 1)
@@ -230,21 +258,78 @@ export function paintFlat(ctx, st, o) {
           const spr = s / glen
           const cr = smoothstep(2.1, 1.3, spr * dpr)
           if (cr > 0 && hw > 0.001) hw = hw + (Math.max(hw, 0.62 * spr) - hw) * cr
-          hw = Math.round(hw * 16) / 16
+          // widths are quantised so neighbouring columns merge into one fillRect; the rows R9 narrows (a dark
+          // ground's, by rowGain) are thin enough that sixteenths moved their light by 6%, so the mask path uses 64ths
+          hw = mask ? Math.round(hw * 64) / 64 : Math.round(hw * 16) / 16
           Y = Math.round(Y * 8) / 8
         } else hw = 0
       }
       if (cx === cols || hw !== runHw || Y !== runY) {
-        if (runHw > 0.05) ctx.fillRect(runX, runY - runHw, cx * cw - runX, runHw * 2)
+        if (runHw > 0.05) {
+          // the shader fades a row thinner than a quarter pixel-unit (clamp(hw * 4)); with a mask, so does this
+          if (mask) mask.globalAlpha = Math.min(1, runHw * 4)
+          rowCtx.fillRect(runX, runY - runHw, cx * cw - runX, runHw * 2)
+        }
         runX = cx * cw; runHw = hw; runY = Y
       }
     }
   }
+  if (mask) mixRows(ctx, mask, st.ink)
+}
+
+// sRGB ↔ linear, as tables: one entry per byte one way, 4096 steps of linear light the other
+const TO_LIN = Float32Array.from({ length: 256 }, (_, i) => { const c = i / 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4) })
+const TO_SRGB = Uint8ClampedArray.from({ length: 4096 }, (_, i) => { const l = i / 4095; return Math.round((l <= 0.0031308 ? l * 12.92 : 1.055 * Math.pow(l, 1 / 2.4) - 0.055) * 255) })
+/**
+ * the rows' coverage (the mask's alpha) mixed into the picture in linear light, over whatever each pixel holds.
+ *
+ * It runs once per paint over the whole canvas, so it is written for that: pixels are read as 32-bit words, and the
+ * mix is a table — for each ground colour met, the 256 colours its coverage levels give — built the first time that
+ * ground is met and reused while the next pixel has the same one (almost every pixel is the same paper).
+ */
+function mixRows(ctx, mask, ink) {
+  const w = ctx.canvas.width, h = ctx.canvas.height
+  const m32 = new Uint32Array(mask.getImageData(0, 0, w, h).data.buffer)
+  const img = ctx.getImageData(0, 0, w, h)
+  const d32 = new Uint32Array(img.data.buffer)
+  const i8 = [Math.round(ink[0] * 255), Math.round(ink[1] * 255), Math.round(ink[2] * 255)]
+  const iL = [TO_LIN[i8[0]], TO_LIN[i8[1]], TO_LIN[i8[2]]]
+  const LE = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1
+  const pack = (r, g, b, a) => (LE ? ((a << 24) | (b << 16) | (g << 8) | r) >>> 0 : ((r << 24) | (g << 16) | (b << 8) | a) >>> 0)
+  const tables = new Map()
+  const tableFor = (px) => {
+    let t = tables.get(px)
+    if (t) return t
+    t = new Uint32Array(256)
+    const r = LE ? px & 255 : px >>> 24, g = LE ? (px >>> 8) & 255 : (px >>> 16) & 255, b = LE ? (px >>> 16) & 255 : (px >>> 8) & 255
+    const al = LE ? px >>> 24 : px & 255
+    for (let a8 = 0; a8 < 256; a8++) {
+      if (!al) { t[a8] = pack(i8[0], i8[1], i8[2], a8); continue }   // empty: the row is ink at its own coverage
+      const a = a8 / 255
+      const mix = (c, k) => TO_SRGB[Math.round((TO_LIN[c] + (iL[k] - TO_LIN[c]) * a) * 4095)]
+      t[a8] = pack(mix(r, 0), mix(g, 1), mix(b, 2), al)
+    }
+    tables.set(px, t)
+    return t
+  }
+  const ashift = LE ? 24 : 0
+  let lastPx = -1, lastT = null
+  for (let i = 0; i < m32.length; i++) {
+    const a8 = (m32[i] >>> ashift) & 255
+    if (!a8) continue
+    const px = d32[i]
+    if (px !== lastPx) { lastPx = px; lastT = tableFor(px) }
+    d32[i] = lastT[a8]
+  }
+  ctx.putImageData(img, 0, 0)
 }
 
 // ─── the renderer ────────────────────────────────────────────────────────────
 export function createFlat(canvas) {
-  const ctx = canvas.getContext('2d', { alpha: true })
+  const ctx = canvas.getContext('2d', { alpha: true, willReadFrequently: true })
+  // the rows' coverage, drawn apart from the picture and mixed into it in linear light (paintFlat, R9)
+  const maskEl = document.createElement('canvas')
+  const mask = maskEl.getContext('2d', { willReadFrequently: true })
   const W = { w: 1, h: 1, dpr: 1 }
   const slots = [null, null, null]
   let front = 1
@@ -258,6 +343,7 @@ export function createFlat(canvas) {
     resize(w, h, dpr) {
       W.w = w; W.h = h; W.dpr = dpr
       canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr)
+      maskEl.width = canvas.width; maskEl.height = canvas.height
     },
     phys() {},                      // the imprint is a physical memory of motion: reduced motion keeps none
     pair(a, b, f) { slots[0] = a; slots[1] = b; front = f },
@@ -271,7 +357,7 @@ export function createFlat(canvas) {
       // at rest one state holds the screen; front only ever sits at an end in reduced motion
       const st = (front < 0.5 ? slots[0] : slots[1]) || slots[1] || slots[0]
       if (!st) return
-      paintFlat(ctx, st, { W: W.w, H: W.h, dpr: W.dpr, strip: api.strip, features: api.features || [], fill: api.fill })
+      paintFlat(ctx, st, { W: W.w, H: W.h, dpr: W.dpr, strip: api.strip, features: api.features || [], fill: api.fill, mask })
     },
   }
   return api

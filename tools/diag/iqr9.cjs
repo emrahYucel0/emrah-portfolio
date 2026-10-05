@@ -1,9 +1,11 @@
 // R9, STEP 2 — THE PROTOTYPES SIDE BY SIDE: off (shipped), A, B, C (docs/IMAGE-QUALITY.md). At rest and in motion.
 //
 //   node iqr9.cjs <port> [--cfg=WxH@dpr,...] [--variants=off,a,b,c] [--rest-only] [--motion-only]
+//   node iqr9.cjs --ports=off@4970,b@4973 [...]      compare BUILDS instead of keys (no query is sent)
 //
-// The build on <port> must carry the ?r9= key (feature/image-quality). Every variant is loaded in a fresh context, so
-// nothing carries over between them.
+// With <port>, the build there must carry the ?r9= key (the step-2 prototype, 4a25b09). Since B became the shipped
+// shader the key is gone, so the comparison is between builds: --ports names each one. Every variant is loaded in a
+// fresh context, so nothing carries over between them.
 //
 // AT REST — the same bare-ground rows as iqrows.cjs (its own extraction and exclusions, imported):
 //   swing   max/min of a row's light over the phases its rows occupy. 1.00 = every row equally bright.
@@ -33,7 +35,8 @@ const opt = (k) => (args.find((a) => a.startsWith('--' + k + '=')) || '').slice(
 const CONFIGS = opt('cfg')
   ? opt('cfg').split(',').map((s) => { const m = /(\d+)x(\d+)@([\d.]+)/.exec(s); return [+m[1], +m[2], +m[3]] })
   : [[1920, 991, 1], [1440, 900, 1.5], [1440, 900, 2]]
-const VARIANTS = (opt('variants') || 'off,a,b,c').split(',')
+const PORTS = opt('ports') ? Object.fromEntries(opt('ports').split(',').map((s) => s.split('@'))) : null
+const VARIANTS = PORTS ? Object.keys(PORTS) : (opt('variants') || 'off,a,b,c').split(',')
 const REST = !args.includes('--motion-only')
 const MOTION = !args.includes('--rest-only')
 const OUT = 'out/iq/r9'
@@ -101,15 +104,22 @@ async function rest(p, scene, STOP) {
 }
 
 // ─── in motion ──────────────────────────────────────────────────────────────
-/** every drawn frame while `act` runs: the given backing columns, or a step function driving the passage */
-async function capture(p, xs, o) {
-  return p.evaluate(async ({ xs, o }) => {
+/**
+ * every drawn frame while `act` runs, or while a step function drives the passage: full-height BLOCKS of the backing
+ * store, a few columns wide. One readback per block, not one per column: each readback stalls the GPU, twenty-two
+ * a frame made the frames slow enough that the site's own capacity governor (A.constrained, main.js) stopped
+ * redrawing — on 2026-10-05 some captures fell to five frames, and those cells measured the governor, not the rows.
+ * How many frames ran constrained is returned with the frames, and printed.
+ */
+async function capture(p, blocks, o) {
+  return p.evaluate(async ({ blocks, o }) => {
     const L = window.__lab
     const gl = L.surface.gl
     const H = gl.drawingBufferHeight
     const raf = () => new Promise((r) => requestAnimationFrame(r))
-    const buf = new Uint8Array(H * 4)
+    const buf = new Uint8Array(Math.max(...blocks.map((b) => b[1])) * H * 4)
     const frames = []
+    let constrained = 0
     let last = ''
     const t0 = performance.now()
     for (let i = 0; frames.length < o.maxF; i++) {
@@ -128,15 +138,17 @@ async function capture(p, xs, o) {
       const fb = gl.getParameter(gl.FRAMEBUFFER_BINDING)
       gl.bindFramebuffer(gl.FRAMEBUFFER, null)
       let s = ''
-      for (const x of xs) {
-        gl.readPixels(x, 0, 1, H, gl.RGBA, gl.UNSIGNED_BYTE, buf)
-        for (let y = H - 1; y >= 0; y--) s += String.fromCharCode(buf[y * 4], buf[y * 4 + 1], buf[y * 4 + 2])
+      for (const [x0, w] of blocks) {
+        gl.readPixels(x0, 0, w, H, gl.RGBA, gl.UNSIGNED_BYTE, buf)
+        // column by column, top down: the layout flicker() reads
+        for (let c = 0; c < w; c++) for (let y = H - 1; y >= 0; y--) { const o4 = (y * w + c) * 4; s += String.fromCharCode(buf[o4], buf[o4 + 1], buf[o4 + 2]) }
       }
       gl.bindFramebuffer(gl.FRAMEBUFFER, fb)
+      if (L.A.constrained) constrained++
       if (s !== last) { frames.push(btoa(s)); last = s }
     }
-    return { H, frames }
-  }, { xs, o })
+    return { H, frames, constrained }
+  }, { blocks, o })
 }
 
 /** rows in one column of one frame, wherever their pitch is locally even; the ground decides which pair normalises */
@@ -202,7 +214,7 @@ function flicker(cap, nCols, pairs) {
       }
     }
   }
-  return { frames: cap.frames.length, pairs: ch.length, moving, p50: med(ch), p90: pct(ch, 0.9), movedPairs: chMoving.length, mp50: med(chMoving), mp90: pct(chMoving, 0.9) }
+  return { constrained: cap.constrained, frames: cap.frames.length, pairs: ch.length, moving, p50: med(ch), p90: pct(ch, 0.9), movedPairs: chMoving.length, mp50: med(chMoving), mp90: pct(chMoving, 0.9) }
 }
 
 const MOTIONS = [
@@ -219,7 +231,7 @@ const MOTIONS = [
     pairs: { dark: [PAPER, EGE], light: [INK, PAPER] },
   },
   {
-    key: 'ripple', label: 'pointer across Full-Stack', cols: [0.28, 0.66, 70],
+    key: 'ripple', label: 'pointer across Full-Stack', blocks: [[0.46, 16]],
     setup: async (p) => { await p.goto(IQ.site.origin + '/tr' + IQ.site.q, { waitUntil: 'networkidle' }); await p.waitForFunction(() => window.__lab?.A.mode === 'index', null, { timeout: 90000 }); await sleep(2600); await p.evaluate(() => window.__lab.go(window.__lab.STOP.system)); await sleep(2800) },
     run: async (p, xs, W, H) => {
       await p.mouse.move(W * 0.3, H * 0.5)
@@ -254,12 +266,12 @@ const MOTIONS = [
   const b = await pw.chromium.launch({ channel: 'chrome' })
   const results = []
   const f2 = (v, d = 2) => (v == null ? '-' : v.toFixed(d))
-  console.log('== R9 STEP 2: the prototypes side by side, http://127.0.0.1:' + port)
+  console.log('== R9: side by side, ' + (PORTS ? Object.entries(PORTS).map(([k, v]) => k + ' on ' + v).join(', ') : 'http://127.0.0.1:' + port))
   for (const [W, H, dpr] of CONFIGS) {
     console.log('')
     console.log('-- ' + W + 'x' + H + '@' + dpr)
     for (const v of VARIANTS) {
-      IQ.site.q = v === 'off' ? '?r9=off' : '?r9=' + v
+      if (PORTS) { IQ.site.origin = 'http://127.0.0.1:' + PORTS[v]; IQ.site.q = '' } else IQ.site.q = v === 'off' ? '?r9=off' : '?r9=' + v
       const ctx = await b.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dpr })
       await ctx.addInitScript(() => {
         const o = HTMLCanvasElement.prototype.getContext
@@ -278,11 +290,9 @@ const MOTIONS = [
         for (const m of MOTIONS) {
           await m.setup(p)
           const bw = await p.evaluate(() => window.__lab.surface.gl.drawingBufferWidth)
-          const xs = []
-          const [c0, c1, nC] = m.cols || [0.04, 0.96, 22]
-          for (let i = 0; i < nC; i++) xs.push(Math.round(bw * (c0 + (c1 - c0) * i / (nC - 1))))
-          const cap = await m.run(p, xs, W, H)
-          res.motion[m.key] = flicker(cap, xs.length, m.pairs)
+          const blocks = (m.blocks || [[0.3, 8], [0.7, 8]]).map(([f, w]) => [Math.round(bw * f), w])
+          const cap = await m.run(p, blocks, W, H)
+          res.motion[m.key] = flicker(cap, blocks.reduce((n, b) => n + b[1], 0), m.pairs)
         }
       }
       res.errors = errs
@@ -291,7 +301,7 @@ const MOTIONS = [
       const mo = res.motion
       console.log('   ' + v.padEnd(4)
         + (REST ? ' REST swing/bright: ' + REST_SCENES.map((s) => s.key + ' ' + f2(r[s.key]?.swing) + '/' + f2(r[s.key]?.meanL, 3)).join('  ') : '')
-        + (MOTION ? '\n        MOTION, rows that moved, flicker p50/p90 (rows, frames): ' + MOTIONS.map((m) => m.key + ' ' + f2(mo[m.key].mp50 * 100, 1) + '/' + f2(mo[m.key].mp90 * 100, 1) + '% (' + mo[m.key].movedPairs + ', ' + mo[m.key].frames + 'f)').join('  ') : '')
+        + (MOTION ? '\n        MOTION, rows that moved, flicker p50/p90 (rows, frames): ' + MOTIONS.map((m) => m.key + ' ' + f2(mo[m.key].mp50 * 100, 1) + '/' + f2(mo[m.key].mp90 * 100, 1) + '% (' + mo[m.key].movedPairs + ', ' + mo[m.key].frames + 'f' + (mo[m.key].constrained ? ', CONSTRAINED ' + mo[m.key].constrained : '') + ')').join('  ') : '')
         + (errs.length ? '\n        console: ' + errs.join(' | ') : ''))
       await ctx.close()
     }

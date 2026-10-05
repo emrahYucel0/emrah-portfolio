@@ -22,7 +22,7 @@ belgedeyse (AUDIT-01, LINEFIELD.md, DEPLOYMENT.md…) burada ona bağlantı veri
 - **Karar bekliyor:** neyin beklendiği yazılı.
 - **Önce inceleme:** mevcut davranış ölçülmeden tasarlanmayacak.
 
-Son güncelleme: 2026-10-04, `feature/image-quality` (worktree `../emrah-portfolio-iq`, 8da676c'den). Canlıda
+Son güncelleme: 2026-10-05, `feature/image-quality` (worktree `../emrah-portfolio-iq`, 8da676c'den): R9 B varsayılan, R29 eklendi. Canlıda
 df5ab32. Görüntü kalitesi turu başladı: R9, R19, R20, R21. Sıra: R9 ölçümü → R9 düzeltmesi → R19 → R20 → R21.
 Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 
@@ -35,7 +35,7 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 | R1 | Birleştirme: düzeltme turu 2 → `main`, yayın dalı | P0 | **Bitti** (2026-10-02, `4d64ac8`) | — |
 | R4 | Özel imleç | P2 | Kısmen: halkanın boyutu ve rengi bekliyor | — (R2 bitti) |
 | R6 | Lab bench girişleri: okunur boyut, üzerine gelince ön gösterim | P2 | Kısmen: ön gösterimin biçimi bekliyor | — |
-| R9 | Koyu zeminlerde satır titreşimi | **P0** (R18 için) | **Sürüyor** (`feature/image-quality`): adım 2 (prototip A/B/C) kuruldu ve ölçüldü; kullanıcının görsel karşılaştırmasını bekliyor | — |
+| R9 | Koyu zeminlerde satır titreşimi | **P0** (R18 için) | **Sürüyor** (`feature/image-quality`): B varsayılan (adım 3, 2026-10-05); kullanıcının incelemesini bekliyor | — |
 | R10 | Safari'de adın ince kesimle çizilmesi | P1 | **Kapandı** (2026-10-04: iPhone'da kalın; Playwright WebKit artefaktı) | R22 |
 | R11 | Yavaş ağda ilk kare (8,9 sn) | P2 | Önce değerlendirme | — |
 | R13 | Gövde metni ve tipografik hiyerarşi | P1 | Karar bekliyor (ölçek) | — |
@@ -46,6 +46,7 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 | R19 | Full-Stack'in siyah kapsüllerinin çevresindeki hale | P1 | Karar bekliyor (korunum kuralının kapsamı: yalnız Full-Stack mi, iki yüz mü) | R9 |
 | R27 | Harness'lar izlenen `docs/` yollarına yazıyor | P2 | **Bitti** (2026-10-03) | — |
 | R28 | Mac dokunmatik yüzeyinde ikinci kaydırmanın yutulması (120 Hz) | **P0** | **Canlıda (`1e663bd`); gerçek MacBook onayı bekliyor** | R22 |
+| R29 | Hareketi azaltılmış modda ton satırları kalınlaştırmıyor (R9'dan önce de var) | P2 | Karar bekliyor | R9 |
 | R20 | Arka belleğe piksel sayısı tavanı ve uyarlanır çizim oranı | P1 | **Karar verildi** (2026-10-04): güvenlik tavanı + uyarlanır oran; değerler ölçümle | R9 |
 | R21 | Büyük ekranlarda büyük harf başına satır sayısına üst sınır | P2 | Karar bekliyor (sanat yönetimi) | — |
 | R22 | Gerçek cihaz testi (iPad, Mac'te Safari, Android telefon) | P0 | Karar verildi | — |
@@ -149,6 +150,34 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
       ayarlanabilir.
     - Önizleme: bu bilgisayarda `127.0.0.1:4971/tr?r9=b`, iPhone'da `192.168.1.5:4972/tr?r9=b`. Sağ üstte kırmızı
       rozet var; rozet yoksa yayındaki shader.
+  - **Karar (2026-10-05, kullanıcı):** B. Masaüstünde (DPR 1) ve iPhone'da karşılaştırıldı: hareketteki titreşim
+    gitti, krem zeminler doğru görünüyor. İstenenler:
+    - B varsayılan olsun;
+    - Linefield'ın koyu yarısı bugünkü parlaklığına dönsün;
+    - değişiklik uygulanıyorsa hareketi azaltılmış yola (`flat.js`) da taşınsın;
+    - kontroller koşulsun; R19'dan önce durulsun.
+  - **Adım 3 (2026-10-05): yapıldı; kullanıcının incelemesini bekliyor. Push yok.** Ayrıntı: `docs/IMAGE-QUALITY.md`.
+    - **Shader:** B koşulsuz. `?r9=` anahtarı, A, C ve rozet kalktı.
+    - **Linefield'ın %8'i bir kayma değil, konum şansıydı:** oran 1 ve 1,5'te bugünkü satırlar pikselin parlak
+      konumuna düşüyor. Durgun bir durum artık kendi duruş konumlarında eşleniyor. Linefield'ın koyu yarısı beş
+      boyutta 0 ile +%0,8 arasında, Ege %0,2 içinde.
+    - **Koyu zeminde harfler kalınlaşmıştı** (sözcük bloğu +%6–9). Harf satırlarına kendi kenar düzeltmeleri
+      verildi; sözcükler artık bugünkü ışıkta (+%0,3 ile +%1,2; 844×390'da +%4).
+    - **`flat.js`:** değişiklik uygulanıyor. Bugün hareketi azaltılmış yol koyu zeminde normalden çok daha koyu
+      (DPR 1'de Linefield −%57, Full-Stack −%46). Satırlar bir maskeye çiziliyor ve doğrusal ışıkta
+      karıştırılıyor. Linefield −%57 → +%6, Ege −%8 → +%2; satırlar düzgün. Boyama maliyeti 1440×900@2'de
+      38 → 71 ms. İlk boyamadaki kahraman plakası değişmedi.
+    - **Hareket halinde (p50), bugün → B:** geçiş %17–26 → %0,5–0,6; kaydırma %6–13 → %0,5; imleç dalgası
+      %9–23 → %1,9–2,2; pasaj %26–29 → %1,5–3,1.
+    - **Kontroller:**
+      - Geçti: glslcheck, compat-ios15, typecheck, cspboot, WebKit telefon boyutu (yerel ağ), `csseam`.
+      - `csbenchseam`: dev sunucusunda her sınır 0 px.
+      - `linefield.cjs`: 146/148. Kalan 2'si sözcükleri renk eşiğiyle arayan test; mürekkep aynı. Test
+        değiştirilmedi, karar kullanıcının.
+      - Cross Section'da kalanların hepsi (fallback, held → landscape, yük altında WebKit jestleri, üretim
+        build'inde bench dikişi) 8da676c'de de var.
+    - **Açık:** Linefield testinin eşiği (karar); R29.
+    - **Önizleme:** `192.168.1.102:4974/tr`. Yerel ağ adresi yeniden .102 oldu.
 - **Dosyalar:** `engine/c2/main.js` (`V.dpr`, `measure`), `engine/c2/surface.js` (shader, `resize`),
   `engine/c2/linefield/` (kendi aralık hesabı), `docs/LINEFIELD.md` (ölçümler).
 - **Bağımlılık:** yok. Gerçek MacBook ekranında görsel onay gerekiyor (R22). R20 ile birlikte ölçülmeli.
@@ -520,6 +549,23 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
   "süper olay" üretiyordu. Artık her olay **ayrı ayrı** gönderiliyor; aynı iki durum 6/6 yeniden koşuldu, üç
   durak bir kez bile çıkmadı ve sonuç belirlenimli hâle geldi.
 - **Öncelik:** P0 (sonraki yayın). **Bağımlılık:** R22 (gerçek MacBook).
+
+### R29. Hareketi azaltılmış modda ton satırları kalınlaştırmıyor
+- **Açıklama:** R9'un 3. adımında ölçüldü (2026-10-05); R9'dan önce de vardı.
+  - Hareketi azaltılmış mod `ampK = 0` koyuyor.
+  - `flat.js` tonun satır ağırlığına etkisini aynı genlikten alıyor (`wgain = min(amp, 1)`). Bu yüzden ton satırları
+    kalınlaştırmıyor; normal hareketteki shader'da kalınlaştırıyor.
+  - Sonuç: dalgalı yüzlerde hareketi azaltılmış mod normal harekete göre daha açık ya da daha koyu.
+    - Full-Stack: DPR 1'de −%14, DPR 1,5'te −%4.
+    - Creative: −%6 ve −%9.
+
+  Ton bir hareket değil, kompozisyonun parçası.
+- **Aday düzeltme:** `flat.js`'te `wgain` için `st.amp` (`ampK`'sız) kullanmak. Tek satır; hareketi azaltılmış
+  modun görünüşünü değiştirir.
+- **Karar:** Bekleyen.
+- **Dosyalar:** `engine/c2/flat.js` (`paintFlat`, `wgain`), `tools/diag/r9flat.cjs` (ölçüm).
+- **Bağımlılık:** R9.
+- **Öncelik:** P2.
 
 ---
 

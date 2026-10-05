@@ -1,6 +1,9 @@
 // R9 PROTOTYPE, THE NO-KEY GUARANTEE — without ?r9= the build draws the same pixels as the base; every variant boots
 // clean, shows its badge and draws something different.
 //
+// A RECORD OF STEP 2 (4a25b09). Since B became the shader (step 3) there is no key and no badge, so this only means
+// something against a build of 4a25b09; it is kept because docs/IMAGE-QUALITY.md cites it.
+//
 //   node r9ident.cjs        base (8da676c) on 4970, the prototype build on 4971
 //
 // Read on Ege inside and Linefield's dark half (no ambient wave, so two builds can match to the byte).

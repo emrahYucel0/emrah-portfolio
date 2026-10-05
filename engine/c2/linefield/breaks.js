@@ -21,6 +21,9 @@
  *              while it flows past, which is the thin grey ghost the revision before this one was about. This
  *              is what calibrates "every word whole" now — see the note there.
  *   nowhisker  type keeps the GROUND's whisker at the vanishing point.
+ *   nowords    every row, type and ground, at the ground's own width: the words removed on purpose. What the LEGIBLE
+ *              check must fail on (R9, 2026-10-05) — A.lfWords cannot do it, because at 0 a letter's rows keep the
+ *              width the base shader gave them before lfHw is asked.
  */
 import { CORRIDOR_PATCH } from './corridor.js'
 
@@ -58,6 +61,9 @@ export function patchFor(name) {
   }
   if (name === 'thinall') {
     return { ...CORRIDOR_PATCH, pars: cut(CORRIDOR_PATCH.pars, 'return mix(mix(1.0, kept, clamp(uLFthin.y, 0.0, 1.0)), 1.0, lfSol(sol));', 'return mix(1.0, kept, clamp(uLFthin.y, 0.0, 1.0));', 'thinall') }
+  }
+  if (name === 'nowords') {
+    return { ...CORRIDOR_PATCH, pars: cut(CORRIDOR_PATCH.pars, 'return mix(ground, max(word, 0.35), lfSol(sol));', 'return uR1.w * 0.5;', 'nowords') }
   }
   if (name === 'nowhisker') {
     return { ...CORRIDOR_PATCH, pars: cut(CORRIDOR_PATCH.pars, 'lfWhiskType_cur, lfSol(sol)', 'lfWhisk_cur, lfSol(sol)', 'nowhisker') }

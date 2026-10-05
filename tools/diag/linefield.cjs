@@ -88,30 +88,114 @@ function inkBox(data, info, ground, box, tol = 10) {
  * pixels of FULL ink at this pitch and a ground row is one or two of part ink, so a vertical run of at least
  * three full-ink pixels is type and nothing else is.
  */
-function typeBox(data, info, ink, box, run0 = 3) {
-  const { width: W, channels: c } = info
-  const near = (i) => Math.max(Math.abs(data[i] - ink[0]), Math.abs(data[i + 1] - ink[1]), Math.abs(data[i + 2] - ink[2]))
-  let n = 0
-  let y0 = 1e9
-  let y1 = -1
-  let x0 = 1e9
-  let x1 = -1
-  for (let x = box.x; x < box.x + box.w; x++) {
-    let run = 0
-    for (let y = box.y; y <= box.y + box.h; y++) {
-      const solid = y < box.y + box.h && near((y * W + x) * c) <= 46
-      if (solid) { run++; continue }
-      if (run >= run0) {
-        n += run
-        if (y - run < y0) y0 = y - run
-        if (y - 1 > y1) y1 = y - 1
-        if (x < x0) x0 = x
-        if (x > x1) x1 = x
-      }
-      run = 0
+/*
+ * THE LETTERS, AS THE STATE LAID THEM OUT — for the LEGIBLE checks.
+ *
+ * Each word is drawn by states.js as 900-weight text in the cap band above its baseline, from x (left on the backend,
+ * right on the frontend). Here every letter is drawn again into a mask the same way, so the checks know where each
+ * glyph is to the pixel. And the fill a letter's row is drawn with is read from what the runtime drew: the corridor
+ * program (A.lfWords, the probe's spread) or the base program (a solid row, 0.36 of the pitch either side).
+ */
+const lettersOf = (p) => p.evaluate(async () => {
+  const L = window.__lab
+  const pr = L.lfProbe()
+  await document.fonts.ready
+  const W = Math.ceil(L.V.W)
+  const back = !!pr.seq.back
+  const x = back ? L.V.W * 0.06 : L.V.W * 0.94
+  const FAMILY = '"Big Shoulders Display Variable", "Big Shoulders Display", Impact, sans-serif'
+  const s = pr.spacing
+  const corridor = L.surface.usingVariant ? L.surface.usingVariant() : false
+  const words = L.A.lfWords ?? 1
+  const hwWord = corridor ? Math.max(s * 0.31 * (0.35 + 0.65 * pr.seq.spread), 0.35) : s * 0.36
+  const fill = Math.min(1, (2 * hwWord) / s) * words
+  const c = document.createElement('canvas')
+  const g = c.getContext('2d', { willReadFrequently: true })
+  const out = []
+  let top = 1e9, bottom = -1e9, left = 1e9, right = -1e9
+  pr.words.forEach((word, i) => {
+    const base = pr.baseline[i]
+    const y0 = Math.floor(base - pr.cap)
+    const hh = Math.ceil(base) - y0 + 1
+    c.width = W; c.height = hh
+    g.font = `900 ${pr.size}px ${FAMILY}`
+    g.textAlign = 'left'
+    const wordW = g.measureText(word).width
+    const x0 = back ? x : x - wordW
+    g.clearRect(0, 0, W, hh)
+    g.save(); g.beginPath(); g.rect(0, base - pr.cap - y0, W, pr.cap); g.clip()
+    g.fillStyle = '#fff'
+    g.fillText(word, x0, base - y0)
+    g.restore()
+    const img = g.getImageData(0, 0, W, hh).data
+    top = Math.min(top, base - pr.cap); bottom = Math.max(bottom, base)
+    for (let j = 0; j < word.length; j++) {
+      if (word[j] === ' ') continue
+      const a = x0 + g.measureText(word.slice(0, j)).width
+      const e = x0 + g.measureText(word.slice(0, j + 1)).width
+      const bx0 = Math.max(0, Math.floor(a) - 2), bx1 = Math.min(W, Math.ceil(e) + 2)
+      let str = ''
+      for (let yy = 0; yy < hh; yy++) for (let xx = bx0; xx < bx1; xx++) str += String.fromCharCode(img[(yy * W + xx) * 4 + 3])
+      // the letter's extent is its INK, not its advance: an advance carries side bearings past the glyph
+      for (let yy = 0; yy < hh; yy++) for (let xx = bx0; xx < bx1; xx++) if (img[(yy * W + xx) * 4 + 3] > 127) { left = Math.min(left, xx); right = Math.max(right, xx + 1) }
+      out.push({ ch: word[j], x0: bx0, x1: bx1, y0, h: hh, mask: btoa(str) })
     }
+  })
+  return { letters: out, fill, corridor, words, top, bottom, left, right, cap: pr.cap, baseline: pr.baseline, spacing: s }
+})
+
+const toLin = (v) => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4) }
+const LIN = Float64Array.from({ length: 256 }, (_, i) => toLin(i))
+/**
+ * The ink of the screenshot, in linear light, as a share of the ground-to-ink contrast: 0 is the ground, 1 is the
+ * ink — whatever the two are mixed as. Integrated inside each letter's mask against the ink it should carry; in the
+ * rows just past the cap line and the last baseline against the open field beside the words; and in the strips.
+ */
+function measureLetters(data, info, pr, L, strip) {
+  const { width: W, height: H, channels: c } = info
+  const lum = (i) => 0.2126 * LIN[data[i]] + 0.7152 * LIN[data[i + 1]] + 0.0722 * LIN[data[i + 2]]
+  const lg = 0.2126 * LIN[pr.ground[0]] + 0.7152 * LIN[pr.ground[1]] + 0.0722 * LIN[pr.ground[2]]
+  const li = 0.2126 * LIN[pr.ink[0]] + 0.7152 * LIN[pr.ink[1]] + 0.0722 * LIN[pr.ink[2]]
+  const ink = (x, y) => (x < 0 || y < 0 || x >= W || y >= H ? 0 : (lum((y * W + x) * c) - lg) / (li - lg))
+  let worst = Infinity, best = 0, n = 0, total = 0
+  // where the type is DRAWN: inside a letter's glyph, at least half ink (the glyph is the font's; what the rows
+  // carry comes through the state's texture, and that is what the margins are about)
+  let inkLeft = Infinity, inkRight = -Infinity
+  // a mark smaller than two rows square (a full stop at the smallest sizes) carries too few rows to judge
+  const minArea = 2 * L.spacing * L.spacing
+  for (const t of L.letters) {
+    const m = Buffer.from(t.mask, 'base64')
+    const bw = t.x1 - t.x0
+    let area = 0, got = 0
+    for (let yy = 0; yy < t.h; yy++) for (let xx = 0; xx < bw; xx++) {
+      const a = m[yy * bw + xx] / 255
+      if (!a) continue
+      area += a
+      const v = ink(t.x0 + xx, t.y0 + yy)
+      got += a * v
+      if (a > 0.5 && v >= 0.5) { inkLeft = Math.min(inkLeft, t.x0 + xx); inkRight = Math.max(inkRight, t.x0 + xx + 1) }
+    }
+    if (area < minArea) continue
+    const r = got / (area * L.fill || 1)
+    worst = Math.min(worst, r); best = Math.max(best, r); n++
+    total += got
   }
-  return { n, x0, x1, y0, y1 }
+  const s = L.spacing
+  const over = [Math.max(0, Math.floor(L.left)), Math.min(W, Math.ceil(L.right))]
+  // the open field: the same rows, the same width, on the side of the screen the words are not on
+  const span = Math.max(8, Math.round((over[1] - over[0]) / 3))
+  const field = L.left > W / 2 ? [Math.round(W * 0.04), Math.round(W * 0.04) + span] : [Math.round(W * 0.96) - span, Math.round(W * 0.96)]
+  const density = (xs, y0, y1) => {
+    let sum = 0, k = 0
+    for (let y = Math.max(0, Math.round(y0)); y < Math.min(H, Math.round(y1)); y++) for (let x = xs[0]; x < xs[1]; x++) { sum += Math.max(0, ink(x, y)); k++ }
+    return k ? sum / k : 0
+  }
+  return {
+    letters: n, worst: n ? worst : 0, best, inkShare: total / (W * H), inkLeft, inkRight,
+    above: density(over, L.top - s, L.top - 2), below: density(over, L.bottom + 2, L.bottom + s),
+    fieldAbove: density(field, L.top - s, L.top - 2), fieldBelow: density(field, L.bottom + 2, L.bottom + s),
+    stripInk: Math.max(density(over, 0, strip), density(over, H - strip, H)),
+  }
 }
 
 const raw = async (p) => {
@@ -174,7 +258,7 @@ const raw = async (p) => {
 
   // ── LEGIBLE ──────────────────────────────────────────────────────────────────────────────────────────────
   if (on('legible')) {
-    console.log('\nLEGIBLE — both ends, both languages, four viewports: words present and clear of the strips')
+    console.log('\nLEGIBLE — both ends, both languages, four viewports: every letter carries its ink, inside its block, clear of the strips')
     for (const locale of ['tr', 'en']) {
       for (const [w, h] of [[1440, 900], [390, 844], [320, 568], [844, 390]]) {
         const { ctx, p, errs } = await open(b, w, h, locale)
@@ -186,39 +270,58 @@ const raw = async (p) => {
          * whether the MATERIAL clears the strips, so the strips are hidden and the whole frame is measured.
          */
         await p.evaluate(() => document.querySelectorAll('.strip').forEach((e) => { e.style.visibility = 'hidden' }))
+        // the same place with the words removed on purpose, beside it, for the negative control
+        const nw = await open(b, w, h, locale, { breakName: 'nowords' })
+        await goTo(nw.p, 'linefield')
+        await nw.p.evaluate(() => document.querySelectorAll('.strip').forEach((e) => { e.style.visibility = 'hidden' }))
         for (const end of [0, 1]) {
           await holdAt(p, end)
           await sleep(350)
           const pr = await p.evaluate(() => window.__lab.lfProbe())
           const { png, data, info } = await raw(p)
           const strip = await p.evaluate(() => window.__lab.V.strip)
-          // the words live between the strips; the strips themselves carry the site's own chrome
-          const box = { x: 0, y: 0, w: info.width, h: info.height }
-          // a letter's row is about 0.72 of the pitch; the threshold follows the pitch, because at 320x568 it
-          // is under three pixels and a fixed three found no type at all
-          const run0 = Math.max(2, Math.round(pr.spacing * 0.55))
-          const k = typeBox(data, info, pr.ink, box, run0)
           const name = `${locale}-${w}x${h}-${end ? 'frontend' : 'backend'}`
           fs.writeFileSync(`${OUT}/rest-${name}.png`, png)
-          ok(k.n > info.width * info.height * 0.01, `${name}  the words are there — ${(k.n / (info.width * info.height) * 100).toFixed(1)}% of the frame is type`)
-          ok(k.y0 >= strip && k.y1 <= info.height - strip, `${name}  and the type clears both strips — from y=${k.y0} to y=${k.y1}, strips ${strip}px (${k.y0 - strip} / ${info.height - strip - k.y1} px of air)`)
-          ok(k.x0 >= 4 && k.x1 <= info.width - 4, `${name}  and both side margins — from x=${k.x0} to x=${k.x1} of ${info.width}`)
+          const L = await lettersOf(p)
+          const m = measureLetters(data, info, pr, L, strip)
+          /*
+           * EVERY LETTER CARRIES THE INK A LETTER IS DRAWN WITH (R9, 2026-10-05).
+           *
+           * This used to look for type by colour — runs of pixels within 46 levels of the ink — and it was
+           * written for ink and paper mixed as sRGB. Mixed in linear light (R9) a letter's edges are softer, a
+           * 4.3 px row is "within 46 levels" for 3 px rather than 4, and the check found 0% type in a frame whose
+           * words carried exactly the ink they always had. So the words are measured the way the needle was:
+           * by what is not the ground. Each letter's own glyph is drawn into a mask from the state's layout
+           * (font, size, baseline, cap band, alignment), the ink inside it is integrated in linear light, and
+           * that is compared with the ink a letter is drawn with — its area times the fill of a letter's row,
+           * read from what the runtime drew (lettersOf). Then the same frame with the words removed must fail.
+           */
+          ok(m.letters > 0 && m.worst >= 0.6 && m.best <= 1.4, `${name}  every letter carries its ink — ${m.letters} letters, ink against expected ${m.worst.toFixed(2)}..${m.best.toFixed(2)} (fill ${L.fill.toFixed(2)})`)
+          ok(m.inkShare > 0.01, `${name}  the words are there — ${(m.inkShare * 100).toFixed(1)}% of the frame is the words' ink`)
+          ok(L.top >= strip && L.bottom <= info.height - strip && m.stripInk < 0.03, `${name}  and the type clears both strips — letters from y=${Math.round(L.top)} to y=${Math.round(L.bottom)}, strips ${strip}px, ink in the strips over the words ${m.stripInk.toFixed(3)}`)
+          ok(m.inkLeft >= 4 && m.inkRight <= info.width - 4, `${name}  and both side margins — the type is drawn from x=${m.inkLeft} to x=${m.inkRight} of ${info.width} (its glyphs reach ${Math.round(L.left)}..${Math.round(L.right)})`)
           /*
            * AND NOTHING IS DRAWN OUTSIDE THE CAP LINE AND THE LAST BASELINE.
            *
            * S, C, U, O and G are drawn a little past both, and at this pitch that overshoot is caught by the
            * first row beyond the edge and drawn as a detached bar — STATE. reads as ŞTATE. No phase of the row
            * grid can clear it (the pitch would have to be 9.1px and it is 7), so the overshoot is clipped off.
-           * This is the assertion that says it stayed clipped: the type's ink box is the block's own box.
+           * This is the assertion that says it stayed clipped: the rows just past either edge, over the words,
+           * carry no more ink than the open field beside them does at the same height.
            */
-          const capTop = pr.baseline[0] - pr.cap
-          const lastBase = pr.baseline[pr.baseline.length - 1]
-          ok(k.y0 >= capTop - 2 && k.y1 <= lastBase + 2, `${name}  and no ink outside the cap line or the last baseline — ink ${k.y0}..${k.y1} against ${Math.round(capTop)}..${Math.round(lastBase)}`)
+          ok(m.above <= m.fieldAbove * 1.5 + 0.03 && m.below <= m.fieldBelow * 1.5 + 0.03, `${name}  and no ink outside the cap line or the last baseline — over the words ${m.above.toFixed(3)} / ${m.below.toFixed(3)}, the field ${m.fieldAbove.toFixed(3)} / ${m.fieldBelow.toFixed(3)}`)
           note(`${name}  ${pr.rowsPerCap} rows through a capital, cap ${Math.round(pr.cap)}px, pitch ${pr.spacing.toFixed(2)}px`)
           ok(pr.rowsPerCap >= 10, `${name}  enough rows through a capital for a curve to keep its counter (${pr.rowsPerCap})`)
+          // THE NEGATIVE CONTROL: the same frame, with the words taken out on purpose (lfbreak=nowords), must not pass
+          await holdAt(nw.p, end)
+          await sleep(350)
+          const gone = await raw(nw.p)
+          const mg = measureLetters(gone.data, gone.info, pr, L, strip)
+          ok(mg.letters > 0 && mg.best < 0.6, `${name}  and with the words removed on purpose the same check fails — ink against expected at most ${mg.best.toFixed(2)}`)
         }
         allErrs.push(...errs)
         await ctx.close()
+        await nw.ctx.close()
       }
     }
   }

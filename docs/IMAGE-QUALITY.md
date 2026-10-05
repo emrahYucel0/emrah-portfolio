@@ -12,8 +12,11 @@ the plan, the measurements and what they mean.
    reduced-motion path: **done (step 3, below); stopped before R19.**
 3. R19: the conservation rule, after R9's fix. **R9 approved (2026-10-05).** The Linefield check rewritten, R29 fixed,
    the reduced-motion cost measured; R19 prototype built and measured, **waiting for the user's comparison** (below).
-4. R20: safety cap and adaptive ratio, after R9 (constraints in ROADMAP R20).
-5. R21: a comparison sheet at four sizes, then the user's decision.
+4. Before R20 (user decision after R19's approval): the reduced-motion paint, options 1 and 2. **Done (f4d7462);
+   the picture is identical; the 100 ms target is not met (below).**
+5. R20: safety cap and adaptive ratio, after R9 (constraints in ROADMAP R20). **Prototype measured, behind
+   `?r20=on`; waiting for the user's decision before it becomes the default (below).**
+6. R21: a comparison sheet at four sizes, then the user's decision.
 
 ## R9 step 1: the sub-pixel model, measured (2026-10-04)
 
@@ -648,3 +651,175 @@ measured).
 
 **Creative's first 8 px (1.23–1.35)** is the capsule's own soft edge, where the ground gives way within a pixel or so.
 With the rule off it was 3.1–3.6.
+
+## The reduced-motion paint: options 1 and 2 (2026-10-05, f4d7462)
+
+User decision (after R19's approval): implement option 1 (prewarm the neighbouring places' masks and gain at idle)
+and option 2 (write the blend from the mask without reading the picture back); the picture must stay identical; target
+every cut under 100 ms at 1440×900@2.
+
+### What changed
+
+- **Option 2 (`flat.js` `groundOf` / `pictureOf`).** The ground under the rows is the state's opaque paper everywhere
+  except where an opening's void was filled with the page's colour or cleared, and the canvas's last row and column
+  when the ratio is fractional (partly covered). Those places are marked as the paint draws them, in 32 px tiles
+  with a pixel to spare, and only they are read back. Every other pixel is written from the paper's colour into one
+  output buffer per canvas, reused from paint to paint. A paper that is not a plain `#rrggbb` falls back to the
+  whole readback.
+- **Option 1.** `flat.warm()` also computes `rowGain` at the key `render()` uses. In reduced motion, `onArrive` queues
+  the places on either side for idle-time warming (for Linefield, the passage's two ends, which is what reduced
+  motion draws there).
+
+### The picture is identical (`out/iq/flatident.cjs`)
+
+SHA-256 of the canvas at every place (name, About, Creative, Full-Stack, Linefield both ends, Work, Cross Section, Lab)
+at 1440×900@2, 1920×991@1, 390×844@3 and 1366×768@1.25 (fractional ratio: the edge rule). Two loads per build, each
+the first page of a fresh browser: **36 of 36 identical** (`out/iq/flatident-fresh.log`).
+
+Comparing loads inside one browser is not valid: the text in a mask rasterises a few pixels differently on a
+browser's later pages (6–18 pixels, at most 7 levels). Today's build differs from itself in exactly the same way.
+
+### Measured (`tools/diag/flatcut.cjs`, guarded by `quiet.cjs`; 8da676c+R19 on 4971 against f4d7462 on 4973)
+
+Each cut is reported as **shown** (go() to the frame after the destination's first paint) and **settled** (the end of
+the last paint the cut caused). The spine is walked out and back twice, 1.5 s apart, so the idle warm-up can run.
+The two builds are interleaved, two rounds. The machine is shared with another project whose captures and audits
+load it for long periods. `quiet.cjs` waits for 30 s of quiet before each run (load under 25%, other work under
+0.1 s of CPU per second) and repeats a disturbed run. Even so, the two rounds ran in different conditions (round 1
+slow, round 2 fast), so the builds are compared within a round.
+
+**1440×900@2** (ms):
+
+| | first: shown worst | warm: shown median / worst | settled worst (first / warm) |
+|---|---|---|---|
+| round 1 (slow), today | 157 | 108 / 175 | 341 / 577 |
+| round 1 (slow), new | 176 | 99 / 152 | 290 / 557 |
+| **round 2 (fast), today** | **97** | **59 / 100** | 273 / 502 |
+| **round 2 (fast), new** | **104** | **49 / 102** | 243 / 494 |
+
+**1920×991@1:** round 2-like conditions: today 94 · 58 / 104; new 106 · 53 / 118. Slow round: today 192 · 95 / 182;
+new 183 · 98 / 207.
+
+**390×844@3:** today 96 · 49 / 93 and 49 · 30 / 45; new 51 · 27 / 43 and 50 · 27 / 42.
+
+Per place (1440×900@2, round 2), first visits, today → new:
+- Linefield: 68 → 56 (the neighbour warm-up)
+- Creative: 78 → 79
+- Full-Stack: 97 → 104
+- Work: 76 → 64 shown
+- Cross Section: 72 → 64 shown
+
+Measured paint by paint inside the page (`out/iq/cutgid.cjs`), the readback falls from 14–23 ms to 10–16 ms
+(5.8 Mpx in 2 calls → 3.8 Mpx in about 24). Full-Stack and Creative paint the same or slightly faster.
+
+### The target is not met, and why
+
+1. **Full-Stack's own paint is about 95–105 ms at 1440×900@2,** on both builds and in the best conditions. Most of it
+   is the row loop in JavaScript (about 45 ms: the material map, four mask lookups per column per row), then the
+   rows' `fillRect`s (about 17 ms), the mask's readback (about 9 ms) and the linear mix (about 13 ms). Options 1
+   and 2 do not touch these.
+2. **Work and Cross Section paint more than once,** and the picture settles only at the last paint. Both builds do
+   this; it was not caused by R9 or R19.
+   - **Work** paints three times. The first paint shows the work. The block's measured lines then arrive and
+     release its masks (a second, full paint). Its arrival flash (`flash`, 0.02 → 0) then ends about 480 ms after
+     the cut, which is a third paint.
+   - **Cross Section** paints SURFACE, then DEPTH.
+
+Options, not applied:
+- **(a)** Paint the neighbours whole in idle time, into an offscreen canvas, and make the cut a copy (a few ms), keyed
+  on the state and its features.
+- **(b)** Work: measure the next work's block lines before arrival, and in reduced motion set the flash to its end at
+  once. That makes one paint.
+- **(c)** Cross Section in reduced motion: draw the side it arrives at directly.
+- **(d)** Option 3 (only the scanlines that hold rows): about 10–20 ms off Full-Stack, not enough on its own.
+
+(a) alone would bring every shown cut under 100 ms. (b) and (c) are needed for settled.
+
+## R20: the safety cap and the adaptive ratio — the prototype (2026-10-05)
+
+**Not the default.** It is off unless the address asks: `?r20=on` turns on the cap and the adaptive ratio, `?r20=cap`
+the cap alone. A badge at the top right gives the ratio being drawn.
+
+### The rules (`main.js`, `RATIO`, `drawRatio`, `ratioFrame`, `ratioStep`)
+
+The drawing ratio R (backing pixels per composition pixel) was `min(DPR, 1.5) × V.u` (1.75 on a phone).
+
+- **Cap.** The backing store never holds more pixels than a 4K screen (`capPx = 3840 × 2160`). The ratio is lowered
+  until it fits. Today this changes only screens larger than 2560×1440@2.
+- **Adaptive.** The meter reads the time between consecutive drawn frames while the surface draws every frame (a
+  transition, the wave, a passage).
+  - **Decision:** when the median over 3 s of such frames (`window`) is over 22 ms (`slow`, under about 45 fps), a
+    step is due.
+  - **Step:** R × 0.8, taken only at rest. At rest means arrived (`A.p === A.base`), nothing busy, no press or
+    shiver, no input for 2 s, not on the Cross Section (its faces are captured from the canvas), and the Linefield
+    drive still.
+  - **Direction:** only down. Nothing in a session raises it again; a resize keeps the step.
+  - **Floor:** R = 1, one backing pixel per composition pixel. A step that would stop less than 12% above the floor
+    goes to the floor itself.
+  - **Not measured:** phones (composition under 700 px wide) and reduced motion (it draws only on change).
+  - **After a step:** the meter waits 1 s, then measures again from empty. It stops at the floor.
+- **One constant:** `RATIO.on = false` (in the prototype, no key) leaves everything as it was.
+- **The step is done as a resize:** `measure()` and then `rebuild()`.
+- **The meter ignores the capacity governor.** A first version skipped measuring while `A.constrained` was set. The
+  governor sets it when frames take over 150 ms, which is exactly the screens R20 is for: at 2560×1440@2 the meter
+  then never stepped. It now measures either way.
+
+### Measured on this machine (`tools/diag/r20.cjs`; Intel UHD, ANGLE D3D11, headless Chrome)
+
+**gpu** is the GPU's own time for one frame (`EXT_disjoint_timer_query_webgl2`, median of 40). **drawn** is the median
+interval between frames the surface draws in a transition. `quiet.cjs` guards every section. The GPU is shared with
+the desktop's Chrome, so a level measured twice can differ: the lower figure is given, with the repeat in brackets.
+
+| size | ratio (backing) | gpu per frame | drawn |
+|---|---|---|---|
+| 2560×1440@1 | **today 1.33** (2560×1440, 3.7 Mpx) | 35.4 ms | 63 ms |
+| | 1.00 floor (1920×1080, 2.1 Mpx) | 20.2 ms | 43 ms |
+| 2560×1440@2 | **today 2.00** (3840×2160, 8.3 Mpx) | 82.9 ms | 139 ms |
+| | 1.60 (3072×1728, 5.3 Mpx) | 53.5 ms | 91 (107) ms |
+| | 1.28 (2458×1382, 3.4 Mpx) | 32.8 (45.6) ms | 59 (73) ms |
+| | 1.00 floor (1920×1080, 2.1 Mpx) | 20.1 (33.8) ms | 38 (54) ms |
+| 3840×2160@2 | **today 2.40** (5760×3240, 18.7 Mpx) | 184 ms | 288 ms |
+| | 1.60 the cap (3840×2160, 8.3 Mpx) | 82.0 ms | 148 ms |
+| | 1.28 (3072×1728, 5.3 Mpx) | 53.3 ms | 97 ms |
+| | 1.00 floor (2400×1350, 3.2 Mpx) | 31.1 ms | 60 ms |
+
+About 10 ms of GPU time per Mpx. That is about twice the 5 ms/Mpx measured before R9: the tent coverage and the
+linear mix cost shader time.
+
+**Left alone (`?r20=on`, a transition every 3.5 s):** every step came at rest.
+- 2560×1440@1: 1.33 → 1.00 at 2.4 s, arrived on Full-Stack.
+- 2560×1440@2: 2.00 → 1.60 at 5.7 s, → 1.28 at 12.8 s, → 1.00 at 16.8 s.
+- 3840×2160@2: the cap to 1.60, then → 1.28 at 5.8 s, → 1.00 at 12.8 s.
+
+On this GPU every size goes to the floor, because even the floor's frames are over 22 ms.
+
+**The moment of a step** (`out/iq/r20hitch.cjs`, 2560×1440@1 and @2): `ratioStep()` takes 5–8 ms, and the new ratio
+is on screen at the next frame (8–12 ms). There is no stall; what changes is the sharpness, in one frame. Not timed
+at 3840×2160@2.
+
+### How it looks (`out/iq/r20/`)
+
+- `R20-SHEET.png`: the same region at every level, at 1:1 device pixels. These are page captures, which is what the
+  screen shows after the browser scales the canvas up.
+- `<size>-R<ratio>.png`: the stills one by one.
+- `<size>-step.webm`: the region captured as fast as the page allows, with a step at 1.2 s.
+
+What the sheet shows:
+- **R 2.00 / 1.60:** crisp, full contrast.
+- **R 1.28:** visibly softer. At 2560×1440@2 a faint thick/thin rhythm runs through the fine field, from the 1.56×
+  scale-up.
+- **R 1.00:** the rows go grey and soft, and the letters' rows lose their edge. The softening is clear at
+  2560×1440@1 too (1.33 → 1.00).
+
+### Open, for the user
+
+1. **The floor.** At R = 1 the image is clearly soft on a DPR 2 screen. A floor of 1.28 (or relative to the screen,
+   e.g. never below 0.64 × DPR) would keep it sharper, and on this GPU stop at about 33–46 ms per frame instead of 20–34.
+2. **The threshold.** At 22 ms this machine always goes to the floor. On the user's own 1920×991@1 screen nothing
+   changes: R is already 1, at the floor.
+3. **The cap at 4K** is a pure gain at 3840×2160@2: 184 → 82 ms, and the picture at 1.60 is still crisp.
+
+### Reproduce
+
+`node tools/diag/r20.cjs 4971 4977 [--cfg=…]` (today's build against `builds/iq-r20`), and
+`node tools/diag/out/iq/r20sheet.cjs` for the sheet.

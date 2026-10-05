@@ -16,8 +16,10 @@
 //   warm     every later visit: per place the worst, and over all places the median and the worst
 //
 // The Lab is visited last (arriving there opens the Lab page, which leaves the index). Builds are interleaved,
-// `rounds` times, so a slow moment on the machine lands on both. A response under 100 ms reads as immediate (RAIL).
+// `rounds` times, so a slow moment on the machine lands on both; each run waits for a quiet machine and is repeated if
+// another project's script ran beside it (quiet.cjs). A response under 100 ms reads as immediate (RAIL).
 const pw = require('playwright')
+const { guarded } = require('./quiet.cjs')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const args = process.argv.slice(2)
 const ports = args[0].split(',')
@@ -70,7 +72,7 @@ const med = (a) => [...a].sort((x, y) => x - y)[a.length >> 1]
   for (const [W, H, dpr] of CONFIGS) {
     console.log(`== ${W}x${H}@${dpr}   (ms: shown / settled, and the paints the cut caused)`)
     for (let round = 0; round < ROUNDS; round++) for (const port of ports) {
-      const v = await run(b, port, W, H, dpr)
+      const v = await guarded(`${port} ${W}x${H}@${dpr}`, () => run(b, port, W, H, dpr))
       const seen = new Set(), first = [], warm = []
       for (const c of v) { (seen.has(c.to) ? warm : first).push(c); seen.add(c.to) }
       const fmt = (c) => `${c.to} ${c.shown.toFixed(0)}/${c.settled.toFixed(0)} [${c.paints.join('+')}]`

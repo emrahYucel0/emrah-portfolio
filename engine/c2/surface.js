@@ -450,13 +450,7 @@ export { hex }
  */
 const sstep = (e0, e1, x) => { const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t) }
 const lin1 = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4))
-const srgb1 = (l) => (l <= 0.0031308 ? l * 12.92 : 1.055 * Math.pow(Math.max(l, 0), 1 / 2.4) - 0.055)
 const lumLin = (c) => 0.2126 * lin1(c[0]) + 0.7152 * lin1(c[1]) + 0.0722 * lin1(c[2])
-function tentCdf(x, r) {
-  if (x <= -r) return 0
-  if (x >= r) return 1
-  return x < 0 ? 0.5 * (x + r) * (x + r) / (r * r) : 1 - 0.5 * (r - x) * (r - x) / (r * r)
-}
 const EVERY = Array.from({ length: 32 }, (_, i) => i / 32 - 0.5)
 
 /*
@@ -488,50 +482,63 @@ export function conserves(st) {
 }
 // the physics field at rest stores 127 of 255, so every row sits this far from its material position (physics.js)
 const REST_DISP = (127 / 255 - 0.5) * 160
-/** where a still field's rows fall inside their pixels: the offset of each row's centre from a pixel centre */
+/**
+ * where a still field's rows fall inside their pixels: the offset of each row's centre from a pixel centre, merged —
+ * the offsets repeat with the pitch, so a few dozen distinct ones carry every row, each with its count
+ */
 function stillPhases(st, R, H, Hb) {
-  const out = []
+  const seen = new Map()
   const n = Math.min(400, Math.ceil(H / st.spacing))
   for (let r = 0; r < n; r++) {
     const ic = (r * st.spacing + REST_DISP) * R + (Hb - H * R) - 0.5
-    out.push(ic - Math.round(ic))
+    const ph = Math.round((ic - Math.round(ic)) * 256) / 256
+    seen.set(ph, (seen.get(ph) || 0) + 1)
   }
-  return out
+  return [...seen]
 }
-/** the light one bare row gives off, averaged over the given positions: drawn as before R9, or as now */
-function rowLight(now, hw, R, ink, pap, phases) {
+const EVERY_W = EVERY.map((ph) => [ph, 1])
+/** the light one bare row gave off BEFORE R9 (smoothstep edge, mixed as sRGB), averaged over weighted positions */
+function lightBefore(hw, R, ink, pap, phases) {
   const gp = lumLin(pap)
   const edge = Math.min(1, Math.max(0, hw * 4))
-  let s = 0
-  for (const ph of phases) {
+  let s = 0, n = 0
+  for (const [ph, w] of phases) {
     for (let j = -4; j <= 4; j++) {
-      const d = Math.abs(j - ph) / R
-      const a = (now ? tentCdf(hw - d, 1 / R) - tentCdf(-hw - d, 1 / R) : sstep(hw + 0.75 / R, hw - 0.75 / R, d)) * edge
-      const c = [0, 1, 2].map((k) => (now ? srgb1(lin1(pap[k]) + (lin1(ink[k]) - lin1(pap[k])) * a) : pap[k] + (ink[k] - pap[k]) * a))
-      s += Math.abs(lumLin(c) - gp)
+      const a = sstep(hw + 0.75 / R, hw - 0.75 / R, Math.abs(j - ph) / R) * edge
+      if (!a) continue
+      s += w * Math.abs(lumLin([0, 1, 2].map((k) => pap[k] + (ink[k] - pap[k]) * a)) - gp)
     }
+    n += w
   }
-  return s / phases.length
+  return s / n
+}
+/**
+ * the half width that gives off `light` NOW. With the tent and linear mixing it needs no search: tents a pixel apart
+ * sum to one, so a row's coverage adds up to its width, 2·hw·R pixels, at any position, and its light is that times the
+ * ink-paper contrast in linear light — times the thin-row fade (4·hw) below a quarter.
+ */
+function widthFor(light, R, dL) {
+  const h = light / (2 * R * dL)
+  return h >= 0.25 ? h : Math.sqrt(light / (8 * R * dL))
 }
 /**
  * `waving` says whether the state's rows travel through every position. By default it is read from the state as it
  * is drawn; the reduced-motion renderer passes the state's normal-motion answer, so the two modes match (flat.js).
+ *
+ * It costs a few hundred evaluations, once per state and ratio, and surface.warm() pays it in idle time — the first
+ * version searched for both numbers and took long enough to show as a long task the first time a state was drawn.
  */
 export function rowGain(st, R, H, Hb, waving = st.amp * (st.ampK ?? 1) > 0.001) {
   const still = !waving
   const key = R + '|' + H + '|' + Hb + '|' + still
   if (st._gain && st._gain.key === key) return st._gain
   const ref = 0.5 * st.thick
-  const phases = still ? stillPhases(st, R, H, Hb) : EVERY
-  const solve = (hw, lo, hi, at) => {
-    const target = rowLight(false, hw, R, st.ink, st.paper, phases)
-    for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (rowLight(true, at(m), R, st.ink, st.paper, EVERY) < target) lo = m; else hi = m }
-    return (lo + hi) / 2
-  }
+  const phases = still ? stillPhases(st, R, H, Hb) : EVERY_W
+  const dL = Math.abs(lumLin(st.ink) - lumLin(st.paper)) || 1e-6
   // a bare row: scaled; a letter's row (two backing pixels wider, solid in the middle): moved at its edges
-  const k = solve(ref, 0.2, 3, (m) => ref * m)
+  const k = Math.min(3, Math.max(0.2, widthFor(lightBefore(ref, R, st.ink, st.paper, phases), R, dL) / ref))
   const thickHw = ref + 2 / R
-  const e = solve(thickHw, -1.5 / R, 1.5 / R, (m) => thickHw + m)
+  const e = Math.min(1.5 / R, Math.max(-1.5 / R, widthFor(lightBefore(thickHw, R, st.ink, st.paper, phases), R, dL) - thickHw))
   st._gain = { key, k, e }
   return st._gain
 }
@@ -753,7 +760,7 @@ export function createSurface(canvas) {
     beneath(n) { slots[2] = n },
     clear() { gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT) },
     // build a state's textures now (in idle time) rather than on the frame it is first shown
-    warm(st) { if (st) { texOf(st.c); texOf(st.d) } },
+    warm(st) { if (st) { texOf(st.c); texOf(st.d); rowGain(st, W.dpr, W.h, canvas.height) } },
     // diagnostics: read back a few texels of a state's content texture
     probe(st, pts = [[0.5, 0.5], [0.2, 0.3], [0.5, 0.01]]) {
       const tex = texOf(st.c), { tw, th } = st.c

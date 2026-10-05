@@ -10,7 +10,8 @@ the plan, the measurements and what they mean.
 2. R9 fix prototype: A / B / C switchable, judged by eye on the user's DPR 1 screen and iPhone. **Done: the user
    chose B (2026-10-05).** Then B as the default, Linefield's dark half back at today's brightness, and the
    reduced-motion path: **done (step 3, below); stopped before R19.**
-3. R19: the conservation rule, after R9's fix.
+3. R19: the conservation rule, after R9's fix. **R9 approved (2026-10-05).** The Linefield check rewritten, R29 fixed,
+   the reduced-motion cost measured; R19 prototype built and measured, **waiting for the user's comparison** (below).
 4. R20: safety cap and adaptive ratio, after R9 (constraints in ROADMAP R20).
 5. R21: a comparison sheet at four sizes, then the user's decision.
 
@@ -377,3 +378,161 @@ node iqr9.cjs --ports=off@4970,b@4973            # rest + motion
 node r9flat.cjs 4973                             # reduced motion against normal
 node r9webkit.cjs http://192.168.1.102:4974
 ```
+
+## After R9's approval (2026-10-05)
+
+**User decisions (2026-10-05):**
+- R9 approved.
+- The Linefield words check is to measure ink, not colour, and prove itself with a negative control.
+- R29 is fixed, with stills.
+- The reduced-motion paint is measured on phones, with whether a cut lags.
+- Then R19 as planned, with a comparison for one face or both. Stop for the comparison.
+
+### The Linefield words check (`linefield.cjs`, LEGIBLE; 89da22f)
+
+**What it measures now.** The words are measured by their ink, the way the needle was.
+- Each letter's glyph is drawn into a mask from the state's own layout: font, size, baseline, cap band and alignment.
+- The ink inside the mask is integrated in linear light (0 is the ground, 1 the ink).
+- That is compared with the ink a letter is drawn with: its area times the fill of a letter's row, read from what
+  the runtime drew (the corridor or the base program, `A.lfWords`, the spread).
+
+**The extents are measured from ink too.**
+- Past the cap line and the last baseline: the rows over the words against the open field beside them.
+- The strips: their own ink.
+- The side margins: where the type is drawn, not the font's advance (which carries side bearings).
+
+The old extent checks had passed vacuously on "no type found".
+
+**The negative control** is `lfbreak=nowords`, a new break in `breaks.js` that draws every row at the ground's own
+width. `A.lfWords(0)` can't do it: at 0 a letter's rows keep the width the base shader gave them, so the letters stay.
+
+| | letters' ink against expected |
+|---|---|
+| with the words | 0.76–1.16 at every size, both languages |
+| words removed | 0.06–0.37 (the check fails, as it must) |
+
+**Result:** `linefield.cjs` passes 180/180: the 148 checks (with "the words are there" redefined) plus 32 new ones.
+8da676c passes every positive check; it has no `nowords` break, so its negative control can't run.
+
+### R29: reduced motion's tone rows (abfe37a)
+
+- `mk()` records the amplitude a state was made with (`toneAmp`), because `main.js` moves `amp` at run time.
+- The reduced renderer takes a row's tone weight, and `rowGain`'s "does it wave" answer, from it. The rows still lie
+  straight; the first-paint plate is unchanged.
+
+Reduced against normal motion (`r9flat.cjs`):
+
+| | DPR 1 | DPR 1.5 |
+|---|---|---|
+| Full-Stack | −13.6% → **+0.8%** | −3.8% → **−0.2%** |
+| Creative | −6.3% → **+1.2%** | −9.2% → **+0.8%** |
+
+**Stills** (`r29stills.cjs`, `out/iq/r29/R29-<face>-1440x900@<dpr>.png`): normal motion, reduced before, reduced
+after. Two things show in the "before" panels as much as in the "after" ones, so they predate R29:
+- the 2D renderer draws curved rows as stepped segments;
+- on Creative, a thin vertical seam in the rows near the list block's left edge and around the V.
+
+### The reduced-motion paint, and whether a cut lags (`r9cost.cjs`)
+
+**The conditions.** While this was measured, another project on the machine was encoding video (`one-grain`,
+ffmpeg, about 22% of every core). So:
+- the two builds ran interleaved, twice each;
+- the paint is also given as main-thread CPU time (CDP `ThreadTime`), which load inflates far less than wall time;
+- a cut is timed from `go()` to the first frame after the new place is painted;
+- "×4" is Chrome's CPU throttling (Lighthouse's mobile setting), an emulation and not a phone.
+
+| | paint (wall / CPU), before R9 → now | cut, before R9 → now |
+|---|---|---|
+| 390×844@3 | 10 / 10 → 34 / 24 ms | 27 → **40–52 ms** |
+| 375×667@2 | 8 / 8 → 16 / 17 ms | 20 → **30 ms** |
+| 1920×991@1 | 46 / 48–65 → 82 / 79–83 ms | 56 → **88 ms** (worst 108) |
+| 1440×900@2 | 54–63 / 69–73 → 119 / 86–141 ms | 68 → **120–141 ms** (worst 178) |
+| 390×844@3, ×4 | 78–95 → 138–175 ms | 141–176 → **191–247 ms** |
+| 375×667@2, ×4 | 56 → 121–133 ms | 109–127 → **194–275 ms** |
+
+- **Phones at full speed:** a cut lands in 30–52 ms. That is immediate.
+- **Desktop 1920×991@1:** 88 ms, at the 100 ms line.
+- **1440×900@2:** 120–141 ms, just over it. This is the one size where a cut can feel a beat late on this machine.
+- **On a phone-class CPU (emulated):** both builds are over 100 ms; B adds 60–100 ms.
+- **Not measured on a physical device.**
+
+**The long tasks** in the first runs (300–700 ms) were the harness's own loop of seven paints in a row. In a clean
+run (`out/iq/longtask.cjs`), the only long task during a cut is that cut's own paint: 50–82 ms before R9, 65–137 ms
+now, at 1440×900@2 under the same load.
+
+**`rowGain` was made cheap anyway.** It is in the same commit as the R19 prototype.
+- "Now" is analytic: tents sum to a row's width, so a row's light is `2·hw·R·fade·ΔL`.
+- "Before" is averaged over merged row positions (a few dozen instead of up to 400).
+- `surface.warm()` pays it in idle time.
+- Brightness is unchanged (`iqr9 --rest-only`, all within 0.4%).
+
+**If the cut should be faster:** the 2D path could paint as before at once and mix in linear light on the next idle
+frame. The cut would then land at the old speed, with the rows settling a frame later. That is a design decision for
+the user.
+
+## R19: the halo at the capsules — the prototype (d401e62 and the cheap `rowGain`)
+
+### The rule
+
+An opening pushes the rows aside, and they crowd against its rim. Each row kept its own width, so the ink per area
+rose there, and on Full-Stack the rim read as a halo. Where a state conserves, a bare row is narrowed by exactly the
+compression the openings caused, as Linefield's `lfHw` does with its own.
+
+**Only the openings count** (`oc`, accumulated in the shader's feature loop from openings alone). A gather or a squeeze
+is meant to close rows into a mass, and is untouched. The pointer's press is an opening too, so its rim conserves as
+well.
+
+**Kept as it was:**
+- letters keep their width;
+- the thin-row fade reads the width before conservation;
+- so does the sum of rows packed closer than a pixel.
+
+**Changed where the rule applies:**
+- the "fuse into a mass" step is off where the openings compress;
+- crowded conserved rows add their coverage, instead of the largest one winning.
+
+`flat.js` does the same in reduced motion.
+
+### For the comparison
+
+The rule sits behind a key, with a badge naming the choice:
+- `?r19=system`: Full-Stack only;
+- `?r19=both`: both faces;
+- `?r19=off`: neither.
+
+Without the key, the output is byte-identical to the previous build (`out/iq/r19ident.cjs`).
+
+### Measured (`iqhalo.cjs`)
+
+Ink per area at the rim, against the same column's open field 140–200 px out (1.00 = conserved):
+
+| | rule off | rule on |
+|---|---|---|
+| Full-Stack, DPR 1, 0–32 px | 2.9–6.0 | **0.88–0.92** |
+| Full-Stack, DPR 2, 0–32 px | 2.1–2.6 | **0.84–0.91** |
+| Creative, 8–64 px | 2.0–2.9 | **0.97–1.08** |
+
+- **At 64–128 px Full-Stack still reads 1.25–1.29 with the rule.** Off, it reads 1.5. This is the far end of the
+  push's reach (four falloffs, 224 px); the measure's field band may itself sit in the next capsule's reach there.
+  Not settled.
+- **A harness fault, found and fixed.** The first version took the rim at the first row with ink over 0.2. Conserved
+  rows at the rim are fainter than that, so it put the rim 27 px out and reported a 30% deficit that a direct profile
+  of the pixels does not have (`out/iq/halodbg.cjs`: 0.08–0.12 per pixel at the rim against 0.098 in the field).
+
+### Sheets (`r19sheet.cjs`)
+
+`out/iq/r19/R19-1440x900@1.png` and `@2.png`. Rows: Full-Stack, Creative. Columns: rule off, rule on. Under each
+panel, the left end of the lower capsule's top rim at 4×.
+
+- **Full-Stack:** without the rule, a bright white band around both capsules. With it, the crowded rows are a grey
+  of the field's own brightness, and the capsules are read by their void.
+- **Creative:** without the rule, a darker band at the rim. With it, the rim fades into the field and the capsule's
+  edge is softer.
+- **At DPR 1 the conserved, very dense area shows a fine mesh** in the 4× crop (rows closer than a pixel). At full
+  size it reads as grey. Whether it shimmers in motion (the ripple, a press) is **not measured**.
+
+### Open, for the user
+
+Is the rule wanted on Full-Stack only, or on both faces? The previews:
+- this computer: `http://127.0.0.1:4977/tr?r19=both` (or `=system`, `=off`);
+- iPhone: `http://192.168.1.102:4978/tr?r19=both`.

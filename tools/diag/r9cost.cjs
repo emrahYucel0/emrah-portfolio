@@ -6,7 +6,9 @@
 // R9 that paint mixes the rows in linear light over the whole canvas, so it costs more. Two numbers, per build, size
 // and CPU speed (as is, and throttled 4x through CDP — Lighthouse's mobile setting, an emulation and not a phone):
 //
-//   paint   one surface.render() of Full-Stack and of Creative, median of seven, main thread
+//   paint   one surface.render() of Full-Stack and of Creative, median of seven, main thread wall time — and the
+//           main thread's CPU time for the same seven (CDP Performance ThreadTime), which another busy process on
+//           the machine inflates far less than wall time
 //   cut     from go() to the first animation frame after the new place has been painted, median of six cuts
 //           Creative <-> Full-Stack; and the longest task the browser reports while it happens
 //
@@ -33,6 +35,16 @@ const med = (a) => [...a].sort((x, y) => x - y)[a.length >> 1]
         await sleep(1500)
         const cdp = await ctx.newCDPSession(p)
         await cdp.send('Emulation.setCPUThrottlingRate', { rate })
+        await cdp.send('Performance.enable')
+        const thread = async () => (await cdp.send('Performance.getMetrics')).metrics.find((m) => m.name === 'ThreadTime').value
+        const cpu = {}
+        for (const place of ['system', 'creative']) {
+          await p.evaluate((n) => window.__lab.go(window.__lab.STOP[n]), place)
+          await sleep(400)
+          const t0 = await thread()
+          await p.evaluate(() => { for (let i = 0; i < 7; i++) window.__lab.surface.render() })
+          cpu[place] = ((await thread()) - t0) / 7 * 1000
+        }
         const r = await p.evaluate(async () => {
           const L = window.__lab
           const s = L.surface
@@ -71,7 +83,7 @@ const med = (a) => [...a].sort((x, y) => x - y)[a.length >> 1]
           cuts.sort((a, b2) => a - b2)
           return { paint, cut: cuts[cuts.length >> 1], cutMax: cuts[cuts.length - 1], longest }
         })
-        line.push(`${port}: paint ${r.paint.system.toFixed(0)} / ${r.paint.creative.toFixed(0)} ms, cut ${r.cut.toFixed(0)} ms (worst ${r.cutMax.toFixed(0)}), longest task ${r.longest.toFixed(0)} ms`)
+        line.push(`${port}: paint ${r.paint.system.toFixed(0)} / ${r.paint.creative.toFixed(0)} ms (cpu ${cpu.system.toFixed(0)} / ${cpu.creative.toFixed(0)}), cut ${r.cut.toFixed(0)} ms (worst ${r.cutMax.toFixed(0)}), longest task ${r.longest.toFixed(0)} ms`)
         await ctx.close()
       }
       console.log(`   ${W}x${H}@${dpr} cpu x${rate}   ` + line.join('   |   '))

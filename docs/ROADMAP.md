@@ -22,7 +22,7 @@ belgedeyse (AUDIT-01, LINEFIELD.md, DEPLOYMENT.md…) burada ona bağlantı veri
 - **Karar bekliyor:** neyin beklendiği yazılı.
 - **Önce inceleme:** mevcut davranış ölçülmeden tasarlanmayacak.
 
-Son güncelleme: 2026-10-05, `feature/image-quality` (worktree `../emrah-portfolio-iq`, 8da676c'den): R9 B varsayılan, R29 eklendi. Canlıda
+Son güncelleme: 2026-10-05, `feature/image-quality` (worktree `../emrah-portfolio-iq`, 8da676c'den): R9 onaylandı, R29 yapıldı, R19 prototipi karşılaştırma bekliyor. Canlıda
 df5ab32. Görüntü kalitesi turu başladı: R9, R19, R20, R21. Sıra: R9 ölçümü → R9 düzeltmesi → R19 → R20 → R21.
 Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 
@@ -35,7 +35,7 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 | R1 | Birleştirme: düzeltme turu 2 → `main`, yayın dalı | P0 | **Bitti** (2026-10-02, `4d64ac8`) | — |
 | R4 | Özel imleç | P2 | Kısmen: halkanın boyutu ve rengi bekliyor | — (R2 bitti) |
 | R6 | Lab bench girişleri: okunur boyut, üzerine gelince ön gösterim | P2 | Kısmen: ön gösterimin biçimi bekliyor | — |
-| R9 | Koyu zeminlerde satır titreşimi | **P0** (R18 için) | **Sürüyor** (`feature/image-quality`): B varsayılan (adım 3, 2026-10-05); kullanıcının incelemesini bekliyor | — |
+| R9 | Koyu zeminlerde satır titreşimi | **P0** (R18 için) | **Onaylandı** (2026-10-05); `feature/image-quality` dalında, birleştirme ve yayın bekliyor | — |
 | R10 | Safari'de adın ince kesimle çizilmesi | P1 | **Kapandı** (2026-10-04: iPhone'da kalın; Playwright WebKit artefaktı) | R22 |
 | R11 | Yavaş ağda ilk kare (8,9 sn) | P2 | Önce değerlendirme | — |
 | R13 | Gövde metni ve tipografik hiyerarşi | P1 | Karar bekliyor (ölçek) | — |
@@ -43,10 +43,10 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 | R15 | Tempo, ilerleme göstergesi, performans bütçesi | P2 | Karar bekliyor | R14 |
 | R17 | Yayın (DEPLOYMENT.md, CSP, canlı yedeği) | P0 | **Bitti** (2026-10-03, `b8918dc` canlıda) | — |
 | R18 | Awwwards başvurusu (Developer Award) | P0 | Karar bekliyor (tarih) | R17, R9, R22, R23 |
-| R19 | Full-Stack'in siyah kapsüllerinin çevresindeki hale | P1 | Karar bekliyor (korunum kuralının kapsamı: yalnız Full-Stack mi, iki yüz mü) | R9 |
+| R19 | Full-Stack'in siyah kapsüllerinin çevresindeki hale | P1 | **Sürüyor:** prototip `?r19=` arkasında; kullanıcının karşılaştırması bekliyor (yalnız Full-Stack mi, iki yüz mü) | R9 |
 | R27 | Harness'lar izlenen `docs/` yollarına yazıyor | P2 | **Bitti** (2026-10-03) | — |
 | R28 | Mac dokunmatik yüzeyinde ikinci kaydırmanın yutulması (120 Hz) | **P0** | **Canlıda (`1e663bd`); gerçek MacBook onayı bekliyor** | R22 |
-| R29 | Hareketi azaltılmış modda ton satırları kalınlaştırmıyor (R9'dan önce de var) | P2 | Karar bekliyor | R9 |
+| R29 | Hareketi azaltılmış modda ton satırları kalınlaştırmıyor (R9'dan önce de var) | P2 | **Yapıldı** (2026-10-05, abfe37a; dalda) | R9 |
 | R20 | Arka belleğe piksel sayısı tavanı ve uyarlanır çizim oranı | P1 | **Karar verildi** (2026-10-04): güvenlik tavanı + uyarlanır oran; değerler ölçümle | R9 |
 | R21 | Büyük ekranlarda büyük harf başına satır sayısına üst sınır | P2 | Karar bekliyor (sanat yönetimi) | — |
 | R22 | Gerçek cihaz testi (iPad, Mac'te Safari, Android telefon) | P0 | Karar verildi | — |
@@ -178,6 +178,20 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
         build'inde bench dikişi) 8da676c'de de var.
     - **Açık:** Linefield testinin eşiği (karar); R29.
     - **Önizleme:** `192.168.1.102:4974/tr`. Yerel ağ adresi yeniden .102 oldu.
+  - **Karar (2026-10-05, kullanıcı): R9 onaylandı.** Ardından yapılanlar (ayrıntı `docs/IMAGE-QUALITY.md`):
+    - **Linefield'ın sözcük testi (89da22f):** artık renkle değil mürekkeple ölçülüyor. Her harfin kendi glif maskesi
+      içinde doğrusal ışıkta tümlenen mürekkep, beklenen mürekkeple karşılaştırılıyor. Negatif kontrol
+      `lfbreak=nowords`: sözcükler kalkınca 0,06–0,37, varken 0,76–1,16. Sonuç `linefield.cjs` 180/180.
+    - **R29 yapıldı (abfe37a).**
+    - **Hareketi azaltılmış modun boyama maliyeti.** Makinede başka bir projenin video kaydı sürerken ölçüldü; iki
+      build sırayla, ikişer kez, hem duvar saatiyle hem CPU süresiyle.
+      - Telefonda bir kesme 30–52 ms: anlık.
+      - 1920×991@1'de 88 ms.
+      - 1440×900@2'de 120–141 ms: 100 ms sınırını hafifçe aşıyor.
+      - 4× yavaşlatılmış CPU'da iki build de 100 ms'yi aşıyor; B 60–100 ms ekliyor.
+      - Gerçek cihazda ölçülmedi.
+      - İstenirse: 2D yol önce eskisi gibi boyar, doğrusal karışımı bir sonraki boş karede yapar (karar).
+    - **`rowGain` hızlandı:** analitik hesap, birleştirilmiş konumlar, boşta ısınma. Parlaklık değişmedi.
 - **Dosyalar:** `engine/c2/main.js` (`V.dpr`, `measure`), `engine/c2/surface.js` (shader, `resize`),
   `engine/c2/linefield/` (kendi aralık hesabı), `docs/LINEFIELD.md` (ölçümler).
 - **Bağımlılık:** yok. Gerçek MacBook ekranında görsel onay gerekiyor (R22). R20 ile birlikte ölçülmeli.
@@ -403,6 +417,18 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 - **Dosyalar:** `engine/c2/states.js` (Full-Stack yüzü), `engine/c2/surface.js`, `engine/c2/flat.js`,
   `engine/c2/linefield/corridor.js` (örnek kural).
 - **Bağımlılık:** R9'un düzeltmesinden sonra (halenin parlaklığı karıştırmaya da bağlı).
+- **Sürüyor (2026-10-05): prototip; kullanıcının karşılaştırmasını bekliyor.** Ayrıntı `docs/IMAGE-QUALITY.md`.
+  - **Kural:** bir satır, yalnız kapsüllerin (opening) yarattığı sıkışma kadar inceltiliyor. Toplama ve sıkıştırma
+    jestleri dışarıda; harfler muaf. `flat.js` de aynısını yapıyor.
+  - **Anahtar:** `?r19=system|both|off`, yeşil rozetle. Anahtarsız build öncekiyle bayt bayt aynı.
+  - **Ölçüm** (`iqhalo.cjs`), kenarda alan başına mürekkep, açık alana göre:
+    - Full-Stack, DPR 1: 2,9–6,0 → 0,88–0,92.
+    - Full-Stack, DPR 2: 2,1–2,6 → 0,84–0,91.
+    - Creative: 2,0–2,9 → 0,97–1,08.
+  - **Karşılaştırma sayfaları:** `tools/diag/out/iq/r19/R19-1440x900@1.png` ve `@2.png`.
+  - **Önizleme:** bu bilgisayarda `127.0.0.1:4977/tr?r19=both`, iPhone'da `192.168.1.102:4978/tr?r19=both`.
+  - **Açık:** DPR 1'de çok sıkışan bölgede ince bir ağ deseni var; hareket halinde titreşip titreşmediği ölçülmedi.
+    Kapsül kenarından 64–128 px uzakta Full-Stack 1,25 okuyor.
 - **Öncelik:** P1.
 
 ### R20. Arka belleğe piksel sayısı tavanı ve uyarlanır çizim oranı
@@ -562,7 +588,13 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
   Ton bir hareket değil, kompozisyonun parçası.
 - **Aday düzeltme:** `flat.js`'te `wgain` için `st.amp` (`ampK`'sız) kullanmak. Tek satır; hareketi azaltılmış
   modun görünüşünü değiştirir.
-- **Karar:** Bekleyen.
+- **Karar (2026-10-05, kullanıcı):** düzelt; hareketi azaltılmış yol da normal yol gibi kalınlaştırsın.
+- **Yapıldı (2026-10-05, abfe37a, dalda).** `mk()` durumun yaratıldığı genliği `toneAmp` olarak saklıyor; `flat.js`
+  ton ağırlığını oradan alıyor. Hareketi azaltılmış mod normal harekete göre:
+  - Full-Stack: −%13,6 → +%0,8 (DPR 1), −%3,8 → −%0,2 (DPR 1,5).
+  - Creative: −%6,3 → +%1,2 ve −%9,2 → +%0,8.
+
+  Görseller: `r29stills.cjs`, `tools/diag/out/iq/r29/`.
 - **Dosyalar:** `engine/c2/flat.js` (`paintFlat`, `wgain`), `tools/diag/r9flat.cjs` (ölçüm).
 - **Bağımlılık:** R9.
 - **Öncelik:** P2.

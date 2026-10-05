@@ -160,7 +160,6 @@ function measure() {
   V.T = V.P && V.W >= 700
   V.S = !V.P && V.H < 520
   V.dpr = drawRatio(Math.min(devicePixelRatio || 1, V.W < 700 ? 1.75 : 1.5))
-  ratioBadge()
   const safe = V.safe = safeInsets()
   // the composition stays symmetrical: the larger side inset moves both margins, the larger of top/bottom both strips
   V.pad = Math.max(V.T ? clamp(V.W * 0.04, 28, 48) : V.P ? 18 : clamp(V.W * 0.025, 16, 36), safe.l, safe.r)
@@ -1485,10 +1484,15 @@ function lockWork(i) {
   if (A.wLocked >= 0 && A.wLocked !== i) unlockWork(A.wLocked)
   A.wLocked = i
   gsap.killTweensOf(s)
-  // the instant the two sets agree, the information resolves — then the rows fill with it. Precision is the event.
-  gsap.to(s, { lod: 0, duration: 0.24, ease: 'expo.out' })
-  gsap.to(s, { fill: 1, duration: 0.5, delay: 0.05, ease: 'power3.out' })
-  s.flash = 0.2; gsap.to(s, { flash: 0, duration: 0.8, ease: 'power2.out' })
+  // reduced motion is not shown the resolving: the work is simply there, registered, in the cut's one paint (the
+  // tweens' end values, set at once; 2026-10-05)
+  if (REDUCED) { s.lod = 0; s.fill = 1; s.flash = 0 }
+  else {
+    // the instant the two sets agree, the information resolves — then the rows fill with it. Precision is the event.
+    gsap.to(s, { lod: 0, duration: 0.24, ease: 'expo.out' })
+    gsap.to(s, { fill: 1, duration: 0.5, delay: 0.05, ease: 'power3.out' })
+    s.flash = 0.2; gsap.to(s, { flash: 0, duration: 0.8, ease: 'power2.out' })
+  }
   phys.kick(fr.y - 6, -40, fr.x, fr.x + fr.w); phys.kick(fr.y + fr.h + 6, 40, fr.x, fr.x + fr.w)
   haptic(8)
   // a work that stays in register gets its real media and its world ready underneath, so the release never waits
@@ -1498,7 +1502,8 @@ function unlockWork(i) {
   const s = WORKS[i]
   A.wLocked = -1
   gsap.killTweensOf(s)
-  gsap.to(s, { fill: 0, flash: 0, lod: ST.LOD_OFF, duration: 0.2, ease: 'power2.out' })
+  if (REDUCED) { s.fill = 0; s.flash = 0; s.lod = ST.LOD_OFF }
+  else gsap.to(s, { fill: 0, flash: 0, lod: ST.LOD_OFF, duration: 0.2, ease: 'power2.out' })
 }
 
 // ─── stops: what happens on arrival ──────────────────────────────────────────
@@ -1506,7 +1511,10 @@ function onArrive(stop, prev) {
   A.arrivedAt = performance.now()
   // reduced motion moves by cuts: the places either side are made ready in idle time, so a cut to one only paints it
   // (the passage is drawn as its two ends there, LF.reducedPair)
-  if (REDUCED) for (const i of [stop - 1, stop + 1]) queueWarm(LINEFIELD && LF && i === LFS ? [LF.back, LF.front] : [IDX[i]])
+  if (REDUCED) for (const i of [stop - 1, stop + 1]) {
+    if (i === STOP.work) prePocket(stop > STOP.work ? N - 1 : 0)
+    queueWarm(LINEFIELD && LF && i === LFS ? [LF.back, LF.front] : [IDX[i]])
+  }
   // on the way to the About room the room itself is the destination; the name is only passed through
   if (!(stop === STOP.name && A.pending === 'about')) arrived(() => PLACE_HEADING[stop]?.(), PLACE_NAME[stop]?.())
   /*
@@ -1819,9 +1827,8 @@ function fillWorldDOM(k) {
  *   text copper (#9a4f22, 5.14:1 on the cream ground) instead of the night's cream and #d4875a.
  */
 const CURRENT_FADE = 70   // states.js: the night fades out over this much of the column's foot
-function currentPocket() {
-  if (!D.current || !D.current.classList.contains('on')) return true
-  const k = registeredWork()
+function currentPocket(k = registeredWork(), early = false) {
+  if (!D.current || (!early && !D.current.classList.contains('on'))) return true
   const st = k >= 0 ? WORKS[k] : null
   if (!st || !st.lines) return true
   const colBox = D.work.querySelector('.col')
@@ -1884,6 +1891,24 @@ function currentPocket() {
   if (!same) { st.lines.length = 0; st.lines.push(...out); surface.release(st) }
   if (!same || moved) lastSig = ''
   return true
+}
+/*
+ * REDUCED MOTION: THE NEXT WORK'S POCKET, MEASURED BEFORE THE VISITOR ARRIVES (2026-10-05, one paint per cut). The
+ * rows clear behind the block's lines, and those lines were measured only once the work had registered — after
+ * the cut's first paint, so the cut painted twice. From the place next to Work, the block is filled with the work
+ * the field will show and measured while its layer is hidden (the block's `on` is held for the measurement only,
+ * so its position is the shown one); the state's masks are then built in idle time with the pocket in them.
+ */
+// k: the work the field will show, which is the first coming from below and the last from above (onArrive)
+function prePocket(k) {
+  if (!D.current || !WORKS[k]?.lines || registeredWork() === k) return
+  D.wtitle.textContent = works[k].name; D.wmeta.textContent = works[k].strength
+  const was = D.current.classList.contains('on')
+  D.current.classList.add('on')
+  currentPocket(k, true)
+  if (!was) D.current.classList.remove('on')
+  lastWork = ''   // domUpdate sets the block as it stands on its next frame
+  queueWarm([WORKS[k]])
 }
 let currentDue = false
 let linesDue = null
@@ -2343,39 +2368,27 @@ function noteFrame(drawn, et) {
  * R20 — HOW MANY PIXELS THE SURFACE DRAWS: A SAFETY CAP AND AN ADAPTIVE RATIO (docs/IMAGE-QUALITY.md; user decision
  * 2026-10-04). The drawing ratio is min(DPR, 1.5) × V.u (1.75 on a phone), and every pixel of it is shaded every frame:
  * on a large high-DPR screen that grew without limit (3840×2160 at DPR 2 drew 18.7 Mpx), and on a weak GPU even a
- * 4K backing store cannot keep up. Two rules, both off with RATIO.on = false (the drawing ratio is then what it was):
+ * 4K backing store cannot keep up. Two rules; RATIO.on = false turns both off (the drawing ratio is then what it was).
+ * User decision 2026-10-05: the cap is the default; the adaptive ratio stays in the code, off (`adaptive: false`),
+ * with its floor at 1.28, until it is measured on a discrete GPU whether it is needed at all.
  *
  *   cap       the backing store never holds more pixels than a 4K screen (`capPx`, 8.3 Mpx); the ratio is lowered until it fits
  *   adaptive  the time between consecutive drawn frames is measured while the surface draws every frame (a transition,
  *             a wave, a passage). When its median over `window` ms of such frames is over `slow` ms, the ratio is due
  *             one step down (× `step`). The step is taken only when the site is at rest — arrived, nothing in flight,
  *             no input for `still` ms, not on the Cross Section (its faces are captured from the canvas) — and only
- *             ever down: nothing in a session raises the ratio again. It never goes below `floor`, one backing pixel
- *             per composition pixel (the 1920 × 1080 the site is composed at), and never below where the cap put it.
+ *             ever down: nothing in a session raises the ratio again. It never goes below `floor` (1.28 backing pixels
+ *             per pixel of the 1920 × 1080 composition: at 1.00 the rows went visibly grey and soft), and never below
+ *             where the cap put it; a step of less than a tenth is not taken.
  *             A phone (the composition under 700 px wide) is never measured, and reduced motion draws only on change,
  *             so there is nothing to measure there.
  */
-// R20 PROTOTYPE (until the user's decision): off unless the address asks — ?r20=on (cap and adaptive), ?r20=cap (the cap
-// alone). As the default, `on` becomes true and the key goes.
-const R20_KEY = new URLSearchParams(location.search).get('r20')
-const RATIO = { on: R20_KEY === 'on' || R20_KEY === 'cap', adaptive: R20_KEY !== 'cap', capPx: 3840 * 2160, floor: 1, window: 3000, slow: 22, step: 0.8, settle: 1000, still: 2000 }
+const RATIO = { on: true, adaptive: false, capPx: 3840 * 2160, floor: 1.28, window: 3000, slow: 22, step: 0.8, settle: 1000, still: 2000 }
 const ratio = { k: 1, iv: [], sum: 0, prev: false, due: false, done: false, since: 0, steps: [] }
 function drawRatio(dpr) {
   if (!RATIO.on) return dpr
   const capped = Math.min(dpr, Math.sqrt(RATIO.capPx / (innerWidth * innerHeight)))
   return Math.max(Math.min(capped, RATIO.floor / V.u), capped * ratio.k)
-}
-// the prototype says so on screen, with the ratio it is drawing at (top right, out of the way of the stills)
-let ratioTag = null
-function ratioBadge() {
-  if (!RATIO.on || typeof document === 'undefined' || !document.body) return
-  if (!ratioTag) {
-    ratioTag = document.createElement('div')
-    ratioTag.setAttribute('aria-hidden', 'true')
-    ratioTag.style.cssText = 'position:fixed;right:6px;top:6px;z-index:2147483647;font:600 11px/1 ui-monospace,monospace;padding:3px 5px;background:#1f4f6f;color:#fff;pointer-events:none'
-    document.body.appendChild(ratioTag)
-  }
-  ratioTag.textContent = `R20 ${R20_KEY} · R ${(V.dpr * V.u).toFixed(2)}`
 }
 const ratioAtRest = (now) => A.mode === 'index' && !A.busy && A.p === A.base && A.pT === A.base && owns()
   && !ptr.down && !A.press && A.shiver < 0.001 && now - Math.max(A.lastInput, ptr.t || 0) > RATIO.still
@@ -2397,13 +2410,14 @@ function ratioFrame(drawn, et, now) {
 }
 // one step down, as a resize is done (the states are rebuilt at the new ratio); at the floor the measuring stops
 function ratioStep(now) {
-  const from = V.dpr * V.u
+  const from = V.dpr * V.u, k0 = ratio.k
   ratio.due = false; ratio.iv.length = 0; ratio.sum = 0; ratio.since = now
   ratio.k *= RATIO.step
   measure()
   // a step that would stop less than an eighth above the floor goes to the floor itself (no 2% steps at the end)
   if (V.dpr * V.u < RATIO.floor * 1.12) { ratio.k = 0; measure() }
-  if (V.dpr * V.u > from - 1e-3) { ratio.done = true; return }
+  // and one that would change the ratio by less than a tenth (already next to the floor) is not taken at all
+  if (V.dpr * V.u > from * 0.9) { ratio.k = k0; measure(); ratio.done = true; return }
   rebuild()
   ratio.steps.push({ at: Math.round(now), from, to: V.dpr * V.u })
   if (V.dpr * V.u <= RATIO.floor + 1e-3) ratio.done = true
@@ -2856,6 +2870,8 @@ window.__lab = { CONTACT_STOP, A, V, ptr, phys, surface, works, STOP, SPINE,
   ratio: () => ({ k: ratio.k, due: ratio.due, done: ratio.done, steps: ratio.steps, R: V.dpr * V.u, backing: [canvas.width, canvas.height],
     median: ratio.iv.length ? [...ratio.iv].sort((a, b) => a - b)[ratio.iv.length >> 1] : 0, span: ratio.sum }),
   ratioStep: () => ratioStep(performance.now()),
+  // the adaptive ratio is off by default (user decision 2026-10-05); a harness can switch it on for one page
+  ratioAdaptive: (on) => { RATIO.adaptive = !!on; ratio.done = false },
   // the passage's own hooks leave with the flag: hold it at an exact progress, and read what it is doing
   ...(LINEFIELD ? {
     lf: () => LF,

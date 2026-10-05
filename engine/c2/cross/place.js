@@ -175,7 +175,10 @@ export function createPlace(surface, { reduced = false } = {}) {
      */
     arrive(fromBelow) {
       back2work = false
-      if (fromBelow) { x = 0; p = 0; turnPending = true } else { x = LAST; p = 1; turnPending = false }
+      // reduced motion has no turn to show: it arrives where the turn would end (the band), in one paint, instead of
+      // painting SURFACE first and the band a frame later (2026-10-05, one paint per cut)
+      if (fromBelow && reduced) { x = 1; p = P[1]; turnPending = false }
+      else if (fromBelow) { x = 0; p = 0; turnPending = true } else { x = LAST; p = 1; turnPending = false }
       held = -1; valid = [false, false]; bandsLeft = 0; waited = 0
     },
     passBy(towardsAbove) { x = towardsAbove ? 0 : LAST; p = P[x]; turnPending = false; back2work = false; held = -1; valid = [false, false]; bandsLeft = 0 },

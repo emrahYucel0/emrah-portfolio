@@ -1,7 +1,7 @@
 // R20 — THE DRAWING RATIO: WHAT A FRAME COSTS AT EACH STEP, WHETHER THE STEPS COME AT REST, AND HOW THEY LOOK.
 //
-//   node r20.cjs <beforePort> <r20Port> [--cfg=WxH@dpr,...] [--headed] [--out=dir]
-//   (the R20 build is opened with ?r20=on, the prototype's key)
+//   node r20.cjs <beforePort> <r20Port> [--cfg=WxH@dpr,...] [--only=before,natural,ladder,film] [--headed] [--out=dir]
+//   (the cap is the R20 build's default; `natural` switches the adaptive ratio on in its page, __lab.ratioAdaptive)
 //
 // Per size, on this machine's GPU (the renderer the browser really used is printed):
 //
@@ -28,6 +28,7 @@ const [before, r20] = args.filter((a) => /^\d+$/.test(a))
 const opt = (k, d) => { const a = args.find((x) => x.startsWith(`--${k}=`)); return a ? a.slice(k.length + 3) : d }
 const CONFIGS = opt('cfg', '2560x1440@1,2560x1440@2,3840x2160@2').split(',').map((s) => s.split(/[x@]/).map(Number))
 const OUT = opt('out', path.join(__dirname, 'out', 'iq', 'r20'))
+const ONLY = opt('only', 'before,natural,ladder,film').split(',')
 fs.mkdirSync(OUT, { recursive: true })
 const med = (a) => (a.length ? [...a].sort((x, y) => x - y)[a.length >> 1] : NaN)
 const FFMPEG = (() => {
@@ -102,7 +103,7 @@ const region = (p) => p.evaluate(() => {
     console.log(`== ${tag}`)
     const row = { size: tag }
     // ── before: today's build (each section waits for a quiet machine and is repeated if disturbed: quiet.cjs)
-    await guarded(`${tag} before`, async () => {
+    if (ONLY.includes('before')) await guarded(`${tag} before`, async () => {
       const { ctx, p } = await open(b, before, W, H, dpr)
       await go(p, 'system'); await settle(p); await sleep(600)
       row.before = { ...(await cost(p)), raf: await rafDuring(p) }
@@ -113,8 +114,9 @@ const region = (p) => p.evaluate(() => {
       await ctx.close()
     })
     // ── natural: the R20 build on its own
-    await guarded(`${tag} natural`, async () => {
-      const { ctx, p } = await open(b, r20, W, H, dpr, '?r20=on')
+    if (ONLY.includes('natural')) await guarded(`${tag} natural`, async () => {
+      const { ctx, p } = await open(b, r20, W, H, dpr)
+      await p.evaluate(() => window.__lab.ratioAdaptive(true))
       const t0 = await p.evaluate(() => performance.now())
       const start = await p.evaluate(() => window.__lab.ratio())
       // a watcher in the page records the site's state on every frame, so each step can be checked against it
@@ -148,9 +150,9 @@ const region = (p) => p.evaluate(() => {
       await ctx.close()
     })
     // ── ladder: every level, forced, with its cost and a still
-    await guarded(`${tag} ladder`, async () => {
-      // ?r20=cap: the cap without the meter, so the page cannot step on its own before the first level is measured
-      const { ctx, p } = await open(b, r20, W, H, dpr, '?r20=cap')
+    if (ONLY.includes('ladder')) await guarded(`${tag} ladder`, async () => {
+      // the default: the cap without the meter, so the page cannot step on its own before the first level is measured
+      const { ctx, p } = await open(b, r20, W, H, dpr)
       row.ladder = []
       for (let lvl = 0; lvl < 6; lvl++) {
         await go(p, 'system'); await settle(p); await sleep(800)
@@ -171,8 +173,8 @@ const region = (p) => p.evaluate(() => {
       await ctx.close()
     })
     // ── film: the first step, at 1:1, as fast as the page can be captured
-    if (FFMPEG) {
-      const { ctx, p } = await open(b, r20, W, H, dpr, '?r20=cap')
+    if (FFMPEG && ONLY.includes('film')) {
+      const { ctx, p } = await open(b, r20, W, H, dpr)
       await go(p, 'system'); await settle(p); await sleep(800)
       const clip = await region(p)
       const dir = path.join(OUT, `${tag}-film`)

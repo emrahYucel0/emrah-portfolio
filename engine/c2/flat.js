@@ -21,7 +21,7 @@
 // What is deliberately not drawn here: the ambient wave, the pen, the shiver, the crossfade between two states,
 // the press reveal and the physics imprint — all of them are motion, and reduced motion asks for none of it.
 
-import { rowGain } from './surface.js'
+import { rowGain, conserves } from './surface.js'
 
 const MAXF = 10
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v)
@@ -216,14 +216,17 @@ export function paintFlat(ctx, st, o) {
     gain = rowGain(st, dpr, Hd, ctx.canvas.height, (o.toneAmp ?? st.amp) > 0.001)
   }
   const ref = thick * 0.5
+  // R19 prototype: the capsules' compression conserves ink here too (the shader's rule; Gs is the openings' compression
+  // at rest — a face holds no gather while it stands)
+  const Q = mask ? conserves(st) : 0
   ctx.fillStyle = st.inkHex
   for (let r = 0; r < rowsN; r++) {
     const vy = r * s
     const fy = ((vy + offY) / texH) * th - 0.5
     const set = ((r % 2) + 2) % 2
-    let runX = 0, runHw = -1, runY = 0
+    let runX = 0, runHw = -1, runY = 0, runEdge = 0
     for (let cx = 0; cx <= cols; cx++) {
-      let hw = 0, Y = 0
+      let hw = 0, Y = 0, eh = 0
       if (cx < cols) {
         const fx = (cx + 0.5) / sub - 0.5
         const px = (cx + 0.5) * cw
@@ -255,6 +258,9 @@ export function paintFlat(ctx, st, o) {
             if (hw <= ref) hw *= gain.k
             else { const t = smoothstep(ref, ref + 1.5 / dpr, hw); hw = (hw + (gain.k - 1) * ref) * (1 - t) + (hw + gain.e) * t }
           }
+          const edgeHw = hw
+          const qk = Q && solid < 0.2 ? 1 : 0
+          if (qk) hw /= Math.max(glen, 1)
           // static saturation tapers row by row along its ramp, exactly as the shader's does
           const rfs = smoothstep(0.15, 0.95, sat + 0.04 * Math.sin(r * 0.73))
           const rfd = clamp((st.fuse || 0) * 1.9 - (1 - solid) * 0.3 - (1 - clamp(info * 2, 0, 1)) * 0.15, 0, 1)
@@ -262,21 +268,23 @@ export function paintFlat(ctx, st, o) {
           hw = hw + (s * 0.8 - hw) * (rf * rf)
           // rows pressed closer than the eye can part are seen as the mass they add up to
           const spr = s / glen
-          const cr = smoothstep(2.1, 1.3, spr * dpr)
+          const cr = smoothstep(2.1, 1.3, spr * dpr) * (1 - qk * smoothstep(1, 1.15, glen))
           if (cr > 0 && hw > 0.001) hw = hw + (Math.max(hw, 0.62 * spr) - hw) * cr
           // widths are quantised so neighbouring columns merge into one fillRect; the rows R9 narrows (a dark
           // ground's, by rowGain) are thin enough that sixteenths moved their light by 6%, so the mask path uses 64ths
           hw = mask ? Math.round(hw * 64) / 64 : Math.round(hw * 16) / 16
           Y = Math.round(Y * 8) / 8
+          // the width the thin-row fade is read from: a conserved row fades as the row it was before R19 narrowed it
+          eh = qk ? edgeHw : hw
         } else hw = 0
       }
       if (cx === cols || hw !== runHw || Y !== runY) {
-        if (runHw > 0.05) {
+        if (runHw > (mask ? 0.005 : 0.05)) {
           // the shader fades a row thinner than a quarter pixel-unit (clamp(hw * 4)); with a mask, so does this
-          if (mask) mask.globalAlpha = Math.min(1, runHw * 4)
+          if (mask) mask.globalAlpha = Math.min(1, runEdge * 4)
           rowCtx.fillRect(runX, runY - runHw, cx * cw - runX, runHw * 2)
         }
-        runX = cx * cw; runHw = hw; runY = Y
+        runX = cx * cw; runHw = hw; runY = Y; runEdge = eh
       }
     }
   }

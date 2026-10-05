@@ -43,9 +43,9 @@ uniform float uFront;
 uniform float uOverlay;
 
 // three state slots: 0 = from, 1 = to, 2 = beneath
-uniform sampler2D uC0; uniform sampler2D uD0; uniform vec4 uR0; uniform vec4 uK0; uniform vec4 uG0; uniform vec4 uH0; uniform vec4 uM0; uniform vec4 uJ0; uniform vec3 uInk0; uniform vec3 uPap0; uniform float uE0;
-uniform sampler2D uC1; uniform sampler2D uD1; uniform vec4 uR1; uniform vec4 uK1; uniform vec4 uG1; uniform vec4 uH1; uniform vec4 uM1; uniform vec4 uJ1; uniform vec3 uInk1; uniform vec3 uPap1; uniform float uE1;
-uniform sampler2D uC2; uniform sampler2D uD2; uniform vec4 uR2; uniform vec4 uK2; uniform vec4 uG2; uniform vec4 uH2; uniform vec4 uM2; uniform vec4 uJ2; uniform vec3 uInk2; uniform vec3 uPap2; uniform float uE2;
+uniform sampler2D uC0; uniform sampler2D uD0; uniform vec4 uR0; uniform vec4 uK0; uniform vec4 uG0; uniform vec4 uH0; uniform vec4 uM0; uniform vec4 uJ0; uniform vec3 uInk0; uniform vec3 uPap0; uniform float uE0; uniform float uQ0;
+uniform sampler2D uC1; uniform sampler2D uD1; uniform vec4 uR1; uniform vec4 uK1; uniform vec4 uG1; uniform vec4 uH1; uniform vec4 uM1; uniform vec4 uJ1; uniform vec3 uInk1; uniform vec3 uPap1; uniform float uE1; uniform float uQ1;
+uniform sampler2D uC2; uniform sampler2D uD2; uniform vec4 uR2; uniform vec4 uK2; uniform vec4 uG2; uniform vec4 uH2; uniform vec4 uM2; uniform vec4 uJ2; uniform vec3 uInk2; uniform vec3 uPap2; uniform float uE2; uniform float uQ2;
 uniform float uStrip;   // UI strips are a frame the rows press against, never cross
 uniform vec3 uBg0; uniform vec3 uBg1; uniform vec3 uBg2;
 uniform float uFill;    // 1 = nothing lives under the surface here: its voids are the ground of the face they belong to
@@ -133,10 +133,12 @@ float cover(float dist, float hw) {
 }
 
 float rows(float x, float m, vec2 gm, sampler2D C, sampler2D D, vec4 R, vec4 K, vec4 G, vec4 H, vec4 M, vec4 J, float E,
+           float Q, float oc,
            float dev, float mem, float disturb, out float order) {
   float s = R.x, f = R.y, wt = R.z, th = R.w;
   float rc = floor(m / s + 0.5);
   float ink = 0.0;
+  float inkSum = 0.0;   // R19: crowded conserved rows share pixels, so their coverage adds rather than the largest winning
   float t = uTime * 0.35;
   bool split = J.z > 0.5;
   float hwSum = 0.0, gl0 = 1.0;
@@ -186,6 +188,17 @@ float rows(float x, float m, vec2 gm, sampler2D C, sampler2D D, vec4 R, vec4 K, 
     // soft edges, so it is moved by its own amount (E); moved like a bare row, the pale words on a dark ground were
     // visibly bolder. From the one to the other over a pixel and a half.
     { float ref = th * 0.5; hw = hw <= ref ? hw * G.w : mix(hw + (G.w - 1.0) * ref, hw + E, smoothstep(ref, ref + 1.5 / uDpr, hw)); }
+    /*
+     * R19 PROTOTYPE — THE CAPSULES' COMPRESSION CONSERVES INK (docs/IMAGE-QUALITY.md). An opening pushes the rows
+     * aside and they crowd against its rim; each kept its own width, so the ink per pixel rose there and the rim read
+     * as a halo. Where a state conserves (Q), a bare row is narrowed by exactly the compression the openings caused
+     * (oc), as Linefield's corridor does with its own (lfHw): the ink per area is the field's. Letters keep their
+     * width, and only the openings' compression counts — a gather or a squeeze is meant to close rows into a mass.
+     * The thin-row fade is taken from the width before this, so the light really is conserved.
+     */
+    float edgeHw = hw;
+    float qk = Q * (1.0 - step(0.2, solid));
+    hw *= mix(1.0, 1.0 / max(oc, 1.0), qk);
     // static saturation tapers row by row along its ramp: a clean edge, not a saw
     float rfs = smoothstep(0.15, 0.95, TS.a + 0.04 * sin(r * 0.73));
     // dynamic saturation starts where information is densest: type first, then tone, then bare rows
@@ -195,17 +208,21 @@ float rows(float x, float m, vec2 gm, sampler2D C, sampler2D D, vec4 R, vec4 K, 
     hw = mix(hw, s * 0.8, rf * rf);
     // saturation by crowding: rows pressed closer than the eye can part fuse into one mass (never into interference)
     float spr = s / glen;
-    hw = mix(hw, max(hw, 0.62 * spr), smoothstep(2.1, 1.3, spr * uDpr) * step(0.001, hw) * VARIANT_FUSE);
-    float a = cover(dist, hw) * clamp(hw * 4.0, 0.0, 1.0);
+    hw = mix(hw, max(hw, 0.62 * spr), smoothstep(2.1, 1.3, spr * uDpr) * step(0.001, hw) * VARIANT_FUSE * (1.0 - qk * smoothstep(1.0, 1.15, oc)));
+    float a = cover(dist, hw) * clamp(mix(hw, edgeHw, qk) * 4.0, 0.0, 1.0);
     float keep = VARIANT_ROW(1.0, r, solid);
     a *= keep;
     if (a > ink) ink = a;
-    hwSum += hw * clamp(hw * 4.0, 0.0, 1.0) * keep;
+    inkSum += a;
+    // the same fade the coverage above is given: a conserved row fades as the row it was (R19), or the sum of rows
+    // packed closer than a pixel loses ink a second time
+    hwSum += hw * clamp(mix(hw, edgeHw, qk) * 4.0, 0.0, 1.0) * keep;
     if (k == 0) gl0 = glen;
   }
   // rows packed closer than the pixel grid can hold are seen as what they add up to — never as interference
   float sp = s / gl0;
   float lod = smoothstep(1.4, 0.7, sp * uDpr);
+  ink = mix(ink, min(inkSum, 1.0), Q * smoothstep(1.0, 1.15, oc));
   if (lod > 0.0) ink = mix(ink, clamp(hwSum * 2.0 / (3.0 * sp), 0.0, 1.0), lod);
   float along = clamp(x / uRes.x, 0.0, 1.0);
   if (mod(rc, 2.0) > 0.5) along = 1.0 - along;
@@ -279,6 +296,7 @@ void main() {
   float m = p.y - disp;
   vec2 gm = vec2(0.0, 1.0);
   float ground = 1.0;    // is there a surface here at all
+  float oc = 1.0;        // how much the openings alone have compressed the rows here (R19)
   float inkVis = 1.0;    // can rows still be seen here (sparse rows outlive their ground)
   float beneath = 0.0;
   float rim = 0.0;
@@ -287,7 +305,9 @@ void main() {
     if (i >= uNF) break;
     vec4 F = uF[i]; vec4 FG = uFG[i]; vec4 FK = uFK[i];
     if (FK.x < 1.5) {
+      float g0 = length(gm);
       float inV = opening(p.x, F, FG, FK, m, gm, rim);
+      oc *= length(gm) / max(g0, 1e-4);
       if (FK.x > 0.5) beneath = max(beneath, inV); else { ground *= 1.0 - inV; inkVis *= 1.0 - inV; }
     } else if (FK.x < 2.5) {
       float dsdx;
@@ -337,11 +357,11 @@ void main() {
 
   float oA, oB, oN;
   float clip = step(uStrip, p.y) * step(p.y, uRes.y - uStrip);
-  float iB = rows(cx, m, gm, uC1, uD1, uR1, uK1, uG1, uH1, uM1, uJ1, uE1, dev, mem, disturb, oB) * clip;
+  float iB = rows(cx, m, gm, uC1, uD1, uR1, uK1, uG1, uH1, uM1, uJ1, uE1, uQ1, oc, dev, mem, disturb, oB) * clip;
   float band = 2.5 / uK1.y;
   float b = uOverlay > 0.5 ? 1.0 : clamp((uFront * (1.0 + band) - oB) / band, 0.0, 1.0);
   float iA = 0.0;
-  if (b < 1.0 || uOverlay > 0.5) iA = rows(cx, m, gm, uC0, uD0, uR0, uK0, uG0, uH0, uM0, uJ0, uE0, dev, mem, disturb, oA) * clip;
+  if (b < 1.0 || uOverlay > 0.5) iA = rows(cx, m, gm, uC0, uD0, uR0, uK0, uG0, uH0, uM0, uJ0, uE0, uQ0, oc, dev, mem, disturb, oA) * clip;
   // the variant's fade applies to the ROWS, before the paper is coloured by them: applied later it would have
   // thinned only the rows standing over exposed ground and left the ink on the paper at full strength
   iA *= fade; iB *= fade;
@@ -375,15 +395,17 @@ void main() {
 
   if (beneath > 0.001) {
     // the face underneath keeps its own composition while it is revealed, so nothing pops when it takes over
-    float mb = p.y; vec2 gb = vec2(0.0, 1.0); float groundN = 1.0; float rimN = 0.0;
+    float mb = p.y; vec2 gb = vec2(0.0, 1.0); float groundN = 1.0; float rimN = 0.0; float ocN = 1.0;
     for (int i = 0; i < ${MAXF}; i++) {
       if (i < uBS) continue;
       if (i >= uBS + uBN) break;
       if (uFK[i].x > 0.5) continue;
+      float gb0 = length(gb);
       float inV = opening(p.x, uF[i], uFG[i], uFK[i], mb, gb, rimN);
+      ocN *= length(gb) / max(gb0, 1e-4);
       groundN *= 1.0 - inV;
     }
-    float iN = rows(p.x, mb, gb, uC2, uD2, uR2, uK2, uG2, uH2, uM2, uJ2, uE2, 0.0, 0.0, 0.0, oN) * clip;
+    float iN = rows(p.x, mb, gb, uC2, uD2, uR2, uK2, uG2, uH2, uM2, uJ2, uE2, uQ2, ocN, 0.0, 0.0, 0.0, oN) * clip;
     col = mix(col, shade(uPap2, uInk2, iN), beneath);
     ground = mix(ground, groundN, beneath);
     inkVis *= 1.0 - beneath;
@@ -436,6 +458,34 @@ function tentCdf(x, r) {
   return x < 0 ? 0.5 * (x + r) * (x + r) / (r * r) : 1 - 0.5 * (r - x) * (r - x) / (r * r)
 }
 const EVERY = Array.from({ length: 32 }, (_, i) => i / 32 - 0.5)
+
+/*
+ * R19 PROTOTYPE — WHICH FACES CONSERVE INK AT THE CAPSULES (docs/IMAGE-QUALITY.md). For the user's comparison:
+ *
+ *   ?r19=system   Full-Stack only
+ *   ?r19=both     Full-Stack and Creative (they share one composition, so one may want what the other has)
+ *   ?r19=off      neither (clears the choice)
+ *
+ * Without the key nothing changes. Kept for the tab, like the R9 prototype was; a badge names the choice.
+ */
+const R19_MODES = { system: 1, both: 2 }
+let r19 = null
+export function r19Mode() {
+  if (r19 != null) return r19
+  try {
+    const q = new URLSearchParams(location.search).get('r19')
+    if (q === 'off') sessionStorage.removeItem('r19')
+    else if (q && R19_MODES[q]) sessionStorage.setItem('r19', q)
+    r19 = R19_MODES[sessionStorage.getItem('r19')] || 0
+  } catch { r19 = 0 }
+  return r19
+}
+/** 1 where this state's rows conserve ink at its openings, 0 where they keep their width */
+export function conserves(st) {
+  const m = r19Mode()
+  if (!m || !st) return 0
+  return st.id === 'system' || (m === 2 && st.id === 'creative') ? 1 : 0
+}
 // the physics field at rest stores 127 of 255, so every row sits this far from its material position (physics.js)
 const REST_DISP = (127 / 255 - 0.5) * 160
 /** where a still field's rows fall inside their pixels: the offset of each row's centre from a pixel centre */
@@ -503,6 +553,13 @@ export function createSurface(canvas) {
   }
   const prog = link(VERT, FRAG)
   const cprog = link(VERT, COMPOSE)
+  if (r19Mode() && typeof document !== 'undefined') {
+    const tag = document.createElement('div')
+    tag.textContent = r19Mode() === 2 ? 'R19 BOTH' : 'R19 FULL-STACK'
+    tag.setAttribute('aria-hidden', 'true')
+    tag.style.cssText = 'position:fixed;right:6px;top:6px;z-index:2147483647;font:600 11px/1 ui-monospace,monospace;padding:3px 5px;background:#1f6f43;color:#fff;pointer-events:none'
+    document.body.appendChild(tag)
+  }
   /*
    * VARIANTS — the same shader with one hook filled in.
    *
@@ -735,6 +792,7 @@ export function createSurface(canvas) {
         const gain = rowGain(st, W.dpr, W.h, canvas.height)
         gl.uniform4f(L(`uG${i}`), r.a0, r.a1, st.lod ?? 0, gain.k)
         gl.uniform1f(L(`uE${i}`), gain.e)
+        gl.uniform1f(L(`uQ${i}`), conserves(st))
         gl.uniform4f(L(`uJ${i}`), r.va0, r.va1, st.split ? 1 : 0, st.fill ?? 0)
         gl.uniform4f(L(`uH${i}`), r.holdA, st.toneThick ?? 1, r.phase, st.amp * (st.ampK ?? 1))
         gl.uniform4f(L(`uM${i}`), st.memThick ?? 0.5, st.memTone ?? 0.1, st.flash ?? 0, st.vis ?? 1)

@@ -70,7 +70,7 @@ async function columns(p, xs) {
         const g = await p.evaluate((n) => {
           const L = window.__lab
           const st = L.IDX()[L.STOP[n]]
-          return { R: L.V.dpr * L.V.u, s: st.spacing, ink: [...st.ink].map((v) => Math.round(v * 255)), paper: [...st.paper].map((v) => Math.round(v * 255)), caps: (st.features || []).filter((f) => !f.kind).map((f) => ({ cx: f.cx, cy: f.cy, h: f.h, hw: f.hw })) }
+          return { R: L.V.dpr * L.V.u, s: st.spacing, ink: [...st.ink].map((v) => Math.round(v * 255)), paper: [...st.paper].map((v) => Math.round(v * 255)), caps: (st.features || []).filter((f) => !f.kind).map((f) => ({ cx: f.cx, cy: f.cy, h: f.h, hw: f.hw })), wordTop: st.layout && st.layout.wordTop ? st.layout.wordTop : 1e9 }
         }, face)
         const lp = lumOf(g.paper), li = lumOf(g.ink)
         const sum = BANDS.map(() => 0), cnt = BANDS.map(() => 0)
@@ -94,8 +94,16 @@ async function columns(p, xs) {
                * AND THE FIELD IS THE SAME COLUMN'S OWN INK PER PIXEL, 140-200 px out, used only where the rows there
                * sit at the state's own pitch (no other capsule, no word): the open field this column runs into.
                */
+              /*
+               * AND NOTHING BELOW THE WORD'S TOP. The word (FULL-STACK, CREATIVE) starts under the lower capsule; its
+               * letters are exempt from the rule and are type, not a halo. A first version let the 64-128 px band run
+               * into them and read 1.25 under Full-Stack's lower capsule (2026-10-05: the profile there is the field's
+               * 0.10 per pixel until the letters, then 0.77-0.97).
+               */
+              const wordY = (g.wordTop - 4) * g.R
               const f0 = rim + dir * 140 * g.R, f1 = rim + dir * 200 * g.R
-              const lo = Math.round(Math.min(f0, f1)), hi = Math.round(Math.max(f0, f1))
+              const lo = Math.round(Math.min(f0, f1)), hi = Math.round(Math.min(Math.max(f0, f1), wordY))
+              if (hi - lo < 30 * g.R) continue
               if (lo < 0 || hi >= e.length) continue
               const pk = []
               for (let j = lo + 1; j < hi - 1; j++) if (e[j] > 0.05 && e[j] >= e[j - 1] && e[j] > e[j + 1]) pk.push(j)
@@ -107,7 +115,7 @@ async function columns(p, xs) {
               if (!(field > 0)) continue
               BANDS.forEach(([d0, d1], k) => {
                 const y0 = rim + dir * d0 * g.R, y1 = rim + dir * d1 * g.R
-                const a0 = Math.round(Math.min(y0, y1)), a1 = Math.round(Math.max(y0, y1))
+                const a0 = Math.round(Math.min(y0, y1)), a1 = Math.round(Math.min(Math.max(y0, y1), wordY))
                 let ink = 0
                 for (let j = a0; j < a1; j++) ink += Math.max(0, e[j] ?? 0)
                 if (a1 > a0) { sum[k] += (ink / (a1 - a0)) / field; cnt[k]++ }

@@ -536,3 +536,115 @@ panel, the left end of the lower capsule's top rim at 4×.
 Is the rule wanted on Full-Stack only, or on both faces? The previews:
 - this computer: `http://127.0.0.1:4977/tr?r19=both` (or `=system`, `=off`);
 - iPhone: `http://192.168.1.102:4978/tr?r19=both`.
+
+## R19 as the default, on both faces (2026-10-05)
+
+**User decision (2026-10-05):** the rule on both faces. Before it became the default:
+- the fine mesh at the rims, measured in motion at DPR 1 with R9's measure;
+- the press edge shown as a still and a film;
+- the 1.25 explained.
+
+Then: the reduced-motion paint measured again on a quiet machine, R19 made the default, the checks.
+
+### The 1.25 was the word
+
+Profiling every capsule and side (`out/iq/halo125.cjs`) shows the rule on everywhere at about 0.10 ink per pixel, the
+field's own, except under the lower capsule. There, 48–80 px out, it reads 0.77 and 0.97: the letters of FULL-STACK
+start 28 px under that capsule's rim, and letters are exempt from the rule. `iqhalo.cjs` now stops every band, and the
+field band, 4 px above the word's top. With that, Full-Stack reads 0.96–1.09 in every band out to 128 px.
+
+### The mesh in motion (`r19mesh.cjs`, DPR 1, 1920×991 and 1440×900; the prototype, rule off against on)
+
+The zone is 0–40 px out from each rim, in every drawn frame.
+- **rows:** R9's measure on the rows the zone can still resolve.
+- **dens:** the same rows' ink per their own pitch. With the rule, a row's ink is meant to follow its compression,
+  so this is the part of the change that is not the rule.
+- **mesh:** where rows are closer than 2 px, the ink in fixed 4 px windows, frame to frame, as a share of the zone's
+  ink.
+
+All values are p50 / p90.
+
+| | pointer ripple along the rim | Creative → Full-Stack | Full-Stack → Creative |
+|---|---|---|---|
+| off, 1920×991 | rows 2.1 · mesh 0.2 / 0.3% | rows 1.0 · mesh 0.3% | rows 0.6 · mesh 0.6% |
+| **on, 1920×991** | rows 0.8 · mesh **0.3 / 0.6%** | rows 1.6 · mesh **0.4%** | rows 1.3 · mesh **0.8%** |
+| off, 1440×900 | rows 5.5 · mesh 0.2 / 0.3% | rows 1.3 · mesh 0.3% | rows 0.6 · mesh 0.7% |
+| **on, 1440×900** | rows 1.4 · mesh **0.3 / 0.6%** | rows 1.9 · mesh **0.4%** | rows 1.8 · mesh **1.2%** |
+
+- **The mesh does not bring the shimmer back.** Every p50 is inside R9's open-field level (0.5–2.2%). The pointer
+  ripple, which only moves rows, moves the mesh's ink by 0.3% / 0.6%.
+- **The transitions' p90 is high with the rule off and on** (12–128%). During a sweep the zone itself forms and
+  dissolves, so that is real change, not shimmer.
+- **Healthy captures:** 27–39 frames, and the capacity governor never engaged.
+
+### The press (`r19press.cjs`; `out/iq/r19press/PRESS-1440x900.png` and four films)
+
+A press on open rows opens a window onto the other face.
+- **Full-Stack, rule off:** the window's edge carries a bright band, with broken "dashes" at 3×.
+- **Full-Stack, rule on:** the edge is a soft grey gradient into the field. The window reads just as clearly, since
+  the cream face behind it is the contrast.
+- **Creative:** the dark band at the edge becomes a lighter one, and the dark face through the window marks the press.
+
+The films (`fullstack-off.webm`, `fullstack-both.webm`, `creative-off.webm`, `creative-both.webm`) were recorded while
+another project's video capture loaded the machine, so their playback may stutter. They are Playwright's recording of
+the page, not of the desktop.
+
+### The reduced-motion paint, on a quiet machine (`r9cost.cjs`, 1440×900@2; 8da676c against the final build, interleaved twice)
+
+| | paint (wall / CPU) | a cut |
+|---|---|---|
+| before R9 | 35–40 / 40 ms | 47 ms (worst 49) |
+| now | 72–74 / 81–83 ms | **84–88 ms** (worst 96–102) |
+
+At 1920×991@1 a cut is 89–91 ms (worst 103); before R9 it was 55–58.
+
+**The first visit to a place** in a session is slower, because its masks and brightness factor are built on that
+first paint (`out/iq/longtask.cjs`): at 1440×900@2 a cut's paint is 80–178 ms, against 25–128 ms before R9. A
+**warm cut is under 100 ms at the median, and a cold one can exceed it.**
+
+**Options, without a deferred blend** (not applied; the user's call):
+1. **Warm the reduced-motion renderer like the WebGL one.** `flat.warm()` builds a state's masks; it could also
+   compute the brightness factor and the row map for the places next to the current one, in idle time. That takes
+   the cold cost off the cut.
+2. **Stop reading the picture back.** The ground under the rows is known (paper, the page's colour in an opening, or
+   empty), so the mix can write it from the mask alone. That saves one full-canvas `getImageData` and its conversion.
+3. **Only touch the scanlines that hold rows,** from the row positions the paint already has.
+
+1 and 2 together should bring a cold cut near the warm one and a warm one well under 100 ms (an estimate; not
+measured).
+
+### What changed
+
+- `states.js`: both faces carry `conserve: true`.
+- `surface.js`: the `?r19=` key and the badge are gone, and `conserves(st)` reads the state's own flag.
+- `flat.js` reads the same flag.
+
+**The default is the prototype's "both":**
+- In reduced motion (still, so comparable to the byte) the two builds differ by 42 and 125 bytes. That is exactly
+  the default build's own run-to-run difference against itself.
+- In normal motion, Ege and Linefield are byte-identical to the prototype without its key (`out/iq/r19final-ident.cjs`).
+
+### The checks (final build `builds/iq-final`, 4971 / 4972 `--lan --wk`)
+
+| check | result |
+|---|---|
+| `glslcheck`, `compat-ios15`, `npx nuxt typecheck`, `cspboot` (4971, 4972 WebKit, `--dir`) | PASS |
+| `r9webkit.cjs` (WebKit 390×844@3 over the LAN, normal and reduced) | PASS |
+| `linefield.cjs` | **PASS, 180/180** |
+| `cross.cjs` Chrome @2 / @1, WebKit | 1 failed each: "fallback forced (runtime not loaded)", which 8da676c fails too. In WebKit, inside the series, a timing crash (`csLayout()` not ready after 2.5 s); run alone, 37 ok and only the fallback. |
+| `csseam.cjs` | PASS |
+| `csbenchseam.cjs` on the dev server | **PASS, every boundary 0 px at all four sizes** |
+| `csrotate.cjs` Chrome / WebKit | "held → landscape" (2 / 1), as on 8da676c |
+| `iqr9.cjs` against 8da676c | R9's results kept (below) |
+| `iqhalo.cjs` | Full-Stack 0.96–1.09 in every band; Creative the same, except its first 8 px at 1.23–1.35 |
+| `r9flat.cjs` | reduced against normal motion: Ege, Full-Stack, Creative within 2%; Linefield dark +3.9% to +6.3%; rows even |
+
+**R9's results on the final build:**
+- **At rest:** the still grounds are even (swing 1.00) and brightness is unchanged.
+- **In motion, today → final (p50):** transition 16–33% → 0.6–0.7%; scroll 6–14% → 0.5%; passage 25–29% →
+  1.5–3.1%.
+- **Ripple: 2.3–2.9%** (before R19: 1.9–2.2%). The ripple's strip crosses the list capsule's reach, where a row's
+  ink is now meant to follow its compression.
+
+**Creative's first 8 px (1.23–1.35)** is the capsule's own soft edge, where the ground gives way within a pixel or so.
+With the rule off it was 3.1–3.6.

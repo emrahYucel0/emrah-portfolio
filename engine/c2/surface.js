@@ -189,7 +189,7 @@ float rows(float x, float m, vec2 gm, sampler2D C, sampler2D D, vec4 R, vec4 K, 
     // visibly bolder. From the one to the other over a pixel and a half.
     { float ref = th * 0.5; hw = hw <= ref ? hw * G.w : mix(hw + (G.w - 1.0) * ref, hw + E, smoothstep(ref, ref + 1.5 / uDpr, hw)); }
     /*
-     * R19 PROTOTYPE — THE CAPSULES' COMPRESSION CONSERVES INK (docs/IMAGE-QUALITY.md). An opening pushes the rows
+     * THE CAPSULES' COMPRESSION CONSERVES INK (R19, docs/IMAGE-QUALITY.md). An opening pushes the rows
      * aside and they crowd against its rim; each kept its own width, so the ink per pixel rose there and the rim read
      * as a halo. Where a state conserves (Q), a bare row is narrowed by exactly the compression the openings caused
      * (oc), as Linefield's corridor does with its own (lfHw): the ink per area is the field's. Letters keep their
@@ -454,32 +454,10 @@ const lumLin = (c) => 0.2126 * lin1(c[0]) + 0.7152 * lin1(c[1]) + 0.0722 * lin1(
 const EVERY = Array.from({ length: 32 }, (_, i) => i / 32 - 0.5)
 
 /*
- * R19 PROTOTYPE — WHICH FACES CONSERVE INK AT THE CAPSULES (docs/IMAGE-QUALITY.md). For the user's comparison:
- *
- *   ?r19=system   Full-Stack only
- *   ?r19=both     Full-Stack and Creative (they share one composition, so one may want what the other has)
- *   ?r19=off      neither (clears the choice)
- *
- * Without the key nothing changes. Kept for the tab, like the R9 prototype was; a badge names the choice.
+ * WHICH STATES CONSERVE INK AT THEIR OPENINGS (R19, docs/IMAGE-QUALITY.md; user decision 2026-10-05: both faces).
+ * A state says so itself (states.js face(): `conserve`); the shader reads it per slot (uQ0-uQ2), flat.js through here.
  */
-const R19_MODES = { system: 1, both: 2 }
-let r19 = null
-export function r19Mode() {
-  if (r19 != null) return r19
-  try {
-    const q = new URLSearchParams(location.search).get('r19')
-    if (q === 'off') sessionStorage.removeItem('r19')
-    else if (q && R19_MODES[q]) sessionStorage.setItem('r19', q)
-    r19 = R19_MODES[sessionStorage.getItem('r19')] || 0
-  } catch { r19 = 0 }
-  return r19
-}
-/** 1 where this state's rows conserve ink at its openings, 0 where they keep their width */
-export function conserves(st) {
-  const m = r19Mode()
-  if (!m || !st) return 0
-  return st.id === 'system' || (m === 2 && st.id === 'creative') ? 1 : 0
-}
+export function conserves(st) { return st && st.conserve ? 1 : 0 }
 // the physics field at rest stores 127 of 255, so every row sits this far from its material position (physics.js)
 const REST_DISP = (127 / 255 - 0.5) * 160
 /**
@@ -560,13 +538,6 @@ export function createSurface(canvas) {
   }
   const prog = link(VERT, FRAG)
   const cprog = link(VERT, COMPOSE)
-  if (r19Mode() && typeof document !== 'undefined') {
-    const tag = document.createElement('div')
-    tag.textContent = r19Mode() === 2 ? 'R19 BOTH' : 'R19 FULL-STACK'
-    tag.setAttribute('aria-hidden', 'true')
-    tag.style.cssText = 'position:fixed;right:6px;top:6px;z-index:2147483647;font:600 11px/1 ui-monospace,monospace;padding:3px 5px;background:#1f6f43;color:#fff;pointer-events:none'
-    document.body.appendChild(tag)
-  }
   /*
    * VARIANTS — the same shader with one hook filled in.
    *

@@ -191,6 +191,9 @@ export function face(V, which) {
     freq: neg ? 0.16 : 0.07, amp: neg ? 0.25 : 0.45,
     inkHex: neg ? PAPER : INK, paperHex: neg ? NIGHT : PAPER, bg: neg ? BG_DARK : BG_LIGHT, negative: neg,
     ...img, layout: lay, features, beneath: 'state', capacity: 1.3,
+    // R19 (user decision 2026-10-05, both faces): the rows crowded against these openings keep the field's ink per
+    // area instead of piling it up into a halo (surface.js rows(), flat.js)
+    conserve: true,
     weak: () => lay.weakY,
   })
 }

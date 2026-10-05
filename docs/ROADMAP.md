@@ -22,7 +22,7 @@ belgedeyse (AUDIT-01, LINEFIELD.md, DEPLOYMENT.md…) burada ona bağlantı veri
 - **Karar bekliyor:** neyin beklendiği yazılı.
 - **Önce inceleme:** mevcut davranış ölçülmeden tasarlanmayacak.
 
-Son güncelleme: 2026-10-05, `feature/image-quality` (worktree `../emrah-portfolio-iq`, 8da676c'den): R9 onaylandı, R29 yapıldı, R19 prototipi karşılaştırma bekliyor. Canlıda
+Son güncelleme: 2026-10-05, `feature/image-quality` (worktree `../emrah-portfolio-iq`, 8da676c'den): R9 onaylandı, R29 yapıldı, R19 iki yüzde varsayılan; R20'den önce durdu. Canlıda
 df5ab32. Görüntü kalitesi turu başladı: R9, R19, R20, R21. Sıra: R9 ölçümü → R9 düzeltmesi → R19 → R20 → R21.
 Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 
@@ -43,7 +43,7 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 | R15 | Tempo, ilerleme göstergesi, performans bütçesi | P2 | Karar bekliyor | R14 |
 | R17 | Yayın (DEPLOYMENT.md, CSP, canlı yedeği) | P0 | **Bitti** (2026-10-03, `b8918dc` canlıda) | — |
 | R18 | Awwwards başvurusu (Developer Award) | P0 | Karar bekliyor (tarih) | R17, R9, R22, R23 |
-| R19 | Full-Stack'in siyah kapsüllerinin çevresindeki hale | P1 | **Sürüyor:** prototip `?r19=` arkasında; kullanıcının karşılaştırması bekliyor (yalnız Full-Stack mi, iki yüz mü) | R9 |
+| R19 | Full-Stack'in siyah kapsüllerinin çevresindeki hale | P1 | **Yapıldı** (2026-10-05): iki yüzde varsayılan; dalda, birleştirme ve yayın bekliyor | R9 |
 | R27 | Harness'lar izlenen `docs/` yollarına yazıyor | P2 | **Bitti** (2026-10-03) | — |
 | R28 | Mac dokunmatik yüzeyinde ikinci kaydırmanın yutulması (120 Hz) | **P0** | **Canlıda (`1e663bd`); gerçek MacBook onayı bekliyor** | R22 |
 | R29 | Hareketi azaltılmış modda ton satırları kalınlaştırmıyor (R9'dan önce de var) | P2 | **Yapıldı** (2026-10-05, abfe37a; dalda) | R9 |
@@ -192,6 +192,11 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
       - Gerçek cihazda ölçülmedi.
       - İstenirse: 2D yol önce eskisi gibi boyar, doğrusal karışımı bir sonraki boş karede yapar (karar).
     - **`rowGain` hızlandı:** analitik hesap, birleştirilmiş konumlar, boşta ısınma. Parlaklık değişmedi.
+    - **Sessiz makinede yeniden ölçüm (2026-10-05), 1440×900@2:**
+      - Isınmış bir kesme 84–88 ms (en kötüsü 96–102). R9'dan önce 47 ms.
+      - Bir yere oturumdaki ilk gidişte kesmenin boyaması 80–178 ms; 100 ms'yi aşabiliyor.
+      - Seçenekler (uygulanmadı, `docs/IMAGE-QUALITY.md`): komşu yerleri boşta ısıtmak, resmi geri okumamak, yalnız
+        satır olan tarama satırlarına dokunmak.
 - **Dosyalar:** `engine/c2/main.js` (`V.dpr`, `measure`), `engine/c2/surface.js` (shader, `resize`),
   `engine/c2/linefield/` (kendi aralık hesabı), `docs/LINEFIELD.md` (ölçümler).
 - **Bağımlılık:** yok. Gerçek MacBook ekranında görsel onay gerekiyor (R22). R20 ile birlikte ölçülmeli.
@@ -429,6 +434,26 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
   - **Önizleme:** bu bilgisayarda `127.0.0.1:4977/tr?r19=both`, iPhone'da `192.168.1.102:4978/tr?r19=both`.
   - **Açık:** DPR 1'de çok sıkışan bölgede ince bir ağ deseni var; hareket halinde titreşip titreşmediği ölçülmedi.
     Kapsül kenarından 64–128 px uzakta Full-Stack 1,25 okuyor.
+  - **Karar (2026-10-05, kullanıcı):** kural iki yüze birden uygulansın. Varsayılan yapılmadan önce istenenler:
+    - ağ deseni DPR 1'de hareket halinde ölçülsün;
+    - basışın kenarı görüntü ve kısa filmle gösterilsin;
+    - 1,25 açıklansın.
+  - **Yapıldı (2026-10-05).** Ayrıntı ve tablolar: `docs/IMAGE-QUALITY.md`, "R19 as the default".
+    - **1,25 bir hale değil, FULL-STACK sözcüğüymüş:** harfler alt kapsülün 28 px altında başlıyor ve kuraldan
+      muaf. Ölçüm artık sözcüğün üstünde duruyor; Full-Stack her bantta 0,96–1,09.
+    - **Ağ deseni hareket halinde titreşmiyor.** Kenar bölgesinde kareden kareye değişim (p50):
+      - imleç dalgasında %0,3 (p90 %0,6);
+      - geçişlerde %0,4–1,2.
+
+      Hepsi R9'un açık alan düzeyinde.
+    - **Basış okunuyor.** Kenardaki parlak (Full-Stack) ya da koyu (Creative) bant yumuşuyor; pencerenin içeriği
+      basışı belli ediyor. Görüntü ve filmler: `tools/diag/out/iq/r19press/`.
+    - **Varsayılan:** iki yüz `conserve: true`; anahtar ve rozet kalktı. Varsayılan, prototipin "both" hâliyle aynı
+      (hareketi azaltılmış modda farkı kendi koşudan koşuya gürültüsü kadar).
+    - **Kontroller:**
+      - `linefield` 180/180; `csseam`; dev sunucusunda bench dikişi 0 px; WebKit yerel ağ; typecheck: geçti.
+      - Cross Section'da kalanların hepsi 8da676c'de de var.
+      - R9'un sonuçları korundu.
 - **Öncelik:** P1.
 
 ### R20. Arka belleğe piksel sayısı tavanı ve uyarlanır çizim oranı

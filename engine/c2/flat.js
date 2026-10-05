@@ -216,8 +216,8 @@ export function paintFlat(ctx, st, o) {
     gain = rowGain(st, dpr, Hd, ctx.canvas.height, (o.toneAmp ?? st.amp) > 0.001)
   }
   const ref = thick * 0.5
-  // R19 prototype: the capsules' compression conserves ink here too (the shader's rule; Gs is the openings' compression
-  // at rest — a face holds no gather while it stands)
+  // R19: the capsules' compression conserves ink here too (the shader's rule; Gs is the openings' compression at rest —
+  // a face holds no gather while it stands)
   const Q = mask ? conserves(st) : 0
   ctx.fillStyle = st.inkHex
   for (let r = 0; r < rowsN; r++) {

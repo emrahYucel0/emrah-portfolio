@@ -52,7 +52,9 @@ function wordBox(d, W, H, c, dark) {
 
 ;(async () => {
   const b = await pw.chromium.launch({ channel: 'chrome' })
-  for (const [w, h] of [[1440, 900], [390, 844], [320, 568], [844, 390]]) {
+  // LF_SIZES='[[1920,1080],[2560,1440],[3840,2160]]' adds the sizes R21's limit applies to (2026-10-06)
+  const sizes = [[1440, 900], [390, 844], [320, 568], [844, 390], ...(process.env.LF_SIZES ? JSON.parse(process.env.LF_SIZES) : [])]
+  for (const [w, h] of sizes) {
     const ctx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1, isMobile: w < 700 && h > w, hasTouch: w < 700 })
     const p = await ctx.newPage()
     await p.goto(`http://127.0.0.1:${port}/tr?linefield=1`, { waitUntil: 'load', timeout: 90000 })

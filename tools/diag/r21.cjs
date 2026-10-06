@@ -1,6 +1,7 @@
 // R21 — LINEFIELD'S WORDS ON LARGE SCREENS: TODAY AGAINST A SIZE LIMIT IN ROWS PER CAPITAL.
 //
 //   node r21.cjs <port> [--sizes=390x844@3,1440x900@2,2560x1440@1,3840x2160@1] [--limits=24,18] [--out=dir]
+//   node r21.cjs --ports=4971,4977 [...]   two builds side by side instead (today, then the new default)
 //
 // The build carries the prototype key ?r21=N (linefield/state.js): past N rows per capital the words are set smaller,
 // the pitch unchanged. Per size and variant (today, then each limit), normal motion, the passage held at four points:
@@ -22,6 +23,7 @@ const port = args.find((a) => /^\d+$/.test(a)) || '4977'
 const opt = (k, d) => { const a = args.find((x) => x.startsWith(`--${k}=`)); return a ? a.slice(k.length + 3) : d }
 const SIZES = opt('sizes', '390x844@3,1440x900@2,2560x1440@1,3840x2160@1').split(',').map((s) => s.split(/[x@]/).map(Number))
 const LIMITS = opt('limits', '24,18').split(',').map(Number)
+const PORTS = opt('ports', '') ? opt('ports', '').split(',') : null
 const OUT = opt('out', path.join(__dirname, 'out', 'iq', 'r21'))
 fs.mkdirSync(path.join(OUT, 'raw'), { recursive: true })
 const POINTS = [0, 0.22, 0.72, 1]
@@ -50,12 +52,12 @@ async function sheet(file, rows, cellW, title) {
   const sameAll = []
   for (const [W, H, dpr] of SIZES) {
     const tag = `${W}x${H}@${dpr}`
-    const variants = [['today', ''], ...LIMITS.map((n) => [`limit ${n}`, `?r21=${n}`])]
+    const variants = PORTS ? [['today', '', PORTS[0]], ['new', '', PORTS[1]]] : [['today', ''], ...LIMITS.map((n) => [`limit ${n}`, `?r21=${n}`])]
     const overview = [], oneToOne = [], same = []
-    for (const [name, q] of variants) {
+    for (const [name, q, vport = port] of variants) {
       const ctx = await b.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: dpr, isMobile: W < 700, hasTouch: W < 700 })
       const p = await ctx.newPage()
-      await p.goto(`http://127.0.0.1:${port}/tr${q}`, { waitUntil: 'load', timeout: 120000 })
+      await p.goto(`http://127.0.0.1:${vport}/tr${q}`, { waitUntil: 'load', timeout: 120000 })
       await p.waitForFunction(() => window.__lab?.A.mode === 'index' && !window.__lab.A.busy, null, { timeout: 120000 })
       await p.evaluate(() => document.fonts.ready)
       await p.evaluate(() => window.__lab.go(window.__lab.STOP.linefield))

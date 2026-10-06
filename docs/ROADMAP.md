@@ -22,7 +22,7 @@ belgedeyse (AUDIT-01, LINEFIELD.md, DEPLOYMENT.md…) burada ona bağlantı veri
 - **Karar bekliyor:** neyin beklendiği yazılı.
 - **Önce inceleme:** mevcut davranış ölçülmeden tasarlanmayacak.
 
-Son güncelleme: 2026-10-05, `feature/image-quality` (worktree `../emrah-portfolio-iq`, 8da676c'den): R9 onaylandı, R29 yapıldı, R19 iki yüzde varsayılan (onaylandı); hareketi azaltılmış modun boyaması için seçenek 1 ve 2 yapıldı, ardından Work ile Cross Section'da kesme başına tek boyama (b, c); R20: 4K tavanı ve uyarlanır oran (taban 1,28) varsayılan; R21 karşılaştırması hazır, kullanıcının seçimi bekleniyor. Canlıda
+Son güncelleme: 2026-10-05, `feature/image-quality` (worktree `../emrah-portfolio-iq`, 8da676c'den): R9 onaylandı, R29 yapıldı, R19 iki yüzde varsayılan (onaylandı); hareketi azaltılmış modun boyaması için seçenek 1 ve 2 yapıldı, ardından Work ile Cross Section'da kesme başına tek boyama (b, c); R20: 4K tavanı ve uyarlanır oran (taban 1,28) varsayılan; R21: büyük harf başına en çok 24 satır, blok etiketinin altında. Tur, hareketi azaltılmış modun kesme süresi dışında bitti; yayın adımları önerildi. Canlıda
 df5ab32. Görüntü kalitesi turu başladı: R9, R19, R20, R21. Sıra: R9 ölçümü → R9 düzeltmesi → R19 → R20 → R21.
 Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 
@@ -48,7 +48,7 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 | R28 | Mac dokunmatik yüzeyinde ikinci kaydırmanın yutulması (120 Hz) | **P0** | **Canlıda (`1e663bd`); gerçek MacBook onayı bekliyor** | R22 |
 | R29 | Hareketi azaltılmış modda ton satırları kalınlaştırmıyor (R9'dan önce de var) | P2 | **Yapıldı** (2026-10-05, abfe37a; dalda) | R9 |
 | R20 | Arka belleğe piksel sayısı tavanı ve uyarlanır çizim oranı | P1 | **Yapıldı** (2026-10-06; dalda): 4K tavanı + uyarlanır oran (taban 1,28) varsayılan | R9 |
-| R21 | Büyük ekranlarda büyük harf başına satır sayısına üst sınır | P2 | **Karşılaştırma hazır** (2026-10-06, `?r21=24|18`); kullanıcının seçimi bekleniyor | — |
+| R21 | Büyük ekranlarda büyük harf başına satır sayısına üst sınır | P2 | **Yapıldı** (2026-10-06; dalda): en çok 24, blok etiketin altında; dizüstü ve telefon piksel piksel aynı | — |
 | R22 | Gerçek cihaz testi (iPad, Mac'te Safari, Android telefon) | P0 | Karar verildi | — |
 | R23 | Awwwards başvuru malzemesi (ekran görüntüleri, kısa video, başlık, açıklama) | P0 | Karar bekliyor (içerik) | R9 |
 | R25 | Linefield yayında açılsın mı | P0 | **Karar verildi: açık. Bitti** (`fb01609`) | — |
@@ -532,7 +532,15 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
   | 3840×2160 | 37 | 24 | 18 |
 
   Sınır konunca blok alanda ortalanıyor; etiket ise üst şeritte kalıyor ve aralarında boşluk açılıyor.
-- **Karar:** Bekleyen: kullanıcının seçimi (bugün, 24 ya da 18; bloğun etiketin altına alınıp alınmayacağı).
+- **Karar (2026-10-06, kullanıcı):** sınır 24. Kelime bloğu yarının etiketinin altına asılıyor; büyük ekranda
+  aralarında boşluk açılmıyor. Sınırın uygulanmadığı her yerde her şey bugünkü gibi.
+- **Yapıldı (2026-10-06; dalda):** `MAX_ROWS_PER_CAP = 24`, anahtar kaldırıldı. Satır sayısı:
+  - 1920×991'de 26 → 24 (kullanıcının ekranı);
+  - 1920×1080 ve 2560×1440'ta 28 → 24;
+  - 4K'da 37 → 24.
+
+  Dizüstü ve telefonlar WebGL okumasıyla piksel piksel aynı. Sözcükler her boyutta şeritlerin dışında kalıyor.
+  Linefield 180/180. `docs/IMAGE-QUALITY.md`.
 - **Dosyalar:** `engine/c2/linefield/state.js` (satır aralığı), `engine/c2/states.js`, `docs/LINEFIELD.md`.
 - **Bağımlılık:** yok.
 - **Öncelik:** P2.

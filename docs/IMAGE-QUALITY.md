@@ -1004,3 +1004,56 @@ text rasterising, not a change in the picture. Today's own hash for this place a
 
 **The cut measurement** (`flatcut.cjs 4971,4973 --rounds=2`, today against iq-final3) is waiting for a quiet machine.
 It writes to `out/iq/final3/flatcut.log`; the result goes here when it has run.
+
+## R21 as the default: 24 rows per capital, the block under its label (2026-10-06)
+
+User decision: limit 24. Move the word block under its half label so the two stay together at every size. Keep
+everything unchanged where the limit does not apply (laptops and phones pixel-identical to today).
+
+### What changed (`linefield/state.js`)
+
+- `MAX_ROWS_PER_CAP = 24`. The `?r21=` key is gone.
+- **Where a capital would take more than 24 rows (`limited`):**
+  - the words are set at 24 rows, at the same pitch;
+  - the first baseline is hung from the label: the top of the cap line sits at the label's bottom, rounded down the
+    row grid, never up into the label.
+- **Where it would not:** the code path is the old one, line for line.
+
+### Where it applies (`out/iq/r21probe2.cjs`: today against the new default)
+
+| size | rows per capital | the words' top under the label | clear of the strips (top / bottom, comp. px) |
+|---|---|---|---|
+| 390×844@3, 844×390@3, 1366×768, 1440×900@2 | unchanged (18/12, 12, 19, 23) | unchanged | unchanged |
+| 1920×991@1 (the user's screen) | 26 → **24** | 3 px | 59 / 77 |
+| 1920×1080@1, 2560×1440@1 | 28 → **24** | 1–8 px (today 8) | 59–66 / 159–166 |
+| 3840×2160@1 | 37 → **24** | 6 px (today −8) | 73 / 422 |
+
+**Laptops and phones are pixel-identical** (`out/iq/lfident.cjs`, WebGL readback, normal motion, the passage at 0,
+0.22, 0.5, 0.72 and 1).
+- **390×844@3, 844×390@3, 1366×768@1 and 1440×900@2:** identical. The only differences were 267 bytes once on the
+  phone at 0.72, which did not repeat, and 1 byte at 1366×768 at 0.72. Today's build shows that same byte against
+  itself.
+- **1920×991@1:** differs at rest and in the corridor, as intended. It is identical at 0.5, the collapse line.
+
+**Sheets (`out/iq/r21-final/`, today against the new default, at 1920×1080, 2560×1440 and 3840×2160):** the block
+hangs under its label at both rest states. The words in the corridor carry the same 24-row structure. At 4K the lower
+half of the field is left as ruled ground.
+
+### The checks (`builds/iq-final4`, 4977 / 4978 `--lan --wk`; logs in `out/iq/final4/`)
+
+| check | result |
+|---|---|
+| `linefield.cjs` | **PASS, 180/180** |
+| `lfwords-locale.cjs`, `lfseam.cjs` | PASS (28/28; seam) |
+| `lfwords.cjs` (dev server, debug entry) | PASS: every word complete at every moment of its flight |
+| `lfmargin.cjs` (dev server; with 1920×1080, 2560×1440 and 3840×2160 added) | the words clear the 50 px strips at every size: top 93–152, bottom 81–1268. Portrait phones: "no words found" in this harness; their picture is byte-identical to today's (above). |
+| `lfresponsive.cjs` phones, tablets, laptops | all clean |
+| `lfresponsive.cjs` wide | 24 rows at every wide size; one check off, `rust50` at 1920×1080 ("mouth at full depth"), **identical on today's build** (same apertures to the decimal) |
+| `cross.cjs` Chrome @2 / @1 | 1 each, "fallback forced", as on 8da676c |
+| `cross.cjs` WebKit | 1 in the series ("warm: one gesture up arrives at DEPTH"); **PASS run alone** |
+| `csseam.cjs`; `csrotate.cjs` | PASS; "held → landscape" (2) as on 8da676c |
+| `r9webkit.cjs`, `iqhalo.cjs` | PASS; Full-Stack 0.96–1.09, Creative's first 8 px 1.23–1.35, as at R19 |
+| `npx nuxt typecheck`, `compat-ios15`, `glslcheck`, `cspboot` (4977, 4978 WebKit, `--dir`) | PASS |
+
+**The round is complete except the reduced-motion cut timing.** `flatcut.cjs 4971,4977 --rounds=2` is waiting for a
+quiet machine and writes to `out/iq/final4/flatcut.log`.

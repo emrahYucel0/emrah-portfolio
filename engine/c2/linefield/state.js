@@ -22,11 +22,13 @@ export const FRONTEND_WORDS = ['FEEL.', 'TIMING.', 'FRICTION.', 'FIRST PAINT.']
 /** how many rows must pass through a capital for the word to hold together */
 const ROWS_PER_CAP = 12
 /*
- * R21 PROTOTYPE (docs/IMAGE-QUALITY.md; until the user's choice): ?r21=18 or ?r21=24 caps the words' size on large
- * screens at that many rows per capital. The pitch stays where it is (7 px past the phone); the type is set smaller,
- * so the block takes less of the field. Without the key nothing changes.
+ * AND AT MOST SO MANY (R21, user decision 2026-10-06: 24). The words grow with the field and the pitch stops at 7 px,
+ * so on a large screen a capital was carried by ever more rows — 28 at 1920 × 1080, 37 at 4K — until the rows stopped
+ * reading as rows and the type as a grey print. Past 24 the words are set smaller at the same pitch, and the block is
+ * hung from its label instead of centred in the field, so the two stay together however much room is left below.
+ * Wherever a capital takes 24 rows or fewer (every laptop and phone measured) nothing here changes.
  */
-const R21_MAX = (typeof location !== 'undefined' && Number(new URLSearchParams(location.search).get('r21'))) || 0
+const MAX_ROWS_PER_CAP = 24
 
 /**
  * THE FACE HAS TO BE THE FACE.
@@ -166,7 +168,8 @@ export function linefieldState(V, side, words, label) {
    * rounded to a whole number of rows and the baseline snapped half a row off the grid, so every row inside a
    * letter is entirely inside it and no row can graze an edge. The letters keep every stroke they have.
    */
-  const rowsPerCap = Math.min(Math.max(ROWS_PER_CAP, Math.round(L.cap / spacing)), R21_MAX > ROWS_PER_CAP ? R21_MAX : Infinity)
+  const limited = Math.round(L.cap / spacing) > MAX_ROWS_PER_CAP
+  const rowsPerCap = limited ? MAX_ROWS_PER_CAP : Math.max(ROWS_PER_CAP, Math.round(L.cap / spacing))
   const capSnap = rowsPerCap * spacing
   // the whole block is rescaled by whatever rounding the cap to whole rows cost, so its proportions survive it
   const size = L.size * (capSnap / L.cap)
@@ -181,7 +184,8 @@ export function linefieldState(V, side, words, label) {
    * inside a 50 pixel strip. The correction is applied in WHOLE ROWS, so the grid alignment that keeps the
    * letters clean survives it, and it is measured against the real ink, diacritics included.
    */
-  let first = snap(L.top + (L.avail - L.blockEm * size) / 2 + asc)
+  // limited (R21): hung from the label, the first ink row whole rows below it (rounded down the grid, never up into it)
+  let first = limited ? (Math.ceil((L.top + asc) / spacing - 0.5) + 0.5) * spacing : snap(L.top + (L.avail - L.blockEm * size) / 2 + asc)
   const under = V.strip + L.air + asc - first
   if (under > 0) first += Math.ceil(under / spacing) * spacing
   const over = first + L.rel[words.length - 1] * size + desc - (H - V.strip - L.air)

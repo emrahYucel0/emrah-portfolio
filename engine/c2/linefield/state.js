@@ -21,6 +21,12 @@ export const FRONTEND_WORDS = ['FEEL.', 'TIMING.', 'FRICTION.', 'FIRST PAINT.']
 
 /** how many rows must pass through a capital for the word to hold together */
 const ROWS_PER_CAP = 12
+/*
+ * R21 PROTOTYPE (docs/IMAGE-QUALITY.md; until the user's choice): ?r21=18 or ?r21=24 caps the words' size on large
+ * screens at that many rows per capital. The pitch stays where it is (7 px past the phone); the type is set smaller,
+ * so the block takes less of the field. Without the key nothing changes.
+ */
+const R21_MAX = (typeof location !== 'undefined' && Number(new URLSearchParams(location.search).get('r21'))) || 0
 
 /**
  * THE FACE HAS TO BE THE FACE.
@@ -160,7 +166,7 @@ export function linefieldState(V, side, words, label) {
    * rounded to a whole number of rows and the baseline snapped half a row off the grid, so every row inside a
    * letter is entirely inside it and no row can graze an edge. The letters keep every stroke they have.
    */
-  const rowsPerCap = Math.max(ROWS_PER_CAP, Math.round(L.cap / spacing))
+  const rowsPerCap = Math.min(Math.max(ROWS_PER_CAP, Math.round(L.cap / spacing)), R21_MAX > ROWS_PER_CAP ? R21_MAX : Infinity)
   const capSnap = rowsPerCap * spacing
   // the whole block is rescaled by whatever rounding the cap to whole rows cost, so its proportions survive it
   const size = L.size * (capSnap / L.cap)

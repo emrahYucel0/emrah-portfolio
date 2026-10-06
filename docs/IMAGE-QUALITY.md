@@ -923,3 +923,68 @@ and writes to `out/iq/final2/flatcut-rtx.log` when it runs.
 What is known without it (`out/iq/twopaint.cjs`): every cut now paints once. Work painted three times before (shown at
 about 60–100 ms, settled at 240–580 ms) and Cross Section twice (settled at 130–300 ms). So their settled time should
 now equal their shown time, about one paint: 60–110 ms on the Intel figures above.
+
+## R20 final, the last extra paint, and R21's comparison (2026-10-06)
+
+User decisions after the RTX table:
+1. R20: the adaptive ratio on by default, floor 1.28, with the 4K cap; one constant still turns both off.
+2. The reduced-motion cut measurement waits for a quiet machine tonight, and its result is recorded here.
+3. R21: the comparison sheet. STOP for the choice.
+
+### R20 as the default (`main.js` `RATIO`)
+
+`{ on: true, adaptive: true, capPx: 3840 × 2160, floor: 1.28, … }`. `RATIO.on = false` still restores the ratio as it
+was. `__lab.ratioAdaptive(false)` switches the adaptive part off for one page, for a harness.
+- On the RTX 4050 it never steps (measured above).
+- On the Intel UHD, at 2560×1440@2 it steps 2.00 → 1.60 → 1.28 and stops there: about 33–46 ms per frame instead of
+  83.
+- 2560×1440@1 does not step at all: 1.33 → 1.28 is under a tenth.
+
+### The last extra paint: Work, 0.43 s after the cut
+
+Work's later visits still painted a second time, 430 ms after the cut (`out/iq/workpaint.cjs`). This was an
+identical redraw. `lockWork`'s 420 ms timer prepares the work's world, and `prepareWorld` cleared the picture's
+signature for the world's frames. On the index in reduced motion no world frame is on screen (no press reveal there),
+so the signature is now kept in that one case. Normal motion is unchanged.
+**Now 8 cuts, 8 paints** (`builds/iq-final3`, 4973 / 4974).
+
+### R21: Linefield's words on large screens (`tools/diag/r21.cjs`; prototype key `?r21=N` in `linefield/state.js`)
+
+**What the key does.** Past N rows per capital, the words are set smaller and the pitch is unchanged (7 px; 5.2 on a
+phone). The block takes less of the field and is centred in it as today. Without the key nothing changes.
+
+**Rows per capital** (backend / frontend where they differ):
+
+| size | composed at | today | limit 24 | limit 18 |
+|---|---|---|---|---|
+| 390×844@3 | 390×844 | 18 / 12 (capital 94 px) | same | same |
+| 1440×900@2 | 1440×900 | 23 (161 px) | 23, unchanged | **18** (126 px) |
+| 2560×1440@1 | 1920×1080 at 1.33× | 28 (261 px) | **24** (224 px) | **18** (168 px) |
+| 3840×2160@1 | 2400×1350 at 1.6× | 37 (414 px) | **24** (269 px) | **18** (202 px) |
+
+Capitals are given in CSS px. 1920×1080 itself is 28 rows (196 px), the same as 2560×1440.
+
+**Sheets (`tools/diag/out/iq/r21/`, page captures, normal motion, the passage held at 0, 0.22, 0.72 and 1):**
+- `<size>-overview.png`: the whole screen at the four points.
+- `<size>-1to1.png`: the first word of each side at rest, 1:1 device pixels.
+- `<size>-same.png` and **`R21-SAME.png`**: the same word at one letter size (capital = 120 px) for every size and
+  variant. This is the "same physical letter size" view: how many rows make a letter, with the letter's size taken out.
+
+**What the sheets show:**
+- **The phone is untouched by either limit.** Its 18 / 12 rows are set by the minimum of 12 and the phone's pitch.
+- **Limit 24 changes only 1920 wide and up.** At 4K the words go from 37 to 24 rows, and the block from about 80% of
+  the field's height to about 55%.
+- **Limit 18 also reaches the 1440×900 laptop** (23 → 18). On every size from there up, it makes the letters about
+  as coarse as the phone's backend words.
+- **At one letter size:**
+  - 37 rows at 4K read as a fine, grey screen in which the rows themselves almost disappear.
+  - 24 rows read like 1440×900 today.
+  - 18 rows read like the phone.
+- **One composition detail with a limit.** The block centres in the field, but the label above it (BACKEND —
+  NASIL DÜŞÜNÜRÜM) stays at the top strip, so a gap opens between them at 4K (the 1:1 sheet shows it: the label is
+  above today's word and out of frame with a limit). If a limit is chosen, the block could be set under the label
+  instead (an option, not built).
+- **Mid-corridor:** the flying words scale with the block, so a limit makes them smaller as well. Their row
+  structure follows the same rule.
+
+Waiting for the user's choice: today, 24 or 18, and whether the block should sit under its label.

@@ -275,7 +275,9 @@ function prepareWorld(k) {
   return Promise.all(items.map(loadItem)).then(() => Promise.all(items.map((it) => prepareTone(it.im)))).then(() => {
     if (!WORLD[k]) return
     framesOf(k).forEach((fr, i) => { if (fr.tone && WORLD[k][i]?.c?.tex) surface.release(WORLD[k][i]) })
-    lastSig = ''
+    // a world's frames are not on screen on the index in reduced motion (no press reveals one there), so the picture
+    // is not redrawn for them: it was a second, identical paint of Work 0.4 s after the cut (lockWork's prepareWorld)
+    if (!(REDUCED && A.mode === 'index')) lastSig = ''
   })
 }
 // previews load before the surface starts; their tone is prepared in a worker in the background, and nothing that
@@ -2369,8 +2371,8 @@ function noteFrame(drawn, et) {
  * 2026-10-04). The drawing ratio is min(DPR, 1.5) × V.u (1.75 on a phone), and every pixel of it is shaded every frame:
  * on a large high-DPR screen that grew without limit (3840×2160 at DPR 2 drew 18.7 Mpx), and on a weak GPU even a
  * 4K backing store cannot keep up. Two rules; RATIO.on = false turns both off (the drawing ratio is then what it was).
- * User decision 2026-10-05: the cap is the default; the adaptive ratio stays in the code, off (`adaptive: false`),
- * with its floor at 1.28, until it is measured on a discrete GPU whether it is needed at all.
+ * User decisions 2026-10-05/06: the cap and the adaptive ratio (floor 1.28) are both the default. On the RTX 4050
+ * it never steps; on the integrated GPU it trades a little sharpness for smoothness at large sizes.
  *
  *   cap       the backing store never holds more pixels than a 4K screen (`capPx`, 8.3 Mpx); the ratio is lowered until it fits
  *   adaptive  the time between consecutive drawn frames is measured while the surface draws every frame (a transition,
@@ -2383,7 +2385,7 @@ function noteFrame(drawn, et) {
  *             A phone (the composition under 700 px wide) is never measured, and reduced motion draws only on change,
  *             so there is nothing to measure there.
  */
-const RATIO = { on: true, adaptive: false, capPx: 3840 * 2160, floor: 1.28, window: 3000, slow: 22, step: 0.8, settle: 1000, still: 2000 }
+const RATIO = { on: true, adaptive: true, capPx: 3840 * 2160, floor: 1.28, window: 3000, slow: 22, step: 0.8, settle: 1000, still: 2000 }
 const ratio = { k: 1, iv: [], sum: 0, prev: false, due: false, done: false, since: 0, steps: [] }
 function drawRatio(dpr) {
   if (!RATIO.on) return dpr
@@ -2870,7 +2872,7 @@ window.__lab = { CONTACT_STOP, A, V, ptr, phys, surface, works, STOP, SPINE,
   ratio: () => ({ k: ratio.k, due: ratio.due, done: ratio.done, steps: ratio.steps, R: V.dpr * V.u, backing: [canvas.width, canvas.height],
     median: ratio.iv.length ? [...ratio.iv].sort((a, b) => a - b)[ratio.iv.length >> 1] : 0, span: ratio.sum }),
   ratioStep: () => ratioStep(performance.now()),
-  // the adaptive ratio is off by default (user decision 2026-10-05); a harness can switch it on for one page
+  // a harness can switch the adaptive ratio off (or on) for one page
   ratioAdaptive: (on) => { RATIO.adaptive = !!on; ratio.done = false },
   // the passage's own hooks leave with the flag: hold it at an exact progress, and read what it is doing
   ...(LINEFIELD ? {

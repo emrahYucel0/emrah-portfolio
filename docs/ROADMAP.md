@@ -22,7 +22,7 @@ belgedeyse (AUDIT-01, LINEFIELD.md, DEPLOYMENT.md…) burada ona bağlantı veri
 - **Karar bekliyor:** neyin beklendiği yazılı.
 - **Önce inceleme:** mevcut davranış ölçülmeden tasarlanmayacak.
 
-Son güncelleme: 2026-10-05, `feature/image-quality` (worktree `../emrah-portfolio-iq`, 8da676c'den): R9 onaylandı, R29 yapıldı, R19 iki yüzde varsayılan (onaylandı); hareketi azaltılmış modun boyaması için seçenek 1 ve 2 yapıldı, ardından Work ile Cross Section'da kesme başına tek boyama (b, c); R20: 4K tavanı varsayılan, uyarlanır oran kodda ama kapalı (taban 1,28), RTX 4050'de ölçüldü; R21'den önce durdu. Canlıda
+Son güncelleme: 2026-10-05, `feature/image-quality` (worktree `../emrah-portfolio-iq`, 8da676c'den): R9 onaylandı, R29 yapıldı, R19 iki yüzde varsayılan (onaylandı); hareketi azaltılmış modun boyaması için seçenek 1 ve 2 yapıldı, ardından Work ile Cross Section'da kesme başına tek boyama (b, c); R20: 4K tavanı ve uyarlanır oran (taban 1,28) varsayılan; R21 karşılaştırması hazır, kullanıcının seçimi bekleniyor. Canlıda
 df5ab32. Görüntü kalitesi turu başladı: R9, R19, R20, R21. Sıra: R9 ölçümü → R9 düzeltmesi → R19 → R20 → R21.
 Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 
@@ -47,8 +47,8 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 | R27 | Harness'lar izlenen `docs/` yollarına yazıyor | P2 | **Bitti** (2026-10-03) | — |
 | R28 | Mac dokunmatik yüzeyinde ikinci kaydırmanın yutulması (120 Hz) | **P0** | **Canlıda (`1e663bd`); gerçek MacBook onayı bekliyor** | R22 |
 | R29 | Hareketi azaltılmış modda ton satırları kalınlaştırmıyor (R9'dan önce de var) | P2 | **Yapıldı** (2026-10-05, abfe37a; dalda) | R9 |
-| R20 | Arka belleğe piksel sayısı tavanı ve uyarlanır çizim oranı | P1 | **Tavan varsayılan** (2026-10-05, f83a74e; dalda). Uyarlanır oran kodda, kapalı (taban 1,28); RTX'te hiç adım atmıyor, gerekip gerekmediği kullanıcının kararı | R9 |
-| R21 | Büyük ekranlarda büyük harf başına satır sayısına üst sınır | P2 | Karar bekliyor (sanat yönetimi) | — |
+| R20 | Arka belleğe piksel sayısı tavanı ve uyarlanır çizim oranı | P1 | **Yapıldı** (2026-10-06; dalda): 4K tavanı + uyarlanır oran (taban 1,28) varsayılan | R9 |
+| R21 | Büyük ekranlarda büyük harf başına satır sayısına üst sınır | P2 | **Karşılaştırma hazır** (2026-10-06, `?r21=24|18`); kullanıcının seçimi bekleniyor | — |
 | R22 | Gerçek cihaz testi (iPad, Mac'te Safari, Android telefon) | P0 | Karar verildi | — |
 | R23 | Awwwards başvuru malzemesi (ekran görüntüleri, kısa video, başlık, açıklama) | P0 | Karar bekliyor (içerik) | R9 |
 | R25 | Linefield yayında açılsın mı | P0 | **Karar verildi: açık. Bitti** (`fb01609`) | — |
@@ -502,6 +502,9 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 
   Intel UHD'de aynı boyutlarda 35, 83 ve 184 / 82 ms. Uyarlanır oran açıkken RTX'te hiçbir boyutta adım atmadı.
   Ekranın hızından düşen tek durum 3840×2160@2'nin tavansız hâliydi (8,1 ms); tavan onu düzeltiyor.
+- **Karar (2026-10-06, kullanıcı):** uyarlanır oran da varsayılan (taban 1,28), tavanla birlikte. Tek sabit
+  (`RATIO.on`) ikisini de kapatıyor. RTX'te hiç adım atmıyor. Tümleşik GPU'da büyük ekranlarda biraz keskinlik
+  verip akıcılık kazandırıyor.
 - **Karar (2026-10-04, önceki):** Cross Section yayınında yok. Görüntü kalitesi turunda R9 ve R19 ile birlikte kendi adımı
   olacak. Ölçüm (`docs/CROSS-SECTION.md`, duyarlı tarama): 3840×2160@2'de arka bellek 18,7 Mpx. Bu Intel UHD'de
   sıradan bir yer 101 ms, Cross Section 74 ms; 8,3 Mpx tavanla ikisi de yaklaşık yarıya iniyor (45 ms ve 34 ms).
@@ -518,7 +521,18 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
     (`linefield/state.js`): telefon alt sınıra (12) çarpıyor; büyük ekranda aralık sayfanın 7 px'inde kalıyor, bu
     yüzden harf büyüdükçe satır sayısı artıyor. Kahraman adı 1080p'de zaten yaklaşık 50 satırla çiziliyor (hesap,
     ölçülmedi).
-- **Karar:** Bekleyen: kullanıcının sanat yönetimi kararı. Dört ekran boyutundan bir karşılaştırma sayfasıyla.
+- **Karşılaştırma (2026-10-06; `docs/IMAGE-QUALITY.md`, `out/iq/r21/`):** `?r21=N` anahtarı, N'den fazla satır
+  düşecek büyük harflerde yazıyı küçültüyor; aralık aynı kalıyor. Büyük harf başına satır:
+
+  | Ekran | Bugün | Sınır 24 | Sınır 18 |
+  |---|---|---|---|
+  | Telefon | 18 / 12 | etkilenmiyor | etkilenmiyor |
+  | 1440×900 | 23 | etkilenmiyor | 18 |
+  | 2560×1440 | 28 | 24 | 18 |
+  | 3840×2160 | 37 | 24 | 18 |
+
+  Sınır konunca blok alanda ortalanıyor; etiket ise üst şeritte kalıyor ve aralarında boşluk açılıyor.
+- **Karar:** Bekleyen: kullanıcının seçimi (bugün, 24 ya da 18; bloğun etiketin altına alınıp alınmayacağı).
 - **Dosyalar:** `engine/c2/linefield/state.js` (satır aralığı), `engine/c2/states.js`, `docs/LINEFIELD.md`.
 - **Bağımlılık:** yok.
 - **Öncelik:** P2.

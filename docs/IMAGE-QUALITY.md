@@ -988,3 +988,19 @@ Capitals are given in CSS px. 1920×1080 itself is 28 rows (196 px), the same as
   structure follows the same rule.
 
 Waiting for the user's choice: today, 24 or 18, and whether the block should sit under its label.
+
+**The picture on the final build (`builds/iq-final3`; `out/iq/final3/flatident.log`, fresh browser per load):** 33 of
+36 identical in the two loads per build. The three that differed were all Cross Section, at 1440×900@2, 1920×991@1
+and 1366×768@1.25. More loads (`out/iq/final3/dump/`, 1440×900@2): 7 of 8 loads of the new build gave today's picture
+byte for byte, and the eighth differed in 3 pixels by 1 level, in a 2 px column (x 1171–1172). Today's build varies in
+the same place (18 pixels at x 1044–1177 between two of its own loads, 2026-10-05). It is the Cross Section's mask
+text rasterising, not a change in the picture. Today's own hash for this place also changed from one day to the next
+(be9cd15… → 1106250…).
+
+**The checks on `builds/iq-final3`:**
+- PASS: `linefield.cjs` 180/180, `npx nuxt typecheck`, `compat-ios15`, `cspboot --dir`.
+- The Cross Section, seam and rotation checks were run on iq-final2 (above). Since then only `prepareWorld`'s
+  signature (reduced motion, index), the ratio's `adaptive` flag and the R21 key (off without it) have changed.
+
+**The cut measurement** (`flatcut.cjs 4971,4973 --rounds=2`, today against iq-final3) is waiting for a quiet machine.
+It writes to `out/iq/final3/flatcut.log`; the result goes here when it has run.

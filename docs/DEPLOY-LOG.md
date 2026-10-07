@@ -101,6 +101,64 @@ other worktree had released `main`.
   `docs/` and `tools/diag/hintaa.cjs`, a harness that is never part of the build. The package's name and SHA-256 above
   stand for `df5ab32`; a build of `main`'s tip produces the same code.
 
+## Candidate — `e192c24`, the image-quality round (R9, R19, R20, R21, R29). NOT UPLOADED.
+
+Prepared 2026-10-07/08 on `feature/image-quality`.
+- **`main`:** fast-forwarded locally to `e192c24`, and then to the commits that record this, which are documentation
+  only. Nothing is pushed: `origin/main` is still `8da676c`.
+- **Not in the table above:** a row is added only after an upload.
+
+- **Package:** `deploy/yucelemrah-e192c24.zip`.
+  - SHA-256 `aa4a642ad7673f7c4c260d03f232b91d203b72331396041f5b357969c72137fd`
+    (`deploy/yucelemrah-e192c24.zip.sha256`).
+  - 220 files, 10,267,497 bytes unpacked, 9,336,991 bytes zipped (8.9 MiB). No `axe.min.js` in it.
+  - `cspboot --dir` PASS on the build (`builds/release-e192c24`) and on the unpacked zip
+    (`builds/release-e192c24-unzipped`, byte-identical to the build).
+- **Built from `main` at `e192c24`.** Identical in code to `builds/iq-final4`, the build every check of the round ran
+  on: all 39 JS and CSS files are byte-identical. The other 44 differing files differ only in the build ID, the
+  timestamps and the CSP hashes derived from them.
+- **What is new for a visitor:**
+  - The rows no longer shimmer as they move (R9).
+  - No halo at the capsules (R19).
+  - Large screens draw at most a 4K screen's pixels, and an integrated GPU steps the ratio down at rest (R20).
+  - Linefield's words are at most 24 rows per capital on large screens, hung from their label (R21). This includes a
+    1920 × 991 desktop.
+  - Reduced motion: tone rows thicken as in normal motion (R29), and each cut paints once.
+  - `docs/IMAGE-QUALITY.md` has the record.
+- **Gate** (2026-10-07, RTX 4050; the other project stopped, the desktop's Chrome open at the user's request). Logs
+  are in `tools/diag/out/iq/release/`.
+  - **`run6.sh` on the release build (flag on), 46 min: every section PASS**, GESTURE and LAB A11Y included.
+    NON-LAB REVIEW ×2.
+  - **`run6.sh` with `NUXT_PUBLIC_LINEFIELD=0` (40 min) and `NUXT_PUBLIC_CROSS=0` (45 min):** every section PASS
+    but GESTURE (5 and 3 failures) and NON-LAB REVIEW.
+  - **GESTURE side by side** with the same flag-off builds of the live code (8da676c ≡ df5ab32, built in
+    `emrah-portfolio-cross`), two alternating runs each:
+    - Linefield off: release 8 and 5 failures, live 3 and 7.
+    - Cross Section off: release 1 and 0, live 2 and 5.
+    - Both builds fail the same ways: "down from Cross Section, the axis moved 2", and flicks or long gestures
+      that travel two stops (or, from the bench, two back).
+    - The exact cases change from run to run on both. A few release cases did not recur as the same case on the
+      live builds in two runs: from name down two stops, from Work up two, from Full-Stack coasting up two. The same
+      moves did occur on live from other places (Creative 1 → 3, Full-Stack 2 → 4, Work 4 → 2).
+  - **NON-LAB:** the live package against the same `pre-site-polish` baseline also reports a state difference at
+    all 7 stops (the spine's new places). The release only adds pixel differences where R9/R19 change the rows
+    (Creative, Full-Stack, Work).
+  - **This round's checks on the release build:**
+    - PASS: `linefield.cjs` 180/180, `lfwords-locale`, `lfseam`, `lfresponsive` phones / tablets / laptops,
+      `cross.cjs` WebKit, `csseam`, `r9webkit`, `iqhalo` (R19 values), `r9flat` (reduced within 2% of normal;
+      Linefield dark +3.9–6.1%).
+    - Known: `lfresponsive` wide `rust50` at 1920×1080 (identical on 8da676c); `cross.cjs` Chrome @2 / @1
+      "fallback forced"; `csrotate` "held → landscape".
+    - `iqr9.cjs` against the live package (moving rows' frame-to-frame change, p50, live → release):
+      - transition 29.3 → 2.1% / 26.2 → 1.0%;
+      - scroll 16.1 → 0.4% / 5.6 → 0.3%;
+      - passage 25.6 → 3.4% / 29.2 → 1.5%;
+      - ripple (1440×900@2) 8.0 → 1.4%.
+  - **Reduced-motion cuts against the live package:** recorded in `docs/IMAGE-QUALITY.md`.
+- **Before upload:** the user's own check of the release build, on the iPhone (LAN preview
+  `http://192.168.1.5:4973/tr`, `builds/release-e192c24` served `--lan --wk`) and on the 1920 × 991 desktop. Then the
+  push of `main`, when the user confirms it, and the upload by hand through cPanel by `docs/DEPLOYMENT.md`'s checklist.
+
 ## Adding a line
 
 After an upload, append a row and fill `verified live by` only once someone has actually opened the deployed site. The

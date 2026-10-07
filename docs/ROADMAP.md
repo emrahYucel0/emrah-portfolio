@@ -22,7 +22,7 @@ belgedeyse (AUDIT-01, LINEFIELD.md, DEPLOYMENT.md…) burada ona bağlantı veri
 - **Karar bekliyor:** neyin beklendiği yazılı.
 - **Önce inceleme:** mevcut davranış ölçülmeden tasarlanmayacak.
 
-Son güncelleme: 2026-10-05, `feature/image-quality` (worktree `../emrah-portfolio-iq`, 8da676c'den): R9 onaylandı, R29 yapıldı, R19 iki yüzde varsayılan (onaylandı); hareketi azaltılmış modun boyaması için seçenek 1 ve 2 yapıldı, ardından Work ile Cross Section'da kesme başına tek boyama (b, c); R20: 4K tavanı ve uyarlanır oran (taban 1,28) varsayılan; R21: büyük harf başına en çok 24 satır, blok etiketinin altında. Tur, hareketi azaltılmış modun kesme süresi dışında bitti; yayın adımları önerildi. Canlıda
+Son güncelleme: 2026-10-05, `feature/image-quality` (worktree `../emrah-portfolio-iq`, 8da676c'den): R9 onaylandı, R29 yapıldı, R19 iki yüzde varsayılan (onaylandı); hareketi azaltılmış modun boyaması için seçenek 1 ve 2 yapıldı, ardından Work ile Cross Section'da kesme başına tek boyama (b, c); R20: 4K tavanı ve uyarlanır oran (taban 1,28) varsayılan; R21: büyük harf başına en çok 24 satır, blok etiketinin altında. Yayın adayı hazır: `main` yerelde `e192c24`'e ileri sarıldı (push yok), tam kapı geçti, paket `deploy/yucelemrah-e192c24.zip` (`docs/DEPLOY-LOG.md`); kullanıcının iPhone ve masaüstü kontrolü bekleniyor. Canlıda
 df5ab32. Görüntü kalitesi turu başladı: R9, R19, R20, R21. Sıra: R9 ölçümü → R9 düzeltmesi → R19 → R20 → R21.
 Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 

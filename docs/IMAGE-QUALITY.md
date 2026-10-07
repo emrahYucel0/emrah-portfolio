@@ -1096,3 +1096,15 @@ ms: shown / settled. Median and worst over the warm cuts; worst over the first v
 4. **The target "every cut under 100 ms at 1440×900@2" is met on the phone** (worst 46–73 ms, settled 62–90). It is
    not met at 1440×900@2 or 1920×991@1, where Full-Stack's own paint is the limit. The option that would meet it,
    painting the neighbours whole in idle time, was set aside by the user (option (a)).
+
+## The release candidate (2026-10-07/08)
+
+The round's release steps ran as approved. The record is in `docs/DEPLOY-LOG.md` (Candidate `e192c24`), with the logs
+in `tools/diag/out/iq/release/`:
+1. The reduced-motion cuts were measured against the live package (above).
+2. `main` was fast-forwarded locally to the branch.
+3. The release build from `main` is identical in code to `builds/iq-final4`.
+4. The full gate passed, with the known cases.
+5. The package is `deploy/yucelemrah-e192c24.zip`.
+
+Waiting for the user's check on the iPhone and the 1920 × 991 desktop before the push and the upload.

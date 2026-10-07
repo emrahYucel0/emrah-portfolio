@@ -1057,3 +1057,42 @@ half of the field is left as ruled ground.
 
 **The round is complete except the reduced-motion cut timing.** `flatcut.cjs 4971,4977 --rounds=2` is waiting for a
 quiet machine and writes to `out/iq/final4/flatcut.log`.
+
+## The reduced-motion cuts, measured for the release (2026-10-07, `out/iq/release/flatcut.log`)
+
+**Setup:**
+- `flatcut.cjs 4975,4977 --rounds=2`: the live package `yucelemrah-df5ab32.zip`, unpacked as is (SHA-256
+  9a627488d516721a…), on 4975, against `builds/iq-final4`, the release content, on 4977.
+- RTX 4050, headless Chrome.
+
+**Conditions:**
+- The other project was stopped.
+- The desktop's Chrome stayed open at the user's request (`QUIET_CHROME=ignore`; the processor's load still had to
+  fall under 25% before each run).
+- Both builds ran side by side, so the comparison holds. The absolute numbers are about 1.8× those of the quiet run
+  on 2026-10-05: Full-Stack's paint was 68 ms on the live package, against 35–40 then.
+
+ms: shown / settled. Median and worst over the warm cuts; worst over the first visits. Two rounds:
+
+| size | | first visit, worst (shown / settled) | warm, median shown | warm, worst (shown / settled) |
+|---|---|---|---|---|
+| 1440×900@2 | live df5ab32 | 82–89 / 209–212 | 35–39 | 65 / 483–485 |
+| | **release** | 135–182 / **152–198** | 100–114 | 167–170 / **183–186** |
+| 1920×991@1 | live df5ab32 | 96–97 / 260–269 | 44–47 | 77–81 / 492–525 |
+| | **release** | 106–161 / **122–177** | 70–84 | 108–179 / **125–195** |
+| 390×844@3 | live df5ab32 | 35–46 / 134–153 | 16 | 25–27 / 458–460 |
+| | **release** | 66–101 / **82–118** | 26–34 | 46–73 / **62–90** |
+
+**What it says:**
+1. **One paint per cut.** On the release a cut settles one frame after it is shown, everywhere. On the live package
+   Work settles 0.4–0.5 s after the cut (three paints) and Cross Section after two paints.
+2. **The final picture now arrives sooner than on the live site, at every size:**
+   - 1440×900@2: worst 198 against 485 ms.
+   - 1920×991@1: worst 195 against 525 ms.
+   - Phone: worst 118 against 460 ms.
+3. **The first picture arrives later than on the live site.** That is R9's cost: the rows are mixed in linear light
+   over the whole canvas. Full-Stack paints in about 175 ms against 68 ms in these conditions; on a quiet machine
+   (2026-10-05) it was about 100 against 40.
+4. **The target "every cut under 100 ms at 1440×900@2" is met on the phone** (worst 46–73 ms, settled 62–90). It is
+   not met at 1440×900@2 or 1920×991@1, where Full-Stack's own paint is the limit. The option that would meet it,
+   painting the neighbours whole in idle time, was set aside by the user (option (a)).

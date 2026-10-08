@@ -298,6 +298,30 @@ GESTURE (flicks only): ${fails === 0 ? 'PASS' : `FAIL (${fails})`}`); await b.cl
     const s1 = (await posOf(p)).pos
     ok(s1 - s0 === expect, `${n} notches of 130px, ${String(gap).padStart(4)} ms apart, move ${expect}`, `${s0} → ${s1}`)
   }
+  /*
+   * ── AND A WINDOWS MOUSE'S OWN DETENT, 100 px (R15, 2026-10-08) ──────────────────────────────────────────────
+   *
+   * One alone is 0.11 of a stop, under landGesture's 0.12, and springs back: the user's decision is to keep that
+   * threshold (his own mouse moves a stop per detent). What a hand does with it is asserted — a quick roll and two
+   * quick detents are one stop. The slow cadences are recorded as measured on the live fd9b2e6 and on this branch
+   * (identical, 3 of 3 each): three detents 300 ms apart move NOTHING, 700 ms apart one, 1400 ms apart nothing. That
+   * is the behaviour today, not a rule; a change prints here, and no cadence may ever move more stops than detents.
+   */
+  console.log('\n-- the 100 px detent')
+  for (const [n, gap, expect, rule] of [[2, 60, 1, true], [3, 45, 1, true], [1, 0, 0, false], [3, 300, 0, false], [3, 700, 1, false], [3, 1400, 0, false]]) {
+    await goTo('name')
+    await hushClear(p)
+    const s0 = (await posOf(p)).pos
+    for (let i = 0; i < n; i++) { await p.mouse.wheel(0, 100); if (i < n - 1) await sleep(gap) }
+    await sleep(2600)
+    const s1 = (await posOf(p)).pos
+    const label = `${n} notch${n > 1 ? 'es' : ''} of 100px${n > 1 ? `, ${String(gap).padStart(4)} ms apart` : ''}`
+    if (rule) ok(s1 - s0 === expect, `${label}, move ${expect}`, `${s0} → ${s1}`)
+    else {
+      ok(s1 - s0 >= 0 && s1 - s0 <= n, `${label}: never more stops than detents`, `${s0} → ${s1}`)
+      if (s1 - s0 !== expect) console.log(`  note ${label} moved ${s1 - s0}, measured ${expect} on 2026-10-08 — the slow-detent behaviour changed`)
+    }
+  }
 
   note(`${PLACES.length} places x 2 directions x 4 shapes, plus the bench, the arrival and normal scrolling`)
   await b.close()

@@ -78,6 +78,12 @@ const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'F
    * of fault as an assertion that is out of date, and it has to be visible in the output.
    */
   if (!SPINE) console.log(`  !!  window.__lab.SPINE is not exposed on this build — the per-place hard-flick cases CANNOT RUN here (only the bench ones below). Stops fall back to ${JSON.stringify(STOP)}`)
+  /*
+   * ABOVE THE BENCH IS THE PASSAGE (R14). With Cross Section on the spine the way up from the bench is the passage,
+   * entered at DEPTH, not Work — touchjourney.cjs learned that as UP, and this file kept asserting Work, so its two
+   * "→ Work" cases failed on the live build identically (2026-10-08). Same name, same rule as touchjourney's.
+   */
+  const UP = STOP.cross ?? STOP.work, UPN = STOP.cross != null ? 'Cross Section (DEPTH)' : 'Work'
 
   // 1. R7: the bench browses — a swipe up from the empty field moves it one study, and only past 03 does the
   //    finger carry on to the Contact finale
@@ -92,12 +98,12 @@ const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'F
   s = await state()
   ok(arrivedAtContact(s), 'and from 03, a swipe up → the Contact finale', contactSaid(s))
 
-  // 2. swipe down from empty field → Work
+  // 2. swipe down from empty field → the place above the bench
   await bench()
   await swipe(Math.round(+W / 2), Math.round(+H * 0.3), 260)
   await sleep(6000)
   s = await state()
-  ok(s.path === '/tr' && s.base === STOP.work, 'swipe down (empty field) → Work', `${s.path} base ${s.base}`)
+  ok(s.path === '/tr' && s.base === UP, `swipe down (empty field) → ${UPN}`, `${s.path} base ${s.base}`)
 
   // 3–5. a swipe that BEGINS on each record is still the bench's gesture (one study along, R7), and must not open
   //      a study or choose the record it began on
@@ -231,15 +237,18 @@ const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'F
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
     return Math.abs(y1 - y0)
   }
-  // a swipe DOWN the screen travels back up the spine, so the sign is flipped for the reading
-  const AXIS = new Set(['work', 'linefield'].filter((n) => STOP[n] !== undefined))
+  // a swipe DOWN the screen travels back up the spine, so the sign is flipped for the reading.
+  // Cross Section has an axis of its own as well — the band's positions — and one flick turns the louvers one
+  // position and stays (place.js): that is the place's rule, not NOTHING MOVED
+  const AXIS = new Set(['work', 'linefield', 'cross'].filter((n) => STOP[n] !== undefined))
+  const axisOf = () => p.evaluate(() => ({ base: window.__lab?.A?.base ?? null, wT: +(window.__lab?.A?.wT ?? 0).toFixed(2), lfp: +(window.__lab?.A?.lfp ?? -1).toFixed(3), csp: +(window.__lab?.csState?.()?.p ?? -1).toFixed(3), path: location.pathname }))
   for (const name of (SPINE || []).filter((n) => n !== 'lab' && n !== 'rest')) {
     for (const dir of [1, -1]) {
       await p.goto(`http://127.0.0.1:${port}/tr`, { waitUntil: 'networkidle', timeout: 60000 })
       await p.waitForFunction(() => window.__lab?.A.mode === 'index', null, { timeout: 40000 }).catch(() => {})
       await sleep(2600)
       if (name !== 'name') { await p.evaluate((n) => window.__lab.go(window.__lab.STOP[n]), name); await sleep(2600) }
-      const a = await p.evaluate(() => ({ base: window.__lab.A.base, wT: +window.__lab.A.wT.toFixed(2), lfp: +(window.__lab.A.lfp ?? -1).toFixed(3) }))
+      const a = await axisOf()
       /*
        * Travelling DOWN the spine means sweeping the finger UP the screen, so it starts low; and the other way for
        * up. The start point is the clear height nearest that end, and where it landed is printed either way.
@@ -248,11 +257,11 @@ const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'F
       if (cp.y === null) { ok(false, `hard flick ${dir > 0 ? 'down' : 'up  '} from ${name.padEnd(10)} — cannot begin`, said(cp)); continue }
       const swept = await hard(cp.y, dir > 0 ? -1 : 1)
       await sleep(4000)
-      const c = await p.evaluate(() => ({ base: window.__lab?.A?.base ?? null, wT: +(window.__lab?.A?.wT ?? 0).toFixed(2), lfp: +(window.__lab?.A?.lfp ?? -1).toFixed(3), path: location.pathname }))
+      const c = await axisOf()
       const pos = /\/contact$/.test(c.path) ? STOP.rest : /\/lab/.test(c.path) ? STOP.lab : c.base
       const moved = pos - a.base
       const atEnd = (dir > 0 && a.base >= STOP.rest) || (dir < 0 && a.base <= 0)
-      const ran = name === 'work' ? Math.abs(c.wT - a.wT) : Math.abs(c.lfp - a.lfp)
+      const ran = name === 'work' ? Math.abs(c.wT - a.wT) : name === 'cross' ? Math.abs(c.csp - a.csp) : Math.abs(c.lfp - a.lfp)
       const held = moved === 0 && AXIS.has(name) && ran > 0.2
       let why = `${moved > 0 ? '+' : ''}${moved}`
       if (moved === 0) why = atEnd ? 'the end of the spine' : held ? `stayed, and its own axis moved ${ran.toFixed(2)}` : 'NOTHING MOVED'
@@ -270,7 +279,7 @@ const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'F
     const where = `${said(cp)}, swept ${swept}px`
     // R7: a hard flick moves the bench one study, however hard (it opens on 01)
     if (dir > 0) ok(s.path === '/tr/lab' && s.study === 2, 'hard flick down from the bench      → one study along, 02', `${s.path} study ${s.study}  ·  ${where}`)
-    else ok(s.path === '/tr' && s.base === STOP.work, 'hard flick up   from the bench      → Work', `${s.path} base ${s.base}  ·  ${where}`)
+    else ok(s.path === '/tr' && s.base === UP, `hard flick up   from the bench      → ${UPN}`, `${s.path} base ${s.base}  ·  ${where}`)
   }
 
   /*

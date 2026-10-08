@@ -37,6 +37,14 @@ const SHAPES = {
   // Windows precision touchpad (Chrome): ~8 ms finger reports with fractional deltas, then Chrome's own fling per frame
   ptp: () => fingerThenMomentum({ frame: 8, ramp: [4.5, 12.25, 25.5, 41.75, 58, 66.5, 71.25, 73], v0: 150, keep: 0.93, liftGap: 12, round: false, floor: 0.5 }).map(([t, d], i, a) => [i >= 8 ? 8 * 8 + 12 + (i - 8) * 16.7 : t, d]),
   ptphard: () => fingerThenMomentum({ frame: 8, ramp: [10, 30, 60, 100, 140, 170, 190, 200], v0: 320, keep: 0.935, liftGap: 12, round: false, floor: 0.5 }).map(([t, d], i) => [i >= 8 ? 8 * 8 + 12 + (i - 8) * 16.7 : t, d]),
+  /*
+   * A WINDOWS MOUSE'S OWN DETENT: 100 px (R15, 2026-10-08). One alone is 0.11 of a stop, under landGesture's 0.12, so
+   * it springs back — the user's decision is to keep that threshold (his mouse moves a stop per detent), so a lone
+   * detent is SOFT here: it may move nothing, never more than one. Turned as a hand turns it, three detents in
+   * 90 ms, it is one stop like every other shape.
+   */
+  notch100: () => [[0, 100]],
+  roll100: () => [[0, 100], [45, 100], [90, 100]],
   // gesture2's own two (mouse free-spin coast; hard trackpad tail), on an exact clock this time
   coast: () => { const ev = []; let t = 0; for (let i = 0; i < 24; i++) { ev.push([t, 112]); t += 16 + Math.round(i * i * 0.58) } return ev },
   tail: () => {
@@ -60,12 +68,13 @@ const SHAPES = {
   const LAST = SPINE.length - 1
   const places = placesArg ? placesArg.split(',') : SPINE.filter((n) => n !== 'lab' && n !== 'rest')
   const shapes = shapesArg ? shapesArg.split(',') : Object.keys(SHAPES)
-  const HAS_AXIS = new Set(['work', 'linefield'])
+  const HAS_AXIS = new Set(['work', 'linefield', 'cross'])
+  const SOFT = new Set(['notch100'])
   console.log(`== TRACKPAD  ${engine} :${port}  spine ${SPINE.join(' · ')}  runs ${RUNS}`)
 
   const posOf = () => p.evaluate(() => {
     const path = location.pathname, A = window.__lab?.A
-    return { path, base: A?.base, wT: +(A?.wT ?? 0).toFixed(2), lfp: +(A?.lfp ?? -1).toFixed(3) }
+    return { path, base: A?.base, wT: +(A?.wT ?? 0).toFixed(2), lfp: +(A?.lfp ?? -1).toFixed(3), csp: +(window.__lab?.csState?.()?.p ?? -1).toFixed(3) }
   })
   const pos = (s) => (/\/contact$/.test(s.path) ? LAST : /\/lab/.test(s.path) ? STOP.lab : s.base)
   const goTo = async (name) => {
@@ -122,21 +131,23 @@ const SHAPES = {
     const after = await posOf()
     const moved = pos(after) - pos(before)
     const atEnd = (dir > 0 && pos(before) >= LAST) || (dir < 0 && pos(before) <= 0)
-    const ran = name === 'work' ? Math.abs(after.wT - before.wT) : Math.abs(after.lfp - before.lfp)
+    const ran = name === 'work' ? Math.abs(after.wT - before.wT) : name === 'cross' ? Math.abs(after.csp - before.csp) : Math.abs(after.lfp - before.lfp)
     const held = moved === 0 && HAS_AXIS.has(name) && ran > 0.2
-    const good = Math.abs(moved) <= 1 && (Math.abs(moved) === 1 || atEnd || held)
+    // and in the work field one throw is at most one work (R15, user decision 2026-10-08: as on the bench)
+    const oneWork = name !== 'work' || ran <= 1.02
+    const good = oneWork && Math.abs(moved) <= 1 && (SOFT.has(shape) || Math.abs(moved) === 1 || atEnd || held)
     const key = `${shape.padEnd(10)} ${dir > 0 ? 'down' : 'up  '} ${name.padEnd(9)} ${mode}`
     const t = (tally[key] ??= { n: 0, bad: 0, res: [] }); t.n++; if (!good) t.bad++; t.res.push(moved)
     const opens = r.log.filter((e) => e.opened)
     const stalls = r.frames.filter(([, d]) => d > 60)
-    const line = `${good ? 'ok  ' : 'OVER'} ${key}  ${pos(before)}→${pos(after)}  events ${r.log.length}  opened ${opens.length}${opens.length ? ` @ ${opens.map((e) => `${Math.round(e.t - r.t0)}ms gap ${e.gap} dy ${e.dy} env ${e.env}${e.spentB ? ' spent' : ''}`).join(' | ')}` : ''}  lands ${r.lands.map(([t, a, b]) => `${Math.round(t - r.t0)}ms ${a}→${b}`).join(', ')}  stalls ${stalls.map(([t, d]) => `${Math.round(t - r.t0)}ms+${d}`).join(' ') || '-'}`
+    const line = `${good ? (SOFT.has(shape) && moved === 0 && !held ? 'soft' : 'ok  ') : oneWork ? 'OVER' : 'SKIP'} ${key}  ${pos(before)}→${pos(after)}${name === 'work' ? ` works ${before.wT}→${after.wT}` : ''}  events ${r.log.length}  opened ${opens.length}${opens.length ? ` @ ${opens.map((e) => `${Math.round(e.t - r.t0)}ms gap ${e.gap} dy ${e.dy} env ${e.env}${e.spentB ? ' spent' : ''}`).join(' | ')}` : ''}  lands ${r.lands.map(([t, a, b]) => `${Math.round(t - r.t0)}ms ${a}→${b}`).join(', ')}  stalls ${stalls.map(([t, d]) => `${Math.round(t - r.t0)}ms+${d}`).join(' ') || '-'}`
     console.log(line)
     if (LOG && !good) for (const e of r.log) console.log('     ', JSON.stringify({ ...e, t: Math.round(e.t - r.t0) }))
   }
   console.log('\n== summary')
   let bad = 0, n = 0
   for (const [k, v] of Object.entries(tally)) { n += v.n; bad += v.bad; if (v.bad) console.log(`  ${k}  ${v.bad}/${v.n}  moved ${v.res.join(',')}`) }
-  console.log(`TRACKPAD ${engine} :${port}: ${bad ? `FAIL — ${bad} of ${n} throws did not move exactly one stop` : `PASS — ${n} throws, each one stop`}`)
+  console.log(`TRACKPAD ${engine} :${port}: ${bad ? `FAIL — ${bad} of ${n} throws did not move exactly one stop (or one work)` : `PASS — ${n} throws, each one stop (a lone 100 px detent at most one)`}`)
   process.exitCode = bad ? 1 : 0
   await b.close()
 })().catch((e) => { console.error(String(e).slice(0, 600)); process.exit(1) })

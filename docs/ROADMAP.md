@@ -22,8 +22,8 @@ belgedeyse (AUDIT-01, LINEFIELD.md, DEPLOYMENT.md…) burada ona bağlantı veri
 - **Karar bekliyor:** neyin beklendiği yazılı.
 - **Önce inceleme:** mevcut davranış ölçülmeden tasarlanmayacak.
 
-Son güncelleme: 2026-10-05, `feature/image-quality` (worktree `../emrah-portfolio-iq`, 8da676c'den): R9 onaylandı, R29 yapıldı, R19 iki yüzde varsayılan (onaylandı); hareketi azaltılmış modun boyaması için seçenek 1 ve 2 yapıldı, ardından Work ile Cross Section'da kesme başına tek boyama (b, c); R20: 4K tavanı ve uyarlanır oran (taban 1,28) varsayılan; R21: büyük harf başına en çok 24 satır, blok etiketinin altında. Yayın adayı hazır: `main` yerelde `e192c24`'e ileri sarıldı (push yok), tam kapı geçti, paket `deploy/yucelemrah-e192c24.zip` (`docs/DEPLOY-LOG.md`); kullanıcının iPhone ve masaüstü kontrolü bekleniyor. Canlıda
-df5ab32. Görüntü kalitesi turu başladı: R9, R19, R20, R21. Sıra: R9 ölçümü → R9 düzeltmesi → R19 → R20 → R21.
+Son güncelleme: 2026-10-08. Görüntü kalitesi turu (R9, R19, R20, R21, R29) **bitti ve canlıda**: `e192c24`, paket
+`deploy/yucelemrah-e192c24.zip`, cPanel'den yüklendi ve Emrah Yücel canlıda doğruladı (`docs/DEPLOY-LOG.md`). `origin/main` 95a825f.
 Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 
 ---
@@ -35,7 +35,7 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 | R1 | Birleştirme: düzeltme turu 2 → `main`, yayın dalı | P0 | **Bitti** (2026-10-02, `4d64ac8`) | — |
 | R4 | Özel imleç | P2 | Kısmen: halkanın boyutu ve rengi bekliyor | — (R2 bitti) |
 | R6 | Lab bench girişleri: okunur boyut, üzerine gelince ön gösterim | P2 | Kısmen: ön gösterimin biçimi bekliyor | — |
-| R9 | Koyu zeminlerde satır titreşimi | **P0** (R18 için) | **Onaylandı** (2026-10-05); `feature/image-quality` dalında, birleştirme ve yayın bekliyor | — |
+| R9 | Koyu zeminlerde satır titreşimi | **P0** (R18 için) | **Bitti, canlıda** (2026-10-08, `e192c24`) | — |
 | R10 | Safari'de adın ince kesimle çizilmesi | P1 | **Kapandı** (2026-10-04: iPhone'da kalın; Playwright WebKit artefaktı) | R22 |
 | R11 | Yavaş ağda ilk kare (8,9 sn) | P2 | Önce değerlendirme | — |
 | R13 | Gövde metni ve tipografik hiyerarşi | P1 | Karar bekliyor (ölçek) | — |
@@ -43,12 +43,12 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 | R15 | Tempo, ilerleme göstergesi, performans bütçesi | P2 | Karar bekliyor | R14 |
 | R17 | Yayın (DEPLOYMENT.md, CSP, canlı yedeği) | P0 | **Bitti** (2026-10-03, `b8918dc` canlıda) | — |
 | R18 | Awwwards başvurusu (Developer Award) | P0 | Karar bekliyor (tarih) | R17, R9, R22, R23 |
-| R19 | Full-Stack'in siyah kapsüllerinin çevresindeki hale | P1 | **Yapıldı** (2026-10-05): iki yüzde varsayılan; dalda, birleştirme ve yayın bekliyor | R9 |
+| R19 | Full-Stack'in siyah kapsüllerinin çevresindeki hale | P1 | **Bitti, canlıda** (2026-10-08, `e192c24`): iki yüzde | R9 |
 | R27 | Harness'lar izlenen `docs/` yollarına yazıyor | P2 | **Bitti** (2026-10-03) | — |
 | R28 | Mac dokunmatik yüzeyinde ikinci kaydırmanın yutulması (120 Hz) | **P0** | **Canlıda (`1e663bd`); gerçek MacBook onayı bekliyor** | R22 |
-| R29 | Hareketi azaltılmış modda ton satırları kalınlaştırmıyor (R9'dan önce de var) | P2 | **Yapıldı** (2026-10-05, abfe37a; dalda) | R9 |
-| R20 | Arka belleğe piksel sayısı tavanı ve uyarlanır çizim oranı | P1 | **Yapıldı** (2026-10-06; dalda): 4K tavanı + uyarlanır oran (taban 1,28) varsayılan | R9 |
-| R21 | Büyük ekranlarda büyük harf başına satır sayısına üst sınır | P2 | **Yapıldı** (2026-10-06; dalda): en çok 24, blok etiketin altında; dizüstü ve telefon piksel piksel aynı | — |
+| R29 | Hareketi azaltılmış modda ton satırları kalınlaştırmıyor (R9'dan önce de var) | P2 | **Bitti, canlıda** (2026-10-08, `e192c24`) | R9 |
+| R20 | Arka belleğe piksel sayısı tavanı ve uyarlanır çizim oranı | P1 | **Bitti, canlıda** (2026-10-08, `e192c24`): 4K tavanı + uyarlanır oran (taban 1,28) | R9 |
+| R21 | Büyük ekranlarda büyük harf başına satır sayısına üst sınır | P2 | **Bitti, canlıda** (2026-10-08, `e192c24`): en çok 24, blok etiketin altında | — |
 | R22 | Gerçek cihaz testi (iPad, Mac'te Safari, Android telefon) | P0 | Karar verildi | — |
 | R23 | Awwwards başvuru malzemesi (ekran görüntüleri, kısa video, başlık, açıklama) | P0 | Karar bekliyor (içerik) | R9 |
 | R25 | Linefield yayında açılsın mı | P0 | **Karar verildi: açık. Bitti** (`fb01609`) | — |

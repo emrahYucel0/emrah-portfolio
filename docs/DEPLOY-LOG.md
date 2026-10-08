@@ -15,6 +15,7 @@ enough to identify it; the full digest goes beside the package), the file count 
 | 2026-10-03 | `b8918dc` | `deploy/yucelemrah-b8918dc.zip` | `08b27a0274508771…` | 219 | 8.9 MiB | Emrah Yücel, via cPanel, after checking it on his iPhone |
 | 2026-10-03 | `1e663bd` | `deploy/yucelemrah-1e663bd.zip` | `cd150812ff38b68d…` | 219 | 8.9 MiB | Emrah Yücel, via cPanel, after checking it on his iPhone |
 | 2026-10-04 | `df5ab32` | `deploy/yucelemrah-df5ab32.zip` | `9a627488d516721a…` | 220 | 8.9 MiB | Emrah Yücel, via cPanel, after the iPhone check of the release build (see note 5) |
+| 2026-10-08 | `e192c24` | `deploy/yucelemrah-e192c24.zip` | `aa4a642ad7673f7c…` | 220 | 8.9 MiB | Emrah Yücel, via cPanel, after the iPhone and 1920 × 991 check of the release build (see note 6) |
 
 **Note 1 — `885b14b`.** Recorded from evidence rather than from a log: the package exists dated 2026-09-25, and
 `release-backup-pre-885b14b/` is a backup of the live document root taken *before* that upload, which is only made when
@@ -101,7 +102,17 @@ other worktree had released `main`.
   `docs/` and `tools/diag/hintaa.cjs`, a harness that is never part of the build. The package's name and SHA-256 above
   stand for `df5ab32`; a build of `main`'s tip produces the same code.
 
-## Release — `e192c24`, the image-quality round (R9, R19, R20, R21, R29). Approved; upload pending.
+**Note 6 — `e192c24`, the image-quality round (R9, R19, R20, R21, R29).**
+- **Uploaded through cPanel and verified live by Emrah Yücel on 2026-10-08.**
+- **Package:** `deploy/yucelemrah-e192c24.zip`, built from `e192c24`, SHA-256
+  `aa4a642ad7673f7c4c260d03f232b91d203b72331396041f5b357969c72137fd`.
+- **Checked after the upload:**
+  - `cspboot.cjs https://yucelemrah.com` passes in Chrome and in WebKit, and `--static` passes.
+  - The live `/tr` is byte-identical to the package's `tr/index.html`, with build ID `2aa62eca-f869-4653-91dc-7d805d9149a1`.
+  - The host answers requests without a browser User-Agent (plain `curl`) with 403. That is the host's filtering,
+    not the site.
+
+## Release — `e192c24`, the image-quality round (R9, R19, R20, R21, R29). Uploaded and verified live (note 6).
 
 - **Approved for release by the user (2026-10-08),** after the user's own check of the release build on the iPhone and
   on the 1920 × 991 desktop.

@@ -248,7 +248,7 @@ const A = {
   labArmed: false, hush: 0,
   // the gesture being metered: where it began, whether it has spent its stop, how far it has carried a place's own
   // axis, and the stream it is being read out of (see opensGesture)
-  gFrom: 0, gSpent: false, gInner: 0, gAt: -1e9, gEnv: 0, gPeak: 0, gMinGap: Infinity,
+  gFrom: 0, gWork: 0, gSpent: false, gInner: 0, gAt: -1e9, gEnv: 0, gPeak: 0, gMinGap: Infinity,
   // a harness may pin how much the type is type, to difference the words out of a frame (see lfWords below)
   lfWordsAt: null, lfWords: 1, lfLeg: false,
   aboutDetailK: 0, bridgeF: null, bridgePK: 0,
@@ -497,7 +497,15 @@ const GEST_EDGE = 0.25
 /** the place a gesture is measured from: the stop on the index, the frame inside a project */
 const gestureBase = () => (A.mode === 'world' ? A.wbase : A.base)
 /** measure the next gesture from here, with nothing spent */
-function resetGesture() { A.gFrom = gestureBase(); A.gSpent = false; A.gInner = 0; A.gMinGap = Infinity; if (CROSS) A.csAcc = 0 }
+function resetGesture() { A.gFrom = gestureBase(); A.gWork = clamp(Math.round(A.wT), 0, N - 1); A.gSpent = false; A.gInner = 0; A.gMinGap = Infinity; if (CROSS) A.csAcc = 0 }
+/*
+ * AND IN THE WORK FIELD ONE GESTURE IS ONE WORK, as on the bench (R15, user decision 2026-10-08). The field's budget
+ * is the work in register when the gesture began, one either side: a hard trackpad flick used to tune straight past
+ * the middle work and the visitor never saw it held. The ends' exits (GEST_EDGE past the first or the last work) sit
+ * inside that budget, so leaving still takes the gesture it always did, and a gesture that ran the field still
+ * cannot also leave it.
+ */
+const workBudget = (t) => clamp(t, A.gWork - 1, A.gWork + 1)
 /** and forget the stream, so that whatever comes next opens a gesture of its own */
 function forgetStream() { A.gAt = -1e9; A.gEnv = 0; A.gPeak = 0 }
 /*
@@ -643,7 +651,7 @@ function scrollBy(d, touch = false) {
     if (settledAt(STOP.work) && !touch) {
       // the register as the field can actually hold it, so that a flick at either end counts as the nothing it moved
       const held = clamp(A.wT, 0, N - 1)
-      A.wT += d * 2.6   // two notches of a wheel carry one work out of register and the next one in
+      A.wT = workBudget(A.wT + d * 2.6)   // two notches of a wheel carry one work out of register and the next one in
       A.gInner += Math.abs(clamp(A.wT, 0, N - 1) - held)
       A.lastInput = now
       // A gesture that has travelled the field does not also leave it: it is pinned at whichever end it reached and
@@ -806,7 +814,7 @@ addEventListener('pointermove', (e) => {
     }
     if (ptr.axis === 'x') {
       // the thumb moves the layers directly: one work per half screen of travel
-      if (settledAt(STOP.work)) { A.wT = clamp(A.wT - dx / (V.W * 0.5), -0.3, N - 1 + 0.3); A.lastInput = now }
+      if (settledAt(STOP.work)) { A.wT = workBudget(clamp(A.wT - dx / (V.W * 0.5), -0.3, N - 1 + 0.3)); A.lastInput = now }
       else A.regDragT += dx
     }
   }

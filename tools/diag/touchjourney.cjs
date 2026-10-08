@@ -153,6 +153,33 @@ const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'F
     if (want === 'rest') ok(atContact(s), `Lab → the Contact finale after ${name} (${n} gestures)`, contactSaid(s))
     else ok(s.path === '/tr' && s.base === UP, `Lab → ${UPN} after ${name} (${n} gestures)`, `${s.path} base ${s.base}`)
   }
+
+  /*
+   * LINEFIELD'S END REACHED MID-SWIPE, AND THE NEXT FINGER STILL LEAVES (R15, 2026-10-08). The end a drag arrives at
+   * is remembered as a height on the glass, and the way out is measured from it. That height used to outlive the
+   * finger: a swipe that reached the far end half way up left it there, every later swipe started below it and could
+   * never get far enough past it, and the phone stood at the end of the passage — 4 of 5 natural walks through it.
+   * Here the end is reached mid-drag on purpose (from 0.9, or 0.1 at the near end), that it really was is asserted,
+   * and the next swipe comes as soon as a visitor's would.
+   */
+  if (STOP.linefield != null) {
+    const lfAt = async (v) => {
+      await goSite()
+      await p.evaluate((i) => window.__lab.go(i), STOP.linefield); await sleep(4200)
+      await p.evaluate((x) => window.__lab.lfSet(x), v); await sleep(1200)
+    }
+    const lfRead = () => p.evaluate(() => ({ base: window.__lab.A.base, target: window.__lab.lf().drive.target, edge: window.__lab.A.lfEdgeY ?? null }))
+    for (const [from, dy, to, label] of [[0.9, -338, STOP.work, 'far end → Work'], [0.1, 338, STOP.system, 'near end → Full-Stack']]) {
+      await lfAt(from)
+      await swipe(dy, undefined, 900)
+      const r1 = await lfRead()
+      const mid = r1.base === STOP.linefield && (dy < 0 ? r1.target > 0.9995 : r1.target < 0.0005) && r1.edge != null
+      ok(mid, `Linefield ${label}: the end is reached mid-swipe (the case under test)`, `base ${r1.base} target ${r1.target.toFixed(4)} edge ${r1.edge}`)
+      await swipe(dy, undefined, 3000)
+      const r2 = await lfRead()
+      ok(r2.base === to, `Linefield ${label}: the next swipe leaves`, `base ${r2.base} (want ${to})`)
+    }
+  }
   await b.close()
   console.log(`TOUCH JOURNEYS: ${fails === 0 ? 'PASS' : `FAIL (${fails})`}`)
   process.exit(fails ? 1 : 0)

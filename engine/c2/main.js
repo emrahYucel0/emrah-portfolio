@@ -758,6 +758,10 @@ addEventListener('pointerdown', (e) => {
   Object.assign(ptr, { down: true, downT: performance.now(), sx: e.clientX / V.u, sy: e.clientY / V.u, x: e.clientX / V.u, y: e.clientY / V.u, moved: 0, axis: null, rub: 0, ui: !!on, swiped: false, touch: e.pointerType !== 'mouse' })
   // a finger on the glass is the beginning of one gesture, whatever it turns into, and it carries one stop
   beginGesture(); forgetStream()
+  // and where the passage's end was reached belongs to the finger that reached it (lfEdge). A drag that arrived at
+  // the end mid-swipe left its height behind, the next finger was measured from there, and from low on the glass it
+  // could never travel far enough past it: the phone stood at the end of Linefield, swipe after swipe (R15, 2026-10-08)
+  if (LINEFIELD) A.lfEdgeY = null
 })
 addEventListener('pointermove', (e) => {
   if (!owns()) return

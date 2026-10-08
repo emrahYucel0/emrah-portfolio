@@ -4,6 +4,10 @@ import bigShoulders from '@fontsource-variable/big-shoulders-display/files/big-s
 import geist from '@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url'
 const { copy } = useLocale()
 useReducedMotion()
+// the wheel log (R15): only in development and in a build made with NUXT_PUBLIC_WHEELLOG=1; otherwise this folds to
+// null at build time and the component has no chunk at all
+declare const __WHEELLOG__: boolean
+const WheelLog = import.meta.dev || __WHEELLOG__ ? defineAsyncComponent(() => import('~/debug/WheelLog.vue')) : null
 
 /**
  * ROUTE-LOCAL C2 ESCAPE. The Lab's studies read the document's own scroll position, and the C2 runtime owns
@@ -63,6 +67,7 @@ watch(inLab, (on) => { if (on) warmLater() })
     <C2Surface v-if="!inLab" />
     <!-- R15 prototype (?r15=a|b|ab): where the visitor is; nothing at all without the key -->
     <R15Progress />
+    <component :is="WheelLog" v-if="WheelLog" />
   </div>
 </template>
 

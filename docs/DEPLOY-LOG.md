@@ -101,7 +101,19 @@ other worktree had released `main`.
   `docs/` and `tools/diag/hintaa.cjs`, a harness that is never part of the build. The package's name and SHA-256 above
   stand for `df5ab32`; a build of `main`'s tip produces the same code.
 
-## Candidate — `e192c24`, the image-quality round (R9, R19, R20, R21, R29). NOT UPLOADED.
+## Release — `e192c24`, the image-quality round (R9, R19, R20, R21, R29). Approved; upload pending.
+
+- **Approved for release by the user (2026-10-08),** after the user's own check of the release build on the iPhone and
+  on the 1920 × 991 desktop.
+- **Pushed:** `main` to `origin` at `95a825f`, fast-forward from `8da676c`, no force. `git ls-remote origin
+  refs/heads/main` returns `95a825f402f19302d133623ac38144fd44387dd3`.
+- **The package `deploy/yucelemrah-e192c24.zip` was built from `e192c24`.** The commits after it, up to `95a825f`, are
+  documentation only: `git diff --name-only e192c24..95a825f` lists only `docs/` files. A build of `95a825f` produces
+  the same code.
+- **The upload is the user's, by hand through cPanel.** The table row is added once it is done and the site has been
+  opened live.
+
+The candidate's record follows.
 
 Prepared 2026-10-07/08 on `feature/image-quality`.
 - **`main`:** fast-forwarded locally to `e192c24`, and then to the commits that record this, which are documentation

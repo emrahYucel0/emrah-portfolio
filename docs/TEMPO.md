@@ -115,3 +115,11 @@ Logs in `tools/diag/out/r15/p2-checks/`.
     - touch 24.
     - The first work unchanged: 10 / 6 / 7.
 - `r15shot.cjs`: 230 assertions PASS on both viewports, normal and reduced.
+- **On a quiet machine** (`quiet.cjs`):
+  - `gesture2.cjs` PASS, the 100 px detent section included (cadences exactly as measured: 1 / 1 / 0 / 0 / 1 / 0).
+  - `trackpad.cjs` in the work field, 9 shapes × both modes: PASS (36 throws; one work at most per throw).
+  - `trackpad.cjs` at every place, coalesced: 73 throws, 0 failures before the runner's time limit cut it. All
+    places for 7 shapes, 9 `soft` lone 100 px detents. `roll100`, `coast` and `tail` were queued again.
+  - `freespin.cjs`: the first run's places were given as `work,name` without directions (`work:1`), so every
+    detent was dispatched as `deltaY: NaN` and Chrome's renderer crashed — on the live build identically. The
+    harness's own mistake, not the site's; queued again with `work:1,work:-1,name:1`.

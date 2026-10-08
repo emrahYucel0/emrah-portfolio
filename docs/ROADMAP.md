@@ -22,9 +22,10 @@ belgedeyse (AUDIT-01, LINEFIELD.md, DEPLOYMENT.md…) burada ona bağlantı veri
 - **Karar bekliyor:** neyin beklendiği yazılı.
 - **Önce inceleme:** mevcut davranış ölçülmeden tasarlanmayacak.
 
-Son güncelleme: 2026-10-08. Görüntü kalitesi turu (R9, R19, R20, R21, R29) **bitti ve canlıda**: `e192c24`, paket
-`deploy/yucelemrah-e192c24.zip`, cPanel'den yüklendi ve Emrah Yücel canlıda doğruladı (`docs/DEPLOY-LOG.md`). `origin/main` 95a825f.
-Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
+Son güncelleme: 2026-10-08. Canlıda `fd9b2e6`: R30 hotfix'i (telefonda Linefield'ın ucunda takılma), görüntü kalitesi
+turunun (R9, R19, R20, R21, R29, `e192c24`) üstüne; cPanel'den yüklendi ve Emrah Yücel canlıda doğruladı
+(`docs/DEPLOY-LOG.md`, not 7). Sırada R15 (`feature/r15-tempo`, worktree `emrah-portfolio-r15`; portlar 4980–4989,
+build'ler `builds/r15-*`, çıktılar `tools/diag/out/r15/`).
 
 ---
 
@@ -52,7 +53,7 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 | R22 | Gerçek cihaz testi (iPad, Mac'te Safari, Android telefon) | P0 | Karar verildi | — |
 | R23 | Awwwards başvuru malzemesi (ekran görüntüleri, kısa video, başlık, açıklama) | P0 | Karar bekliyor (içerik) | R9 |
 | R25 | Linefield yayında açılsın mı | P0 | **Karar verildi: açık. Bitti** (`fb01609`) | — |
-| R30 | Telefonda Linefield'ın ucunda takılma | **P0** | **Düzeltildi, yayın adayı** (`fd9b2e6`, yüklenmedi; iPhone kontrolü bekliyor) | — |
+| R30 | Telefonda Linefield'ın ucunda takılma | **P0** | **Bitti, canlıda** (2026-10-08, `fd9b2e6`) | — |
 
 ---
 
@@ -673,6 +674,9 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
   - Canlıda başarısız, düzeltmede geçiyor. 25 tekrar × 2 uç: 50/50. Doğal yavaş yürüyüş: canlıda 10'da 2 takıldı,
     düzeltmede 30'da 0.
   - Kontroller ve paket: `docs/DEPLOY-LOG.md`, `fd9b2e6` adayı.
+- **Bitti, canlıda (2026-10-08).** `deploy/yucelemrah-fd9b2e6.zip` cPanel'den yüklendi ve Emrah Yücel tarafından
+  iPhone kontrolünden sonra canlıda doğrulandı. Canlıya karşı `cspboot` (`--static`, Chrome, WebKit) geçti; canlı
+  HTML paketle aynı. Kayıt: `docs/DEPLOY-LOG.md`, not 7.
 - **Ayrıca görüldü (düzeltilmedi):** `touch.cjs`'in 3 beklentisi Cross Section'dan önceye ait ve canlıda da aynı
   biçimde kalıyor.
   - Bench'ten yukarı "→ Work" bekleniyor; artık geçide DEPTH'ten giriliyor.
@@ -726,6 +730,7 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 | 2026-10-02 | R8: case study'lerin adresi, okunur "sonraki iş", satırları aralayan cep | `fix/audit-01-batch2` 526bc8e, c5e9b2a, 2e0f9a4 | aşağıda |
 | 2026-10-02 | R7: Lab'de kaydırmak gezdirir, tıklamak açar; bench'in alt şeridi site şeridi; etiketlerdeki ikilenme (kullanıcı onaylı) | `fix/audit-01-batch2` 6954a14; telefon kontrolü 74d1757 | aşağıda |
 | 2026-10-02 | AUDIT-01 §9, düz katman #11: runtime'ın düz listesinde her iş kendi adresine gidiyor | `fix/audit-01-batch2` (bu commit) | AUDIT-01 §10 |
+| 2026-10-08 | R30: telefonda Linefield'ın ucunda takılma (hotfix, canlıda) | `fix/lf-touch-edge` fd9b2e6, 874cfd3 | `docs/DEPLOY-LOG.md` not 7 |
 
 **AUDIT-01 §9 #11'in ayrıntısı (2026-10-02):** R8'in adresleri gelince yapıldı. Runtime'ın düz listesinde
 (`#plain`) her iş artık dış siteye değil kendi adresine gidiyor: `openWorkAt`, işi alandan açılmış gibi açıyor (adres

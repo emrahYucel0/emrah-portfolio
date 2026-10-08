@@ -16,6 +16,7 @@ enough to identify it; the full digest goes beside the package), the file count 
 | 2026-10-03 | `1e663bd` | `deploy/yucelemrah-1e663bd.zip` | `cd150812ff38b68d…` | 219 | 8.9 MiB | Emrah Yücel, via cPanel, after checking it on his iPhone |
 | 2026-10-04 | `df5ab32` | `deploy/yucelemrah-df5ab32.zip` | `9a627488d516721a…` | 220 | 8.9 MiB | Emrah Yücel, via cPanel, after the iPhone check of the release build (see note 5) |
 | 2026-10-08 | `e192c24` | `deploy/yucelemrah-e192c24.zip` | `aa4a642ad7673f7c…` | 220 | 8.9 MiB | Emrah Yücel, via cPanel, after the iPhone and 1920 × 991 check of the release build (see note 6) |
+| 2026-10-08 | `fd9b2e6` | `deploy/yucelemrah-fd9b2e6.zip` | `13c58e5a7f7cbbae…` | 220 | 8.9 MiB | Emrah Yücel, via cPanel, after the iPhone check of the release build (see note 7) |
 
 **Note 1 — `885b14b`.** Recorded from evidence rather than from a log: the package exists dated 2026-09-25, and
 `release-backup-pre-885b14b/` is a backup of the live document root taken *before* that upload, which is only made when
@@ -112,6 +113,18 @@ other worktree had released `main`.
   - The host answers requests without a browser User-Agent (plain `curl`) with 403. That is the host's filtering,
     not the site.
 
+**Note 7 — `fd9b2e6`, the R30 hotfix (the phone stuck at the end of Linefield).**
+- **Uploaded through cPanel and verified live by Emrah Yücel on 2026-10-08,** after his iPhone check of the release
+  build on the LAN preview.
+- **Package:** `deploy/yucelemrah-fd9b2e6.zip` (in `emrah-portfolio-r15/deploy`), built from `fd9b2e6`, SHA-256
+  `13c58e5a7f7cbbaeaec921661592284cf28d5d520c5af48629ae9fee370b8c3c`.
+- **Checked after the upload:**
+  - `cspboot.cjs --static https://yucelemrah.com`, and `cspboot.cjs https://yucelemrah.com` in Chrome and in WebKit:
+    all PASS (`tools/diag/out/r15/live-fd9b2e6/`).
+  - The live `/tr`, `/en` and `/tr/lab` are byte-identical to the package, build ID
+    `caa006a3-5080-4794-b86c-fd9a2531dee1`. The runtime chunk carrying the fix (`_nuxt/INhCaMMk.js`) is served
+    byte-identical; `e192c24`'s chunk (`CH-jZXya.js`) answers 404.
+
 ## Release — `e192c24`, the image-quality round (R9, R19, R20, R21, R29). Uploaded and verified live (note 6).
 
 - **Approved for release by the user (2026-10-08),** after the user's own check of the release build on the iPhone and
@@ -182,7 +195,7 @@ Prepared 2026-10-07/08 on `feature/image-quality`.
   `http://192.168.1.5:4973/tr`, `builds/release-e192c24` served `--lan --wk`) and on the 1920 × 991 desktop. Then the
   push of `main`, when the user confirms it, and the upload by hand through cPanel by `docs/DEPLOYMENT.md`'s checklist.
 
-## Candidate — `fd9b2e6`, hotfix: the phone stuck at the end of Linefield (R30). NOT UPLOADED.
+## Release — `fd9b2e6`, hotfix: the phone stuck at the end of Linefield (R30). Uploaded and verified live (note 7).
 
 Prepared 2026-10-08 on `fix/lf-touch-edge` (worktree `emrah-portfolio-r15`), cut from `main` 58a266c (= live
 `e192c24` plus documentation). `main` is not moved and nothing is pushed.

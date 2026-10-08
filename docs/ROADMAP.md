@@ -52,6 +52,7 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
 | R22 | Gerçek cihaz testi (iPad, Mac'te Safari, Android telefon) | P0 | Karar verildi | — |
 | R23 | Awwwards başvuru malzemesi (ekran görüntüleri, kısa video, başlık, açıklama) | P0 | Karar bekliyor (içerik) | R9 |
 | R25 | Linefield yayında açılsın mı | P0 | **Karar verildi: açık. Bitti** (`fb01609`) | — |
+| R30 | Telefonda Linefield'ın ucunda takılma | **P0** | **Düzeltildi, yayın adayı** (`fd9b2e6`, yüklenmedi; iPhone kontrolü bekliyor) | — |
 
 ---
 
@@ -365,6 +366,9 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
   - Ziyaretçiye nerede olduğunu gösteren bir ilerleme göstergesi.
   - Durak başına bir kare ve süre bütçesi, harness'la ölçülebilir biçimde.
 - **Karar:** Bekleyen: göstergenin biçimi; bütçenin rakamları.
+- **Karar (2026-10-08, kullanıcı):** adım 0'ın planı onaylandı. Tek 100 px'lik çentik eşiğin (0,12) altında kalıyor, ama
+  kullanıcının faresinde hero'da tek çentik bir sonraki durağa geçiyor: eşik kalıyor; jest harness'larına sonra
+  100 px'lik çentikler eklenecek. Önce R30 tek başına yayınlanacak; R15'in kalanı ondan sonra `feature/r15-tempo`'da.
 - **Dosyalar:** `engine/c2/main.js` (`SPINE`, `domUpdate`), `engine/c2/style.css`, `tools/diag/journey.cjs`.
 - **Bağımlılık:** R14.
 - **R14'ten (2026-10-03):**
@@ -652,6 +656,32 @@ Portlar 4970–4979, build'ler `builds/iq-*`, çıktılar `tools/diag/out/iq/`.
   "süper olay" üretiyordu. Artık her olay **ayrı ayrı** gönderiliyor; aynı iki durum 6/6 yeniden koşuldu, üç
   durak bir kez bile çıkmadı ve sonuç belirlenimli hâle geldi.
 - **Öncelik:** P0 (sonraki yayın). **Bağımlılık:** R22 (gerçek MacBook).
+
+### R30. Telefonda Linefield'ın ucunda takılma
+- **Açıklama:** R15'in adım 0 ölçümünde bulundu (2026-10-08); canlıdaki `e192c24`'te var.
+  - Parmak Linefield'ın ucuna sürükleme sırasında varırsa `lfEdge()` o yüksekliği `A.lfEdgeY`'de saklıyor.
+  - Bu değer parmak kalkınca temizlenmiyordu; yalnız geçidin ortasında ya da durağa varınca temizleniyordu.
+  - Sonraki her kaydırma o eski yükseklikten ölçülüyor. Camın altından başlayan bir kaydırma onu çıkış eşiği kadar
+    (`V.H * 0,14`) geçemiyor ve telefon geçidin ucunda kalıyor.
+  - Ölçüm, yük altında: 390 × 844'te doğal yürüyüşün 5'te 4'ü takıldı.
+- **Karar (2026-10-08, kullanıcı):** dar düzeltme, ayrı bir hotfix yayını; dal `fix/lf-touch-edge`, worktree
+  `emrah-portfolio-r15`.
+- **Yapıldı:**
+  - `fd9b2e6`: `pointerdown` `A.lfEdgeY`'yi temizliyor; bayrak kapalıyken build'den düşüyor.
+  - `874cfd3`: `touchjourney.cjs` ucu kaydırmanın sonlarında yakalatıyor (0,82 / 0,18), bunu doğruluyor ve sonraki
+    kaydırmanın çıktığını iki uçta da sınıyor.
+  - Canlıda başarısız, düzeltmede geçiyor. 25 tekrar × 2 uç: 50/50. Doğal yavaş yürüyüş: canlıda 10'da 2 takıldı,
+    düzeltmede 30'da 0.
+  - Kontroller ve paket: `docs/DEPLOY-LOG.md`, `fd9b2e6` adayı.
+- **Ayrıca görüldü (düzeltilmedi):** `touch.cjs`'in 3 beklentisi Cross Section'dan önceye ait ve canlıda da aynı
+  biçimde kalıyor.
+  - Bench'ten yukarı "→ Work" bekleniyor; artık geçide DEPTH'ten giriliyor.
+  - "hard flick down from cross" kontrolü.
+  - R15'in Faz 1'inde güncellenecek.
+- **Dosyalar:** `engine/c2/main.js` (`pointerdown`, `lfEdge`), `tools/diag/touchjourney.cjs`.
+- **Öncelik:** P0.
+
+---
 
 ### R29. Hareketi azaltılmış modda ton satırları kalınlaştırmıyor
 - **Açıklama:** R9'un 3. adımında ölçüldü (2026-10-05); R9'dan önce de vardı.

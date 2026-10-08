@@ -182,6 +182,42 @@ Prepared 2026-10-07/08 on `feature/image-quality`.
   `http://192.168.1.5:4973/tr`, `builds/release-e192c24` served `--lan --wk`) and on the 1920 × 991 desktop. Then the
   push of `main`, when the user confirms it, and the upload by hand through cPanel by `docs/DEPLOYMENT.md`'s checklist.
 
+## Candidate — `fd9b2e6`, hotfix: the phone stuck at the end of Linefield (R30). NOT UPLOADED.
+
+Prepared 2026-10-08 on `fix/lf-touch-edge` (worktree `emrah-portfolio-r15`), cut from `main` 58a266c (= live
+`e192c24` plus documentation). `main` is not moved and nothing is pushed.
+- **Package:** `deploy/yucelemrah-fd9b2e6.zip` (in the worktree; `deploy/` is ignored).
+  - SHA-256 `13c58e5a7f7cbbaeaec921661592284cf28d5d520c5af48629ae9fee370b8c3c`
+    (`deploy/yucelemrah-fd9b2e6.zip.sha256`).
+  - 220 files, 10,267,512 bytes unpacked, 9,337,059 bytes zipped (8.9 MiB). The three `.htaccess` files are in it; no
+    `tools/`, `*.cjs`, `axe` or `lab/proof`.
+  - `cspboot --dir` PASS on the build (`builds/release-fd9b2e6`) and on the unpacked zip
+    (`builds/release-fd9b2e6-unzipped`, byte-identical to the build).
+- **Built from `fd9b2e6`** (`npx nuxt typecheck` 0, `npm run generate` 0, Linefield and Cross Section in the package).
+  Against the live `e192c24` build: same 220 paths, and of the 39 JS and CSS files 38 are byte-identical once the
+  content-hashed chunk names are normalised. The one that differs adds 15 bytes, `lfEdgeY=null` at the end of the
+  runtime's `pointerdown`. Later commits on the branch are a harness and documentation only.
+- **What changes for a visitor:** on a phone, a swipe that reached Linefield's end late in the drag no longer leaves
+  every later swipe unable to leave the passage. Nothing else.
+- **Checks** (390 × 844 touch emulation and desktop, Chrome on the RTX 4050, quiet machine via `quiet.cjs`; logs in
+  `tools/diag/out/r15/hotfix/`):
+  - The failure, reproduced and then gone:
+    - `touchjourney.cjs` new case (end reached late in a swipe, asserted; the next swipe must leave):
+      live FAIL at both ends, fd9b2e6 PASS.
+    - The same case repeated: live 5 times per end, 0 of 10 left; fd9b2e6 25 times per end, 50 of 50 left.
+    - The natural walk (from the near end, swipe after swipe, slow drag): live stuck in 2 of 10; fd9b2e6 0 of 30.
+  - `touchjourney.cjs` PASS (the rest identical to live).
+  - `linefield.cjs` 180/180.
+  - `journey.cjs` TR and EN PASS (WebKit).
+  - `cspboot` Chrome and WebKit PASS.
+  - `touch.cjs` 3 failures, **identical on the live build**: its expectations predate Cross Section (up from the
+    bench "→ Work", now the passage at DEPTH; "hard flick down from cross").
+  - Not run: the full gate, `gesture2`, `trackpad`, `freespin` and reduced motion. The change is one touch-only
+    statement on Linefield builds, and no wheel or keyboard path reads it.
+- **Before upload:** the user's iPhone check of the release build on the LAN preview
+  (`builds/release-fd9b2e6` served `--lan --wk` on 4983), then the push when the user confirms it, and the upload by
+  hand through cPanel by `docs/DEPLOYMENT.md`'s checklist.
+
 ## Adding a line
 
 After an upload, append a row and fill `verified live by` only once someone has actually opened the deployed site. The

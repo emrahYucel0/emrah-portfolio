@@ -41,7 +41,7 @@ build'ler `builds/r15-*`, çıktılar `tools/diag/out/r15/`).
 | R11 | Yavaş ağda ilk kare (8,9 sn) | P2 | Önce değerlendirme | — |
 | R13 | Gövde metni ve tipografik hiyerarşi | P1 | Karar bekliyor (ölçek) | — |
 | R14 | Cross Section (İşler → Lab köprüsünün yerine) | P1 | **Bitti** (yayında: `df5ab32`, 2026-10-04) | R2, R15 |
-| R15 | Tempo, ilerleme göstergesi, performans bütçesi | P2 | Karar bekliyor | R14 |
+| R15 | Tempo, ilerleme göstergesi, performans bütçesi | P2 | **Sürüyor** (`feature/r15-tempo`): Faz 1 bitti; Faz 2 prototipleri hazır, göstergenin seçimi bekliyor | R14 |
 | R17 | Yayın (DEPLOYMENT.md, CSP, canlı yedeği) | P0 | **Bitti** (2026-10-03, `b8918dc` canlıda) | — |
 | R18 | Awwwards başvurusu (Developer Award) | P0 | Karar bekliyor (tarih) | R17, R9, R22, R23 |
 | R19 | Full-Stack'in siyah kapsüllerinin çevresindeki hale | P1 | **Bitti, canlıda** (2026-10-08, `e192c24`): iki yüzde | R9 |
@@ -370,6 +370,21 @@ build'ler `builds/r15-*`, çıktılar `tools/diag/out/r15/`).
 - **Karar (2026-10-08, kullanıcı):** adım 0'ın planı onaylandı. Tek 100 px'lik çentik eşiğin (0,12) altında kalıyor, ama
   kullanıcının faresinde hero'da tek çentik bir sonraki durağa geçiyor: eşik kalıyor; jest harness'larına sonra
   100 px'lik çentikler eklenecek. Önce R30 tek başına yayınlanacak; R15'in kalanı ondan sonra `feature/r15-tempo`'da.
+- **Karar (2026-10-08, kullanıcı):** İşler alanındaki fiskenin ortadaki işi atlaması istenmiyor: bench'teki gibi bir jest
+  en fazla bir iş. `touch.cjs`'in eski beklentileri güncellenecek, jest harness'larına 100 px'lik çentikler, depoya
+  `tempo.cjs`. Ardından Faz 2: iki gösterge (A, B ve ikisi) `?r15=a|b|ab` arkasında prototip; masaüstü ve telefonda
+  kareler ve filmler, hareketi azaltılmış mod, `aria-current`. Kontroller: jest, trackpad, free-spin, dokunma ve
+  yolculuk; tam kapı değil. Gösterge seçimi için durulacak; push yok.
+- **Sürüyor (2026-10-08):** dal `feature/r15-tempo`, worktree `emrah-portfolio-r15`, yerel `main` f492799'dan; portlar
+  4980–4989, build'ler `builds/r15-*`, çıktılar `tools/diag/out/r15/`. Belge: `docs/TEMPO.md`.
+  - **Faz 1 (169f533, e1339cc):** İşler'de bir jest en fazla bir iş (tekerlek ve parmak); `tempo.cjs`; `gesture2` ve
+    `trackpad`'e 100 px'lik çentikler; `touch.cjs` Cross Section'ı biliyor.
+  - **Faz 2 (8af4c82):** `app/components/R15Progress.client.vue`. A: üst şeritte bölüm işaretli; B: alt şeritte durak
+    çentikli ince çizgi; her modda `aria-current="location"`. Anahtarsız hiçbir şey yapmıyor. Kareler, şerit
+    sayfaları ve filmler: `tools/diag/out/r15/indicator/` (`r15shot.cjs`).
+  - **Bulgu (düzeltilmedi):** 100 px'lik çentiklerle 300 ms arayla üç tık hiç ilerletmiyor, 700 ms arayla bir durak;
+    canlı `fd9b2e6` ile aynı. Eşik kararı gereği kayıt altında (`gesture2`).
+  - **Bekleyen:** göstergenin seçimi (A, B ya da ikisi); bütçe rakamları; Faz 3'ün tempo kolları.
 - **Dosyalar:** `engine/c2/main.js` (`SPINE`, `domUpdate`), `engine/c2/style.css`, `tools/diag/journey.cjs`.
 - **Bağımlılık:** R14.
 - **R14'ten (2026-10-03):**

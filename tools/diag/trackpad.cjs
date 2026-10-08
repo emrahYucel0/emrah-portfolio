@@ -38,10 +38,10 @@ const SHAPES = {
   ptp: () => fingerThenMomentum({ frame: 8, ramp: [4.5, 12.25, 25.5, 41.75, 58, 66.5, 71.25, 73], v0: 150, keep: 0.93, liftGap: 12, round: false, floor: 0.5 }).map(([t, d], i, a) => [i >= 8 ? 8 * 8 + 12 + (i - 8) * 16.7 : t, d]),
   ptphard: () => fingerThenMomentum({ frame: 8, ramp: [10, 30, 60, 100, 140, 170, 190, 200], v0: 320, keep: 0.935, liftGap: 12, round: false, floor: 0.5 }).map(([t, d], i) => [i >= 8 ? 8 * 8 + 12 + (i - 8) * 16.7 : t, d]),
   /*
-   * A WINDOWS MOUSE'S OWN DETENT: 100 px (R15, 2026-10-08). One alone is 0.11 of a stop, under landGesture's 0.12, so
-   * it springs back — the user's decision is to keep that threshold (the user's own mouse moves a stop per detent), so a lone
-   * detent is SOFT here: it may move nothing, never more than one. Turned as a hand turns it, three detents in
-   * 90 ms, it is one stop like every other shape.
+   * A WINDOWS MOUSE'S OWN DETENT: 100 px (R15, 2026-10-08). Since the notch change (user decision 2026-10-08: a stop
+   * lands past 0.10, measured from the gesture's own start) one alone is one stop, like every other shape, and so is
+   * a roll of three in 90 ms. Before it, a lone detent was 0.11 of a stop, under 0.12, and sprang back: on a build
+   * without the change notch100 fails by design.
    */
   notch100: () => [[0, 100]],
   roll100: () => [[0, 100], [45, 100], [90, 100]],
@@ -69,7 +69,7 @@ const SHAPES = {
   const places = placesArg ? placesArg.split(',') : SPINE.filter((n) => n !== 'lab' && n !== 'rest')
   const shapes = shapesArg ? shapesArg.split(',') : Object.keys(SHAPES)
   const HAS_AXIS = new Set(['work', 'linefield', 'cross'])
-  const SOFT = new Set(['notch100'])
+  const SOFT = new Set()   // a shape allowed to move nothing (none since the R15 notch change)
   console.log(`== TRACKPAD  ${engine} :${port}  spine ${SPINE.join(' · ')}  runs ${RUNS}`)
 
   const posOf = () => p.evaluate(() => {
@@ -147,7 +147,7 @@ const SHAPES = {
   console.log('\n== summary')
   let bad = 0, n = 0
   for (const [k, v] of Object.entries(tally)) { n += v.n; bad += v.bad; if (v.bad) console.log(`  ${k}  ${v.bad}/${v.n}  moved ${v.res.join(',')}`) }
-  console.log(`TRACKPAD ${engine} :${port}: ${bad ? `FAIL — ${bad} of ${n} throws did not move exactly one stop (or one work)` : `PASS — ${n} throws, each one stop (a lone 100 px detent at most one)`}`)
+  console.log(`TRACKPAD ${engine} :${port}: ${bad ? `FAIL — ${bad} of ${n} throws did not move exactly one stop (or one work)` : `PASS — ${n} throws, each one stop`}`)
   process.exitCode = bad ? 1 : 0
   await b.close()
 })().catch((e) => { console.error(String(e).slice(0, 600)); process.exit(1) })

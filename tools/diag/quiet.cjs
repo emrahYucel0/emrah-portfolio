@@ -10,7 +10,10 @@
 //   quiet       for 30 s: the processor's own load under 25%, and the other work under 0.35 s of CPU per second
 //   disturbed   the other work averaged more than 0.35 s of CPU per second over the run (sampled every 10 s)
 // (0.35: the desktop's Chrome with its tabs open idles at about 0.3 s/s; a capture or an audit uses 1–2.5 s/s)
-// QUIET_CHROME=ignore leaves the desktop's Chrome out of the other work (the user asked to go on with it open,
+// Another project's BUILD is other work too (vite / nuxt / next … build|generate, outside this project), not only its
+// scripts. The desktop's own Chrome is LEFT OUT by default (user decision 2026-10-08: it stays open, idle, and must not
+// block a run); a busy tab still shows as processor load. QUIET_CHROME=count puts it back in.
+// (Before 2026-10-08: QUIET_CHROME=ignore left the desktop's Chrome out of the other work — the user asked to go on with it open,
 // 2026-10-07); the processor's load still has to fall under 25%.
 // Windows only (it asks WMI through PowerShell); elsewhere it does nothing and just runs.
 const { execFileSync } = require('node:child_process')
@@ -19,7 +22,7 @@ const ps = (cmd) => execFileSync('powershell', ['-NoProfile', '-Command', cmd], 
 // the other work as it stands: each process's CPU seconds so far (pid -> s), and what its roots are
 const OTHER = `
 $all = Get-CimInstance Win32_Process
-$roots = @($all | ? { ($_.Name -eq 'node.exe' -and $_.CommandLine -match 'scripts/') -or ($env:QUIET_CHROME -ne 'ignore' -and $_.Name -eq 'chrome.exe' -and $_.CommandLine -notmatch '--type=' -and $_.CommandLine -notmatch 'remote-debugging' -and $_.CommandLine -notmatch 'ms-playwright') })
+$roots = @($all | ? { ($_.Name -eq 'node.exe' -and $_.CommandLine -match 'scripts/') -or ($_.Name -eq 'node.exe' -and $_.CommandLine -match '(vite|nuxt|nuxi|next|webpack|rollup|esbuild|astro)[^ ]*[ ]+(build|generate)|run[ ]+(build|generate)' -and $_.CommandLine -notmatch 'emrah-portfolio') -or ($env:QUIET_CHROME -eq 'count' -and $_.Name -eq 'chrome.exe' -and $_.CommandLine -notmatch '--type=' -and $_.CommandLine -notmatch 'remote-debugging' -and $_.CommandLine -notmatch 'ms-playwright') })
 $ids = @($roots.ProcessId); $n = -1
 while ($ids.Count -ne $n) { $n = $ids.Count; $ids = @($ids + @($all | ? { $ids -contains $_.ParentProcessId } | % { $_.ProcessId }) | Select-Object -Unique) }
 $parts = foreach ($i in $ids) { $p = Get-Process -Id $i -ErrorAction SilentlyContinue; if ($p -and $p.CPU) { '{0}:{1}:{2}' -f $i, [long]($p.CPU * 1000), [long]((Get-Date) - $p.StartTime).TotalMilliseconds } }

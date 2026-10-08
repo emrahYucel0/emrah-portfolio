@@ -280,57 +280,30 @@ GESTURE (flicks only): ${fails === 0 ? 'PASS' : `FAIL (${fails})`}`); await b.cl
   ok(n1 - n0 === 2, 'a hard flick then one notch move two stops', `${n0} → ${n1}`)
 
   /*
-   * ── AND NORMAL SCROLLING IS UNCHANGED ─────────────────────────────────────────────────────────────────────
+   * ── NORMAL SCROLLING: ONE DELIBERATE NOTCH IS ONE STOP (R15, user decision 2026-10-08) ─────────────────────
    *
-   * The numbers below are not chosen: they are what the UNTOUCHED origin/main build does, measured on it directly
-   * at these three cadences, and they are asserted here so that the pacing cannot drift while the flick is being
-   * fixed. They also say something worth knowing — that this site has always needed a real pause between notches
-   * to advance twice, because a notch is 0.143 of a place and part of it is spent on the arrival still settling.
-   * So a landed gesture holding the door for a third of a second costs nothing that ever worked.
-   */
-  /*
-   * R15 PROPOSAL (NUXT_PUBLIC_NOTCH=1, docs/TEMPO.md): a gesture lands by its own travel, so a notch that arrives
-   * while the last arrival is still under way is a stop of its own, not that arrival's lag read backwards — the 2 and
-   * the 1 below are 0 → 1 → 0 → 1 when traced. A build with the proposal says so on window.__lab.notch, and every
-   * deliberate notch is then one stop at every cadence here.
-   */
-  await goTo('name')
-  const NOTCH_ON = await p.evaluate(() => !!window.__lab?.notch)
-  console.log(`\n-- normal scrolling: the cadences, against what origin/main does${NOTCH_ON ? ' — or, with the R15 notch proposal, one stop per notch' : ''}`)
-  for (const [n, gap, was] of [[3, 1400, 3], [3, 700, 2], [3, 300, 1]]) {
-    const expect = NOTCH_ON ? n : was
-    await goTo('name')
-    await hushClear(p)
-    const s0 = (await posOf(p)).pos
-    for (let i = 0; i < n; i++) { await p.mouse.wheel(0, 130); await sleep(gap) }
-    await sleep(2600)
-    const s1 = (await posOf(p)).pos
-    ok(s1 - s0 === expect, `${n} notches of 130px, ${String(gap).padStart(4)} ms apart, move ${expect}`, `${s0} → ${s1}`)
-  }
-  /*
-   * ── AND A WINDOWS MOUSE'S OWN DETENT, 100 px (R15, 2026-10-08) ──────────────────────────────────────────────
+   * A gesture lands by its own travel, from where its target stood when it began, and lands past 0.10 of a stop
+   * (91 px). So a notch is a stop at any pace a hand turns a wheel — 1400, 700 or 300 ms apart — while notches that
+   * come faster than the landing (a roll, two detents 60 ms apart) are one gesture and one stop.
    *
-   * One alone is 0.11 of a stop, under landGesture's 0.12, and springs back (the threshold was kept on 2026-10-08:
-   * the user's own mouse moves a stop per detent). What a hand does with it is asserted — a quick roll and two quick
-   * detents are one stop. The slow cadences are recorded as measured on the live fd9b2e6 and on this branch
-   * (identical, 3 of 3 each): three detents 300 ms apart move NOTHING, 700 ms apart one, 1400 ms apart nothing. That
-   * is the behaviour today, not a rule; a change prints here, and no cadence may ever move more stops than detents.
-   * With the R15 proposal they are rules: one stop per notch, the lone detent included.
+   * WHAT THIS TABLE USED TO SAY. It asserted what origin/main did — 130 px notches 1400 / 700 / 300 ms apart moved
+   * 3 / 2 / 1 — and read the shortfall as "part of a notch is spent on the arrival still settling". Traced in the
+   * page it was worse: a notch made while the last arrival was under way was measured against the new base, read the
+   * arrival's lag as its own travel, and landed BACKWARDS (300 ms: 0 → 1 → 0 → 1). And a Windows detent, 100 px, was
+   * 0.11 of a stop, under the old 0.12, so alone it never moved at all (3 x 300 ms: 0 → 1 → 0; 3 x 1400 ms: 0).
+   * On a build without the change these RHYTHM lines fail by design; that is the comparison, not a fault.
    */
-  console.log('\n-- the 100 px detent')
-  for (const [n, gap, was, wasRule] of [[2, 60, 1, true], [3, 45, 1, true], [1, 0, 0, false], [3, 300, 0, false], [3, 700, 1, false], [3, 1400, 0, false]]) {
-    const rule = wasRule || NOTCH_ON, expect = NOTCH_ON && !wasRule ? n : was
-    await goTo('name')
-    await hushClear(p)
-    const s0 = (await posOf(p)).pos
-    for (let i = 0; i < n; i++) { await p.mouse.wheel(0, 100); if (i < n - 1) await sleep(gap) }
-    await sleep(2600)
-    const s1 = (await posOf(p)).pos
-    const label = `${n} notch${n > 1 ? 'es' : ''} of 100px${n > 1 ? `, ${String(gap).padStart(4)} ms apart` : ''}`
-    if (rule) ok(s1 - s0 === expect, `${label}, move ${expect}`, `${s0} → ${s1}`)
-    else {
-      ok(s1 - s0 >= 0 && s1 - s0 <= n, `${label}: never more stops than detents`, `${s0} → ${s1}`)
-      if (s1 - s0 !== expect) console.log(`  note ${label} moved ${s1 - s0}, measured ${expect} on 2026-10-08 — the slow-detent behaviour changed`)
+  console.log('\n-- normal scrolling: one deliberate notch, one stop')
+  for (const px of [130, 100]) {
+    for (const [n, gap, expect] of [[1, 0, 1], [2, 60, 1], [3, 45, 1], [3, 300, 3], [3, 700, 3], [3, 1400, 3]]) {
+      await goTo('name')
+      await hushClear(p)
+      const s0 = (await posOf(p)).pos
+      for (let i = 0; i < n; i++) { await p.mouse.wheel(0, px); if (i < n - 1) await sleep(gap) }
+      await sleep(2600)
+      const s1 = (await posOf(p)).pos
+      const label = `RHYTHM ${n} notch${n > 1 ? 'es' : ''} of ${px}px${n > 1 ? `, ${String(gap).padStart(4)} ms apart` : ''}`
+      ok(s1 - s0 === expect, `${label}, move ${expect}`, `${s0} → ${s1}`)
     }
   }
 

@@ -188,6 +188,10 @@ const LINEFIELD = typeof __LINEFIELD__ !== 'undefined' && __LINEFIELD__
 // CROSS SECTION (R14, docs/CROSS-SECTION.md): the passage between Work and the Lab, on by default (NUXT_PUBLIC_CROSS=0 turns it off).
 // Written as its own pair of literals so that, with the flag off, each branch folds to exactly the list it always was.
 const CROSS = typeof __CROSS__ !== 'undefined' && __CROSS__
+// R15 PROPOSAL (docs/TEMPO.md, not decided): one Windows detent, 100 px, and Firefox's three lines, 96 px, each land one
+// stop, and a gesture lands by its own travel. Only in a build made with NUXT_PUBLIC_NOTCH=1; off, every line it
+// touches folds back to exactly what it was.
+const NOTCH = typeof __NOTCH__ !== 'undefined' && __NOTCH__
 const SPINE = LINEFIELD
   ? (CROSS ? ['name', 'creative', 'system', 'linefield', 'work', 'cross', 'lab', 'rest'] : ['name', 'creative', 'system', 'linefield', 'work', 'lab', 'rest'])
   : (CROSS ? ['name', 'creative', 'system', 'work', 'cross', 'lab', 'rest'] : ['name', 'creative', 'system', 'work', 'lab', 'rest'])
@@ -494,10 +498,18 @@ const GEST_INNER = 0.5
  * run the field is still pinned at the end by GEST_INNER, so a flick that crossed the works does not also leave.
  */
 const GEST_EDGE = 0.25
+/*
+ * R15 PROPOSAL: WHAT A GESTURE MUST TRAVEL TO LAND, AND FROM WHERE. 0.12 is 109 px of wheel, and a Windows detent at
+ * 100% scaling is 100 px (0.11), Firefox's three lines 96 (0.106): alone, neither ever landed. 0.10 is 91 px. And the
+ * travel is the gesture's own, from where its target stood when it began — measured against the base instead, a
+ * notch that came while the last arrival was still under way read that arrival's lag as its own travel, the wrong
+ * way: three notches 300 ms apart went 0 → 1 → 0 → 1 (130 px) and 0 → 1 → 0 (100 px), on the live site.
+ */
+const GEST_LAND = 0.10   // read only where NOTCH is on: off, it is never referenced and the build has no trace of it
 /** the place a gesture is measured from: the stop on the index, the frame inside a project */
 const gestureBase = () => (A.mode === 'world' ? A.wbase : A.base)
 /** measure the next gesture from here, with nothing spent */
-function resetGesture() { A.gFrom = gestureBase(); A.gWork = clamp(Math.round(A.wT), 0, N - 1); A.gSpent = false; A.gInner = 0; A.gMinGap = Infinity; if (CROSS) A.csAcc = 0 }
+function resetGesture() { A.gFrom = gestureBase(); if (NOTCH) A.gT0 = A.mode === 'world' ? A.wpT : A.pT; A.gWork = clamp(Math.round(A.wT), 0, N - 1); A.gSpent = false; A.gInner = 0; A.gMinGap = Infinity; if (CROSS) A.csAcc = 0 }
 /*
  * AND IN THE WORK FIELD ONE GESTURE IS ONE WORK, as on the bench (R15, user decision 2026-10-08). The field's budget
  * is the work in register when the gesture began, one either side: a hard trackpad flick used to tune straight past
@@ -519,9 +531,9 @@ function landGesture() {
   if (!A.gesture) return false
   const world = A.mode === 'world'
   const keyT = world ? 'wpT' : 'pT', keyBase = world ? 'wbase' : 'base', max = world ? lastFrame() : LAST
-  const d = A[keyT] - A[keyBase]
+  const d = NOTCH ? A[keyT] - (A.gT0 ?? A[keyBase]) : A[keyT] - A[keyBase]
   A.gesture = false
-  if (Math.abs(d) <= 0.12) return false
+  if (Math.abs(d) <= (NOTCH ? GEST_LAND : 0.12)) return false
   A[keyBase] = clamp(A[keyBase] + Math.sign(d) * Math.max(1, Math.round(Math.abs(d))), 0, max)
   return true
 }
@@ -608,7 +620,7 @@ function scrollBy(d, touch = false) {
         // a gesture that has run the passage is spent on the passage; the next place waits for a new one
         if (A.gInner > GEST_INNER) { A.lastInput = now; return }
         A.lfExit += Math.abs(d)
-        if (A.lfExit > LF.exitMargin) {
+        if (A.lfExit > (NOTCH ? GEST_LAND : LF.exitMargin)) {
           A.lfExit = 0
           A.gSpent = true
           A.gesture = false
@@ -2879,7 +2891,7 @@ export function setLocale(next) {
   return true
 }
 
-window.__lab = { CONTACT_STOP, A, V, ptr, phys, surface, works, STOP, SPINE,
+window.__lab = { CONTACT_STOP, A, V, ptr, phys, surface, works, STOP, SPINE, ...(NOTCH ? { notch: { land: GEST_LAND } } : {}),
   // R20: what the drawing ratio is and what it has done this session; ratioStep() takes the next step now (the stills)
   ratio: () => ({ k: ratio.k, due: ratio.due, done: ratio.done, steps: ratio.steps, R: V.dpr * V.u, backing: [canvas.width, canvas.height],
     median: ratio.iv.length ? [...ratio.iv].sort((a, b) => a - b)[ratio.iv.length >> 1] : 0, span: ratio.sum }),

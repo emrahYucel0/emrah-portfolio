@@ -288,8 +288,17 @@ GESTURE (flicks only): ${fails === 0 ? 'PASS' : `FAIL (${fails})`}`); await b.cl
    * to advance twice, because a notch is 0.143 of a place and part of it is spent on the arrival still settling.
    * So a landed gesture holding the door for a third of a second costs nothing that ever worked.
    */
-  console.log('\n-- normal scrolling: the cadences, against what origin/main does')
-  for (const [n, gap, expect] of [[3, 1400, 3], [3, 700, 2], [3, 300, 1]]) {
+  /*
+   * R15 PROPOSAL (NUXT_PUBLIC_NOTCH=1, docs/TEMPO.md): a gesture lands by its own travel, so a notch that arrives
+   * while the last arrival is still under way is a stop of its own, not that arrival's lag read backwards — the 2 and
+   * the 1 below are 0 → 1 → 0 → 1 when traced. A build with the proposal says so on window.__lab.notch, and every
+   * deliberate notch is then one stop at every cadence here.
+   */
+  await goTo('name')
+  const NOTCH_ON = await p.evaluate(() => !!window.__lab?.notch)
+  console.log(`\n-- normal scrolling: the cadences, against what origin/main does${NOTCH_ON ? ' — or, with the R15 notch proposal, one stop per notch' : ''}`)
+  for (const [n, gap, was] of [[3, 1400, 3], [3, 700, 2], [3, 300, 1]]) {
+    const expect = NOTCH_ON ? n : was
     await goTo('name')
     await hushClear(p)
     const s0 = (await posOf(p)).pos
@@ -301,14 +310,16 @@ GESTURE (flicks only): ${fails === 0 ? 'PASS' : `FAIL (${fails})`}`); await b.cl
   /*
    * ── AND A WINDOWS MOUSE'S OWN DETENT, 100 px (R15, 2026-10-08) ──────────────────────────────────────────────
    *
-   * One alone is 0.11 of a stop, under landGesture's 0.12, and springs back: the user's decision is to keep that
-   * threshold (his own mouse moves a stop per detent). What a hand does with it is asserted — a quick roll and two
-   * quick detents are one stop. The slow cadences are recorded as measured on the live fd9b2e6 and on this branch
+   * One alone is 0.11 of a stop, under landGesture's 0.12, and springs back (the threshold was kept on 2026-10-08:
+   * the user's own mouse moves a stop per detent). What a hand does with it is asserted — a quick roll and two quick
+   * detents are one stop. The slow cadences are recorded as measured on the live fd9b2e6 and on this branch
    * (identical, 3 of 3 each): three detents 300 ms apart move NOTHING, 700 ms apart one, 1400 ms apart nothing. That
    * is the behaviour today, not a rule; a change prints here, and no cadence may ever move more stops than detents.
+   * With the R15 proposal they are rules: one stop per notch, the lone detent included.
    */
   console.log('\n-- the 100 px detent')
-  for (const [n, gap, expect, rule] of [[2, 60, 1, true], [3, 45, 1, true], [1, 0, 0, false], [3, 300, 0, false], [3, 700, 1, false], [3, 1400, 0, false]]) {
+  for (const [n, gap, was, wasRule] of [[2, 60, 1, true], [3, 45, 1, true], [1, 0, 0, false], [3, 300, 0, false], [3, 700, 1, false], [3, 1400, 0, false]]) {
+    const rule = wasRule || NOTCH_ON, expect = NOTCH_ON && !wasRule ? n : was
     await goTo('name')
     await hushClear(p)
     const s0 = (await posOf(p)).pos

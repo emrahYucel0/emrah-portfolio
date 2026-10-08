@@ -114,7 +114,7 @@ other worktree had released `main`.
     not the site.
 
 **Note 7 — `fd9b2e6`, the R30 hotfix (the phone stuck at the end of Linefield).**
-- **Uploaded through cPanel and verified live by Emrah Yücel on 2026-10-08,** after his iPhone check of the release
+- **Uploaded through cPanel and verified live by Emrah Yücel on 2026-10-08,** after an iPhone check of the release
   build on the LAN preview.
 - **Package:** `deploy/yucelemrah-fd9b2e6.zip` (in `emrah-portfolio-r15/deploy`), built from `fd9b2e6`, SHA-256
   `13c58e5a7f7cbbaeaec921661592284cf28d5d520c5af48629ae9fee370b8c3c`.

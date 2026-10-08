@@ -39,7 +39,7 @@ const SHAPES = {
   ptphard: () => fingerThenMomentum({ frame: 8, ramp: [10, 30, 60, 100, 140, 170, 190, 200], v0: 320, keep: 0.935, liftGap: 12, round: false, floor: 0.5 }).map(([t, d], i) => [i >= 8 ? 8 * 8 + 12 + (i - 8) * 16.7 : t, d]),
   /*
    * A WINDOWS MOUSE'S OWN DETENT: 100 px (R15, 2026-10-08). One alone is 0.11 of a stop, under landGesture's 0.12, so
-   * it springs back — the user's decision is to keep that threshold (his mouse moves a stop per detent), so a lone
+   * it springs back — the user's decision is to keep that threshold (the user's own mouse moves a stop per detent), so a lone
    * detent is SOFT here: it may move nothing, never more than one. Turned as a hand turns it, three detents in
    * 90 ms, it is one stop like every other shape.
    */

@@ -61,6 +61,8 @@ watch(inLab, (on) => { if (on) warmLater() })
     <C2Plate v-if="!inLab" />
     <!-- the frozen C2 runtime; renders nothing here, owns its own DOM on document.body -->
     <C2Surface v-if="!inLab" />
+    <!-- R15 prototype (?r15=a|b|ab): where the visitor is; nothing at all without the key -->
+    <R15Progress />
   </div>
 </template>
 

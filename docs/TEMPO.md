@@ -123,3 +123,53 @@ Logs in `tools/diag/out/r15/p2-checks/`.
   - `freespin.cjs`: the first run's places were given as `work,name` without directions (`work:1`), so every
     detent was dispatched as `deltaY: NaN` and Chrome's renderer crashed — on the live build identically. The
     harness's own mistake, not the site's; queued again with `work:1,work:-1,name:1`.
+
+## Finding 2 reopened: the 100 px detent (user, 2026-10-08)
+
+`gesture2`'s record showed that a lone 100 px detent never advances, whatever the pause between detents. 100 px is
+what Chrome on Windows reports per detent at 100% scaling, and 96 px (three lines × 32) is Firefox's; the user's own
+mouse does advance, so it probably sends more. Two steps, in this order: a wheel log to read a real mouse, then a
+proposal — not applied until the user has seen it.
+
+### The wheel log (`app/debug/WheelLog.vue`, f878e36)
+
+`?wheellog=1` (kept for the session, `?wheellog=0` hides it) — only in `npm run dev` and in a build made with
+`NUXT_PUBLIC_WHEELLOG=1`; a release build has no chunk for it. Per event: Δt, deltaY, deltaX, deltaMode, the pixels
+and stops the site reads (lines × 32; × 0.0011), the burst sum; a lone event that will not land is marked.
+
+### What a slow detent actually does (traced in the page, WebKit, live build's rule)
+
+Three detents 300 ms apart:
+- 100 px: `0 → 1 → 0`. The first springs back (0.11 ≤ 0.12); the second falls inside the same gesture and lands;
+  the third opens a new gesture while the target is still on its way to the new stop (pT 0.46 → base 1), and
+  `landGesture` measures `pT − base = −0.36` — the arrival's lag, read as the gesture's travel, backwards.
+- 130 px: `0 → 1 → 0 → 1`. The same thing: the middle notch takes the visitor back a stop. `gesture2`'s cadence table
+  ("3 notches of 130 px, 300 ms apart, move 1"; 700 ms "move 2") had locked this in as what origin/main does.
+
+### The proposal (ebdbdfe, behind `NUXT_PUBLIC_NOTCH=1`; off, the runtime chunk is byte-identical)
+
+1. **The landing threshold 0.12 → 0.10** (91 px): a lone 100 px detent (0.11) and Firefox's three lines (0.106)
+   each land one stop.
+2. **A gesture lands by its own travel** — from where its target stood when it began (`A.gT0`), not from the base.
+   A notch made while the last arrival is still under way is then a stop of its own, in the direction it was made.
+3. **Linefield's end exit takes the same 0.10** (was 0.16: two 100 px detents).
+4. **Unchanged:** `GEST_FLOOR` (0.12, what makes an event a new throw), `GEST_GAP`, `GEST_REST`, the budget of one
+   stop per gesture, the work field's two detents per work, Cross Section's step (0.04), the bench's and the
+   finale's 96 px.
+
+Measured on the proposal build (WebKit, `p.mouse.wheel`, from the hero), 100 px and 130 px alike:
+
+| Detents | Live rule (100 px) | Live rule (130 px) | Proposal (both) |
+|---|---|---|---|
+| one | 0 | 1 | 1 |
+| two, 60 ms apart | 1 | 1 | 1 |
+| a roll, three 45 ms apart | 1 | 1 | 1 |
+| three, 300 ms apart | 0 (0 → 1 → 0) | 1 (0 → 1 → 0 → 1) | 3 |
+| three, 700 ms apart | 1 | 2 | 3 |
+| three, 1400 ms apart | 0 | 3 | 3 |
+
+The risk is the one the threshold was guarding: a flick's tail, once something opens a new gesture inside it, now
+needs only 0.10 of travel to land a second stop, and lands it forwards where the lag used to cancel it. The proof is
+`gesture2` (hard flicks, coasts, the arrival, and the 100 px section), `trackpad` (every shape at every place, and
+the work field in both delivery modes), `freespin` (every place, Linefield and Work included) and the touch checks,
+against the proposal build and, for `freespin`, against the current rule as a baseline.

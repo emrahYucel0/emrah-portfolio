@@ -159,8 +159,10 @@ const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'F
    * is remembered as a height on the glass, and the way out is measured from it. That height used to outlive the
    * finger: a swipe that reached the far end half way up left it there, every later swipe started below it and could
    * never get far enough past it, and the phone stood at the end of the passage — 4 of 5 natural walks through it.
-   * Here the end is reached mid-drag on purpose (from 0.9, or 0.1 at the near end), that it really was is asserted,
-   * and the next swipe comes as soon as a visitor's would.
+   * Here the end is reached LATE in a drag on purpose, and that it really was is asserted. The passage follows the
+   * finger one to one (a 338 px swipe is 0.222 of it at 390x844), so from 0.82 the end arrives about 64 px before the
+   * finger stops — high on the glass, and short of the V.H * 0.14 (118 px) that would leave in the same swipe. The
+   * next swipe, as soon as a visitor's would come, starts low and must leave. 0.18 is the same at the near end.
    */
   if (STOP.linefield != null) {
     const lfAt = async (v) => {
@@ -169,7 +171,7 @@ const ok = (c, l, x = '') => { if (!c) fails++; console.log(`  ${c ? 'ok  ' : 'F
       await p.evaluate((x) => window.__lab.lfSet(x), v); await sleep(1200)
     }
     const lfRead = () => p.evaluate(() => ({ base: window.__lab.A.base, target: window.__lab.lf().drive.target, edge: window.__lab.A.lfEdgeY ?? null }))
-    for (const [from, dy, to, label] of [[0.9, -338, STOP.work, 'far end → Work'], [0.1, 338, STOP.system, 'near end → Full-Stack']]) {
+    for (const [from, dy, to, label] of [[0.82, -338, STOP.work, 'far end → Work'], [0.18, 338, STOP.system, 'near end → Full-Stack']]) {
       await lfAt(from)
       await swipe(dy, undefined, 900)
       const r1 = await lfRead()

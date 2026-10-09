@@ -231,6 +231,38 @@ Prepared 2026-10-08 on `fix/lf-touch-edge` (worktree `emrah-portfolio-r15`), cut
   (`builds/release-fd9b2e6` served `--lan --wk` on 4983), then the push when the user confirms it, and the upload by
   hand through cPanel by `docs/DEPLOYMENT.md`'s checklist.
 
+## Candidate — `bcb8f90`, R15: the notch rule, one notch one work, indicator A. NOT UPLOADED.
+
+Prepared 2026-10-10 on `feature/r15-tempo` (worktree `emrah-portfolio-r15`), on top of `main` f492799 (= live
+`fd9b2e6` plus documentation). Nothing is pushed; `main` is not moved.
+- **Package:** `deploy/yucelemrah-bcb8f90.zip` (in the worktree; `deploy/` is ignored).
+  - SHA-256 `490a50f37a619c119ac5bc4f27f71614528af3aa9889e3ec16aebc46e6993305` (`deploy/yucelemrah-bcb8f90.zip.sha256`).
+  - 220 files, 10,269,394 bytes unpacked, 9,337,588 bytes zipped (8.9 MiB). The three `.htaccess` files are in it;
+    no wheel log, no `?r15` prototype, no `*.cjs`, no `200.html`.
+  - `cspboot --dir` PASS on the build (`builds/release-bcb8f90`) and on the unpacked zip (byte-identical to it).
+- **Built from `bcb8f90`** (`npx nuxt typecheck` 0, `npm run generate` 0, `NUXT_PUBLIC_WHEELLOG` unset, Linefield
+  and Cross Section in). Its 39 JS and CSS files are byte-identical, chunk names normalised, to `builds/r15-rc3`, the
+  build every proof run used.
+- **What changes for a visitor** (`docs/TEMPO.md`):
+  - One deliberate wheel notch is one stop at any pace, a 100 px Windows detent and Firefox's 96 px included; slow
+    notches no longer move backwards.
+  - A free-spinning wheel's late detents no longer each land a stop.
+  - In the work field one notch is one work, and a hard trackpad flick no longer skips the middle work; a gentle
+    trackpad feels as before.
+  - The top strip marks the section the visitor is in (İŞLER, HAKKIMDA, LAB, İLETİŞİM), with `aria-current`.
+- **Checks:**
+  - **Proof, rc3 against the live build, alternating, quiet machine** (`tools/diag/out/r15/proof4/`): `freespin`
+    ×2, the Work tail repeats ×2, Work `trackpad` ×2, `gesture2` Work cases ×2, full `gesture2` ×2 (with the 100 px
+    section and the slow-notch rhythms), `trackpad` at every other place ×1 (the user cut the second pair for time),
+    `touch`, `touchjourney`, `workfeel`.
+    - No overshoot appeared only on rc3; every failure was re-run alone.
+    - Overshoots on both builds, recorded as live issues: "long up from work", "coast up from linefield",
+      "long down from Cross Section" (`docs/ROADMAP.md`, R15).
+  - **On the candidate itself** (`tools/diag/out/r15/rc/`): `cspboot` Chrome and WebKit PASS; `journey.cjs` TR,
+    EN and TR reduced PASS; `r15shot.cjs` (indicator A, desktop and phone, normal and reduced) PASS, 124 assertions.
+- **Before upload:** the user's iPhone check on the LAN preview (`builds/release-bcb8f90` served `--lan --wk` on
+  4983), then the push when the user confirms it, and the upload by hand through cPanel by `docs/DEPLOYMENT.md`.
+
 ## Adding a line
 
 After an upload, append a row and fill `verified live by` only once someone has actually opened the deployed site. The

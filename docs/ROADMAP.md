@@ -41,7 +41,7 @@ build'ler `builds/r15-*`, çıktılar `tools/diag/out/r15/`).
 | R11 | Yavaş ağda ilk kare (8,9 sn) | P2 | Önce değerlendirme | — |
 | R13 | Gövde metni ve tipografik hiyerarşi | P1 | Karar bekliyor (ölçek) | — |
 | R14 | Cross Section (İşler → Lab köprüsünün yerine) | P1 | **Bitti** (yayında: `df5ab32`, 2026-10-04) | R2, R15 |
-| R15 | Tempo, ilerleme göstergesi, performans bütçesi | P2 | **Sürüyor** (`feature/r15-tempo`): Faz 1 bitti; Faz 2 prototipleri hazır, göstergenin seçimi bekliyor | R14 |
+| R15 | Tempo, ilerleme göstergesi, performans bütçesi | P2 | **Yayın adayı** (`feature/r15-tempo`): tık kuralı + İşler'de bir tık bir iş + A göstergesi; Faz 3 bekliyor | R14 |
 | R17 | Yayın (DEPLOYMENT.md, CSP, canlı yedeği) | P0 | **Bitti** (2026-10-03, `b8918dc` canlıda) | — |
 | R18 | Awwwards başvurusu (Developer Award) | P0 | Karar bekliyor (tarih) | R17, R9, R22, R23 |
 | R19 | Full-Stack'in siyah kapsüllerinin çevresindeki hale | P1 | **Bitti, canlıda** (2026-10-08, `e192c24`): iki yüzde | R9 |
@@ -384,7 +384,24 @@ build'ler `builds/r15-*`, çıktılar `tools/diag/out/r15/`).
     sayfaları ve filmler: `tools/diag/out/r15/indicator/` (`r15shot.cjs`).
   - **Bulgu (düzeltilmedi):** 100 px'lik çentiklerle 300 ms arayla üç tık hiç ilerletmiyor, 700 ms arayla bir durak;
     canlı `fd9b2e6` ile aynı. Eşik kararı gereği kayıt altında (`gesture2`).
-  - **Bekleyen:** göstergenin seçimi (A, B ya da ikisi); bütçe rakamları; Faz 3'ün tempo kolları.
+  - **Karar (2026-10-08/09, kullanıcı):**
+    - Tık önerisi onaylandı: iniş eşiği 0,10, jest kendi başlangıcından ölçülür, Linefield'ın uç çıkışı 0,10,
+      `GEST_FLOOR` aynı. Varsayılan olması koşulu: kanıt koşularında sıfır aşma. Koşular eski (canlı) ve yeni build'e
+      dönüşümlü; bir hata yalnız yenide görünür ve tek başına tekrarlanırsa sayılır.
+    - Gösterge: A (şerit bölümü işaretler), varsayılan; hareketi azaltılmış mod ve `aria-current` ile.
+    - Wheel günlüğü hiçbir yayın build'inde olmayacak.
+    - İşler'de bir tık bir iş (kazanç 2,6 → 5); "bir jest en fazla bir iş" sınırı kalıyor; son işten bir tıkla çıkış.
+      Nazik trackpad'in hissi ölçülecek; fazla kolaysa bir tık = bir iş'i koruyan düzeltme önerilecek.
+  - **Bekleyen:** bütçe rakamları; Faz 3'ün tempo kolları.
+  - **Yayın adayı (2026-10-10):** tık kuralının son hâli (eşik 0,10, girdinin kendi yolu, Linefield çıkışı 0,10,
+    serbest tekerlekte 700 ms kapı), İşler'de bir tık bir iş (kazanç 5 / 2,6, iş harcanınca yeni jest), A göstergesi.
+    Kanıt canlıya karşı dönüşümlü: yalnız yenide görülen aşma yok; ayrıntı `docs/TEMPO.md`. Aday: `docs/DEPLOY-LOG.md`.
+  - **Canlıda kalan sorunlar (ikisinde de var, düzeltilmedi):** "long up from work" 4 → 2 (20'de 1–2), "coast up from
+    linefield" −2 (20'de 4–5), Cross'ta "long down" lameller iki konum (5'te 1). Uzun ya da titrek bir akışın geç
+    olayları yükselme sayılıyor (`GEST_FALLEN`).
+  - **Faz 3, Linefield tekerlek adımı (kayıt 2026-10-09):** geçidin içinde tek 100 px'lik tık geçidi 0,067 ilerletiyor
+    (`LF_PUSH`); yavaş bir fare geçidi ≈15 tıkta geçiyor, 3 tıklık tur 0,2. Bu geçidin kendi ekseni, durak değil; tık
+    değişikliği ona dokunmuyor.
 - **Dosyalar:** `engine/c2/main.js` (`SPINE`, `domUpdate`), `engine/c2/style.css`, `tools/diag/journey.cjs`.
 - **Bağımlılık:** R14.
 - **R14'ten (2026-10-03):**

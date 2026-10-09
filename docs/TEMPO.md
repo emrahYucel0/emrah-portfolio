@@ -13,6 +13,10 @@ the decisions; this file holds the plan, the measurements and what they mean.
 4. Phase 2: both indicators as prototypes, A, B and both, behind `?r15=a|b|ab`; stills and films on desktop and
    phone, reduced motion, `aria-current`. **Done; waiting for the user's choice of indicator.**
 5. Phase 3 (not started): the tempo levers — Linefield's wheel step, Work → Cross Section, the damping's tail.
+   - **Linefield's wheel step** (recorded 2026-10-09, user): inside the passage one 100 px detent moves it 0.067 of
+     its length (`LF_PUSH`, `LF_WHEEL_SPAN`), so a mouse turned slowly needs about fifteen detents to cross it and a
+     three-detent roll 0.2 (six rolls, step 0). It is the passage's own axis, not a stop, and the notch change leaves
+     it alone; `trackpad.cjs` reports a lone detent there as not having moved (its axis threshold is 0.2).
 
 Checks for phases 1 and 2 (user): gesture, trackpad, free-spin, touch and journey — not the full gate.
 
@@ -173,3 +177,52 @@ needs only 0.10 of travel to land a second stop, and lands it forwards where the
 `gesture2` (hard flicks, coasts, the arrival, and the 100 px section), `trackpad` (every shape at every place, and
 the work field in both delivery modes), `freespin` (every place, Linefield and Work included) and the touch checks,
 against the proposal build and, for `freespin`, against the current rule as a baseline.
+
+## The notch rule, final form (rc3, user decisions 2026-10-08/09)
+
+What became the default, in `engine/c2/main.js`:
+
+1. **A gesture lands past 0.10 of a stop** (`GEST_LAND`, was 0.12): a 100 px detent and Firefox's 96 px each land.
+2. **It lands on the input's own travel** (`A.gTravel`): what `scrollBy` applied to the target in this gesture,
+   after the budget's clamp. The target's decay toward the base is never counted. Two earlier forms failed:
+   - measured against the base, a notch made during the last arrival's lag landed backwards (0 → 1 → 0 → 1);
+   - measured against the target at the gesture's start, the lag's decay counted as travel ("tail up from work",
+     4 → 2, 1 in 40).
+   A landing is always one stop within the gesture's start ± 1.
+3. **Linefield's end is left past the same 0.10** (was 0.16).
+4. **A free-spinning wheel holds the door 700 ms** (`GEST_REST_SPIN`). After a stream of full-size detents
+   (≥ 90 px, < 120 ms apart) the next gesture opens only after 700 ms of quiet; a trackpad stream keeps 340 ms;
+   a slow hand with no stream before it opens a gesture at once. Without it, each late detent of a slowing wheel
+   (450–600 ms apart) landed a stop of its own: two to four places per flick.
+5. **In the work field one notch is one work.**
+   - A single event of 40 px or more moves the field 5 per stop (100 px = 0.55 of a work); smaller events keep
+     2.6, so a gentle trackpad feels as it did (`workfeel.cjs`: 144 px of 2–8 px events stays on the work, as on
+     live).
+   - Once the field has reached the next work the gesture is spent, and a new gesture starts from the work in
+     register, so notches 300 / 700 / 1400 ms apart move one work each.
+   - One gesture still moves at most one work.
+
+`GEST_FLOOR` (what makes an event a new throw) is unchanged.
+
+### Proof (rc3 against the live f492799, alternating, quiet machine; `tools/diag/out/r15/proof4/`)
+
+| Check | Live | rc3 |
+|---|---|---|
+| `freespin`, 9 places × 3 detent sizes × 7 end gaps, ×2 | 16 overshoots per round (450/600 ms end gaps) | **0** |
+| Work tail repeats, 2 × 40 throws | 0 overshoots (20 middle-work skips) | **0**, 80/80 |
+| Work `trackpad`, 9 shapes × 2 modes, ×2 | 14 skips per round | **72/72** |
+| `gesture2`, Work cases, 3 reps, ×2 | pass | one "long up from work" (see below) |
+| `gesture2`, full, ×2 | 3 overshoots per round + the old rhythm | round 1 **PASS**; round 2 two Cross axis cases (see below) |
+| `gesture2` RHYTHM (100 / 130 px; alone, 60 / 45 / 300 / 700 / 1400 ms) | 6–7 fail (the old rule) | **all one stop per notch** |
+| `trackpad`, every shape × the other places × 2 modes, ×1 | 14 under-moves | **0 overshoots**; 2 = Linefield's single-notch step |
+| `workfeel` | 144 px gentle → stays; a notch 0.29 | identical gentle feel; every notch one work |
+
+The user cut the second `trackpad` pair for time (2026-10-10).
+
+Overshoots seen on rc3, each re-run alone and found on the live build too (not counted):
+- "long up from work" 4 → 2 (4 → 1 once): live 2 in 20, rc3 1 in 20.
+- "coast up from linefield" −2: live 4 in 20, earlier build 5 in 20.
+- "long down from Cross Section", the louvers two positions: live 1 in 5, rc3 1 in 5 (alone); "burst down" 0 in 5 on both.
+- `touch.cjs` and `touchjourney.cjs`: PASS on both builds.
+
+These are **live issues**: the late events of a long or jittered stream read as a rise (`GEST_FALLEN`), on both builds.

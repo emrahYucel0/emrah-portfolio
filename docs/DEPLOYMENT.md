@@ -248,7 +248,7 @@ file dates and a backup folder.
   returns at least one file) and that Full-Stack → Linefield → Work works in the artifact being shipped
 - **PRE-UPLOAD:** `.output/public` contains `.htaccess`, `_nuxt/.htaccess`, `opt/.htaccess`, `404.html`, `robots.txt`, `sitemap.xml`, `og/`, favicons; no `200.html`
 - **PRE-UPLOAD (CSP):** `node tools/diag/cspboot.cjs --dir .output/public` exit 0 — the policy names every inline script in the artifact it ships with
-- **PRE-UPLOAD (payload):** no `tools/`, no `*.cjs`, no `lab/proof` route in the artifact
+- **PRE-UPLOAD (payload):** no `tools/`, no `*.cjs`, no `lab/proof` route in the artifact; no wheel log (`grep -rl "WHEEL LOG" .output/public` finds nothing — `NUXT_PUBLIC_WHEELLOG` must be unset for a release build)
 - **UPLOAD:** document root identified; backup downloaded **and its size and file count checked against the live listing — a tiny backup means STOP**; old files cleaned keeping `.well-known/` and `cgi-bin/`; zip extracted; three `.htaccess` confirmed
 - **AFTER UPLOAD:** append a line to `docs/DEPLOY-LOG.md` — date, commit, package, SHA-256, file count, size —
   and fill `verified live by` only after opening the deployed site yourself

@@ -7,7 +7,7 @@
 // Other work is another project's node script (`node scripts/...`) and the desktop's own Chrome (not a test browser),
 // each with every process under it (its browser, its GPU process, its ffmpeg). What counts is the CPU time they use,
 // as a rate: a script asleep or a browser sitting idle is not other work; a tab that animates, or a capture, is.
-//   quiet       for 30 s: the processor's own load under 25%, and the other work under 0.35 s of CPU per second
+//   quiet       for 30 s: the processor's load under 30% on average, and the other work under 0.35 s of CPU per second
 //   disturbed   the other work averaged more than 0.35 s of CPU per second over the run (sampled every 10 s)
 // (0.35: the desktop's Chrome with its tabs open idles at about 0.3 s/s; a capture or an audit uses 1–2.5 s/s)
 // Another project's BUILD is other work too (vite / nuxt / next … build|generate, outside this project), not only its
@@ -22,7 +22,7 @@ const ps = (cmd) => execFileSync('powershell', ['-NoProfile', '-Command', cmd], 
 // the other work as it stands: each process's CPU seconds so far (pid -> s), and what its roots are
 const OTHER = `
 $all = Get-CimInstance Win32_Process
-$roots = @($all | ? { ($_.Name -eq 'node.exe' -and $_.CommandLine -match 'scripts/') -or ($_.Name -eq 'node.exe' -and $_.CommandLine -match '(vite|nuxt|nuxi|next|webpack|rollup|esbuild|astro)[^ ]*[ ]+(build|generate)|run[ ]+(build|generate)' -and $_.CommandLine -notmatch 'emrah-portfolio') -or ($env:QUIET_CHROME -eq 'count' -and $_.Name -eq 'chrome.exe' -and $_.CommandLine -notmatch '--type=' -and $_.CommandLine -notmatch 'remote-debugging' -and $_.CommandLine -notmatch 'ms-playwright') })
+$roots = @($all | ? { ($_.Name -eq 'node.exe' -and $_.CommandLine -match 'scripts/' -and $_.CommandLine -notmatch 'emrah-portfolio|out/r15/') -or ($_.Name -eq 'node.exe' -and $_.CommandLine -match '(vite|nuxt|nuxi|next|webpack|rollup|esbuild|astro)[^ ]*[ ]+(build|generate)|run[ ]+(build|generate)' -and $_.CommandLine -notmatch 'emrah-portfolio') -or ($env:QUIET_CHROME -eq 'count' -and $_.Name -eq 'chrome.exe' -and $_.CommandLine -notmatch '--type=' -and $_.CommandLine -notmatch 'remote-debugging' -and $_.CommandLine -notmatch 'ms-playwright') })
 $ids = @($roots.ProcessId); $n = -1
 while ($ids.Count -ne $n) { $n = $ids.Count; $ids = @($ids + @($all | ? { $ids -contains $_.ParentProcessId } | % { $_.ProcessId }) | Select-Object -Unique) }
 $parts = foreach ($i in $ids) { $p = Get-Process -Id $i -ErrorAction SilentlyContinue; if ($p -and $p.CPU) { '{0}:{1}:{2}' -f $i, [long]($p.CPU * 1000), [long]((Get-Date) - $p.StartTime).TotalMilliseconds } }
@@ -51,13 +51,24 @@ const usedBetween = (a, b) => {
 const load = () => { try { return Number(ps('(Get-CimInstance Win32_Processor).LoadPercentage')) || 0 } catch { return 0 } }
 async function waitQuiet(label) {
   if (process.platform !== 'win32') return
-  let n = 0, said = false, prev = other()
-  while (n < 6) {
+  /*
+   * Quiet for 30 s: other work under 0.35 s/s in every 5 s sample, and the processor's load under 30% ON AVERAGE over
+   * those six samples. WMI's LoadPercentage is an instantaneous reading and jumps 20 → 50 → 20 on an idle desktop (the
+   * desktop's Chrome, Teams, this very query), so requiring every sample under 25% could hold a run back for hours on
+   * a machine doing nothing (2026-10-09); the average still sees a machine that is really busy.
+   */
+  let said = false, prev = other()
+  const loads = [], works = []
+  while (true) {
     await sleep(5000)
     const o = other(), l = load(), busy = usedBetween(prev, o)
     prev = o
-    if (l < 25 && busy < 0.35 * 5) n++
-    else { n = 0; if (!said) { console.log(`   (waiting for a quiet machine before ${label}: load ${l}%${busy >= 0.35 * 5 ? `, other work ${(busy / 5).toFixed(2)} s/s: ${o.what}` : ''})`); said = true } }
+    loads.push(l); works.push(busy)
+    if (loads.length > 6) { loads.shift(); works.shift() }
+    const mean = loads.reduce((a, b) => a + b, 0) / loads.length
+    if (loads.length === 6 && mean < 30 && works.every((w) => w < 0.35 * 5)) break
+    if (busy >= 0.35 * 5) { loads.length = 0; works.length = 0 }
+    if (!said && (busy >= 0.35 * 5 || (loads.length === 6 && mean >= 30))) { console.log(`   (waiting for a quiet machine before ${label}: load ${Math.round(mean)}% on average${busy >= 0.35 * 5 ? `, other work ${(busy / 5).toFixed(2)} s/s: ${o.what}` : ''})`); said = true }
   }
 }
 async function guarded(label, fn, tries = 6) {

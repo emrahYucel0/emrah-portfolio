@@ -188,10 +188,6 @@ const LINEFIELD = typeof __LINEFIELD__ !== 'undefined' && __LINEFIELD__
 // CROSS SECTION (R14, docs/CROSS-SECTION.md): the passage between Work and the Lab, on by default (NUXT_PUBLIC_CROSS=0 turns it off).
 // Written as its own pair of literals so that, with the flag off, each branch folds to exactly the list it always was.
 const CROSS = typeof __CROSS__ !== 'undefined' && __CROSS__
-// R15 PROPOSAL (docs/TEMPO.md, not decided): one Windows detent, 100 px, and Firefox's three lines, 96 px, each land one
-// stop, and a gesture lands by its own travel. Only in a build made with NUXT_PUBLIC_NOTCH=1; off, every line it
-// touches folds back to exactly what it was.
-const NOTCH = typeof __NOTCH__ !== 'undefined' && __NOTCH__
 const SPINE = LINEFIELD
   ? (CROSS ? ['name', 'creative', 'system', 'linefield', 'work', 'cross', 'lab', 'rest'] : ['name', 'creative', 'system', 'linefield', 'work', 'lab', 'rest'])
   : (CROSS ? ['name', 'creative', 'system', 'work', 'cross', 'lab', 'rest'] : ['name', 'creative', 'system', 'work', 'lab', 'rest'])
@@ -252,7 +248,7 @@ const A = {
   labArmed: false, hush: 0,
   // the gesture being metered: where it began, whether it has spent its stop, how far it has carried a place's own
   // axis, and the stream it is being read out of (see opensGesture)
-  gFrom: 0, gWork: 0, gSpent: false, gInner: 0, gAt: -1e9, gEnv: 0, gPeak: 0, gMinGap: Infinity,
+  gFrom: 0, gTravel: 0, gSpin: false, gWork: 0, gWorkFresh: false, gSpent: false, gInner: 0, gAt: -1e9, gEnv: 0, gPeak: 0, gMinGap: Infinity,
   // a harness may pin how much the type is type, to difference the words out of a frame (see lfWords below)
   lfWordsAt: null, lfWords: 1, lfLeg: false,
   aboutDetailK: 0, bridgeF: null, bridgePK: 0,
@@ -437,6 +433,17 @@ function lfEdge(now) {
  */
 const GEST_GAP = 400       // ms of silence that opens a gesture when nothing has landed yet
 const GEST_REST = 340      // and ms of quiet a landed STREAM holds the door for, re-armed by every event
+/*
+ * A FREE-SPINNING WHEEL HOLDS IT LONGER (R15, user decision 2026-10-09). Its detents are full size all the way down,
+ * and as it slows they come 450, 600 ms apart — each, on its own, exactly a deliberate slow notch, which since the
+ * notch change lands a stop of its own: one flick of such a wheel went two to four places (measured, freespin.cjs).
+ * What tells them apart is what came before: a stream of full-size detents (GEST_DETENT and above, closer than
+ * GEST_STREAM) is a wheel spinning, and once it has landed the door stays shut until GEST_REST_SPIN of quiet, re-armed
+ * by every detent. A trackpad's stream (small events) keeps GEST_REST; a slow hand, with no stream before it, still
+ * opens a gesture at once.
+ */
+const GEST_REST_SPIN = 700
+const GEST_DETENT = 90 * 0.0011
 const GEST_STREAM = 120    // events closer together than this arrived as a stream, not as separate intentions
 const GEST_RISE = 2.6      // an event this many times the envelope is a new throw
 const GEST_FLOOR = 0.12    // and a real one: about one notch of travel, which is a stop's own threshold
@@ -499,17 +506,24 @@ const GEST_INNER = 0.5
  */
 const GEST_EDGE = 0.25
 /*
- * R15 PROPOSAL: WHAT A GESTURE MUST TRAVEL TO LAND, AND FROM WHERE. 0.12 is 109 px of wheel, and a Windows detent at
- * 100% scaling is 100 px (0.11), Firefox's three lines 96 (0.106): alone, neither ever landed. 0.10 is 91 px. And the
- * travel is the gesture's own, from where its target stood when it began — measured against the base instead, a
- * notch that came while the last arrival was still under way read that arrival's lag as its own travel, the wrong
- * way: three notches 300 ms apart went 0 → 1 → 0 → 1 (130 px) and 0 → 1 → 0 (100 px), on the live site.
+ * WHAT A GESTURE MUST TRAVEL TO LAND, AND FROM WHERE (R15, user decision 2026-10-08). One deliberate notch is one
+ * stop. A Windows detent at 100% scaling is 100 px (0.11 of a stop) and Firefox's three lines 96 (0.106); the old 0.12
+ * (109 px) landed neither, so a visitor turning such a wheel slowly never moved. 0.10 is 91 px.
+ *
+ * AND THE TRAVEL IS THE INPUT'S OWN (A.gTravel, user decision 2026-10-09): what scrollBy actually applied to the
+ * target in this gesture, after the budget's clamp, and nothing else. Measured as the target against the base, a notch
+ * made while the last arrival was still under way read that arrival's lag as its own travel, the wrong way — three
+ * notches 300 ms apart went 0 → 1 → 0 → 1 (130 px) and 0 → 1 → 0 (100 px) on the live site. Measured as the target
+ * against where it stood when the gesture began, the target's own decay toward the base counted as travel: the late
+ * tail of a trackpad throw out of Work, opened while the exit's lag (base + 0.35) was still decaying, landed a second
+ * stop (4 → 2, 1 in 40). The decay of the target is never the visitor's input. GEST_FLOOR, what makes an event a new
+ * throw, is unchanged: this is how far a gesture goes, not when one begins. Proof: docs/TEMPO.md.
  */
-const GEST_LAND = 0.10   // read only where NOTCH is on: off, it is never referenced and the build has no trace of it
+const GEST_LAND = 0.10
 /** the place a gesture is measured from: the stop on the index, the frame inside a project */
 const gestureBase = () => (A.mode === 'world' ? A.wbase : A.base)
 /** measure the next gesture from here, with nothing spent */
-function resetGesture() { A.gFrom = gestureBase(); if (NOTCH) A.gT0 = A.mode === 'world' ? A.wpT : A.pT; A.gWork = clamp(Math.round(A.wT), 0, N - 1); A.gSpent = false; A.gInner = 0; A.gMinGap = Infinity; if (CROSS) A.csAcc = 0 }
+function resetGesture() { A.gFrom = gestureBase(); A.gTravel = 0; A.gSpin = false; A.gWork = clamp(Math.round(A.wT), 0, N - 1); A.gWorkFresh = true; A.gSpent = false; A.gInner = 0; A.gMinGap = Infinity; if (CROSS) A.csAcc = 0 }
 /*
  * AND IN THE WORK FIELD ONE GESTURE IS ONE WORK, as on the bench (R15, user decision 2026-10-08). The field's budget
  * is the work in register when the gesture began, one either side: a hard trackpad flick used to tune straight past
@@ -518,6 +532,11 @@ function resetGesture() { A.gFrom = gestureBase(); if (NOTCH) A.gT0 = A.mode ===
  * cannot also leave it.
  */
 const workBudget = (t) => clamp(t, A.gWork - 1, A.gWork + 1)
+// the wheel's travel in the work field per unit of stop travel (R15). A DETENT — one event of 40 px or more: a mouse's
+// notch, Firefox's three lines, a trackpad's own large events — carries the field 5 per stop, so 100 px (0.11) is 0.55
+// of a work: one notch, one work. A small event — a trackpad moved gently, a few px at a time — keeps the old 2.6, so
+// nudging the field does not tip it into the next work any sooner than before (measured: workfeel.cjs).
+const WORK_GAIN = 5, WORK_GAIN_FINE = 2.6, WORK_DETENT = 40 * 0.0011
 /** and forget the stream, so that whatever comes next opens a gesture of its own */
 function forgetStream() { A.gAt = -1e9; A.gEnv = 0; A.gPeak = 0 }
 /*
@@ -530,11 +549,13 @@ function forgetStream() { A.gAt = -1e9; A.gEnv = 0; A.gPeak = 0 }
 function landGesture() {
   if (!A.gesture) return false
   const world = A.mode === 'world'
-  const keyT = world ? 'wpT' : 'pT', keyBase = world ? 'wbase' : 'base', max = world ? lastFrame() : LAST
-  const d = NOTCH ? A[keyT] - (A.gT0 ?? A[keyBase]) : A[keyT] - A[keyBase]
+  const keyBase = world ? 'wbase' : 'base', max = world ? lastFrame() : LAST
+  const d = A.gTravel
   A.gesture = false
-  if (Math.abs(d) <= (NOTCH ? GEST_LAND : 0.12)) return false
-  A[keyBase] = clamp(A[keyBase] + Math.sign(d) * Math.max(1, Math.round(Math.abs(d))), 0, max)
+  if (Math.abs(d) <= GEST_LAND) return false
+  // one stop, within the budget: a gesture begun while the target was still behind an arrival can travel more than
+  // a stop's worth of target and still only ever carries one place from where it began
+  A[keyBase] = clamp(A[keyBase] + Math.sign(d), Math.max(0, A.gFrom - 1), Math.min(max, A.gFrom + 1))
   return true
 }
 function beginGesture() { landGesture(); resetGesture() }
@@ -581,9 +602,10 @@ function opensGesture(d, now) {
    * itself through. Measured: `burst up from work` ended back where it started and `long up from work` moved two.
    */
   A.gMinGap = Math.min(A.gMinGap, gap)
+  if (mag >= GEST_DETENT && gap < GEST_STREAM) A.gSpin = true
   // a landed STREAM holds the door until the input has gone quiet; a landed single input holds nothing, and a
   // gesture still in the air is only interrupted by a real silence or a new throw
-  const rest = A.gMinGap < GEST_STREAM ? GEST_REST : 0
+  const rest = A.gMinGap < GEST_STREAM ? (A.gSpin ? GEST_REST_SPIN : GEST_REST) : 0
   const opens = A.gSpent ? rise || gap > rest : rise || gap > GEST_GAP
   // whatever opens a gesture starts a stream of its own, and that stream's peak is the one a next throw is read against
   if (opens) A.gPeak = perFrame
@@ -620,7 +642,8 @@ function scrollBy(d, touch = false) {
         // a gesture that has run the passage is spent on the passage; the next place waits for a new one
         if (A.gInner > GEST_INNER) { A.lastInput = now; return }
         A.lfExit += Math.abs(d)
-        if (A.lfExit > (NOTCH ? GEST_LAND : LF.exitMargin)) {
+        // one notch past the end leaves it, as one notch lands a stop anywhere else (R15)
+        if (A.lfExit > GEST_LAND) {
           A.lfExit = 0
           A.gSpent = true
           A.gesture = false
@@ -661,10 +684,21 @@ function scrollBy(d, touch = false) {
     }
     // wheel tunes the work field; a finger tunes it sideways and swipes vertically between places
     if (settledAt(STOP.work) && !touch) {
+      // a new gesture moves from the work in register, not from wherever the last one's settling has got to: two
+      // notches 300 ms apart found the field still tuning (0.81 of the way to w1), the second added 0.55 to that, and
+      // 1.36 fell back to w1 (R15)
+      if (A.gWorkFresh) { A.wT = A.gWork; A.gWorkFresh = false }
       // the register as the field can actually hold it, so that a flick at either end counts as the nothing it moved
       const held = clamp(A.wT, 0, N - 1)
-      A.wT = workBudget(A.wT + d * 2.6)   // two notches of a wheel carry one work out of register and the next one in
+      // ONE NOTCH IS ONE WORK (R15, user decision 2026-10-09): a detent carries the field 0.55, past the half that
+      // registers the next work (at 2.6 it was 0.29: two notches a work, and a slow hand never got past the first).
+      // A roll or a trackpad throw is still one work at most (workBudget), and the field's end is still left by a notch.
+      A.wT = workBudget(A.wT + d * (Math.abs(d) >= WORK_DETENT ? WORK_GAIN : WORK_GAIN_FINE))
       A.gInner += Math.abs(clamp(A.wT, 0, N - 1) - held)
+      // a gesture that has carried the field into the next work has spent its one work, as a landed stop spends its
+      // gesture on the spine: the rest of a throw is absorbed, and the next deliberate notch is a gesture of its own
+      // (without this, two notches 300 ms apart fell inside one gesture's budget and moved one work, R15)
+      if (Math.abs(A.wT - A.gWork) >= 0.5) A.gSpent = true
       A.lastInput = now
       // A gesture that has travelled the field does not also leave it: it is pinned at whichever end it reached and
       // the way out is a new gesture. What is left of a flick is what would otherwise have taken the whole spine.
@@ -685,7 +719,9 @@ function scrollBy(d, touch = false) {
     // a finger swiping on past the work field carries the whole field into the Lab
     if (settledAt(STOP.work) && touch && d > 0) { A.bridgeAcc = (A.bridgeAcc || 0) + d; if (A.bridgeAcc > 0.12) { A.bridgeAcc = 0; A.gSpent = true; if (CROSS && CS) { A.base = A.pT = CXS; A.leftWork = now } else startBridge() } A.lastInput = now; return }
     // THE BUDGET: one stop from where this gesture began, and the rest of a flick is absorbed
+    const before = A.pT
     A.pT = clamp(A.pT + d, Math.max(0, A.gFrom - 1), Math.min(LAST, A.gFrom + 1))
+    A.gTravel += A.pT - before   // the input's own travel, as the budget let it through (landGesture)
   } else if (A.mode === 'world') {
     const last = lastFrame()
     if (A.wbase === last && d > 0 && A.wp > last - 0.03) {
@@ -699,6 +735,7 @@ function scrollBy(d, touch = false) {
     A.exitAccum = 0
     const was = A.wpT
     A.wpT = clamp(A.wpT + d, Math.max(0, A.gFrom - 1), Math.min(last, A.gFrom + 1))
+    A.gTravel += A.wpT - was
     A.gInner += Math.abs(A.wpT - was)
     A.learned.world = true
   } else return
@@ -2079,7 +2116,15 @@ function uiDestination() {
   if (A.mode !== 'index') return 'name'
   return DEST_AT[clamp(A.base, 0, DEST_AT.length - 1)]
 }
-let lastHint = '', lastCue = '', lastTone = '', lastTT = '', lastTB = '', lastBg = '', lastWork = '', lastWB = ''
+let lastHint = '', lastCue = '', lastTone = '', lastTT = '', lastTB = '', lastBg = '', lastWork = '', lastWB = '', lastNav = null
+/*
+ * WHERE THE VISITOR IS, IN THE STRIP (R15, indicator A, user decision 2026-10-08). The section's control carries
+ * aria-current and the strip underlines it: İŞLER at Work and in a project, HAKKIMDA in the About room, LAB at Cross
+ * Section — the way into the Lab, SURFACE to DEPTH, the louvers closing over the bench — and at the Lab stop. The
+ * opening (the name, the faces, Linefield) is no section of the strip and marks nothing. The Lab's own chrome marks
+ * the bench and the finale (LabChrome.vue). It changes with the place, never by itself, so reduced motion is the same.
+ */
+const NAV_SECTION = { work: 'work', world: 'work', cross: 'lab', lab: 'lab', rest: 'rest', about: 'about', 'about-detail': 'about' }
 // the strip's right end: where the visitor is writing from, and whether he is free — never an instruction now
 function hintFor() {
   if (A.mode !== 'index' || A.aboutOpen) return ''
@@ -2218,6 +2263,14 @@ function domUpdate(from, to, front) {
   }
   const hint = hintFor()
   if (hint !== lastHint) { D.hint.textContent = hint; lastHint = hint }
+  // the strip names the section the visitor is in (R15, indicator A)
+  const section = NAV_SECTION[uiDestination()] ?? ''
+  if (section !== lastNav) {
+    lastNav = section
+    for (const b of D.top.querySelectorAll('.nav [data-go]')) {
+      if (b.dataset.go === section) b.setAttribute('aria-current', 'location'); else b.removeAttribute('aria-current')
+    }
+  }
   stillUpdate(performance.now())
   if (linesDue != null && (A.mode === 'world' || A.mode === 'exit') && pocketLines(linesDue)) linesDue = null
   if (currentDue && A.mode === 'index' && currentPocket()) currentDue = false
@@ -2880,7 +2933,7 @@ export function setLocale(next) {
   const refocus = focusKey(document.activeElement)   // M4 A11Y
   FR = {}                       // frame blocks carry copy; their geometry does not change, so WORLD textures stand
   buildDOM()
-  lastHint = lastCue = lastTone = lastTT = lastTB = lastBg = lastWork = lastWB = ''; stillShown = ''
+  lastHint = lastCue = lastTone = lastTT = lastTB = lastBg = lastWork = lastWB = ''; lastNav = null; stillShown = ''
   mediaShown = ''
   onState.clear()
   layoutDOM()
@@ -2891,7 +2944,7 @@ export function setLocale(next) {
   return true
 }
 
-window.__lab = { CONTACT_STOP, A, V, ptr, phys, surface, works, STOP, SPINE, ...(NOTCH ? { notch: { land: GEST_LAND } } : {}),
+window.__lab = { CONTACT_STOP, A, V, ptr, phys, surface, works, STOP, SPINE,
   // R20: what the drawing ratio is and what it has done this session; ratioStep() takes the next step now (the stills)
   ratio: () => ({ k: ratio.k, due: ratio.due, done: ratio.done, steps: ratio.steps, R: V.dpr * V.u, backing: [canvas.width, canvas.height],
     median: ratio.iv.length ? [...ratio.iv].sort((a, b) => a - b)[ratio.iv.length >> 1] : 0, span: ratio.sum }),

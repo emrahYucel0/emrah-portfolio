@@ -72,6 +72,8 @@ html.c2-zoomed[data-c2='on'], html.c2-zoomed[data-c2='on'] body { touch-action: 
 :where(#ui) .strip .lang { padding: 10px 10px; margin: 0 -10px; }
 /* M4 A11Y: the strip's short words (Lab) reach 24px of target too; padding and margin cancel, nothing moves */
 :where(#ui) .strip .nav button { padding-left: 4px; padding-right: 4px; margin: 0 -4px; }
+/* R15 (indicator A): the section the visitor is in is underlined — the strip names the place, as the Lab's does */
+:where(#ui) .strip .nav [aria-current] { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px; }
 :where(#ui) .roles { opacity: .82; }
 /* .9, not quieter: in a project the hint sits on the work's ink, and İstanbul's #8e3a17 took .78 to 4.33:1 (AUDIT-01) */
 :where(#ui) #hint { opacity: .9; overflow: hidden; text-overflow: ellipsis; min-width: 0; margin-left: auto; text-align: right; transition: opacity .4s ease; }   /* M3: it shrinks and keeps the right edge on a phone too */

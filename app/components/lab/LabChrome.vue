@@ -114,7 +114,8 @@ const toContact = (e: MouseEvent) => {
 .lab-strip a:hover, .lab-strip a:focus-visible { color: var(--ink); text-decoration: underline; }
 .lab-strip .id { color: var(--ink); }
 .lab-strip nav ul { display: flex; align-items: center; gap: 26px; list-style: none; margin: 0; padding: 0; }
-.lab-strip nav a[aria-current='page'] { color: var(--ink); }
+/* the place the visitor is in: inked, and underlined as on the runtime's strip (R15, indicator A) */
+.lab-strip nav a[aria-current='page'] { color: var(--ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px; }
 /* the language control keeps a 24px target though its text is two letters (WCAG 2.2) */
 .lab-strip .lang { padding-inline: 10px; margin-inline: -10px; }
 @media (max-width: 900px) { .lab-strip nav ul { gap: 16px; } }

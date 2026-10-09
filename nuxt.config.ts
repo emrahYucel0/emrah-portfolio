@@ -36,17 +36,17 @@ const LINEFIELD = !OFF.has(String(process.env.NUXT_PUBLIC_LINEFIELD ?? '').toLow
 const CROSS = !OFF.has(String(process.env.NUXT_PUBLIC_CROSS ?? '').toLowerCase())
 
 /**
- * TWO SWITCHES THAT ARE OFF UNLESS ASKED FOR (R15). Neither is ever in a release build.
+ * THE WHEEL LOG — off unless asked for, and never in a release build (R15, user decision 2026-10-08).
  *
- *   NUXT_PUBLIC_WHEELLOG=1 npm run generate   the wheel log (?wheellog=1, app/debug/WheelLog.vue): what each wheel
- *                                             event carries, for reading a real mouse on the LAN preview. In
- *                                             `npm run dev` it is there without the variable.
- *   NUXT_PUBLIC_NOTCH=1 npm run generate      the proposed notch threshold (docs/TEMPO.md), for the checks to run
- *                                             against before the user has decided; off, the runtime is unchanged.
+ *   NUXT_PUBLIC_WHEELLOG=1 npm run generate   ?wheellog=1 (app/debug/WheelLog.vue): what each wheel event carries,
+ *                                             for reading a real mouse on the LAN preview. In `npm run dev` it is
+ *                                             there without the variable.
+ *
+ * Off, the layout's import folds to null at build time and there is no chunk; a release package is checked for it
+ * (docs/DEPLOYMENT.md checklist).
  */
 const ON = new Set(['1', 'true', 'on', 'yes'])
 const WHEELLOG = ON.has(String(process.env.NUXT_PUBLIC_WHEELLOG ?? '').toLowerCase())
-const NOTCH = ON.has(String(process.env.NUXT_PUBLIC_NOTCH ?? '').toLowerCase())
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-09-16',
@@ -82,7 +82,7 @@ export default defineNuxtConfig({
   // lowers the syntax and makes Nuxt drop the import map on its own.
   vite: {
     build: { target: ['safari15', 'ios15'] },
-    define: { __LINEFIELD__: JSON.stringify(LINEFIELD), __CROSS__: JSON.stringify(CROSS), __WHEELLOG__: JSON.stringify(WHEELLOG), __NOTCH__: JSON.stringify(NOTCH) },
+    define: { __LINEFIELD__: JSON.stringify(LINEFIELD), __CROSS__: JSON.stringify(CROSS), __WHEELLOG__: JSON.stringify(WHEELLOG) },
   },
 
   nitro: {

@@ -71,6 +71,16 @@ html.lab-zoomed body.lab-route--home, html.lab-zoomed .lab-route--home .lab-stag
 .lab-route--home .lab-stage { touch-action: pinch-zoom; min-height: 0; }
 
 /*
+  A STUDY SCROLLS, BUT SHOWS NO SCROLLBAR. Its document is exactly its track (the stage is fixed, the track is
+  H × (1 + stages)), and the scroll IS the study's parameter, so there is nothing to fix in the overflow. The bar
+  only drew a page where there is a field: it is hidden, and wheel, touch and keyboard scroll as before. The
+  viewport's scrollbar is the root's, so the rule sits on html, for the study routes only.
+*/
+html:has(> body.lab-route--study) { scrollbar-width: none; }
+html:has(> body.lab-route--study)::-webkit-scrollbar,
+body.lab-route--study::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+/*
   ONE RETURN, AND IT IS THE STUDY'S OWN. A visitor inside WEIGHT, LINE or TONE needs the way back to the bench
   where they are looking, not folded into the strip's list of places — so the study's own ← LAB is the control,
   and the strip drops its Lab entry on these routes (LabChrome) so the two never compete. The link used to point

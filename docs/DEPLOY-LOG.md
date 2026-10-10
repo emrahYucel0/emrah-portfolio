@@ -231,7 +231,30 @@ Prepared 2026-10-08 on `fix/lf-touch-edge` (worktree `emrah-portfolio-r15`), cut
   (`builds/release-fd9b2e6` served `--lan --wk` on 4983), then the push when the user confirms it, and the upload by
   hand through cPanel by `docs/DEPLOYMENT.md`'s checklist.
 
-## Candidate — `bcb8f90`, R15: the notch rule, one notch one work, indicator A. NOT UPLOADED.
+## Candidate — `5d95e06`, `bcb8f90` plus the Lab studies without a scrollbar. NOT UPLOADED. Replaces `bcb8f90`.
+
+Prepared 2026-10-10 on `feature/r15-tempo`, one commit on top of `bcb8f90`. Nothing is pushed; `main` is not moved.
+`bcb8f90` below is superseded by this package and is not to be uploaded.
+- **Package:** `deploy/yucelemrah-5d95e06.zip` (in the worktree; `deploy/` is ignored).
+  - SHA-256 `09ade6cd2f5e04eb5eb8c2525130c0fe25ae50d8a3613bb853fba648d959ab73` (`deploy/yucelemrah-5d95e06.zip.sha256`).
+  - 220 files, 10,271,671 bytes unpacked, 9,338,076 bytes zipped (8.9 MiB). The three `.htaccess` files are in it;
+    no wheel log, no `*.cjs`, no `200.html`.
+  - `cspboot --dir` PASS on the build (`builds/release-5d95e06`) and on the unpacked zip (byte-identical to it).
+- **Built from `5d95e06`** (`npx nuxt typecheck` 0, `npm run generate` 0, `NUXT_PUBLIC_WHEELLOG` unset, Linefield
+  and Cross Section in). Against `builds/release-bcb8f90`, chunk names normalised, one of the 39 JS and CSS files
+  differs: the Lab stylesheet, by the new rule alone.
+- **What changes for a visitor,** beyond `bcb8f90`: in WEIGHT, LINE and TONE, on desktop and on phones, the page
+  shows no scrollbar. Why it was there: each study's document is exactly its track (`H × (1 + stages)`, measured
+  equal to `scrollHeight` on 1440 × 900 and on a 390 × 664 phone, no horizontal overflow), and the scroll is the
+  study's parameter; nothing overflowed by accident. So the viewport's scrollbar is hidden on the study routes
+  (`scrollbar-width: none`, `::-webkit-scrollbar`, `app/assets/css/lab.css`), and wheel, touch and keyboard
+  scroll as before.
+- **Checks:** by the user's instruction only typecheck and the two `cspboot --dir` runs; no test suite. The user
+  checks the studies by eye.
+- **Before upload:** the user's check on the LAN preview (`builds/release-5d95e06` served `--lan --wk` on 4983),
+  then the push when the user confirms it, and the upload by hand through cPanel by `docs/DEPLOYMENT.md`.
+
+## Candidate — `bcb8f90`, R15: the notch rule, one notch one work, indicator A. NOT UPLOADED. Superseded by `5d95e06`.
 
 Prepared 2026-10-10 on `feature/r15-tempo` (worktree `emrah-portfolio-r15`), on top of `main` f492799 (= live
 `fd9b2e6` plus documentation). Nothing is pushed; `main` is not moved.

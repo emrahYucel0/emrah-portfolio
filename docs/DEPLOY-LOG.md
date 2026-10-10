@@ -253,6 +253,10 @@ Prepared 2026-10-10 on `feature/r15-tempo`, one commit on top of `bcb8f90`. Noth
   checks the studies by eye.
 - **Before upload:** the user's check on the LAN preview (`builds/release-5d95e06` served `--lan --wk` on 4983),
   then the push when the user confirms it, and the upload by hand through cPanel by `docs/DEPLOYMENT.md`.
+- **Approved** by the user after their check, 2026-10-10. `feature/r15-tempo` brought into `main` as a fast-forward
+  and pushed. The package is built from `5d95e06`; every commit on `main` after `5d95e06` is documentation only
+  (`docs/DEPLOY-LOG.md`), so the package is what `main` ships. Not yet uploaded: the live row is added after the
+  upload, once someone has opened the deployed site.
 
 ## Candidate — `bcb8f90`, R15: the notch rule, one notch one work, indicator A. NOT UPLOADED. Superseded by `5d95e06`.
 
